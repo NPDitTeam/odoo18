@@ -32,7 +32,7 @@ class VehicleBookingAPI(http.Controller):
             # เงื่อนไขเริ่มต้น: เฉพาะสถานะเสร็จสิ้น (done)
             domain = [('state', '=', 'done')]
 
-            # --- กรองตามเดือน/ปี ของ planned_start_date_t ---
+            # --- กรองตามเดือน/ปี ของ planned_start_date_t (วันเวลาออกเดินทางจริง) ---
             month = kwargs.get('month')
             year = kwargs.get('year')
 
