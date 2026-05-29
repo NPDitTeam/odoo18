@@ -1,0 +1,4 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_cash_payment_user,cash.payment.user,model_cash_payment,base.group_user,1,1,1,1
+access_cash_payment_line_user,cash.payment.line.user,model_cash_payment_line,base.group_user,1,1,1,1
+access_fleet_chatter_service_user,fleet.chatter.service.user,model_fleet_chatter_service,base.group_user,1,1,1,1

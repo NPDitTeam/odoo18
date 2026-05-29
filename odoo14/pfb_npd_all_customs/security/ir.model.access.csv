@@ -1,0 +1,4 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_sale_objective,sale.objective,model_sale_objective,,1,1,1,1
+access_sale_advance_rent_inv,sale_advance_rent_inv,model_sale_advance_rent_inv,,1,1,1,1
+access_sale_order_approval_wizard,sale.order.approval.wizard,model_sale_order_approval_wizard,base.group_user,1,1,1,1

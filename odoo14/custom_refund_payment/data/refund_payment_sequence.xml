@@ -1,0 +1,11 @@
+<odoo>
+    <record id="seq_refund_payment" model="ir.sequence">
+        <field name="name">Refund Payment</field>
+        <field name="code">overpaid_refund.payment</field>
+        <field name="prefix">REF/%(year)s/%(month)s/%(day)s/</field>
+        <field name="padding">4</field>
+        <field name="number_next">1</field>
+        <field name="number_increment">1</field>
+        <field name="use_date_range">True</field>
+    </record>
+</odoo>

@@ -1,0 +1,29 @@
+<odoo>
+    <record id="view_sale_order_approval_wizard_form" model="ir.ui.view">
+        <field name="name">sale.order.approval.wizard.form</field>
+        <field name="model">sale.order.approval.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Approval" >
+                <footer>
+                    <button name="action_confirm_approval" type="object" string="Confirm" class="btn-primary" />
+                    <button string="Cancel" special="cancel" class="btn-secondary" />
+                </footer>
+                <sheet>
+                    <group>
+                        <field name="approver_id" />
+                    </group>
+                    <group>
+                            <field name="note_approver" placeholder="กรอกหมายเหตุการอนุมัติ..."/>
+
+                        </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+
+
+
+</odoo>
+
+

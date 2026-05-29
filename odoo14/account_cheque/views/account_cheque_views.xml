@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_account_cheque_form" model="ir.ui.view">
+        <field name="name">account.cheque.form</field>
+        <field name="model">account.cheque</field>
+        <field name="arch" type="xml">
+            <form string="เช็ค">
+                <header>
+                    <button name="action_assigned" type="object" string="กำหนด" invisible="state != 'draft'" class="btn-primary"/>
+                    <button name="action_cheque_done" type="object" string="เสร็จสิ้น" invisible="state != 'assigned'" class="btn-primary"/>
+                    <button name="action_reject" type="object" string="ปฏิเสธ" invisible="state not in ('draft', 'assigned')"/>
+                    <button name="action_cancel" type="object" string="ยกเลิก" invisible="state in ('done', 'cancel')"/>
+                    <button name="action_redraft" type="object" string="กลับเป็นร่าง" invisible="state not in ('reject', 'cancel')"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,assigned,done"/>
+                </header>
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="name"/>
+                            <field name="cheque_type"/>
+                            <field name="partner_id"/>
+                            <field name="bank_id"/>
+                        </group>
+                        <group>
+                            <field name="date_cheque"/>
+                            <field name="date_receipt"/>
+                            <field name="date_done"/>
+                            <field name="cheque_total"/>
+                            <field name="journal_id"/>
+                        </group>
+                    </group>
+                    <field name="remark" placeholder="หมายเหตุ..."/>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+    <record id="view_account_cheque_list" model="ir.ui.view">
+        <field name="name">account.cheque.list</field>
+        <field name="model">account.cheque</field>
+        <field name="arch" type="xml">
+            <list string="เช็ค">
+                <field name="name"/>
+                <field name="cheque_type"/>
+                <field name="partner_id"/>
+                <field name="date_cheque"/>
+                <field name="cheque_total"/>
+                <field name="state" widget="badge" decoration-success="state == 'done'" decoration-warning="state == 'assigned'" decoration-danger="state == 'reject'"/>
+            </list>
+        </field>
+    </record>
+    <record id="action_account_cheque" model="ir.actions.act_window">
+        <field name="name">เช็ค</field>
+        <field name="res_model">account.cheque</field>
+        <field name="view_mode">list,form</field>
+    </record>
+    <menuitem id="menu_account_cheque" name="เช็ค" parent="account.menu_finance_entries" action="action_account_cheque" sequence="30"/>
+</odoo>

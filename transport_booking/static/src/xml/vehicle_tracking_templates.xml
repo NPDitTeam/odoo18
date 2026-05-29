@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    
+    <!-- Vehicle Tracking Map Template -->
+    <t t-name="transport_booking.VehicleTrackingMap">
+        <div class="o_tracking_map_container">
+            <div class="tracking_controls">
+                <button class="primary" t-on-click="loadTrackingData">
+                    <i class="fa fa-refresh"/> รีเฟรช
+                </button>
+            </div>
+            <div class="o_tracking_map_view"/>
+        </div>
+    </t>
+
+</templates>

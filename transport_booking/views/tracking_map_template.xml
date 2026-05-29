@@ -1,0 +1,342 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Template สำหรับแสดงแผนที่ติดตามตำแหน่ง -->
+    <template id="tracking_map_template" name="Real-time Tracking Map">
+        <html>
+            <head>
+                <meta charset="UTF-8"/>
+                <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+                <title>📍 ติดตามตำแหน่ง - <t t-esc="booking.name"/></title>
+                <style>
+                    body {
+                        margin: 0;
+                        padding: 0;
+                        font-family: Arial, sans-serif;
+                    }
+                    #map {
+                        width: 100%;
+                        height: calc(100vh - 120px);
+                    }
+                    .info-panel {
+                        padding: 10px;
+                        background: #f8f9fa;
+                        border-bottom: 1px solid #dee2e6;
+                    }
+                    .info-item {
+                        display: inline-block;
+                        margin-right: 20px;
+                        padding: 5px 10px;
+                        background: white;
+                        border-radius: 4px;
+                        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+                    }
+                    .info-label {
+                        font-weight: bold;
+                        color: #666;
+                        font-size: 11px;
+                    }
+                    .info-value {
+                        color: #333;
+                        font-size: 13px;
+                    }
+                    .status-badge {
+                        display: inline-block;
+                        padding: 3px 8px;
+                        border-radius: 3px;
+                        font-size: 11px;
+                        font-weight: bold;
+                        color: white;
+                    }
+                    .status-pending { background: #6c757d; }
+                    .status-in_transit { background: #0d6efd; }
+                    .status-near_destination { background: #fd7e14; }
+                    .status-delivered { background: #198754; }
+                </style>
+            </head>
+            <body>
+                <div class="info-panel">
+                    <div class="info-item">
+                        <div class="info-label">📋 เลขที่จอง</div>
+                        <div class="info-value"><t t-esc="booking.name"/></div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">🚚 รถ</div>
+                        <div class="info-value"><t t-esc="booking.vehicle_id.license_plate if booking.vehicle_id else '-'"/></div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">👤 คนขับ</div>
+                        <div class="info-value"><t t-esc="booking.driver_id.name if booking.driver_id else '-'"/></div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">สถานะ</div>
+                        <div class="info-value">
+                            <span t-attf-class="status-badge status-{{ booking.tracking_status }}">
+                                <t t-if="booking.tracking_status == 'pending'">รอออกเดินทาง</t>
+                                <t t-elif="booking.tracking_status == 'picked_up'">รับสินค้าแล้ว</t>
+                                <t t-elif="booking.tracking_status == 'in_transit'">อยู่ระหว่างขนส่ง</t>
+                                <t t-elif="booking.tracking_status == 'near_destination'">ใกล้ถึงปลายทาง</t>
+                                <t t-elif="booking.tracking_status == 'delivered'">ส่งถึงแล้ว</t>
+                            </span>
+                        </div>
+                    </div>
+                    <div class="info-item" id="lastUpdate">
+                        <div class="info-label">🕐 อัพเดทล่าสุด</div>
+                        <div class="info-value">-</div>
+                    </div>
+                </div>
+                
+                <div id="map"></div>
+                
+                <script>
+                    <![CDATA[
+                    let map, vehicleMarker, pickupMarker, destinationMarker, routePolyline;
+                    let bookingId = ]]><t t-esc="booking.id"/><![CDATA[;
+                    let pickupLocation = ']]><t t-esc="booking.pickup_location or ''"/><![CDATA[';
+                    let destination = ']]><t t-esc="booking.destination or ''"/><![CDATA[';
+                    let pathCoordinates = [];
+                    
+                    // สร้าง SVG icon สำหรับรถ
+                    const truckSVG = `
+                        <svg width="40" height="40" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
+                            <circle cx="20" cy="20" r="18" fill="#4285F4" stroke="white" stroke-width="3"/>
+                            <text x="20" y="27" text-anchor="middle" font-size="20" fill="white">🚚</text>
+                        </svg>
+                    `;
+                    
+                    // สร้างแผนที่เมื่อโหลดหน้าเว็บ
+                    function initMap() {
+                        const defaultCenter = { lat: 14.8825, lng: 100.9925 };
+                        
+                        map = new google.maps.Map(document.getElementById('map'), {
+                            zoom: 14,
+                            center: defaultCenter,
+                            mapTypeId: 'roadmap'
+                        });
+                        
+                        // สร้าง marker สำหรับรถ (Vehicle Icon)
+                        vehicleMarker = new google.maps.Marker({
+                            map: map,
+                            icon: {
+                                url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(truckSVG),
+                                scaledSize: new google.maps.Size(40, 40),
+                                anchor: new google.maps.Point(20, 20)
+                            },
+                            title: 'ตำแหน่งรถปัจจุบัน',
+                            zIndex: 999
+                        });
+                        
+                        // สร้าง marker สำหรับจุดรับสินค้า
+                        pickupMarker = new google.maps.Marker({
+                            map: map,
+                            icon: {
+                                path: google.maps.SymbolPath.CIRCLE,
+                                scale: 10,
+                                fillColor: '#34A853',
+                                fillOpacity: 1,
+                                strokeColor: '#fff',
+                                strokeWeight: 3,
+                            },
+                            title: 'จุดรับสินค้า',
+                            label: {
+                                text: 'A',
+                                color: 'white',
+                                fontWeight: 'bold'
+                            }
+                        });
+                        
+                        // สร้าง marker สำหรับจุดส่งสินค้า
+                        destinationMarker = new google.maps.Marker({
+                            map: map,
+                            icon: {
+                                path: google.maps.SymbolPath.CIRCLE,
+                                scale: 10,
+                                fillColor: '#EA4335',
+                                fillOpacity: 1,
+                                strokeColor: '#fff',
+                                strokeWeight: 3,
+                            },
+                            title: 'ปลายทาง',
+                            label: {
+                                text: 'B',
+                                color: 'white',
+                                fontWeight: 'bold'
+                            }
+                        });
+                        
+                        // สร้าง polyline สำหรับเส้นทาง
+                        routePolyline = new google.maps.Polyline({
+                            map: map,
+                            strokeColor: '#4285F4',
+                            strokeOpacity: 0.8,
+                            strokeWeight: 5,
+                            path: [],
+                            geodesic: true
+                        });
+                        
+                        // เริ่มต้นดึงข้อมูล
+                        updateLocation();
+                        
+                        // อัพเดทตาม tracking_refresh_interval (นาที -> มิลลิวินาที)
+                        // Default: 2 นาที = 120,000 มิลลิวินาที
+                        const refreshMinutes = 2; // ✅ เปลี่ยนที่นี่ถ้าต้องการ (หน่วย: นาที)
+                        const refreshInterval = refreshMinutes * 60 * 1000; // แปลงเป็น มิลลิวินาที
+                        setInterval(updateLocation, refreshInterval);
+                    }
+                    
+                    // ฟังก์ชันอัพเดทตำแหน่ง
+                    function updateLocation() {
+                        fetch('/web/dataset/call_kw', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({
+                                jsonrpc: '2.0',
+                                method: 'call',
+                                params: {
+                                    model: 'vehicle.booking',
+                                    method: 'read',
+                                    args: [[bookingId], [
+                                        'current_latitude', 
+                                        'current_longitude', 
+                                        'gps_last_update', 
+                                        'tracking_status',
+                                        'pickup_latitude',
+                                        'pickup_longitude',
+                                        'destination_latitude',
+                                        'destination_longitude'
+                                    ]],
+                                    kwargs: {}
+                                },
+                                id: Math.floor(Math.random() * 1000000)
+                            })
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.result && data.result.length > 0) {
+                                const booking = data.result[0];
+                                
+                                // อัพเดทตำแหน่งรถ
+                                const lat = parseFloat(booking.current_latitude);
+                                const lng = parseFloat(booking.current_longitude);
+                                
+                                if (!isNaN(lat) && !isNaN(lng) && lat !== 0 && lng !== 0) {
+                                    const position = new google.maps.LatLng(lat, lng);
+                                    
+                                    // อัพเดท vehicle marker
+                                    vehicleMarker.setPosition(position);
+                                    vehicleMarker.setVisible(true);
+                                    
+                                    // ปรับแผนที่ให้อยู่ตรงกลาง
+                                    map.setCenter(position);
+                                    
+                                    // เพิ่มจุดในเส้นทาง
+                                    pathCoordinates.push(position);
+                                    routePolyline.setPath(pathCoordinates);
+                                    
+                                    // อัพเดทเวลา
+                                    if (booking.gps_last_update) {
+                                        try {
+                                            const updateTime = new Date(booking.gps_last_update);
+                                            document.querySelector('#lastUpdate .info-value').textContent = 
+                                                updateTime.toLocaleString('th-TH');
+                                        } catch (e) {
+                                            console.error('Error parsing date:', e);
+                                        }
+                                    }
+                                } else {
+                                    vehicleMarker.setVisible(false);
+                                }
+                                
+                                // แสดง pickup marker
+                                if (booking.pickup_latitude && booking.pickup_longitude) {
+                                    const pickupLat = parseFloat(booking.pickup_latitude);
+                                    const pickupLng = parseFloat(booking.pickup_longitude);
+                                    if (!isNaN(pickupLat) && !isNaN(pickupLng) && pickupLat !== 0 && pickupLng !== 0) {
+                                        const pickupPos = new google.maps.LatLng(pickupLat, pickupLng);
+                                        pickupMarker.setPosition(pickupPos);
+                                        pickupMarker.setVisible(true);
+                                    }
+                                } else {
+                                    pickupMarker.setVisible(false);
+                                }
+                                
+                                // แสดง destination marker
+                                if (booking.destination_latitude && booking.destination_longitude) {
+                                    const destLat = parseFloat(booking.destination_latitude);
+                                    const destLng = parseFloat(booking.destination_longitude);
+                                    if (!isNaN(destLat) && !isNaN(destLng) && destLat !== 0 && destLng !== 0) {
+                                        const destPos = new google.maps.LatLng(destLat, destLng);
+                                        destinationMarker.setPosition(destPos);
+                                        destinationMarker.setVisible(true);
+                                    }
+                                } else {
+                                    destinationMarker.setVisible(false);
+                                }
+                                
+                                // ปรับ zoom ให้เห็นทุกจุด
+                                if (pickupMarker.getVisible() || destinationMarker.getVisible() || vehicleMarker.getVisible()) {
+                                    const bounds = new google.maps.LatLngBounds();
+                                    if (pickupMarker.getVisible()) bounds.extend(pickupMarker.getPosition());
+                                    if (destinationMarker.getVisible()) bounds.extend(destinationMarker.getPosition());
+                                    if (vehicleMarker.getVisible()) bounds.extend(vehicleMarker.getPosition());
+                                    map.fitBounds(bounds);
+                                }
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error fetching location:', error);
+                        });
+                    }
+                    ]]>
+                </script>
+                
+                <!-- Load Google Maps API with key from database -->
+                <t t-set="maps_url" t-value="'https://maps.googleapis.com/maps/api/js?key=' + str(api_key) + '&amp;callback=initMap&amp;v=weekly'"/>
+                <script t-att-src="maps_url" async="async" defer="defer"></script>
+            </body>
+        </html>
+    </template>
+    
+    <!-- Template สำหรับแสดง Error -->
+    <template id="tracking_map_error" name="Tracking Map Error">
+        <html>
+            <head>
+                <title>Error</title>
+                <style>
+                    body {
+                        display: flex;
+                        justify-content: center;
+                        align-items: center;
+                        height: 100vh;
+                        margin: 0;
+                        font-family: Arial, sans-serif;
+                        background: #f8f9fa;
+                    }
+                    .error-box {
+                        text-align: center;
+                        padding: 40px;
+                        background: white;
+                        border-radius: 8px;
+                        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+                    }
+                    .error-icon {
+                        font-size: 48px;
+                        color: #dc3545;
+                    }
+                    .error-message {
+                        margin-top: 20px;
+                        color: #666;
+                    }
+                </style>
+            </head>
+            <body>
+                <div class="error-box">
+                    <div class="error-icon">⚠️</div>
+                    <h2>เกิดข้อผิดพลาด</h2>
+                    <p class="error-message"><t t-esc="error_message"/></p>
+                </div>
+            </body>
+        </html>
+    </template>
+</odoo>

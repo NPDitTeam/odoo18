@@ -1,0 +1,198 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Sequence -->
+    <record id="seq_vehicle_inspection" model="ir.sequence">
+        <field name="name">Vehicle Inspection</field>
+        <field name="code">vehicle.inspection</field>
+        <field name="prefix">INSP/%(year)s/</field>
+        <field name="padding">5</field>
+    </record>
+
+    <!-- List View -->
+    <record id="view_vehicle_inspection_list" model="ir.ui.view">
+        <field name="name">vehicle.inspection.list</field>
+        <field name="model">vehicle.inspection</field>
+        <field name="arch" type="xml">
+            <list string="รายการตรวจสอบสภาพรถ" decoration-info="state=='draft'" 
+                  decoration-success="state=='approved'" decoration-warning="state=='confirmed'">
+                <field name="name"/>
+                <field name="license_plate" string="ทะเบียนรถ"/>
+                <field name="category_name" string="ประเภทรถ"/>
+                <field name="inspection_date_thai"/>
+                <field name="driver_name"/>
+                <field name="branch_id"/>
+                <field name="checked_items"/>
+                <field name="total_items"/>
+                <field name="issue_count"/>
+                <field name="state" widget="badge" 
+                       decoration-info="state=='draft'"
+                       decoration-warning="state=='confirmed'"
+                       decoration-success="state=='approved'"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Form View -->
+    <record id="view_vehicle_inspection_form" model="ir.ui.view">
+        <field name="name">vehicle.inspection.form</field>
+        <field name="model">vehicle.inspection</field>
+        <field name="arch" type="xml">
+            <form string="รายการตรวจสอบสภาพรถ">
+                <header>
+                    <!-- ปุ่มยืนยัน - แสดงเมื่อมีสิทธิ์และสถานะเป็นร่าง -->
+                    <button name="action_confirm" string="ยืนยัน" type="object" 
+                            class="btn-primary" 
+                            invisible="state != 'draft' or not can_confirm"/>
+                    <!-- ปุ่มอนุมัติ - แสดงเมื่อมีสิทธิ์และสถานะเป็นยืนยัน -->
+                    <button name="action_approve" string="อนุมัติ" type="object" 
+                            class="btn-success" 
+                            invisible="state != 'confirmed' or not can_approve"/>
+                    <!-- ปุ่มกลับเป็นร่าง - แสดงเมื่อมีสิทธิ์และสถานะไม่ใช่ร่าง -->
+                    <button name="action_draft" string="กลับเป็นร่าง" type="object" 
+                            invisible="state == 'draft' or not can_reset"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,confirmed,approved"/>
+                </header>
+                <sheet>
+                    <!-- Hidden fields for permission check -->
+                    <field name="can_confirm" invisible="1"/>
+                    <field name="can_approve" invisible="1"/>
+                    <field name="can_reset" invisible="1"/>
+                    
+                    <div class="oe_title">
+                        <h1><field name="name" readonly="1"/></h1>
+                    </div>
+                    
+                    <!-- ข้อมูลรถที่ตรวจสอบ (ใหม่) -->
+                    <group string="ข้อมูลรถที่ตรวจสอบ">
+                        <group>
+                            <field name="vehicle_id" readonly="state != 'draft'" 
+                                   options="{'no_create': True, 'no_open': True}"
+                                   domain="[('license_plate', '!=', 'ไม่มีทะเบียน')]"/>
+                            <field name="license_plate" readonly="1"/>
+                        </group>
+                        <group>
+                            <field name="category_id" readonly="state != 'draft'"
+                                   options="{'no_create': True, 'no_open': True}"/>
+                            <field name="category_name" readonly="1" invisible="1"/>
+                        </group>
+                    </group>
+                    
+                    <group>
+                        <group string="ข้อมูลผู้ตรวจสอบ">
+                            <field name="driver_id" readonly="state != 'draft'"/>
+                            <field name="driver_name" readonly="1"/>
+                            <field name="branch_id" readonly="state != 'draft'"/>
+                        </group>
+                        <group string="วันที่ตรวจสอบ">
+                            <field name="inspection_date" readonly="state != 'draft'"/>
+                            <field name="inspection_date_thai" readonly="1"/>
+                            <field name="confirmed_by_name" readonly="1" invisible="not confirmed_by_name"/>
+                        </group>
+                    </group>
+                    
+                    <notebook>
+                        <page string="รายการตรวจเช็ค (ข้อ 1-20)" name="inspection_lines">
+                            <field name="inspection_line_ids">
+                                <list editable="bottom" delete="0" create="0">
+                                    <field name="item_no" readonly="1" column_invisible="0"/>
+                                    <field name="name" readonly="1"/>
+                                    <field name="standard" readonly="1" optional="hide"/>
+                                    <field name="is_checked" readonly="parent.state != 'draft'" widget="boolean_toggle"/>
+                                    <field name="note" readonly="parent.state != 'draft'"/>
+                                    <field name="image" widget="image" 
+                                           options="{'size': [50, 50], 'zoom': true, 'zoom_delay': 0, 'preview_image': 'image'}" 
+                                           readonly="parent.state != 'draft'"
+                                           class="o_inspection_image"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="รายการบำรุงรักษา (ข้อ 21-24)" name="maintenance_lines">
+                            <field name="maintenance_line_ids">
+                                <list editable="bottom" delete="0" create="0">
+                                    <field name="item_no" readonly="1"/>
+                                    <field name="name" readonly="1"/>
+                                    <field name="is_due" widget="badge"
+                                           decoration-danger="is_due == 'due'"
+                                           decoration-success="is_due == 'not_due'"
+                                           readonly="parent.state != 'draft'"/>
+                                    <field name="current_mileage" readonly="parent.state != 'draft'"/>
+                                    <field name="last_change_mileage" readonly="parent.state != 'draft'"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="หมายเหตุ" name="notes">
+                            <group>
+                                <field name="general_note" placeholder="ระบุความผิดปกติอื่นๆที่ตรวจพบ นอกเหนือจาก 24 ข้อ..." readonly="state != 'draft'"/>
+                            </group>
+                        </page>
+                    </notebook>
+                    
+                    <group string="สถิติการตรวจสอบ">
+                        <group>
+                            <field name="total_items"/>
+                            <field name="checked_items"/>
+                        </group>
+                        <group>
+                            <field name="issue_count"/>
+                        </group>
+                    </group>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <!-- Search View -->
+    <record id="view_vehicle_inspection_search" model="ir.ui.view">
+        <field name="name">vehicle.inspection.search</field>
+        <field name="model">vehicle.inspection</field>
+        <field name="arch" type="xml">
+            <search string="ค้นหารายการตรวจสอบ">
+                <field name="name"/>
+                <field name="license_plate" string="ทะเบียนรถ"/>
+                <field name="category_id" string="ประเภทรถ"/>
+                <field name="driver_name"/>
+                <field name="branch_id"/>
+                <filter string="วันนี้" name="today" domain="[('inspection_date', '>=', (context_today()).strftime('%Y-%m-%d')), ('inspection_date', '&lt;', (context_today() + relativedelta(days=1)).strftime('%Y-%m-%d'))]"/>
+                <filter string="สัปดาห์นี้" name="this_week" domain="[('inspection_date', '>=', (context_today() - relativedelta(days=context_today().weekday())).strftime('%Y-%m-%d'))]"/>
+                <separator/>
+                <filter string="ร่าง" name="draft" domain="[('state', '=', 'draft')]"/>
+                <filter string="ยืนยัน" name="confirmed" domain="[('state', '=', 'confirmed')]"/>
+                <filter string="อนุมัติ" name="approved" domain="[('state', '=', 'approved')]"/>
+                <group expand="0" string="จัดกลุ่มตาม">
+                    <filter string="ทะเบียนรถ" name="group_vehicle" context="{'group_by': 'vehicle_id'}"/>
+                    <filter string="ประเภทรถ" name="group_category" context="{'group_by': 'category_id'}"/>
+                    <filter string="ผู้ตรวจสอบ" name="group_driver" context="{'group_by': 'driver_id'}"/>
+                    <filter string="สาขา" name="group_branch" context="{'group_by': 'branch_id'}"/>
+                    <filter string="วันที่" name="group_date" context="{'group_by': 'inspection_date:day'}"/>
+                    <filter string="สถานะ" name="group_state" context="{'group_by': 'state'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- Action -->
+    <record id="action_vehicle_inspection" model="ir.actions.act_window">
+        <field name="name">รายการตรวจสอบสภาพรถ</field>
+        <field name="res_model">vehicle.inspection</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_vehicle_inspection_search"/>
+        <field name="context">{'search_default_today': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                ยังไม่มีรายการตรวจสอบสภาพรถ
+            </p>
+            <p>
+                รายการตรวจสอบสภาพรถจะถูกบันทึกจากแอปมือถือ
+            </p>
+        </field>
+    </record>
+
+    <!-- Menu - ต่อจากเมนูผู้ขับขี่ (sequence 20) ในโมดูล fleet -->
+    <menuitem id="menu_vehicle_inspection"
+              name="รายการตรวจสอบสภาพรถ"
+              parent="fleet.menu_root"
+              action="action_vehicle_inspection"
+              sequence="25"/>
+
+</odoo>

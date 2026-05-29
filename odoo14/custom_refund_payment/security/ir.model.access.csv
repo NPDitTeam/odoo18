@@ -1,0 +1,4 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_refund_payment_user,refund.payment.user,model_refund_payment,base.group_user,1,1,1,0
+access_refund_payment_line_user,refund.payment.line.user,model_refund_payment_line,base.group_user,1,1,1,1
+access_fleet_refund_service_user,fleet.refund.service.user,model_fleet_refund_service,base.group_user,1,1,1,1

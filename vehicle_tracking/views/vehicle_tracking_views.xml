@@ -1,0 +1,191 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    
+    <!-- Tree View -->
+    <record id="view_vehicle_tracking_tree" model="ir.ui.view">
+        <field name="name">gps.vehicle.tracking.tree</field>
+        <field name="model">gps.vehicle.tracking</field>
+        <field name="arch" type="xml">
+            <list string="ติดตามรถ" create="false">
+                <field name="device_name"/>
+                <field name="lpn"/>
+                <field name="fleet_name"/>
+                <field name="status_text" decoration-success="status_text=='กำลังเคลื่อนที่'" 
+                       decoration-warning="status_text=='จอด (เครื่องยนต์ติด)'" 
+                       decoration-muted="status_text=='จอด'"/>
+                <field name="speed"/>
+                <field name="mileage_km"/>
+                <field name="engine_status" widget="badge" 
+                       decoration-success="engine_status=='1'" 
+                       decoration-danger="engine_status=='0'"/>
+                <field name="latitude"/>
+                <field name="longitude"/>
+                <field name="utc_timestamp"/>
+                <field name="battery_voltage"/>
+                <field name="supply_voltage"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Form View -->
+    <record id="view_vehicle_tracking_form" model="ir.ui.view">
+        <field name="name">gps.vehicle.tracking.form</field>
+        <field name="model">gps.vehicle.tracking</field>
+        <field name="arch" type="xml">
+            <form string="รายละเอียดรถ" create="false" edit="false">
+                <header>
+                    <button name="action_refresh_data" string="รีเฟรชข้อมูล" 
+                            type="object" class="oe_highlight"/>
+                    <button name="action_view_on_map" string="ดูบน Google Maps" 
+                            type="object" class="oe_highlight" icon="fa-truck"/>
+                </header>
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button class="oe_stat_button" type="object" 
+                                name="action_view_on_map" icon="fa-truck">
+                            <div class="o_field_widget o_stat_info">
+                                <span class="o_stat_text">ดูตำแหน่ง</span>
+                                <span class="o_stat_text">รถบนแผนที่</span>
+                            </div>
+                        </button>
+                    </div>
+                    
+                    <div class="oe_title">
+                        <h1>
+                             <field name="device_name" placeholder="ชื่ออุปกรณ์"/>
+                        </h1>
+                        <h2>
+                            <field name="lpn" placeholder="เลขทะเบียนรถ"/>
+                        </h2>
+                    </div>
+                    
+                    <group>
+                        <group string="ข้อมูลรถ">
+                            <field name="imei"/>
+                            <field name="fleet_name"/>
+                            <field name="product_name"/>
+                            <field name="status_text"/>
+                        </group>
+                    </group>
+                    
+                    <group>
+                        <group string="สถานะปัจจุบัน">
+                            <field name="engine_status" widget="badge"/>
+                            <field name="speed"/>
+                            <field name="mileage_km"/>
+                            <field name="course"/>
+                            <field name="sos" widget="boolean_toggle"/>
+                        </group>
+                        <group string="ตำแหน่ง">
+                            <field name="latitude"/>
+                            <field name="longitude"/>
+                            <field name="altitude"/>
+                            <field name="gps_fix" widget="badge"/>
+                            <field name="utc_timestamp"/>
+                        </group>
+                    </group>
+                    
+                    <notebook>
+                        <page string="ข้อมูลสัญญาณ">
+                            <group>
+                                <group>
+                                    <field name="gsm"/>
+                                    <field name="gsm_level"/>
+                                    <field name="num_sat"/>
+                                    <field name="hdop"/>
+                                </group>
+                                <group>
+                                    <field name="lbs"/>
+                                    <field name="io"/>
+                                    <field name="stage"/>
+                                </group>
+                            </group>
+                        </page>
+                        
+                        <page string="แบตเตอรี่และไฟเลี้ยง">
+                            <group>
+                                <group>
+                                    <field name="battery_voltage"/>
+                                    <field name="supply_voltage"/>
+                                    <field name="battery_level"/>
+                                </group>
+                                <group>
+                                    <field name="ext_bat_status"/>
+                                    <field name="car_battery"/>
+                                </group>
+                            </group>
+                        </page>
+                        
+                        <page string="ข้อมูลเพิ่มเติม">
+                            <group>
+                                <group>
+                                    <field name="temperature"/>
+                                </group>
+                                <group>
+                                    <field name="acc_on_time"/>
+                                    <field name="recv_utc_timestamp"/>
+                                    <field name="expire_time"/>
+                                </group>
+                            </group>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Search View -->
+    <record id="view_vehicle_tracking_search" model="ir.ui.view">
+        <field name="name">gps.vehicle.tracking.search</field>
+        <field name="model">gps.vehicle.tracking</field>
+        <field name="arch" type="xml">
+            <search string="ค้นหารถ">
+                <field name="device_name"/>
+                <field name="lpn"/>
+                <field name="fleet_name"/>
+                <field name="imei"/>
+                <filter string="เครื่องยนต์ติด" name="engine_on" 
+                        domain="[('engine_status', '=', '1')]"/>
+                <filter string="เครื่องยนต์ดับ" name="engine_off" 
+                        domain="[('engine_status', '=', '0')]"/>
+                <filter string="กำลังเคลื่อนที่" name="moving" 
+                        domain="[('speed', '>', 0)]"/>
+                <separator/>
+                <group expand="0" string="จัดกลุ่มตาม">
+                    <filter string="กลุ่มรถ" name="group_fleet" 
+                            context="{'group_by': 'fleet_name'}"/>
+                    <filter string="สถานะ" name="group_status" 
+                            context="{'group_by': 'engine_status'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- Action -->
+    <record id="action_vehicle_tracking" model="ir.actions.act_window">
+        <field name="name">ติดตามรถ</field>
+        <field name="res_model">gps.vehicle.tracking</field>
+        <field name="view_mode">list,form</field>
+        <field name="context">{}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                ไม่พบข้อมูลรถ!
+            </p>
+            <p>
+                กดปุ่ม "รีเฟรชข้อมูล" เพื่อดึงข้อมูลรถจากระบบ GPS
+            </p>
+        </field>
+    </record>
+
+    <!-- Scheduled Action for Auto-refresh (Every 1 minute) -->
+    <record id="ir_cron_fetch_vehicle_data" model="ir.cron">
+        <field name="name">ดึงข้อมูล GPS รถอัตโนมัติ</field>
+        <field name="model_id" ref="model_gps_vehicle_tracking"/>
+        <field name="state">code</field>
+        <field name="code">model.fetch_vehicle_data()</field>
+        <field name="interval_number">1</field>
+        <field name="interval_type">minutes</field>
+        <field name="active" eval="True"/>
+    </record>
+
+</odoo>

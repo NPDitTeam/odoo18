@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <data noupdate="1">
+        <record id="date_constants_sequence_settings" model="ir.config_parameter">
+            <field name="key">sequence.mixin.constraint_start_date</field>
+            <field name="value">9999-12-31</field>
+        </record>
+        <record id="receivable_journal" model="account.journal">
+            <field name="name">Receivable</field>
+            <field name="code">RVV</field>
+            <field name="type">receivable</field>
+            <field name="company_id" eval="False"/>
+        </record>
+        <record id="payable_journal" model="account.journal">
+            <field name="name">Payable</field>
+            <field name="code">PVV</field>
+            <field name="type">payable</field>
+            <field name="company_id" eval="False"/>
+        </record>
+    </data>
+</odoo>

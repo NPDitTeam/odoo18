@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    
+    <!-- Custom Map View สำหรับติดตามรถแบบ Real-time -->
+    <record id="view_vehicle_tracking_map_realtime" model="ir.ui.view">
+        <field name="name">vehicle.tracking.map.realtime</field>
+        <field name="model">vehicle.tracking</field>
+        <field name="arch" type="xml">
+            <form string="Real-time Tracking Map" class="o_tracking_map_form">
+                <sheet>
+                    <div class="oe_title">
+                        <h1>
+                            <i class="fa fa-map-marker"/> แผนที่ติดตามการขนส่ง (Real-time)
+                        </h1>
+                    </div>
+                    
+                    <div class="o_tracking_map_header">
+                        <div class="row">
+                            <div class="col-md-3">
+                                <div class="o_stat_info">
+                                    <span class="o_stat_text">รถกำลังเคลื่อนที่</span>
+                                    <div class="o_stat_value text-success">
+                                        <i class="fa fa-truck"/> 
+                                        <span id="moving_count">0</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="o_stat_info">
+                                    <span class="o_stat_text">รถหยุด</span>
+                                    <div class="o_stat_value text-warning">
+                                        <i class="fa fa-pause-circle"/> 
+                                        <span id="stopped_count">0</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="o_stat_info">
+                                    <span class="o_stat_text">งานทั้งหมด</span>
+                                    <div class="o_stat_value text-info">
+                                        <i class="fa fa-tasks"/> 
+                                        <span id="total_count">0</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="o_stat_info">
+                                    <span class="o_stat_text">อัปเดตล่าสุด</span>
+                                    <div class="o_stat_value text-muted">
+                                        <i class="fa fa-clock-o"/> 
+                                        <span id="last_update">-</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <separator string="แผนที่"/>
+                    
+                    <div class="o_tracking_map_widget_container" style="height: 600px;">
+                        <field name="id" widget="vehicle_tracking_map" nolabel="1"/>
+                    </div>
+                    
+                    <separator string="รายการรถที่กำลังติดตาม"/>
+                    
+                    <div class="o_tracking_vehicle_list">
+                        <table class="table table-sm table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Booking</th>
+                                    <th>รถ</th>
+                                    <th>คนขับ</th>
+                                    <th>สถานะ</th>
+                                    <th>ความเร็ว</th>
+                                    <th>เวลาอัปเดต</th>
+                                    <th>ตำแหน่ง</th>
+                                </tr>
+                            </thead>
+                            <tbody id="vehicle_list_body">
+                                <!-- จะถูกเติมด้วย JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Action สำหรับเปิดแผนที่ Real-time -->
+    <record id="action_vehicle_tracking_map_realtime" model="ir.actions.act_window">
+        <field name="name">🗺️ แผนที่ติดตามแบบ Real-time</field>
+        <field name="res_model">vehicle.tracking</field>
+        <field name="view_mode">form</field>
+        <field name="view_id" ref="view_vehicle_tracking_map_realtime"/>
+        <field name="target">fullscreen</field>
+        <field name="context">{
+            'form_view_initial_mode': 'readonly',
+        }</field>
+    </record>
+
+    <!-- เพิ่มเมนู -->
+    <!--
+    <menuitem
+        id="menu_vehicle_tracking_map_realtime"
+        name="🗺️ แผนที่ Real-time"
+        parent="menu_vehicle_booking_root"
+        action="action_vehicle_tracking_map_realtime"
+        sequence="21"/>
+    -->
+
+</odoo>

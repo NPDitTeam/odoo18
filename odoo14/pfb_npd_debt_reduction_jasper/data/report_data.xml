@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+<odoo>
+    <record id="jasper_debt_reduction_report" model="ir.actions.report">
+        <field name="name">ใบลดหนี้</field>
+        <field name="model">account.move</field>
+        <field name="report_type">jasper</field>
+        <field name="file">pfb_npd_debt_reduction_jasper/report/debt_reduction.jrxml</field>
+        <field name="attachment_use">False</field>
+        <field name="report_name">ใบลดหนี้</field>
+        <field name="jasper_report">True</field>
+        <field name="jasper_output">pdf</field>
+        <field name="model_id" ref="account.model_account_move"/>
+        <field name="binding_model_id" ref="account.model_account_move"/>
+        <field name="binding_type">report</field>
+        <field name="print_report_name">'ใบลดหนี้ - %s' % (object.name)</field>
+    </record>
+
+    <record id="jasper_debt_reduction_file" model="ir.actions.report.xml.file">
+        <field name="default">True</field>
+        <field name="filename">debt_reduction.jrxml</field>
+        <field name="report_id" ref="pfb_npd_debt_reduction_jasper.jasper_debt_reduction_report"/>
+        <field name="file" type="base64" file="pfb_npd_debt_reduction_jasper/report/debt_reduction.jrxml"/>
+    </record>
+</odoo>

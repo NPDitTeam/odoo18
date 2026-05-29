@@ -1,0 +1,196 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Installment List View (standalone) -->
+    <record id="view_npd_loan_installment_list" model="ir.ui.view">
+        <field name="name">npd.loan.installment.list</field>
+        <field name="model">npd.loan.installment</field>
+        <field name="arch" type="xml">
+            <list decoration-danger="state == 'overdue'"
+                  decoration-success="state == 'paid'"
+                  decoration-muted="state == 'cancelled'"
+                  editable="bottom">
+                <field name="installment_no" readonly="1" string="งวด"/>
+                <field name="actual_payment" string="จ่ายจริง" sum="รวมจ่ายจริง"/>
+                <field name="principal_amount" readonly="1" string="ยอดชำระเงินต้น" sum="รวมเงินต้น"/>
+                <field name="interest_amount" readonly="1" string="ยอดชำระดอก" sum="รวมดอก"/>
+                <field name="remaining_principal" readonly="1" string="คงเหลือ"/>
+                <field name="minimum_payment" readonly="1" string="ชำระขั้นต่ำ"/>
+                <field name="due_date"/>
+                <field name="paid_date"/>
+                <field name="overdue_days" string="วันเกิน" readonly="1"/>
+                <field name="late_fee_type" string="วิธีคิด"/>
+                <field name="late_fee" string="ค่าปรับ" readonly="1" sum="รวมค่าปรับ"/>
+                <field name="late_fee_paid" string="ค่าปรับจ่าย" readonly="1" sum="รวมค่าปรับจ่าย"/>
+                <field name="is_cancelled" column_invisible="1"/>
+                <field name="state" widget="badge"
+                       decoration-info="state == 'pending'"
+                       decoration-success="state == 'paid'"
+                       decoration-danger="state == 'overdue'"
+                       decoration-muted="state == 'cancelled'"/>
+                <field name="payment_proof_count" string="หลักฐาน"/>
+                <button name="action_cancel_installment" type="object"
+                        icon="fa-times" title="ยกเลิกงวด"
+                        invisible="state == 'cancelled'"
+                        confirm="ยืนยันยกเลิกงวดนี้? ยอดชำระดอกจะถูกคืนกลับไปที่หักล่วงหน้า"/>
+                <button name="action_view_payment_proofs" type="object"
+                        icon="fa-paperclip" title="ดูหลักฐาน"/>
+            </list>
+        </field>
+    </record>
+
+
+    <!-- Installment Form View -->
+    <record id="view_npd_loan_installment_form" model="ir.ui.view">
+        <field name="name">npd.loan.installment.form</field>
+        <field name="model">npd.loan.installment</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <button name="action_confirm_payment" type="object"
+                            string="✓ ยืนยันการชำระ" class="btn-success"
+                            invisible="state in ('paid', 'cancelled')"/>
+                    <button name="action_cancel_installment" type="object"
+                            string="✗ ยกเลิกงวด" class="btn-danger"
+                            invisible="state == 'cancelled'"
+                            confirm="ยืนยันยกเลิกงวดนี้? ยอดชำระดอกจะถูกคืนกลับไปที่หักล่วงหน้า"/>
+                    <field name="state" widget="statusbar"/>
+                </header>
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_view_payment_proofs" type="object"
+                                class="oe_stat_button" icon="fa-file-image-o">
+                            <field name="payment_proof_count" widget="statinfo" string="หลักฐาน"/>
+                        </button>
+                    </div>
+                    
+                    <!-- แจ้งเตือนเกินกำหนด -->
+                    <div class="alert alert-danger" role="alert" invisible="state != 'overdue'">
+                        <strong>⚠ เกินกำหนดชำระ!</strong> 
+                        เกินมาแล้ว <field name="overdue_days" readonly="1" class="oe_inline"/> วัน 
+                        | ค่าปรับ: <field name="late_fee" readonly="1" class="oe_inline"/> บาท
+                    </div>
+                    
+                    <group>
+                        <group string="ข้อมูลงวด">
+                            <field name="loan_id" readonly="1"/>
+                            <field name="installment_no"/>
+                            <field name="due_date"/>
+                            <field name="paid_date"/>
+                        </group>
+                        <group string="การชำระ">
+                            <field name="actual_payment" style="font-weight: bold; font-size: 16px;"/>
+                            <field name="minimum_payment" readonly="1"/>
+                            <field name="previous_remaining" readonly="1"/>
+                        </group>
+                    </group>
+
+                    <group>
+                        <group string="ยอดที่คำนวณได้">
+                            <field name="principal_amount" readonly="1" string="ยอดชำระเงินต้น"/>
+                            <field name="interest_amount" readonly="1" string="ยอดชำระดอก"/>
+                            <field name="remaining_principal" readonly="1" string="เงินต้นคงเหลือ" 
+                                   style="font-weight: bold; color: red;"/>
+                        </group>
+                        <group string="ค่าปรับล่าช้า">
+                            <field name="late_fee_type" readonly="1"/>
+                            <field name="late_fee_rate"/>
+                            <field name="overdue_days" readonly="1"/>
+                            <field name="late_fee" readonly="1"/>
+                        </group>
+                    </group>
+                    
+                    <!-- แท็บ -->
+                    <notebook>
+                        <page string="ค่าคอม Sale" name="commissions">
+                            <field name="commission_ids">
+                                <list editable="bottom">
+                                    <field name="sale_user_id"/>
+                                    <field name="commission_amount"/>
+                                    <field name="minimum_payment" readonly="1" string="ชำระขั้นต่ำ (ดอก+ค้าง)"/>
+                                    <field name="net_amount" readonly="1" string="ยอดสุทธิเหลือ"
+                                           decoration-danger="net_amount &lt; 0"
+                                           decoration-success="net_amount &gt;= 0"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="หลักฐานการโอน" name="payment_proofs">
+                            <field name="payment_proof_ids">
+                                <list editable="bottom">
+                                    <field name="payment_date"/>
+                                    <field name="amount" sum="รวม"/>
+                                    <field name="bank_name"/>
+                                    <field name="reference_no"/>
+                                    <field name="attachment" filename="attachment_name"/>
+                                    <field name="attachment_name" column_invisible="1"/>
+                                    <field name="name"/>
+                                    <field name="uploaded_by" readonly="1"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="หมายเหตุ" name="notes">
+                            <field name="note" placeholder="หมายเหตุเพิ่มเติม..."/>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+
+    <!-- Payment Proof List View -->
+    <record id="view_npd_loan_payment_proof_list" model="ir.ui.view">
+        <field name="name">npd.loan.payment.proof.list</field>
+        <field name="model">npd.loan.payment.proof</field>
+        <field name="arch" type="xml">
+            <list editable="bottom">
+                <field name="payment_date"/>
+                <field name="amount" sum="รวม"/>
+                <field name="bank_name"/>
+                <field name="reference_no"/>
+                <field name="attachment" filename="attachment_name"/>
+                <field name="attachment_name" column_invisible="1"/>
+                <field name="name"/>
+                <field name="note"/>
+                <field name="uploaded_by" readonly="1"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Payment Proof Form View -->
+    <record id="view_npd_loan_payment_proof_form" model="ir.ui.view">
+        <field name="name">npd.loan.payment.proof.form</field>
+        <field name="model">npd.loan.payment.proof</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <group>
+                        <group string="ข้อมูลการโอน">
+                            <field name="installment_id" readonly="1"/>
+                            <field name="loan_id" readonly="1"/>
+                            <field name="payment_date"/>
+                            <field name="amount"/>
+                        </group>
+                        <group string="รายละเอียดธนาคาร">
+                            <field name="bank_name"/>
+                            <field name="reference_no"/>
+                        </group>
+                    </group>
+                    <group>
+                        <group string="ไฟล์หลักฐาน">
+                            <field name="attachment" filename="attachment_name"/>
+                            <field name="attachment_name" invisible="1"/>
+                        </group>
+                        <group string="ข้อมูลเพิ่มเติม">
+                            <field name="name"/>
+                            <field name="uploaded_by" readonly="1"/>
+                            <field name="upload_date" readonly="1"/>
+                        </group>
+                    </group>
+                    <group>
+                        <field name="note" placeholder="หมายเหตุ..."/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+</odoo>

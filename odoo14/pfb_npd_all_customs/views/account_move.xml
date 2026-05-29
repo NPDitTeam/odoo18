@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<odoo>
+    <record id="view_move_form_inherit" model="ir.ui.view">
+        <field name="name">account.move.form.inherit</field>
+        <field name="model">account.move</field>
+        <field name="inherit_id" ref="account.view_move_form"/>
+        <field name="arch" type="xml">
+            <field name="payment_reference" position="after">
+                <field name="pfb_so_type" string="ประเภทใบเสนอราคา"/>
+                <field name="pfb_objective_id" string="วัตถุประสงค์"/>
+                <field name="contact_type" string="การติดต่อของลูกค้า"/>
+                <field name="sales_contact" string="Sales ที่ติดต่อ"/>
+            </field>
+
+            <xpath expr="//field[@name='invoice_line_ids']/list/field[@name='name']" position="after">
+                <field name="pfb_so_rent_ok" column_invisible="1"/>
+                <field name="move_state_parent" column_invisible="1"/>
+                <field name="move_type_parent" column_invisible="1"/>
+                <field name="pfb_date_of_rent" force_save="1"
+                       invisible="not pfb_so_rent_ok"
+                       readonly="move_type_parent != 'out_refund' and move_state_parent != 'draft'"/>
+                <field name="pfb_quantity" force_save="1"
+                       invisible="not pfb_so_rent_ok"
+                       readonly="move_type_parent != 'out_refund' and move_state_parent != 'draft'"/>
+            </xpath>
+
+            <xpath expr="//field[@name='invoice_line_ids']/list//field[@name='price_unit']" position="before">
+                <field name="discount_type_selection"/>
+            </xpath>
+
+            <xpath expr="//group[hasclass('oe_subtotal_footer')]/field[@name='tax_totals']" position="after">
+                <field name="total_rental_discount" widget="monetary" options="{'currency_field': 'currency_id'}" readonly="1"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

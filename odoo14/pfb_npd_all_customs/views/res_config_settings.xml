@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="res_config_settings_view_form" model="ir.ui.view">
+        <field name="name">res.config.settings.view.form.inherit.pfb</field>
+        <field name="model">res.config.settings</field>
+        <field name="priority" eval="20"/>
+        <field name="inherit_id" ref="sale.res_config_settings_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//block[@id='pricing_setting_container']" position="inside">
+                <setting string="Insurance Deposit Product" help="Default product used for insurance deposits">
+                    <field name="deposit_default_npd_id" context="{'default_type': 'service'}"/>
+                </setting>
+            </xpath>
+        </field>
+    </record>
+</odoo>

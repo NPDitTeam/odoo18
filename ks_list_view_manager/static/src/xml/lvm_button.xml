@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<templates>
+     <t t-name="new_lvm_button" t-inherit="web.ListView.Buttons" t-inherit-mode="extension" owl="1">
+           <xpath expr="//div[hasclass('o_list_buttons')]" position="after">
+               <div class="ks_lvm_buttons d-flex align-items-center">
+                   <t t-if="props.showButtons">
+                       <t t-call="ks_ListView.buttons"/>
+                   </t>
+
+               </div>
+
+           </xpath>
+     </t>
+</templates>

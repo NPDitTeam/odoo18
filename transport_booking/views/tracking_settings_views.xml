@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Tracking Settings Form View -->
+    <record id="view_tracking_settings_form" model="ir.ui.view">
+        <field name="name">tracking.settings.form</field>
+        <field name="model">tracking.settings</field>
+        <field name="arch" type="xml">
+            <form string="ตั้งค่าการติดตาม">
+                <sheet>
+                    <group>
+                        <group string="การติดตามตำแหน่ง">
+                            <field name="user_id" invisible="1"/>
+                            <field name="tracking_enabled" string="เปิดการติดตาม"/>
+                            <field name="tracking_interval" string="ช่วงเวลาการติดตาม (นาที)" invisible="not tracking_enabled"/>
+                            <field name="high_accuracy" string="โหมดความแม่นยำสูง" invisible="not tracking_enabled"/>
+                        </group>
+                        <group string="การแจ้งเตือน">
+                            <field name="notify_on_arrival" string="แจ้งเตือนเมื่อถึงจุดหมาย"/>
+                            <field name="notify_on_delay" string="แจ้งเตือนเมื่อล่าช้า"/>
+                            <field name="notify_off_route" string="แจ้งเตือนออกนอกเส้นทาง"/>
+                            <field name="off_route_distance" invisible="not notify_off_route" 
+                                   string="ระยะออกนอกเส้นทาง (เมตร)"/>
+                        </group>
+                    </group>
+                    <group>
+                        <group string="การแสดงผลแผนที่">
+                            <field name="show_speed" string="แสดงความเร็ว"/>
+                            <field name="show_route" string="แสดงเส้นทาง"/>
+                            <field name="map_type" string="ประเภทแผนที่"/>
+                        </group>
+                        <group string="การบันทึกข้อมูล">
+                            <field name="save_history" string="บันทึกประวัติ"/>
+                            <field name="history_retention_days" string="เก็บประวัติ (วัน)" invisible="not save_history"/>
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Action for Tracking Settings (User-specific) -->
+    <record id="action_tracking_settings_user" model="ir.actions.act_window">
+        <field name="name">การตั้งค่าการติดตาม</field>
+        <field name="res_model">tracking.settings</field>
+        <field name="view_mode">form</field>
+        <field name="target">inline</field>
+        <field name="domain">[('user_id', '=', uid)]</field>
+        <field name="context">{'default_user_id': uid}</field>
+    </record>
+
+    <!-- Menu item under Settings -->
+    <menuitem
+        id="menu_tracking_settings"
+        name="การตั้งค่าการติดตาม"
+        parent="base.menu_users"
+        action="action_tracking_settings_user"
+        sequence="50"/>
+
+</odoo>

@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_order_form_inherit" model="ir.ui.view">
+        <field name="name">sale.order.form.inherit.shipment</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_order_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//notebook" position="inside">
+                <page string="ข้อมูลขนส่ง" name="shipment_info">
+                    <group string="ข้อมูลการขนส่ง">
+                        <group>
+                            <field name="delivery_type"/>
+                            <field name="pickup_location" widget="autocomplete_location"/>
+                            <field name="destination" widget="autocomplete_location"/>
+                            <field name="vehicle_type_id"/>
+                            <field name="distance_km" readonly="1"/>
+                            <field name="trip_allowance" readonly="1"/>
+                            <field name="daily_allowance" readonly="1"/>
+                        </group>
+                        <group>
+                            <field name="delivery_employee_id"/>
+                            <field name="license_plate_id"/>
+                            <field name="shipping_cost_raw" readonly="1"/>
+                            <field name="shipping_cost"/>
+                            <field name="use_special_delivery_zero"/>
+                            <field name="shipping_cost_m"/>
+                        </group>
+                    </group>
+                    <separator string="คำนวณต้นทุนการขนส่ง"/>
+                    <group string="ค่าน้ำมันเชื้อเพลิง">
+                        <group>
+                            <field name="fuel_price_per_liter" readonly="1"/>
+                            <field name="fuel_consumption_rate" readonly="1"/>
+                        </group>
+                        <group>
+                            <field name="fuel_used_per_trip" readonly="1"/>
+                            <field name="fuel_cost_per_trip" readonly="1"/>
+                        </group>
+                    </group>
+                    <group string="ค่าเสื่อมราคาและค่าใช้จ่ายรถยนต์">
+                        <group>
+                            <field name="vehicle" readonly="1"/>
+                            <field name="vehicle_cost" readonly="1"/>
+                            <field name="salvage_value" readonly="1"/>
+                            <field name="depreciation_period" readonly="1"/>
+                            <field name="depreciation_per_trip" readonly="1"/>
+                        </group>
+                        <group>
+                            <field name="annual_vehicle_tax_y" readonly="1"/>
+                            <field name="annual_vehicle_tax" readonly="1"/>
+                            <field name="annual_insurance_class2" readonly="1"/>
+                            <field name="annual_insurance_class1" readonly="1"/>
+                            <field name="annual_compulsory_insurance1" readonly="1"/>
+                            <field name="annual_compulsory_insurance" readonly="1"/>
+                            <field name="total_depreciation_per_trip" readonly="1"/>
+                        </group>
+                    </group>
+                    <group string="ค่าแรงงานและค่าใช้จ่ายดำเนินงาน">
+                        <group>
+                            <field name="labor_costs" readonly="1"/>
+                            <field name="working_days_per_month" readonly="1"/>
+                            <field name="driver_salary" readonly="1"/>
+                            <field name="maintenance_cost" readonly="1"/>
+                            <field name="trips_per_day" readonly="1"/>
+                        </group>
+                        <group>
+                            <field name="labor_cost_per_trip" readonly="1"/>
+                            <field name="other_expenses" readonly="1"/>
+                            <field name="total_labor_per_trip" readonly="1"/>
+                        </group>
+                    </group>
+                    <separator string="สรุปต้นทุนและกำไร"/>
+                    <group>
+                        <group>
+                            <field name="total_cost_per_trip" readonly="1"/>
+                        </group>
+                        <group>
+                            <field name="profit_per_trip_p"/>
+                            <field name="profit_per_trip" readonly="1"/>
+                        </group>
+                    </group>
+                </page>
+            </xpath>
+        </field>
+    </record>
+</odoo>

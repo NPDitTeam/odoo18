@@ -1,0 +1,122 @@
+<odoo>
+    <!-- List View -->
+    <record id="view_refund_payment_tree" model="ir.ui.view">
+        <field name="name">refund.payment.list</field>
+        <field name="model">refund.payment</field>
+        <field name="arch" type="xml">
+            <list string="โอนคืนเงินลูกค้า">
+                <field name="name"/>
+                <field name="transfer_type"/>
+                <field name="state"/>
+                <field name="payment_ids"/>
+                <field name="date"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Form View -->
+    <record id="view_refund_payment_form" model="ir.ui.view">
+        <field name="name">refund.payment.form</field>
+        <field name="model">refund.payment</field>
+        <field name="arch" type="xml">
+            <form string="โอนคืนเงินลูกค้า" delete="false" duplicate="false">
+
+                <header>
+                    <button name="action_confirm"
+                            string="ยืนยัน"
+                            type="object"
+                            class="btn-primary"
+                            invisible="state in ('confirmed', 'cancelled')"/>
+
+                    <button name="action_cancel"
+                            string="ยกเลิก"
+                            type="object"
+                            class="btn-danger"
+                            confirm="คุณแน่ใจหรือไม่ว่าต้องการยกเลิกเอกสารนี้?"
+                            invisible="state == 'cancelled' or not can_confirm_cancel"/>
+
+                    <button name="action_reset_to_draft"
+                            string="ยกเลิกรับเป็นร่าง"
+                            type="object"
+                            class="btn-secondary"
+                            invisible="state in ('draft', 'cancelled') or not show_fleet_refund_button"/>
+
+                    <button name="action_reverse_overpaid"
+                            string="คืนเงินโอนเกิน"
+                            type="object"
+                            class="btn-warning"
+                            invisible="transfer_type != 'overpaid_refund' or state != 'confirmed' or not show_fleet_refund_button or not can_confirm_cancel"/>
+
+                    <button name="action_reverse_wtax"
+                            string="คืนหัก ณ ที่จ่าย"
+                            type="object"
+                            class="btn-info"
+                            confirm="คุณแน่ใจหรือไม่ว่าต้องการกลับขาบัญชีหัก ณ ที่จ่าย?"
+                            invisible="transfer_type != 'wtax_refund' or state != 'confirmed' or not can_confirm_cancel or reversed_wtax_move_id"/>
+
+                    <field name="state" widget="statusbar" statusbar_visible="draft,confirmed,cancelled"/>
+                </header>
+
+                <sheet>
+                    <widget name="web_ribbon"
+                            title="เสร็จสิ้น"
+                            bg_color="text-bg-success"
+                            invisible="not show_state"/>
+
+                    <widget name="web_ribbon"
+                            title="ยกเลิก"
+                            bg_color="text-bg-danger"
+                            invisible="state != 'cancelled'"/>
+
+                    <group>
+                        <field name="transfer_type" required="1" readonly="state in ('confirmed', 'cancelled')"/>
+                        <field name="show_fleet_refund_button" invisible="1"/>
+                        <field name="can_confirm_cancel" invisible="1"/>
+                        <field name="show_state" invisible="1"/>
+                        <field name="is_date_readonly" invisible="1"/>
+                        <field name="name" readonly="1"/>
+                        <field name="branch_id" readonly="1"/>
+                        <field name="payment_ids"
+                               widget="many2many_tags"
+                               options="{'no_create_edit': True}"
+                               readonly="state in ('confirmed', 'cancelled')"/>
+                        <field name="move_id" readonly="1"/>
+                        <field name="reversed_wtax_move_id" readonly="1" invisible="not reversed_wtax_move_id"/>
+                        <field name="date" readonly="state in ('confirmed', 'cancelled') or is_date_readonly"/>
+                    </group>
+
+                    <notebook>
+                        <page string="รายละเอียดการชำระเงิน">
+                            <group string="รายละเอียดรายการที่เลือก">
+                                <field name="payment_lines" readonly="state in ('confirmed', 'cancelled')">
+                                    <list editable="bottom">
+                                        <field name="payment_name"/>
+                                        <field name="payment_id" column_invisible="1"/>
+                                        <field name="partner_id"/>
+                                        <field name="amount" required="1"/>
+                                        <field name="payment_date"/>
+                                    </list>
+                                </field>
+                            </group>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <!-- Action -->
+    <record id="action_refund_payment_form" model="ir.actions.act_window">
+        <field name="name">โอนคืนเงินลูกค้า</field>
+        <field name="res_model">refund.payment</field>
+        <field name="view_mode">list,form</field>
+        <field name="view_id" ref="view_refund_payment_tree"/>
+        <field name="context">{}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                ยังไม่มีข้อมูลเพิ่มข้อมูลใหม่เพื่อเริ่มต้น
+            </p>
+        </field>
+    </record>
+</odoo>

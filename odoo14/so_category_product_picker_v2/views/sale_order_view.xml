@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_order_form_inherit_category_button" model="ir.ui.view">
+        <field name="name">sale.order.form.category.button</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_order_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='order_line']" position="before">
+                <div class="mt16 mb8">
+                    <button name="open_category_product_popup"
+                            icon="fa-plus-circle"
+                            type="object"
+                            class="btn btn-primary"
+                            string="เพิ่มรายการสินค้าตามหมวดหมู่"
+                            invisible="state == 'sale'"/>
+                </div>
+            </xpath>
+        </field>
+    </record>
+</odoo>

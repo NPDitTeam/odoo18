@@ -1,0 +1,4 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_rent_discount_wizard,rent.discount.wizard,model_rent_discount_wizard,base.group_user,1,1,1,1
+access_request_picking_approval_wizard,stock.picking.request.approval.wizard,model_stock_picking_request_approval_wizard,base.group_user,1,1,1,1
+access_approval_picking_wizard,stock.picking.approval.wizard,model_stock_picking_approval_wizard,base.group_user,1,1,1,1

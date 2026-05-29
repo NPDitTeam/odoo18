@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+    <record id="channel_facebook" model="customer.channel">
+        <field name="name">Facebook</field>
+        <field name="sequence">1</field>
+    </record>
+    <record id="channel_walkin" model="customer.channel">
+        <field name="name">Walk in</field>
+        <field name="sequence">2</field>
+    </record>
+    <record id="channel_website" model="customer.channel">
+        <field name="name">Website</field>
+        <field name="sequence">3</field>
+    </record>
+    <record id="channel_lineoa" model="customer.channel">
+        <field name="name">LineOA</field>
+        <field name="sequence">4</field>
+    </record>
+    <record id="channel_bci" model="customer.channel">
+        <field name="name">BCI</field>
+        <field name="sequence">5</field>
+    </record>
+    <record id="channel_tiktok" model="customer.channel">
+        <field name="name">TIKTOK</field>
+        <field name="sequence">6</field>
+    </record>
+    <record id="channel_referral" model="customer.channel">
+        <field name="name">ลูกค้าแนะนำ</field>
+        <field name="sequence">7</field>
+    </record>
+</odoo>

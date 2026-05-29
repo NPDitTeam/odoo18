@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <template id="assets_backend_inherit_multi_branch" inherit_id="web.assets_backend" name="Multi brnach assets">
+        <xpath expr="script[last()]" position="after">
+            <script type="text/javascript" src="/multi_branch_management_aagam/static/src/js/switch_branch.js"/>
+             <script type="text/javascript" src="/multi_branch_management_aagam/static/src/js/action_manager_report.js"/>
+        </xpath>
+    </template>
+
+
+
+    <template id="assets_common" name="account cash flow pdf assets" inherit_id="web.report_assets_common">
+        <xpath expr="." position="inside">
+            <link rel="stylesheet" type="text/scss" href="/multi_branch_management_aagam/static/src/scss/account_cashflow_report.scss"/>
+        </xpath>
+    </template>
+
+<!--    <template id="assets_backend" inherit_id="web.assets_backend">-->
+<!--        <xpath expr="." position="inside">-->
+<!--            <script type="text/javascript" src="/multiple_branch_managment_aagam/static/src/js/action_manager_report.js"/>-->
+<!--        </xpath>-->
+<!--    </template>-->
+</odoo>

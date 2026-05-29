@@ -1,0 +1,43 @@
+/* Vehicle Inspection - Image Styling */
+
+/* รูปภาพในรายการ (list view) - แสดงขนาดเล็ก */
+.o_list_view .o_field_image img,
+.o_list_renderer .o_field_image img {
+    max-width: 50px !important;
+    max-height: 50px !important;
+    width: 50px !important;
+    height: 50px !important;
+    object-fit: cover;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: transform 0.2s ease;
+    border: 1px solid #dee2e6;
+}
+
+.o_list_view .o_field_image img:hover,
+.o_list_renderer .o_field_image img:hover {
+    transform: scale(1.1);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+
+/* รูปภาพใน Form view - ขนาดกลาง */
+.o_form_view .o_field_image img {
+    max-width: 150px !important;
+    max-height: 150px !important;
+    object-fit: cover;
+    border-radius: 6px;
+    cursor: pointer;
+    border: 1px solid #dee2e6;
+}
+
+/* Thumbnail container */
+.o_field_image {
+    display: inline-block;
+}
+
+/* ปรับความกว้างคอลัมน์รูปภาพ */
+.o_list_view th:has(.o_field_image),
+.o_list_view td:has(.o_field_image) {
+    width: 70px !important;
+    text-align: center;
+}

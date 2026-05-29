@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<templates>
+
+    <t t-name="ks_list_view_manager.hr_expense_button" t-inherit="hr_expense.ListButtons" t-inherit-mode="extension"
+       owl="1">
+        <xpath expr="//div[hasclass('o_list_buttons')]" position="after">
+            <div class="ks_lvm_buttons d-flex align-items-center">
+                <t t-if="props.showButtons">
+                    <t t-call="ks_ListView.buttons"/>
+                </t>
+            </div>
+
+        </xpath>
+    </t>
+    <t t-name="ks_list_view_manager.file_upload.Buttons" t-inherit="account.FileuploadListView.Buttons"
+       t-inherit-mode="extension" owl="1">
+        <xpath expr="//div[hasclass('o_list_buttons')]" position="after">
+            <div class="ks_lvm_buttons d-flex align-items-center">
+                <t t-if="props.showButtons">
+                    <t t-call="ks_ListView.buttons"/>
+                </t>
+            </div>
+
+        </xpath>
+    </t>
+
+    <t t-name="ks_list_view_manager.account.Buttons" t-inherit="account.AccountViewUploadButton"
+       t-inherit-mode="extension" owl="1">
+        <xpath expr="//AccountFileUploader" position="after">
+            <div class="ks_lvm_buttons d-flex align-items-center">
+                <t t-if="props.showButtons">
+                    <t t-call="ks_ListView.buttons"/>
+                </t>
+            </div>
+        </xpath>
+    </t>
+
+</templates>

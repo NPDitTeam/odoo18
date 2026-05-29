@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- เปลี่ยนโลโก้หน้า Login -->
+    <template id="custom_login_logo" inherit_id="web.login_layout" priority="99">
+        <xpath expr="//img[@t-attf-src]" position="replace">
+            <img src="/custom_logo/static/src/img/custom_logo.png"
+                 alt="Logo"
+                 style="max-height:120px; max-width: 100%; width:auto"/>
+        </xpath>
+    </template>
+</odoo>

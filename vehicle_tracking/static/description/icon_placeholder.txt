@@ -1,0 +1,17 @@
+ICON FILE PLACEHOLDER
+======================
+
+Please add a PNG icon file here (128x128 pixels recommended).
+
+Suggested icon themes:
+- GPS tracking symbol
+- Vehicle/truck icon
+- Location pin icon
+- Map with vehicle icon
+
+You can find free icons at:
+- https://www.flaticon.com
+- https://icons8.com
+- https://www.iconfinder.com
+
+Save the icon as: icon.png

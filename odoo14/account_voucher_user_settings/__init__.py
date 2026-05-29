@@ -1,0 +1,1 @@
+# Field can_edit_voucher_lines is defined in res_config_settings_refund_of_rental_npd

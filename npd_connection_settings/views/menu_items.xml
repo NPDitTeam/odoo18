@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <!-- เมนูย่อยใต้ "บริษัท" ใน Settings -->
+        <menuitem
+            id="menu_npd_connection_settings"
+            name="NPD Connection Settings"
+            parent="base.menu_users"
+            action="action_npd_connection_config"
+            sequence="50"
+            groups="base.group_system"/>
+    </data>
+</odoo>

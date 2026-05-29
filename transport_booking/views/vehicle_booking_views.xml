@@ -1,0 +1,499 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <!-- List View -->
+        <record id="view_vehicle_booking_list" model="ir.ui.view">
+            <field name="name">vehicle.booking.list</field>
+            <field name="model">vehicle.booking</field>
+            <field name="arch" type="xml">
+                <list string="จองคิวรถขนส่ง"
+                      decoration-info="state=='draft'"
+                      decoration-primary="state=='confirmed'"
+                      decoration-warning="state=='in_progress'"
+                      decoration-success="state=='done'">
+                    <field name="name"/>
+                    <field name="branch_id"/>
+		    <field name="delivery_type"/>
+                    <field name="booking_date"/>
+                    <field name="transport_order_id"/>
+                    <field name="partner_id"/>
+                    <field name="pickup_location"/>
+                    <field name="destination"/>
+                    <field name="vehicle_id"/>
+		    <field name="vehicle_ownership" readonly="1"/>
+                    <field name="driver_id"/>
+                    <field name="license_plate_name"/>
+                    <field name="gps_tracking_available" string="GPS" widget="boolean"/>
+                    <field name="gps_vehicle_status" optional="show"/>
+                    <field name="state" widget="badge"/>
+                </list>
+            </field>
+        </record>
+
+        <!-- Form View -->
+        <record id="view_vehicle_booking_form" model="ir.ui.view">
+            <field name="name">vehicle.booking.form</field>
+            <field name="model">vehicle.booking</field>
+            <field name="arch" type="xml">
+                <form string="จองคิวรถขนส่ง">
+                    <header>
+                        <button name="action_confirm" string="✅ ยืนยันการจอง"
+                                type="object" class="btn-primary"
+                                invisible="state != 'draft'"/>
+                        <button name="action_reset_to_draft" string="🔄 รีเซ็ตเป็นร่าง"
+                                type="object" class="btn-warning"
+                                confirm="คุณต้องการรีเซ็ตกลับเป็นร่างใช่หรือไม่? สถานะรถจะถูกเปลี่ยนเป็น 'พร้อมใช้'"
+                                invisible="state != 'confirmed'"/>
+                        <button name="action_start" string="🚚 เริ่มขนส่ง"
+                                type="object" class="btn-primary"
+                                confirm="⚠️ เมื่อคุณกด เริ่มขนส่ง ระบบจะปรับการทำงานฝั่งแอปขนส่งเพื่อข้าม การถ่ายรูปส่งของในการเริ่มงาน"
+                                invisible="state != 'confirmed'"/>
+                        <button name="action_open_done_reason_wizard" string="✔️ เสร็จสิ้น"
+                                type="object" class="btn-success"
+                                invisible="state != 'in_progress'"/>
+                        <button name="action_cancel" string="❌ ยกเลิก"
+                                type="object"
+                                invisible="state in ['done','cancelled']"/>
+                        <field name="state" widget="statusbar"
+                               statusbar_visible="draft,confirmed,in_progress,done"/>
+                    </header>
+                    <sheet>
+                        <!-- Smart Buttons -->
+                        <div class="oe_button_box" name="button_box">
+                            <!-- GPS Tracking Button -->
+                            <button name="action_view_gps_tracking"
+                                    type="object"
+                                    class="oe_stat_button"
+                                     icon="fa-location-arrow"
+                                    invisible="not gps_tracking_available">
+                                <div class="o_stat_info">
+                                    <span class="o_stat_value">
+                                        <field name="gps_vehicle_speed" widget="float" digits="[16,1]"/>
+                                    </span>
+                                    <span class="o_stat_text">เปิดแผนที่ GPSติดตามรถ กม./ชม. (GPS)</span>
+                                </div>
+                            </button>
+
+                            <button name="action_open_tracking_map"
+                                    type="object"
+                                    class="oe_stat_button"
+                                    icon="fa-map"
+                                    invisible="state == 'draft'"
+                                    string="🗺️ แผนที่ติดตาม">
+                                <div class="o_stat_info">
+                                    <span class="o_stat_text">ติดตามการขนส่ง</span>
+                                </div>
+                            </button>
+                            <button name="action_view_tracking"
+                                    type="object"
+                                    class="oe_stat_button"
+                                    icon="fa-map-marker"
+                                    invisible="state == 'draft'">
+                                <div class="o_stat_info">
+                                    <field name="tracking_count" widget="statinfo" string="ตำแหน่ง GPS"/>
+                                </div>
+                            </button>
+                        </div>
+
+                        <div class="oe_title">
+                            <h1>
+                                <field name="name" readonly="1"
+                                       class="oe_inline"
+                                       placeholder="ร่าง (รอยืนยันการจอง)"/>
+                            </h1>
+                        </div>
+
+                        <group>
+    <group string="📦 ข้อมูลคำสั่งขนส่ง">
+        <field name="transport_order_id"
+               options="{'no_create': True, 'no_create_edit': True}"
+               readonly="state != 'draft'"/>
+
+        <field name="booking_date" readonly="state != 'draft'"/>
+        <field name="partner_id" readonly="1"/>
+        <field name="delivery_employee_name" readonly="1"/>
+        <field name="branch_id" readonly="1"/>
+        <field name="travel_expenses" />
+        <field name="daily_allowance" />
+    </group>
+    <group string="🚚 จัดสรรรถและคนขับ">
+    <!-- ✅ จองพร้อมกัน -->
+    <field name="is_concurrent_booking"
+           widget="boolean_toggle"
+           readonly="state != 'draft'"/>
+    <field name="concurrent_booking_id"
+           invisible="not is_concurrent_booking"
+           readonly="state != 'draft'"
+           options="{'no_create': True, 'no_edit': True}"/>
+
+    <!-- ✅ หมายเหตุ - แสดงเมื่อเลือก concurrent_booking_id แล้ว + บังคับกรอก -->
+    <field name="note"
+           string="📝 หมายเหตุ (จองพร้อมกัน)"
+           invisible="not concurrent_booking_id"
+           readonly="state != 'draft'"
+           required="concurrent_booking_id"
+           placeholder="กรุณาระบุเหตุผลที่ต้องจองพร้อมกัน..."/>
+
+    <!-- ✅ รถที่จัดส่ง - เพิ่ม force_save="1" -->
+    <field name="vehicle_id"
+           options="{'no_create': True, 'no_create_edit': True}"
+           readonly="state != 'draft' or (is_concurrent_booking and concurrent_booking_id)"
+           force_save="1"/>
+
+	<field name="vehicle_ownership" readonly="1"/>
+    <!-- ✅ คนขับ - เพิ่ม force_save="1" -->
+    <field name="driver_id"
+           options="{'no_create': True, 'no_create_edit': True}"
+           readonly="state != 'draft' or (is_concurrent_booking and concurrent_booking_id)"
+           force_save="1"/>
+
+    <field name="license_plate_name" readonly="1"/>
+	<field name="source" readonly="1"/>
+</group>
+</group>
+
+                        <!-- GPS Tracking Information -->
+                        <group invisible="not gps_tracking_available">
+                            <group string="🛰️ ข้อมูล GPS รถ">
+                                <field name="gps_tracking_available" invisible="1"/>
+                                <field name="gps_vehicle_id" readonly="1"
+                                       string="รถใน GPS"
+                                       options="{'no_create': True, 'no_open': False}"/>
+                                <field name="gps_vehicle_status" readonly="1"/>
+                                <field name="gps_vehicle_speed" readonly="1" string="ความเร็วปัจจุบัน (กม./ชม.)"/>
+                                <field name="gps_last_update" readonly="1" widget="datetime"/>
+                                <div colspan="2">
+<!--                                    <button name="action_view_gps_tracking" -->
+<!--                                            string="🗺️ เปิดแผนที่ GPSติดตามรถ"-->
+<!--                                            type="object" -->
+<!--                                            class="btn btn-primary"-->
+<!--                                            icon="fa-map-marker"/>-->
+                                    <button name="action_open_gps_vehicle_form"
+                                            string="📊 ดูข้อมูล GPS เต็มรูปแบบ"
+                                            type="object"
+                                            class="btn btn-secondary"
+                                            icon="fa-info-circle"/>
+                                </div>
+                            </group>
+                        </group>
+
+                        <group>
+                            <group string="📍 สถานที่">
+                                <field name="pickup_location"
+                                       placeholder="สถานที่รับสินค้า"
+                                       readonly="1"/>
+                                <field name="destination"
+                                       placeholder="ปลายทาง"
+                                       readonly="1"/>
+                                <field name="distance_km" readonly="1"/>
+                                <field name="estimated_time" readonly="1"/>
+                                <field name="shipping_cost"
+                                       widget="monetary"
+                                       options="{'currency_field': 'currency_id'}"
+                                       readonly="1"/>
+                                <field name="total_weight_order" readonly="1" string="น้ำหนักรวม (กก.)"/>
+                                <field name="vehicle_type_name" readonly="1"/>
+				<field name="delivery_type"/>
+                            </group>
+                            <group string="⏰ เวลาที่วางแผน">
+                                <field name="planned_start_date" readonly="state != 'draft'"/>
+<!--                                <field name="planned_end_date" readonly="state != 'draft'"/>-->
+                                <field name="planned_start_date_t" readonly="state != 'draft'"/>
+                                <field name="planned_end_date_t" readonly="state != 'draft'"/>
+                            </group>
+                        </group>
+
+                        <!-- Hidden fields for widget trigger -->
+                        <group invisible="1">
+                            <field name="currency_id"/>
+                            <field name="pickup_location" force_save="1"/>
+                            <field name="destination" force_save="1"/>
+                            <field name="distance_km" force_save="1"/>
+                            <field name="shipping_cost" force_save="1"/>
+                            <field name="total_weight_order" force_save="1"/>
+                            <field name="estimated_time" force_save="1"/>
+                            <field name="waypoints_json" force_save="1"/>
+                            <field name="route_version" force_save="1"/>
+                            <field name="map_trigger" force_save="1"/>
+                            <field name="tracking_count"/>
+                            <!-- GPS Coordinates -->
+                            <field name="pickup_latitude" force_save="1"/>
+                            <field name="pickup_longitude" force_save="1"/>
+                            <field name="destination_latitude" force_save="1"/>
+                            <field name="destination_longitude" force_save="1"/>
+                        </group>
+
+                        <notebook>
+                            <page string="🗺️ แผนที่เส้นทาง">
+                                <field name="map_route" widget="google_maps_widget" nolabel="1"/>
+                            </page>
+                            
+                            <page string="ติดตามข้อมูลการขนส่ง" invisible="state == 'draft'">
+                                <!-- 📸 รูปถ่ายสินค้าก่อนขนส่ง - แสดงทันที -->
+                                <group string="📸 รูปถ่ายสินค้าก่อนขนส่ง" invisible="not pickup_photo">
+                                    <field name="pickup_photo" widget="image" options="{'size': [400, 400]}" nolabel="1"/>
+                                    <group>
+                                        <field name="actual_pickup_time" string="เวลาที่ถ่ายรูป" readonly="1"/>
+                                    </group>
+                                </group>
+                                
+<!--                                <separator string="🗺️ แผนที่แสดงตำแหน่ง Real-time"/>-->
+<!--                                &lt;!&ndash; แผนที่แสดงตำแหน่ง Real-time &ndash;&gt;-->
+<!--                                <group>-->
+<!--                                    <field name="tracking_map_html" nolabel="1" widget="html"/>-->
+<!--                                </group>-->
+                                
+<!--                                <group>-->
+<!--                                    <group string="สถานะการขนส่ง">-->
+<!--                                        <field name="tracking_status" widget="badge"/>-->
+<!--                                        <field name="current_location" placeholder="ตำแหน่งปัจจุบัน"/>-->
+<!--                                        <field name="current_latitude" readonly="1" digits="[10,7]"/>-->
+<!--                                        <field name="current_longitude" readonly="1" digits="[10,7]"/>-->
+<!--                                        <field name="gps_last_update" readonly="1"/>-->
+<!--                                    </group>-->
+<!--                                    <group string="เวลาจริง">-->
+<!--                                        <field name="actual_pickup_time"/>-->
+<!--                                        <field name="actual_delivery_time"/>-->
+<!--                                    </group>-->
+<!--                                </group>-->
+                                
+                                <!-- ปุ่มอัพเดทสถานะ - DISABLED (ใช้แอปมือถืออัพเดทแทน) -->
+                                <!--
+                                <group string="ปุ่มอัพเดทสถานะ" invisible="state != 'in_progress'">
+                                    <div class="oe_button_box">
+                                        <button name="action_mark_picked_up" 
+                                                string="✅ รับสินค้าแล้ว" 
+                                                type="object" 
+                                                class="oe_stat_button btn-success"
+                                                icon="fa-check-circle"
+                                                invisible="tracking_status not in ['pending', 'in_transit']"/>
+                                        <button name="action_mark_near_destination" 
+                                                string="🚚 ใกล้ถึงปลายทาง" 
+                                                type="object" 
+                                                class="oe_stat_button btn-warning"
+                                                icon="fa-truck"
+                                                invisible="tracking_status not in ['picked_up', 'in_transit']"/>
+                                        <button name="action_mark_delivered" 
+                                                string="📦 ส่งถึงแล้ว" 
+                                                type="object" 
+                                                class="oe_stat_button btn-primary"
+                                                icon="fa-home"
+                                                invisible="tracking_status not in ['near_destination', 'in_transit']"/>
+                                    </div>
+                                </group>
+                                -->
+                                
+<!--                                <separator string="📍 จุดติดตาม GPS ทั้งหมด"/>-->
+<!--                                <field name="tracking_ids" nolabel="1">-->
+<!--                                    <list string="จุดติดตาม GPS" default_order="timestamp desc" create="0" edit="0">-->
+<!--                                        <field name="timestamp"/>-->
+<!--                                        <field name="latitude" digits="[10,7]"/>-->
+<!--                                        <field name="longitude" digits="[10,7]"/>-->
+<!--                                        <field name="speed"/>-->
+<!--                                        <field name="heading"/>-->
+<!--                                        <field name="is_moving" widget="boolean_toggle"/>-->
+<!--                                        <field name="address"/>-->
+<!--                                        <field name="notes"/>-->
+<!--                                    </list>-->
+<!--                                </field>-->
+<!--                                -->
+<!--                                &lt;!&ndash; ประวัติการติดตาม (สำหรับ backward compatibility) &ndash;&gt;-->
+<!--                                <separator string="ประวัติการติดตาม (Legacy)" invisible="not tracking_history_ids"/>-->
+<!--                                <field name="tracking_history_ids" nolabel="1" invisible="not tracking_history_ids">-->
+<!--                                    <list string="ประวัติ GPS" default_order="timestamp desc" limit="20">-->
+<!--                                        <field name="timestamp"/>-->
+<!--                                        <field name="latitude" digits="[10,7]"/>-->
+<!--                                        <field name="longitude" digits="[10,7]"/>-->
+<!--                                        <field name="speed"/>-->
+<!--                                        <field name="address"/>-->
+<!--                                    </list>-->
+<!--                                </field>-->
+                                
+                                <!-- ข้อมูลการส่งมอบ - แสดงเมื่อส่งของเสร็จแล้ว -->
+                                <separator string="📦 ข้อมูลการส่งมอบ" invisible="not receiver_name and not delivery_photo and not receiver_signature"/>
+                                <group invisible="not receiver_name and not delivery_photo and not receiver_signature">
+                                    <group string="👤 ข้อมูลผู้รับ">
+                                        <field name="receiver_name" placeholder="ชื่อผู้รับสินค้า" readonly="state == 'done'"/>
+                                        <field name="actual_delivery_time" string="เวลาส่งถึง" readonly="1"/>
+                                    </group>
+                                </group>
+                                
+                                <!-- รูปภาพการส่งมอบ -->
+                                <group invisible="not delivery_photo or not receiver_signature">
+                                    <group string="📸 รูปถ่ายหลักฐานการส่ง" invisible="not delivery_photo">
+                                        <field name="delivery_photo" widget="image" options="{'size': [400, 400]}" nolabel="1"/>
+                                    </group>
+                                    <group string="✍️ ลายเซ็นผู้รับ" invisible="not receiver_signature">
+                                        <field name="receiver_signature" widget="image" options="{'size': [400, 200]}" nolabel="1"/>
+                                    </group>
+                                </group>
+                                
+                                <group string="📝 บันทึกการติดตาม">
+                                    <field name="tracking_notes" nolabel="1" placeholder="บันทึกเพิ่มเติมเกี่ยวกับการขนส่ง..."/>
+                                </group>
+                            </page>
+
+                            <page string="ค่าใช้จ่ายเพิ่มเติม">
+    <!-- (ถ้าไม่อยากโชว์บนหัวแท็บ ให้คอมเมนต์ไว้)
+    <group>
+        <field name="total_expense" widget="monetary" options="{'currency_field': 'currency_id'}" readonly="1"/>
+    </group>
+    -->
+
+    <field name="expense_ids" nolabel="1">
+        <!-- ใช้ <list> สำหรับ inline one2many ใน v17+ -->
+        <list string="รายการค่าใช้จ่าย" editable="bottom">
+            <field name="expense_date"/>
+            <field name="expense_type"/>
+            <field name="description" optional="hide"/>
+            <field name="is_fuel" widget="boolean_toggle" readonly="1"/>
+            <!-- ✅ ตัด attrs ออก ให้ฟิลด์ fuel แสดงได้เสมอ (โหลดชัวร์) -->
+            <field name="fuel_liters" optional="hide"/>
+            <field name="fuel_price_per_liter" optional="hide"/>
+
+            <!-- ✅ amount เป็นคอลัมน์สุดท้าย + มี footer รวมล่างขวา -->
+            <field name="amount"
+                   widget="monetary"
+                   options="{'currency_field': 'currency_id'}"
+                   class="oe_right"
+                   sum="รวมค่าใช้จ่ายเพิ่มเติม"/>
+        </list>
+
+        <!-- ฟอร์มย่อยของรายการ -->
+        <form string="รายการค่าใช้จ่าย">
+            <group>
+                <group>
+                    <field name="expense_date"/>
+                    <field name="expense_type"/>
+                    <field name="description"/>
+                </group>
+
+                <group string="รายละเอียดค่าน้ำมัน" colspan="2">
+                    <field name="is_fuel" readonly="1"/>
+                    <!-- ❗ ไม่มี attrs ใน v17+ -->
+                    <field name="fuel_liters"/>
+                    <field name="fuel_price_per_liter"/>
+                    <field name="amount"
+                           widget="monetary"
+                           options="{'currency_field': 'currency_id'}"/>
+                </group>
+            </group>
+        </form>
+    </field>
+
+    <!-- แถบสรุปใต้ตาราง ชิดขวา (ไม่ใช้ attrs) -->
+    <group col="4">
+        <group/><group/><group/>  <!-- ดันพื้นที่ว่างซ้าย -->
+        <group>
+            <!-- ใส่ for ให้ label เพื่อกัน error label-without-for -->
+            <label for="total_expense" string="รวมค่าใช้จ่ายเพิ่มเติม"/>
+            <field name="total_expense"
+                   nolabel="1"
+                   class="oe_right"
+                   widget="monetary"
+                   options="{'currency_field': 'currency_id'}"
+                   readonly="1"/>
+        </group>
+    </group>
+</page>
+
+                            <page string="📋 รายการสินค้า">
+                                <field name="order_line_ids" nolabel="1" readonly="1">
+                                    <list string="รายการสินค้า" create="0" edit="0" delete="0">
+                                        <field name="product_name_o14" string="ชื่อสินค้า"/>
+                                        <field name="quantity" string="จำนวน" sum="รวมจำนวน"/>
+                                        <field name="uom_name" string="หน่วย"/>
+                                        <field name="total_weight" string="น้ำหนัก (กก.)" sum="รวมน้ำหนัก"/>
+                                    </list>
+                                </field>
+                            </page>
+
+                            <page string="⭐ ประเมินความพึงพอใจ" invisible="state != 'done'">
+                                <group>
+                                    <group string="📊 สถิติการประเมิน">
+                                        <field name="rating_count" string="จำนวนการประเมิน"/>
+                                        <field name="latest_rating" string="คะแนนล่าสุด" widget="float"/>
+                                    </group>
+                                    <group string="🔗 สร้าง Link ประเมิน">
+                                        <button name="action_create_rating_link" 
+                                                string="📝 สร้าง Link ประเมินใหม่" 
+                                                type="object" 
+                                                class="btn-primary"
+                                                icon="fa-link"/>
+                                    </group>
+                                </group>
+                                
+                                <separator string="📋 ประวัติการประเมินทั้งหมด"/>
+                                <field name="rating_ids" nolabel="1"/>
+                            </page>
+                            
+                            <page string="หมายเหตุ">
+                                <field name="note" nolabel="1" readonly="state != 'draft'"/>
+                                <separator string="📌 เหตุผลที่ไม่ใช้งานผ่านแอป (เสร็จสิ้น)"
+                                           invisible="not no_app_done_reason"/>
+                                <field name="no_app_done_reason" nolabel="1" readonly="1"
+                                       invisible="not no_app_done_reason"/>
+                            </page>
+                        </notebook>
+                    </sheet>
+                    <chatter>
+                        <field name="message_follower_ids"/>
+                        <field name="message_ids"/>
+                    </chatter>
+                </form>
+            </field>
+        </record>
+
+        <!-- Wizard: ระบุเหตุผลที่ไม่ใช้งานผ่านแอป (ก่อนกดเสร็จสิ้น) -->
+        <record id="view_done_reason_wizard_form" model="ir.ui.view">
+            <field name="name">vehicle.booking.done.reason.wizard.form</field>
+            <field name="model">vehicle.booking.done.reason.wizard</field>
+            <field name="arch" type="xml">
+                <form string="หมายเหตุ: ระบุเหตุผลที่ไม่ใช้งานผ่านแอป">
+                    <div class="alert alert-warning" role="alert">
+                        ⚠️ คุณกำลังกดเสร็จสิ้นจากฝั่ง Odoo โดยไม่จบงานผ่านแอปขนส่ง
+                        กรุณาระบุเหตุผล (บังคับกรอก)
+                    </div>
+                    <group>
+                        <field name="booking_id" invisible="1"/>
+                        <field name="reason" nolabel="1" required="1"
+                               placeholder="กรุณาระบุเหตุผลที่ไม่ใช้งานผ่านแอป..."/>
+                    </group>
+                    <footer>
+                        <button name="action_confirm" string="ตกลง"
+                                type="object" class="btn-primary"/>
+                        <button string="ยกเลิก" class="btn-secondary" special="cancel"/>
+                    </footer>
+                </form>
+            </field>
+        </record>
+
+        <!-- Action -->
+        <record id="action_vehicle_booking" model="ir.actions.act_window">
+            <field name="name">จองคิวรถขนส่ง</field>
+            <field name="res_model">vehicle.booking</field>
+            <field name="view_mode">list,form</field>
+            <field name="help" type="html">
+                <p class="o_view_nocontent_smiling_face">
+                    ยินดีต้อนรับสู่ระบบจองคิวรถขนส่ง
+                </p>
+                <p>
+                    คลิกปุ่ม "สร้าง" เพื่อเริ่มจองคิวรถขนส่งใหม่
+                </p>
+            </field>
+        </record>
+
+        <!-- Main Menu -->
+        <menuitem id="menu_vehicle_booking_root"
+                  name="จองคิวรถขนส่ง"
+                  sequence="5"
+                  web_icon="transport_booking,static/description/icon.png"/>
+
+        <!-- Sub Menu -->
+        <menuitem id="menu_vehicle_booking"
+                  name="จองคิวรถขนส่ง"
+                  parent="menu_vehicle_booking_root"
+                  action="action_vehicle_booking"
+                  sequence="10"/>
+    </data>
+</odoo>

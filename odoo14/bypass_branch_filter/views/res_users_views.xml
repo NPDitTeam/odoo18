@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_users_form_inherit_bypass_branch" model="ir.ui.view">
+        <field name="name">res.users.form.inherit.bypass.branch</field>
+        <field name="model">res.users</field>
+        <field name="inherit_id" ref="base.view_users_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//page[@name='preferences']" position="inside">
+                <group string="สิทธิ์แสดงข้อมูลทุกสาขา">
+                    <field name="bypass_branch_filter"/>
+                    <field name="bypass_branch_filter_payment"/>
+                </group>
+            </xpath>
+        </field>
+    </record>
+</odoo>

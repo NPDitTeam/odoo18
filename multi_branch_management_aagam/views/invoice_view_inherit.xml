@@ -1,0 +1,278 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+
+        <record id="view_move_tree_branch_inherit" model="ir.ui.view">
+            <field name="name">account.move.inherite</field>
+            <field name="model">account.move</field>
+            <field name="inherit_id" ref="account.view_invoice_tree"/>
+            <field name="arch" type="xml">
+                <xpath expr="//field[@name='company_id']" position="before">
+
+                    <field string="Branch Name" name="branch_id"/>
+                </xpath>
+            </field>
+        </record>
+
+
+        <record id="view_account_move_filter_branch_inherit" model="ir.ui.view">
+             <field name="name">account.move.select.inherite</field>
+            <field name="model">account.move</field>
+            <field name="inherit_id" ref="account.view_account_invoice_filter"/>
+            <field name="arch" type="xml">
+                <xpath expr="//group/filter[@name='duedate']" position="after">
+                    <filter name="Branch" domain="[]" context="{'group_by': 'branch_id'}"/>
+                </xpath>
+            </field>
+        </record>
+
+        <record id="view_move_form_branch_inherit" model="ir.ui.view">
+            <field name="name">account.move.inherite</field>
+            <field name="model">account.move</field>
+            <field name="inherit_id" ref="account.view_move_form"/>
+            <field name="arch" type="xml">
+                <xpath expr="//field[@name='company_id']" position="before">
+
+                    <field string="Branch Name" name="branch_id"/>
+                </xpath>
+                <xpath expr="//field[@name='invoice_date']" position="after">
+
+                    <field string="Branch Name" name="branch_id"/>
+                </xpath>
+
+                <xpath expr="//page/field[@name='line_ids']" position="after">
+                     <field name="invoice_line_ids" string="Invoice Lines"
+                                       widget="section_and_note_one2many"
+                                       mode="list,kanban"
+                                       context="{'default_move_type': context.get('default_move_type'), 'journal_id': journal_id, 'default_partner_id': commercial_partner_id, 'default_currency_id': currency_id or company_currency_id}"
+                                        invisible="move_type == 'entry'"
+                     >
+                                    <list editable="bottom" string="Journal Items" default_order="sequence, date desc, move_name desc, id">
+                                        <control>
+                                            <create name="add_line_control" string="Add a line"/>
+                                            <create name="add_section_control" string="Add a section" context="{'default_display_type': 'line_section'}"/>
+                                            <create name="add_note_control" string="Add a note" context="{'default_display_type': 'line_note'}"/>
+                                        </control>
+
+                                        <!-- Displayed fields -->
+                                        <field name="sequence" widget="handle"/>
+                                        <field name="move_name" invisible="1"/>
+                                        <field name="product_id"
+                                               optional="show"
+                                               domain="
+                                                    context.get('default_move_type') in ('out_invoice', 'out_refund', 'out_receipt')
+                                                    and [('sale_ok', '=', True), '|', ('company_id', '=', False), ('company_id', '=', parent.company_id)]
+                                                    or [('purchase_ok', '=', True), '|', ('company_id', '=', False), ('company_id', '=', parent.company_id)]
+                                               "/>
+                                        <field name="name" widget="section_and_note_text" attrs="{'required': [('parent.move_type', 'not in', ('in_invoice', 'in_refund','in_receipt'))]}"/>
+<!--                                        <field name="is_off_balance" invisible="1"/>-->
+<!--                                        <field name="account_id"-->
+<!--                                               groups="account.group_account_readonly"-->
+<!--                                               options="{'no_create': True}"-->
+<!--                                               domain="[('deprecated', '=', False), ('account_type', 'not in', ('receivable', 'payable')), ('company_id', '=', parent.company_id)]"-->
+<!--                                               invisible="display_type == False"-->
+<!--                                        />-->
+                                        <field string="Branch Name" name="branch_id"/>
+<!--                                        <field name="account_id"-->
+<!--                                               domain="['|', ('company_id', '=', False), ('company_id', '=', parent.company_id)]"-->
+<!--                                               groups="analytic.group_analytic_accounting"-->
+<!--                                               optional="show"/>-->
+                                        <field name="tax_tag_ids"
+                                               optional="show"
+                                               widget="many2many_tags"/>
+                                        <field name="quantity"/>
+                                        <field name="product_uom_category_id" invisible="1"/>
+                                        <field name="product_uom_id" string="UoM" groups="uom.group_uom" optional="show"/>
+                                        <field name="price_unit" string="Price"/>
+                                        <field name="discount" string="Disc.%" optional="hide"/>
+                                        <field name="tax_ids" widget="many2many_tags"
+                                               domain="[('type_tax_use', '=?', parent.invoice_filter_type_domain), ('company_id', '=', parent.company_id), ('country_id', '=', parent.tax_country_id)]"
+                                               context="{'append_type_to_tax_name': not parent.invoice_filter_type_domain}"
+                                               options="{'no_create': True}"
+                                               optional="show"/>
+                                        <field name="price_subtotal"
+                                               string="Subtotal"
+                                               groups="account.group_show_line_subtotals_tax_excluded"/>
+                                        <field name="price_total"
+                                               string="Total"
+                                               groups="account.group_show_line_subtotals_tax_included"/>
+
+                                        <!-- Others fields -->
+                                        <field name="partner_id" invisible="1"/>
+                                        <field name="amount_currency" invisible="1"/>
+                                        <field name="currency_id" invisible="1"/>
+                                        <field name="debit" invisible="1"/>
+                                        <field name="credit" invisible="1"/>
+                                        <field name="date" invisible="1"/>
+                                        <field name="date_maturity" invisible="1"/>
+
+                                        <field name="group_tax_id" invisible="1"/>
+                                        <field name="tax_line_id" invisible="1"/>
+                                        <field name="tax_repartition_line_id" invisible="1"/>
+                                        <field name="tax_tag_ids" invisible="1"/>
+                                        <field name="tax_base_amount" invisible="1"/>
+                                        <field name="company_id" invisible="1"/>
+                                        <field name="company_currency_id" invisible="1"/>
+<!--                                       Check later for this <field name="recompute_tax_line" invisible="1" force_save="1"/>-->
+                                        <field name="display_type" force_save="1" invisible="1"/>
+<!--                                     Check later for this    <field name="is_rounding_line" invisible="1"/>-->
+<!--                                     Check later for this   <field name="exclude_from_invoice_tab" invisible="1"/>-->
+                                        <field name="account_type" invisible="1"/>
+                                        <field name="account_internal_group" invisible="1"/>
+                                    </list>
+                                    <kanban class="o_kanban_mobile">
+                                        <!-- Displayed fields -->
+                                        <field name="name"/>
+                                        <field name="product_id"/>
+                                        <field name="price_subtotal" groups="account.group_show_line_subtotals_tax_excluded"/>
+                                        <field name="price_total" groups="account.group_show_line_subtotals_tax_included"/>
+                                        <field name="quantity"/>
+                                        <field name="product_uom_category_id" invisible="1"/>
+                                        <field name="product_uom_id" groups="uom.group_uom"/>
+                                        <field name="price_unit"/>
+                                        <templates>
+                                            <t t-name="kanban-box">
+                                                <div t-attf-class="oe_kanban_card oe_kanban_global_click pl-0 pr-0 {{ record.display_type.raw_value ? 'o_is_' + record.display_type.raw_value : '' }}">
+                                                    <t t-if="!record.display_type.raw_value">
+                                                        <div class="row no-gutters">
+                                                            <div class="col-2 pr-3">
+                                                                <img t-att-src="kanban_image('product.product', 'image_128', record.product_id.raw_value)" t-att-title="record.product_id.value" t-att-alt="record.product_id.value" style="max-width: 100%;"/>
+                                                            </div>
+                                                            <div class="col-10">
+                                                                <div class="row">
+                                                                    <div class="col">
+                                                                        <strong t-esc="record.product_id.value"/>
+                                                                    </div>
+                                                                    <div class="col-auto">
+                                                                        <strong class="float-right text-right">
+                                                                            <t t-esc="record.price_subtotal.value" groups="account.group_show_line_subtotals_tax_excluded"/>
+                                                                            <t t-esc="record.price_total.value" groups="account.group_show_line_subtotals_tax_included"/>
+                                                                        </strong>
+                                                                    </div>
+                                                                </div>
+                                                                <div class="text-muted">
+                                                                    Quantity:
+                                                                    <t t-esc="record.quantity.value"/>
+                                                                    <t t-esc="record.product_uom_id.value"/>
+                                                                </div>
+                                                                <div class="text-muted">
+                                                                    Unit Price:
+                                                                    <t t-esc="record.price_unit.value"/>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </t>
+                                                    <t t-if="record.display_type.raw_value === 'line_section' || record.display_type.raw_value === 'line_note'">
+                                                        <div class="row">
+                                                            <div class="col-12">
+                                                                <t t-esc="record.name.value"/>
+                                                            </div>
+                                                        </div>
+                                                    </t>
+                                                </div>
+                                            </t>
+                                        </templates>
+
+                                        <!-- Others fields -->
+                                        <field name="partner_id" invisible="1"/>
+                                        <field name="amount_currency" invisible="1"/>
+                                        <field name="currency_id" invisible="1"/>
+                                        <field name="debit" invisible="1"/>
+                                        <field name="credit" invisible="1"/>
+                                        <field name="date" invisible="1"/>
+                                        <field name="date_maturity" invisible="1"/>
+
+                                        <field name="group_tax_id" invisible="1"/>
+                                        <field name="tax_line_id" invisible="1"/>
+                                        <field name="tax_repartition_line_id" invisible="1"/>
+                                        <field name="tax_tag_ids" invisible="1"/>
+                                        <field name="tax_base_amount" invisible="1"/>
+                                        <field name="company_id" invisible="1"/>
+                                        <field name="company_currency_id" invisible="1"/>
+<!--                                        <field name="recompute_tax_line" invisible="1" force_save="1"/>-->
+                                        <field name="display_type" force_save="1" invisible="1"/>
+<!--                                        <field name="is_rounding_line" invisible="1"/>-->
+<!--                                        <field name="exclude_from_invoice_tab" invisible="1"/>-->
+                                        <field name="account_type" invisible="1"/>
+                                        <field name="account_internal_group" invisible="1"/>
+                                    </kanban>
+                                    <form>
+                                        <sheet>
+                                            <field name="product_uom_category_id" invisible="1"/>
+                                            <field name="display_type" invisible="1"/>
+                                            <field name="parent_state" invisible="1"/>
+                                            <group>
+                                                <field name="partner_id" invisible="1"/>
+                                                <field name="company_id" invisible="1"/>
+                                                <field name="product_id" widget="many2one_barcode"/>
+                                                <field name="quantity"/>
+                                                <field name="product_uom_id" groups="uom.group_uom"/>
+                                                <field name="price_unit"/>
+                                                <field name="discount" groups="product.group_discount_per_so_line"/>
+                                                <field name="currency_id" invisible="1"/>
+                                            </group>
+                                            <group>
+                                                <field name="tax_tag_ids" widget="many2many_tags"/>
+<!--                                                <field name="account_id" options="{'no_create': True}" domain="[('company_id', '=', company_id)]" readonly="1"/>-->
+                                                <field name="tax_ids" widget="many2many_tags"/>
+                                                <field name="account_id" groups="analytic.group_analytic_accounting"/>
+                                            </group>
+                                            <label for="name" string="Description"  invisible="display_type != False"/>
+                                            <label for="name" string="Section" invisible="display_type != 'line_section'"/>
+                                            <label for="name" string="Note" invisible="display_type != 'line_note'"/>
+                                            <field name="name" widget="text"/>
+                                        </sheet>
+                                    </form>
+                                </field>
+                </xpath>
+            </field>
+        </record>
+
+
+        <record id="view_account_move_line_form_branch_inherit" model="ir.ui.view">
+            <field name="name">account.move.line.inherite</field>
+            <field name="model">account.move.line</field>
+            <field name="inherit_id" ref="account.view_move_line_form"/>
+            <field name="arch" type="xml">
+                <xpath expr="//field[@name='partner_id']" position="after">
+                    <field string="Branch Name" name="branch_id"/>
+                </xpath>
+            </field>
+        </record>
+
+        <record id="view_account_move_line_tree_branch_inherit" model="ir.ui.view">
+            <field name="name">account.move.line.inherite</field>
+            <field name="model">account.move.line</field>
+            <field name="inherit_id" ref="account.view_move_line_tree"/>
+            <field name="arch" type="xml">
+                <xpath expr="//field[@name='partner_id']" position="after">
+                    <field string="Branch Name" name="branch_id"/>
+                </xpath>
+            </field>
+        </record>
+
+        <!--  Account payment      -->
+        <record id="view_account_payment_form_branch_inherit" model="ir.ui.view">
+            <field name="name">account.payment.inherite</field>
+            <field name="model">account.payment</field>
+            <field name="inherit_id" ref="account.view_account_payment_form"/>
+            <field name="arch" type="xml">
+                <xpath expr="//field[@name='partner_bank_id']" position="after">
+                    <field string="Branch Name" name="branch_id"/>
+                </xpath>
+            </field>
+        </record>
+
+        <record id="view_account_payment_tree_branch_inherit" model="ir.ui.view">
+            <field name="name">account.payment.tree.inherite</field>
+            <field name="model">account.payment</field>
+            <field name="inherit_id" ref="account.view_account_payment_tree"/>
+            <field name="arch" type="xml">
+                <xpath expr="//field[@name='state']" position="before">
+                    <field string="Branch Name" name="branch_id"/>
+                </xpath>
+            </field>
+        </record>
+
+    </data>
+</odoo>

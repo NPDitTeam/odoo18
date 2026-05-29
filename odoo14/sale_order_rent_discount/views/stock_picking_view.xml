@@ -1,0 +1,31 @@
+<odoo>
+    <record id="view_picking_form_rent_discount" model="ir.ui.view">
+        <field name="name">stock.picking.form.rent.discount</field>
+        <field name="model">stock.picking</field>
+        <field name="inherit_id" ref="stock.view_picking_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//header" position="inside">
+                <button name="%(rent_discount_wizard_action)d"
+                        type="action"
+                        string="ส่วนลดค่าเช่า"
+                        class="btn-secondary"/>
+                <button name="%(request_picking_approval_wizard_action)d"
+                        type="action"
+                        string="ส่งอนุมัติ"
+                        class="btn-warning"
+                        invisible="rent_discount == 0 or approval_state == 'waiting'"/>
+                <button name="%(approval_picking_wizard_action)d"
+                        type="action"
+                        string="พิจารณาอนุมัติ"
+                        class="btn-success"
+                        invisible="approval_state != 'waiting'"/>
+            </xpath>
+            <xpath expr="//field[@name='location_dest_id']" position="after">
+                <field name="rent_discount"/>
+                <field name="approval_state"/>
+                <field name="approver_id"/>
+                <field name="approval_note" readonly="approval_state != 'waiting'"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

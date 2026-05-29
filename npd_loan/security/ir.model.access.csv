@@ -1,0 +1,17 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_npd_loan_type_user,npd.loan.type.user,model_npd_loan_type,base.group_user,1,1,1,1
+access_npd_loan_user,npd.loan.user,model_npd_loan,base.group_user,1,1,1,1
+access_npd_loan_installment_user,npd.loan.installment.user,model_npd_loan_installment,base.group_user,1,1,1,1
+access_npd_loan_document_user,npd.loan.document.user,model_npd_loan_document,base.group_user,1,1,1,1
+access_npd_loan_payment_proof_user,npd.loan.payment.proof.user,model_npd_loan_payment_proof,base.group_user,1,1,1,1
+access_npd_loan_add_installment_wizard_user,npd.loan.add.installment.wizard.user,model_npd_loan_add_installment_wizard,base.group_user,1,1,1,1
+access_npd_loan_call_history_user,npd.loan.call.history.user,model_npd_loan_call_history,base.group_user,1,1,1,1
+access_npd_loan_call_wizard_user,npd.loan.call.wizard.user,model_npd_loan_call_wizard,base.group_user,1,1,1,1
+access_npd_sale_commission_template_user,npd.sale.commission.template.user,model_npd_sale_commission_template,base.group_user,1,1,1,1
+access_npd_sale_commission_template_line_user,npd.sale.commission.template.line.user,model_npd_sale_commission_template_line,base.group_user,1,1,1,1
+access_npd_loan_commission_line_user,npd.loan.commission.line.user,model_npd_loan_commission_line,base.group_user,1,1,1,1
+access_npd_loan_installment_commission_user,npd.loan.installment.commission.user,model_npd_loan_installment_commission,base.group_user,1,1,1,1
+access_npd_loan_wizard_commission_line_user,npd.loan.wizard.commission.line.user,model_npd_loan_wizard_commission_line,base.group_user,1,1,1,1
+access_npd_loan_commission_payout_user,npd.loan.commission.payout.user,model_npd_loan_commission_payout,base.group_user,1,1,1,1
+access_npd_loan_commission_payout_wizard_user,npd.loan.commission.payout.wizard.user,model_npd_loan_commission_payout_wizard,base.group_user,1,1,1,1
+access_npd_loan_commission_payout_wizard_line_user,npd.loan.commission.payout.wizard.line.user,model_npd_loan_commission_payout_wizard_line,base.group_user,1,1,1,1

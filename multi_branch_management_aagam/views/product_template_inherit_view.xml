@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <record id="view_product_template_branch_inherit" model="ir.ui.view">
+            <field name="name">product.template.inherite</field>
+            <field name="model">product.template</field>
+            <field name="inherit_id" ref="product.product_template_only_form_view"/>
+            <field name="arch" type="xml">
+                <xpath expr="//field[@name='barcode']" position="after">
+                        <field string="Branch Name" name="branch_id" />
+                </xpath>
+            </field>
+        </record>
+    </data>
+</odoo>

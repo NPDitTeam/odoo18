@@ -1,0 +1,63 @@
+<odoo>
+    <!-- Form Wizard View -->
+    <record id="view_sale_order_cancel_wizard_form" model="ir.ui.view">
+        <field name="name">sale.order.cancel.wizard.form</field>
+        <field name="model">sale.order.cancel.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Cancel Related Documents">
+                <group>
+                    <field name="cancel_summary" readonly="1"/>
+                </group>
+
+                <group>
+                    <field name="select_all" widget="boolean_toggle" style="font-weight: bold; color: #007cba;"/>
+                    <separator colspan="2"/>
+                    <field name="cancel_sale_order"/>
+                    <field name="cancel_invoice" readonly="cancel_sale_order" force_save="1"/>
+                    <field name="cancel_delivery" readonly="cancel_sale_order" force_save="1"/>
+                    <field name="cancel_stock_cut" readonly="cancel_sale_order" force_save="1"/>
+                    <field name="cancel_insurance" readonly="cancel_sale_order" force_save="1"/>
+                    <field name="cancel_payment" readonly="cancel_sale_order" force_save="1"/>
+                    <field name="cancel_debit_note" readonly="cancel_sale_order" force_save="1"/>
+                </group>
+                <footer>
+                    <button string="ยืนยันการยกเลิก"
+                            type="object"
+                            name="confirm_cancel"
+                            class="btn-primary"
+                            confirm="คุณแน่ใจหรือไม่ที่จะยกเลิกรายการที่เลือก?"/>
+                    <button string="ปิดหน้าต่าง" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <!-- Action to open wizard -->
+    <record id="action_open_cancel_wizard" model="ir.actions.act_window">
+        <field name="name">ยกเลิกรายการอ้างอิงบิลเช่า</field>
+        <field name="res_model">sale.order.cancel.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+        <field name="context">{'default_sale_id': active_id}</field>
+    </record>
+
+    <!-- Button in Sale Order Form -->
+    <record id="sale_order_form_inherit_cancel" model="ir.ui.view">
+        <field name="name">sale.order.form.inherit.cancel</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_order_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//header/button[last()]" position="after">
+                <button name="action_open_cancel_wizard"
+                        type="object"
+                        string="ยกเลิกรายการอ้างอิงบิลเช่า"
+                        icon="fa-times"
+                        class="btn-danger"
+                        groups="base.group_user"/>
+            </xpath>
+            <xpath expr="//field[@name='partner_id']" position="after">
+                <field name="cancel_summary" readonly="1" nolabel="1" widget="text" invisible="1"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

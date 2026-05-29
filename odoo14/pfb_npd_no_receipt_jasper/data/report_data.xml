@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+<odoo>
+    <record id="jasper_no_receipt_report" model="ir.actions.report">
+        <field name="name">ใบเสร็จรับเงิน (ยังไม่ได้รับเงิน)</field>
+        <field name="model">account.payment</field>
+        <field name="report_type">jasper</field>
+        <field name="file">pfb_npd_no_receipt_jasper/report/no_receipt_invoice.jrxml</field>
+        <field name="attachment_use">False</field>
+        <field name="report_name">ใบเสร็จรับเงิน (ยังไม่ได้รับเงิน)</field>
+        <field name="jasper_report">True</field>
+        <field name="jasper_output">pdf</field>
+        <field name="model_id" ref="account.model_account_payment"/>
+        <field name="binding_model_id" ref="account.model_account_payment"/>
+        <field name="binding_type">report</field>
+        <field name="print_report_name">'ใบเสร็จรับเงิน (ยังไม่ได้รับเงิน) - %s' % (object.name)</field>
+    </record>
+
+    <record id="jasper_no_receipt_file" model="ir.actions.report.xml.file">
+        <field name="default">True</field>
+        <field name="filename">no_receipt_invoice.jrxml</field>
+        <field name="report_id" ref="pfb_npd_no_receipt_jasper.jasper_no_receipt_report"/>
+        <field name="file" type="base64" file="pfb_npd_no_receipt_jasper/report/no_receipt_invoice.jrxml"/>
+    </record>
+</odoo>

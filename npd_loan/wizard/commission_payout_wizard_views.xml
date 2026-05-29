@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Commission Payout Wizard Form -->
+    <record id="view_commission_payout_wizard_form" model="ir.ui.view">
+        <field name="name">npd.loan.commission.payout.wizard.form</field>
+        <field name="model">npd.loan.commission.payout.wizard</field>
+        <field name="arch" type="xml">
+            <form style="min-width: 1000px;">
+                <sheet>
+                    <group>
+                        <group string="ข้อมูลสินเชื่อ">
+                            <field name="loan_id" invisible="1"/>
+                            <field name="loan_name" readonly="1" string="เลขที่สินเชื่อ"/>
+                            <field name="customer_name" readonly="1"/>
+                            <field name="loan_amount" readonly="1"/>
+                        </group>
+                        <group string="สรุปค่าคอม">
+                            <field name="total_commission_sale" readonly="1"
+                                   style="font-weight: bold;"/>
+                            <field name="total_commission_installment" readonly="1"
+                                   style="font-weight: bold;"/>
+                        </group>
+                    </group>
+
+                    <separator string="รายการจ่ายค่าคอม Sale (แยกรายงวด)"/>
+
+                    <field name="wizard_line_ids">
+                        <list editable="bottom" create="0" delete="0"
+                              decoration-info="payout_type == 'main'"
+                              decoration-muted="is_paid == True">
+                            <field name="payout_id" column_invisible="1"/>
+                            <field name="payout_type" column_invisible="1"/>
+                            <field name="installment_id" column_invisible="1"/>
+                            <field name="status" column_invisible="1"/>
+                            <field name="sale_user_id" readonly="1" force_save="1"/>
+                            <field name="display_label" string="รายการ" readonly="1"/>
+                            <field name="commission_amount" readonly="1" string="ค่าคอม"
+                                   sum="รวมทั้งหมด"/>
+                            <field name="is_paid" string="จ่ายแล้ว" widget="boolean_toggle"/>
+                            <field name="payment_date" string="วันที่จ่าย"/>
+                            <field name="attachment" widget="image" string="สลิป"
+                                   options="{'size': [100, 100]}"/>
+                            <field name="note" optional="hide"/>
+                        </list>
+                    </field>
+                </sheet>
+                <footer>
+                    <button name="action_save" string="บันทึก"
+                            type="object" class="btn-primary"/>
+                    <button name="action_mark_all_paid" string="จ่ายทั้งหมด"
+                            type="object" class="btn-success"/>
+                    <button string="ปิด" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <!-- Action to open wizard -->
+    <record id="action_commission_payout_wizard" model="ir.actions.act_window">
+        <field name="name">จ่ายค่าคอม Sale</field>
+        <field name="res_model">npd.loan.commission.payout.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="view_id" ref="view_commission_payout_wizard_form"/>
+        <field name="target">new</field>
+    </record>
+</odoo>

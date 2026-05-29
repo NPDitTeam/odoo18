@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_quatation_order_form_add_rent_date" model="ir.ui.view">
+        <field name="name">view.quatation_order.form.add.rent.date</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_order_form"/>
+        <field name="priority">20</field>
+        <field name="arch" type="xml">
+            <!-- Add date_order_x after date_order -->
+            <xpath expr="//group[@name='order_details']//field[@name='date_order'][last()]" position="after">
+                <field name="date_order_x" string="วันที่สั่งซื้อย้อนหลัง"/>
+            </xpath>
+
+            <!-- Add rent date + rental info fields in right column after payment_term_id -->
+            <xpath expr="//field[@name='payment_term_id']" position="after">
+                <field name="start_rent_date" string="วันที่เริ่มต้นการเช่า"/>
+                <field name="end_rent_date" string="วันที่สิ้นสุดการเช่า" decoration-danger="is_past_due"/>
+                <field name="is_past_due" invisible="1"/>
+                <field name="on_site" string="หน้างาน"/>
+                <field name="cash" string="ยอดถืออยู่" readonly="1"/>
+                <field name="is_due_date" invisible="1"/>
+                <field name="is_overdue" invisible="1"/>
+                <field name="is_nearly_due" invisible="1"/>
+                <field name="is_in_rent" invisible="1"/>
+                <field name="is_ready" invisible="1"/>
+                <field name="is_done" invisible="1"/>
+                <field name="rental_status" string="สถานะการเช่า" readonly="1"
+                       decoration-danger="rental_status == 'overdue'"
+                       decoration-warning="rental_status == 'nearly_due'"
+                       decoration-info="rental_status == 'in_rent'"
+                       decoration-muted="rental_status == 'ready'"
+                       decoration-success="rental_status == 'done'"
+                       decoration-primary="rental_status == 'due_date'"
+                       widget="badge"/>
+                <field name="deposit_return_status" string="สถานะคืนเงินประกัน"/>
+                <field name="rent_days_remaining" string="วันเช่า/เหลือ" readonly="1"/>
+                <field name="rent_days_overdue" string="วันเกิน" readonly="1"/>
+                <field name="related_returns" widget="many2many_tags" invisible="1"/>
+                <field name="check_state" invisible="1"/>
+                <field name="deposit_ref" string="เลขอ้างอิงเงินประกัน" readonly="1"/>
+                <field name="debt_payment_type" string="ประเภทการรับชำระหนี้"
+                       widget="selection"
+                       placeholder="เลือกประเภทการรับชำระหนี้"/>
+            </xpath>
+
+            <!-- Add contact fields after partner_shipping_id (left column) -->
+            <xpath expr="//field[@name='partner_shipping_id']" position="after">
+                <field name="contact_type" string="การติดต่อของลูกค้า" required="1"/>
+                <field name="sales_contact" string="Sales ที่ติดต่อ" required="1"/>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_sale_order_tree_inherit" model="ir.ui.view">
+        <field name="name">sale.order.list.inherit</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_order_tree"/>
+        <field name="arch" type="xml">
+            <xpath expr="//list" position="inside">
+                <field name="is_past_due" invisible="1"/>
+                <field name="end_rent_date" string="วันที่สิ้นสุดการเช่า" optional="hide"/>
+                <field name="cash" string="ยอดถืออยู่" readonly="1" optional="hide"/>
+            </xpath>
+            <xpath expr="//list" position="attributes">
+                <attribute name="decoration-danger">is_past_due</attribute>
+            </xpath>
+            <xpath expr="//field[@name='date_order']" position="after">
+                <field name="date_order_x" string="วันที่สั่งซื้อย้อนหลัง" optional="hide"/>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_sale_order_search_inherit_rental_status" model="ir.ui.view">
+        <field name="name">sale.order.search.inherit.rental.status</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_sales_order_filter"/>
+        <field name="arch" type="xml">
+            <xpath expr="//filter[@name='salesperson']" position="after">
+                <separator/>
+                <filter name="filter_rental_status_overdue"
+                        string="เกินกำหนด (Overdue)"
+                        domain="[('rental_status', '=', 'overdue')]"/>
+                <filter name="filter_rental_status_nearly_due"
+                        string="ใกล้ครบกำหนด (Nearly Due)"
+                        domain="[('rental_status', '=', 'nearly_due')]"/>
+                <filter name="filter_rental_status_due_date"
+                        string="ครบกำหนด (Due Today)"
+                        domain="[('rental_status', '=', 'due_date')]"/>
+                <filter name="filter_rental_status_in_rent"
+                        string="อยู่ระหว่างการเช่า (In Rent)"
+                        domain="[('rental_status', '=', 'in_rent')]"/>
+                <filter name="filter_rental_status_ready"
+                        string="ทำราคา (Ready)"
+                        domain="[('rental_status', '=', 'ready')]"/>
+                <filter name="filter_rental_status_done"
+                        string="ปิดบิล (Done)"
+                        domain="[('rental_status', '=', 'done')]"/>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_sale_order_tree_inherit1" model="ir.ui.view">
+        <field name="name">sale.order.list.inherit.rental</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_order_tree"/>
+        <field name="arch" type="xml">
+            <xpath expr="//list" position="attributes">
+                <attribute name="default_order">rent_days_overdue desc</attribute>
+                <attribute name="decoration-danger">rental_status == 'overdue'</attribute>
+                <attribute name="decoration-warning">rental_status == 'nearly_due'</attribute>
+                <attribute name="decoration-primary">rental_status == 'due_date'</attribute>
+            </xpath>
+            <xpath expr="//list/field[@name='invoice_status']" position="after">
+                <field name="rental_status" string="สถานะการเช่า" readonly="1"
+                       decoration-danger="rental_status == 'overdue'"
+                       decoration-warning="rental_status == 'nearly_due'"
+                       decoration-info="rental_status == 'in_rent'"
+                       decoration-muted="rental_status == 'ready'"
+                       decoration-success="rental_status == 'done'"
+                       decoration-primary="rental_status == 'due_date'"
+                       widget="badge" optional="show"/>
+                <field name="is_due_date" invisible="1"/>
+                <field name="is_overdue" invisible="1"/>
+                <field name="is_nearly_due" invisible="1"/>
+                <field name="is_in_rent" invisible="1"/>
+                <field name="is_ready" invisible="1"/>
+                <field name="is_done" invisible="1"/>
+                <field name="cash" string="ยอดถืออยู่" readonly="1" optional="hide"/>
+            </xpath>
+            <xpath expr="//field[@name='rental_status']" position="after">
+                <field name="rent_days_remaining" string="วันเช่า/เหลือ" readonly="1" optional="show"/>
+                <field name="rent_days_overdue" string="วันเกิน" readonly="1" optional="show"/>
+            </xpath>
+            <xpath expr="//field[@name='date_order']" position="after">
+                <field name="date_order_x" string="วันที่สั่งซื้อย้อนหลัง" optional="hide"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

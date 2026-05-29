@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+
+        <record id="view_partner_form_branch_inherit" model="ir.ui.view">
+            <field name="name">res.partner.groups</field>
+            <field name="model">res.partner</field>
+            <field name="inherit_id" ref="base.view_partner_form"/>
+            <field name="arch" type="xml">
+                <xpath expr="//field[@name='vat']" position="after">
+                        <field name="is_branch" invisible="is_branch == False" />
+                        <field string="Branch Name" name="branch_id" invisible="is_branch == True"/>
+                </xpath>
+            </field>
+        </record>
+
+        <record id="view_partner_tree_branch_inherit" model="ir.ui.view">
+            <field name="name">res.partner.tree.inherite</field>
+            <field name="model">res.partner</field>
+            <field name="inherit_id" ref="base.view_partner_tree"/>
+            <field name="arch" type="xml">
+                <xpath expr="//field[@name='company_id']" position="before">
+                            <field string="Branch Name" name="branch_id"/>
+                </xpath>
+            </field>
+        </record>
+
+    </data>
+</odoo>

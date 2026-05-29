@@ -1,0 +1,31 @@
+# Menu Parent IDs ที่ต้องลอง
+
+## ลำดับการลอง (จากน้อยไปมากแน่นอน):
+
+1. **base.menu_administration** ← ลองอันนี้ก่อน
+2. **base.menu_ir_property**
+3. **base.ir_ui_menu_company** 
+4. **base.menu_partner**
+5. **ir.ui.menu,2** (Hard ID)
+
+## ถ้ายังไม่ได้:
+
+ต้องดู SQL ตรง Odoo DB เพื่อหา Menu ID ที่ถูกต้องสำหรับ "บริษัท"
+
+```sql
+SELECT id, name, parent_id FROM ir_ui_menu WHERE name LIKE '%Company%' OR name LIKE '%บริษัท%';
+```
+
+## ตัวอย่าง Structure ที่ถูกต้อง:
+
+```xml
+<menuitem 
+    id="menu_npd_connection_settings"
+    name="NPD Connection Settings"
+    action="action_npd_connection_config"
+    parent="base.menu_administration"  <!-- ← Use this -->
+    sequence="50"
+    groups="base.group_system"/>
+```
+
+ลองติดตั้งดูก่อน ถ้า error ให้ send ให้ฉัน 👍

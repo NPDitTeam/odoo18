@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Script to delete old views with expected_interest -->
+    <!-- Run this by upgrading the module -->
+    
+    <function model="ir.ui.view" name="search">
+        <value eval="[('arch_db', 'ilike', 'expected_interest')]"/>
+    </function>
+</odoo>

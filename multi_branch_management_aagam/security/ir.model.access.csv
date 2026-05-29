@@ -1,0 +1,4 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_res_branch_manager,access_res_branch_manager,model_res_branch,,1,1,1,1
+access_wizard_warehouse_branch,access_wizard_warehouse_branch,model_wizard_warehouse_branch,,1,1,1,1
+access_account_wizard,account.cash.flow.wizard,model_account_cash_flow_wizard,,1,1,1,1

@@ -1,0 +1,350 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- List View -->
+    <record id="view_transport_order_list" model="ir.ui.view">
+        <field name="name">transport.order.list</field>
+        <field name="model">transport.order</field>
+        <field name="arch" type="xml">
+            <list string="ข้อมูลขนส่ง"
+                  decoration-info="state=='draft'"
+                  decoration-success="state=='sale'"
+                  create="true"
+                  edit="true"
+                  delete="true">
+                <field name="name" string="เลขที่"/>
+                <field name="branch_id" string="สาขา" optional="show"/>
+                <field name="delivery_type" string="ประเภทการจัดส่ง" optional="show"/>
+                <field name="date_order" string="วันที่" optional="show"/>
+                <field name="partner_id" string="ลูกค้า" optional="show"/>
+                <field name="vehicle_type_name" string="ประเภทรถ" optional="hide"/>
+                <field name="distance_km" string="ระยะทาง (กม.)" optional="hide"/>
+                <field name="trip_allowance" string="ค่าเที่ยว" optional="show"/>
+                <field name="shipping_cost_raw" string="ค่าขนส่งก่อนปัดเศษ" optional="show"/>
+                <field name="shipping_cost" string="ค่าขนส่งคิดจากระบบ" optional="show"/>
+                <field name="use_special_delivery_zero" string="ใช้ค่าขนส่งพิเศษที่เป็น 0" optional="show"/>
+                <field name="shipping_cost_m" string="ค่าขนส่งพิเศษ" optional="show"/>
+                <field name="total_cost_per_trip" string="ต้นทุน" optional="hide"/>
+                <field name="profit_per_trip" string="กำไร" optional="hide"/>
+                <field name="profit_per_trip_p" string="กำไร%" widget="percentage" optional="hide"/>
+
+                <field name="state" string="สถานะ" widget="badge"
+                       decoration-info="state=='draft'"
+                       decoration-success="state=='sale'"
+                       decoration-warning="state=='sent'"
+                       decoration-muted="state=='cancel'"/>
+                <field name="is_renew_green_house" string="บิลต่ออายุจากบ้านเขียว" optional="show"/>
+                <field name="sync_date" string="วันที่ซิงค์" optional="hide"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Form View -->
+    <record id="view_transport_order_form" model="ir.ui.view">
+        <field name="name">transport.order.form</field>
+        <field name="model">transport.order</field>
+        <field name="arch" type="xml">
+            <form string="คำสั่งขนส่ง">
+                <header>
+                    <button name="action_sync_recent_from_odoo14"
+                            string="ซิงค์วันนี้"
+                            type="object"
+                            class="btn-primary"/>
+                    <button name="action_sync_from_odoo14"
+                            string="ซิงค์ทั้งหมด"
+                            type="object"
+                            class="btn-secondary"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,sent,sale,done"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="name" readonly="1" placeholder="เลขที่จะถูกสร้างอัตโนมัติ"/>
+                        </h1>
+                    </div>
+
+                    <group>
+                        <group string="ข้อมูลหลัก">
+                            <field name="is_renew_green_house" readonly="1"/>
+                            <field name="odoo14_id" readonly="1"/>
+                            <field name="branch_id"/>
+                            <field name="branch_name_o14" readonly="1" invisible="not branch_name_o14"/>
+                            <field name="company_id"/>
+                            <field name="date_order"/>
+                            <field name="validity_date"/>
+                        </group>
+
+                        <group string="ข้อมูลลูกค้า">
+                            <field name="partner_id"/>
+                            <field name="partner_name_o14" readonly="1" invisible="not partner_name_o14"/>
+                            <field name="partner_phone" widget="phone"/>
+                            <field name="partner_email" widget="email"/>
+                            <field name="salesperson_name"/>
+                        </group>
+                    </group>
+
+                    <notebook>
+                        <!-- Tab 1: ข้อมูลการขนส่งพื้นฐาน -->
+                        <page string="🚚 ข้อมูลการขนส่ง" name="transport_info">
+                            <group>
+                                <group string="เส้นทาง">
+                                    <field name="delivery_type"/>
+                                    <field name="pickup_location" placeholder="ที่อยู่ต้นทาง"/>
+                                    <field name="destination" placeholder="ที่อยู่ปลายทาง"/>
+                                    <field name="distance_km"/>
+                                </group>
+
+                                <group string="รถและพนักงาน">
+                                    <field name="vehicle_type_id" readonly="1"/>
+                                    <field name="vehicle_type_name"/>
+                                    <field name="delivery_employee_id" readonly="1"/>
+                                    <field name="delivery_employee_name"/>
+                                    <field name="license_plate_id" readonly="1"/>
+                                    <field name="license_plate_name"/>
+                                </group>
+
+                                <group string="ค่าขนส่ง">
+                                    <field name="trip_allowance"/>
+                                    <field name="daily_allowance"/>
+                                    <field name="shipping_cost_raw"/>
+                                    <field name="shipping_cost"/>
+                                    <field name="use_special_delivery_zero"/>
+                                    <field name="shipping_cost_m"/>
+                                </group>
+                            </group>
+                        </page>
+
+                        <!-- Tab 2: ข้อมูลน้ำมัน -->
+                        <page string="⛽ ข้อมูลน้ำมัน" name="fuel_info">
+                            <group>
+                                <group string="ข้อมูลเชื้อเพลิง">
+                                    <field name="fuel_price_per_liter"/>
+                                    <field name="fuel_consumption_rate"/>
+                                </group>
+                                <group string="การใช้น้ำมัน">
+                                    <field name="fuel_used_per_trip"/>
+                                    <field name="fuel_cost_per_trip"/>
+                                </group>
+                            </group>
+                        </page>
+
+                        <!-- Tab 3: ค่าเสื่อมราคา -->
+                        <page string="📉 ค่าเสื่อมราคา" name="depreciation_info">
+                            <group>
+                                <group string="ต้นทุนรถ">
+                                    <field name="vehicle"/>
+                                    <field name="vehicle_cost"/>
+                                    <field name="salvage_value"/>
+                                </group>
+                                <group string="การคำนวณ">
+                                    <field name="depreciation_period"/>
+                                    <field name="depreciation_per_trip"/>
+                                </group>
+                            </group>
+                        </page>
+
+                        <!-- Tab 4: ค่าใช้จ่ายประจำปี -->
+                        <page string="💰 ค่าใช้จ่ายประจำปี" name="annual_expenses">
+                            <group>
+                                <group string="ภาษีและประกัน">
+                                    <field name="annual_vehicle_tax_y"/>
+                                    <field name="annual_vehicle_tax"/>
+                                    <field name="annual_insurance_class2"/>
+                                    <field name="annual_insurance_class1"/>
+                                </group>
+                                <group string="ประกันภัยบังคับ">
+                                    <field name="annual_compulsory_insurance1"/>
+                                    <field name="annual_compulsory_insurance"/>
+                                    <field name="total_depreciation_per_trip"/>
+                                </group>
+                            </group>
+                        </page>
+
+                        <!-- Tab 5: ค่าแรงงาน -->
+                        <page string="👷 ค่าแรงงาน" name="labor_costs">
+                            <group>
+                                <group string="ข้อมูลพนักงาน">
+                                    <field name="labor_costs"/>
+                                    <field name="working_days_per_month"/>
+                                    <field name="driver_salary"/>
+                                    <field name="maintenance_cost"/>
+                                </group>
+                                <group string="การคำนวณค่าแรง">
+                                    <field name="trips_per_day"/>
+                                    <field name="labor_cost_per_trip"/>
+                                    <field name="total_labor_per_trip"/>
+                                </group>
+                            </group>
+                        </page>
+
+                        <!-- Tab 6: สรุปต้นทุนและกำไร -->
+                        <page string="📊 สรุปต้นทุนและกำไร" name="cost_summary">
+                            <group>
+                                <group string="ค่าใช้จ่ายอื่นๆ">
+                                    <field name="trip_allowance"/>
+                                    <field name="daily_allowance"/>
+
+                                </group>
+                                <group string="สรุปรายได้">
+                                    <field name="total_cost_per_trip" class="fw-bold"/>
+                                    <field name="profit_per_trip" class="fw-bold text-success"/>
+                                    <field name="profit_per_trip_p" class="fw-bold text-success" widget="percentage"/>
+                                </group>
+                            </group>
+                            
+                            <!-- แสดงสรุปเป็นตาราง -->
+                            <group string="รายละเอียดต้นทุน">
+                                <group string="ค่าใช้จ่ายหลัก">
+                                    <field name="fuel_cost_per_trip" string="ค่าน้ำมันต่อเที่ยว" readonly="1"/>
+                                    <field name="depreciation_per_trip" string="ค่าเสื่อมรถต่อรอบ" readonly="1"/>
+                                    <field name="total_depreciation_per_trip" string="ค่าเสื่อมอื่นๆต่อรอบ" readonly="1"/>
+                                </group>
+                                
+                                <group string="ค่าดำเนินการ">
+                                    <field name="total_labor_per_trip" string="ค่าแรงต่อรอบ" readonly="1"/>
+                                    <field name="trip_allowance" string="ค่าเที่ยว" readonly="1"/>
+                                    <field name="daily_allowance" string="ค่าเบี้ยเลี้ยง" readonly="1"/>
+
+                                </group>
+                            </group>
+                        </page>
+
+                        <!-- Tab 7: รายการสินค้า -->
+                        <page string="รายการสินค้า" name="order_lines">
+                            <field name="order_line_ids">
+                                <list string="รายการสินค้า" editable="bottom">
+                                    <field name="product_id"/>
+                                    <field name="product_name_o14" readonly="1" optional="hide"/>
+                                    <field name="product_code" optional="hide"/>
+                                    <field name="description" optional="hide"/>
+                                    <field name="quantity"/>
+                                    <field name="uom_name"/>
+                                    <field name="price_unit"/>
+                                    <field name="discount" optional="hide"/>
+                                    <field name="price_subtotal" sum="ยอดย่อย"/>
+                                    <field name="price_tax" sum="ภาษี" optional="hide"/>
+                                    <field name="price_total" sum="ยอดรวม"/>
+                                    <field name="total_weight" sum="น้ำหนักรวม"/>
+                                </list>
+                            </field>
+
+                            <group class="oe_subtotal_footer oe_right">
+                                <field name="amount_untaxed" string="ยอดก่อนภาษี"/>
+                                <field name="amount_tax" string="ภาษี"/>
+                                <field name="total_weight_order" string="น้ำหนักรวม (กก.)"/>
+                                <div class="oe_subtotal_footer_separator oe_inline">
+                                    <label for="amount_total" string="ยอดรวมทั้งหมด"/>
+                                    <field name="amount_total" nolabel="1" class="oe_subtotal_footer_separator"/>
+                                </div>
+                            </group>
+                        </page>
+
+                        <!-- Tab 3: หมายเหตุ -->
+                        <page string="หมายเหตุ" name="notes">
+                            <field name="note" placeholder="หมายเหตุเพิ่มเติม..."/>
+                        </page>
+
+                        <!-- Tab 4: ข้อมูลการซิงค์ -->
+                        <page string="ข้อมูลการซิงค์" name="sync_info">
+                            <group>
+                                <group>
+                                    <field name="sync_date" readonly="1"/>
+                                    <field name="sync_status" widget="badge"/>
+                                </group>
+                                <group>
+                                    <field name="sync_error" readonly="1" invisible="not sync_error"/>
+                                </group>
+                            </group>
+                        </page>
+                    </notebook>
+                </sheet>
+
+                <!-- Chatter -->
+                <chatter>
+                    <field name="message_follower_ids"/>
+                    <field name="message_ids"/>
+                </chatter>
+            </form>
+        </field>
+    </record>
+
+    <!-- Search View -->
+    <record id="view_transport_order_search" model="ir.ui.view">
+        <field name="name">transport.order.search</field>
+        <field name="model">transport.order</field>
+        <field name="arch" type="xml">
+            <search string="ค้นหา">
+                <!-- Search Fields -->
+                <field name="name" string="เลขที่" filter_domain="[('name', 'ilike', self)]"/>
+                <field name="branch_id" string="สาขา"/>
+                <field name="partner_id" string="ลูกค้า"/>
+                <field name="delivery_employee_name" string="พนักงานส่งของ"/>
+                <field name="license_plate_name" string="ทะเบียนรถ"/>
+
+                <!-- Filters -->
+                <separator/>
+                <filter string="วันนี้" name="today"
+                        domain="[('date_order', '&gt;=', context_today().strftime('%Y-%m-%d'))]"/>
+                <filter string="สัปดาห์นี้" name="this_week"
+                        domain="[('date_order', '&gt;=', (context_today() - datetime.timedelta(days=7)).strftime('%Y-%m-%d'))]"/>
+                <filter string="เดือนนี้" name="this_month"
+                        domain="[('date_order', '&gt;=', (context_today() - datetime.timedelta(days=30)).strftime('%Y-%m-%d'))]"/>
+
+                <separator/>
+                <filter string="Quotation" name="draft" domain="[('state', '=', 'draft')]"/>
+                <filter string="Sales Order" name="sale" domain="[('state', '=', 'sale')]"/>
+                <filter string="Done" name="done" domain="[('state', '=', 'done')]"/>
+                <filter string="Cancelled" name="cancel" domain="[('state', '=', 'cancel')]"/>
+
+                <separator/>
+                <filter string="ซิงค์แล้ว" name="synced" domain="[('sync_status', '=', 'synced')]"/>
+                <filter string="รอซิงค์" name="pending" domain="[('sync_status', '=', 'pending')]"/>
+                <filter string="ผิดพลาด" name="error" domain="[('sync_status', '=', 'error')]"/>
+
+                <!-- Group By -->
+                <group expand="0" string="Group By">
+                    <filter string="สาขา" name="group_branch" context="{'group_by': 'branch_id'}"/>
+                    <filter string="ลูกค้า" name="group_partner" context="{'group_by': 'partner_id'}"/>
+                    <filter string="สถานะ" name="group_state" context="{'group_by': 'state'}"/>
+                    <filter string="วันที่สั่ง" name="group_date" context="{'group_by': 'date_order:month'}"/>
+                    <filter string="สถานะซิงค์" name="group_sync" context="{'group_by': 'sync_status'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- Server Action: ซิงค์วันนี้จาก Odoo 14 (แสดงในเมนูการดำเนินการ) -->
+    <record id="action_sync_recent_from_odoo14" model="ir.actions.server">
+        <field name="name">ซิงค์วันนี้จาก Odoo 14</field>
+        <field name="model_id" ref="model_transport_order"/>
+        <field name="binding_model_id" ref="model_transport_order"/>
+        <field name="binding_view_types">list,form</field>
+        <field name="state">code</field>
+        <field name="code">
+action = model.action_sync_recent_from_odoo14()
+        </field>
+    </record>
+
+    <!-- Server Action: ซิงค์ทั้งหมดจาก Odoo 14 (แสดงในเมนูการดำเนินการ) -->
+    <record id="action_sync_from_odoo14" model="ir.actions.server">
+        <field name="name">ซิงค์ทั้งหมดจาก Odoo 14</field>
+        <field name="model_id" ref="model_transport_order"/>
+        <field name="binding_model_id" ref="model_transport_order"/>
+        <field name="binding_view_types">list,form</field>
+        <field name="state">code</field>
+        <field name="code">
+action = model.action_sync_from_odoo14()
+        </field>
+    </record>
+
+    <!-- Server Action: ลบรายการซ้ำ (แสดงในเมนูการดำเนินการ) -->
+    <record id="action_remove_duplicates" model="ir.actions.server">
+        <field name="name">ลบรายการที่ซ้ำกัน</field>
+        <field name="model_id" ref="model_transport_order"/>
+        <field name="binding_model_id" ref="model_transport_order"/>
+        <field name="binding_view_types">list,form</field>
+        <field name="state">code</field>
+        <field name="code">
+action = model.action_remove_duplicates()
+        </field>
+    </record>
+</odoo>

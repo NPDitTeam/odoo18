@@ -1,0 +1,48 @@
+<odoo>
+    <data>
+
+        <record id="purchase_order_branch_inherit" model="ir.ui.view">
+            <field name="name">purchase.order.inherite</field>
+            <field name="model">purchase.order</field>
+            <field name="inherit_id" ref="purchase.purchase_order_form"/>
+            <field name="arch" type="xml">
+                <xpath expr="//field[@name='user_id']" position="after">
+                    <field string="Branch Name" name="branch_id"/>
+                </xpath>
+            </field>
+        </record>
+
+         <record id="purchase_order_tree_branch_inherit" model="ir.ui.view">
+            <field name="name">purchase.order.tree.inherite</field>
+            <field name="model">purchase.order</field>
+            <field name="inherit_id" ref="purchase.purchase_order_tree"/>
+            <field name="arch" type="xml">
+                <xpath expr="//field[@name='company_id']" position="before">
+                    <field string="Branch Name" name="branch_id"/>
+                </xpath>
+            </field>
+        </record>
+
+        <record id="purchase_order_view_tree_branch_inherit" model="ir.ui.view">
+            <field name="name">purchase.order.tree.inherite</field>
+            <field name="model">purchase.order</field>
+            <field name="inherit_id" ref="purchase.purchase_order_view_tree"/>
+            <field name="arch" type="xml">
+                <xpath expr="//field[@name='company_id']" position="before">
+                    <field string="Branch Name" name="branch_id"/>
+                </xpath>
+            </field>
+        </record>
+
+        <record id="view_purchase_order_filter_branch_inherit" model="ir.ui.view">
+            <field name="name">purchase.order.inherite</field>
+            <field name="model">purchase.order</field>
+            <field name="inherit_id" ref="purchase.view_purchase_order_filter"/>
+            <field name="arch" type="xml">
+                <xpath expr="//group/filter[@name='order_date']" position="after">
+                    <filter name="Branch" domain="[]" context="{'group_by': 'branch_id'}"/>
+                </xpath>
+            </field>
+        </record>
+    </data>
+</odoo>

@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+
+        <record id="view_pos_pos_form_inherit" model="ir.ui.view">
+            <field name="name">pos.order.form.inherite</field>
+            <field name="model">pos.order</field>
+            <field name="inherit_id" ref="point_of_sale.view_pos_pos_form"/>
+            <field name="arch" type="xml">
+                <xpath expr="//field[@name='user_id']" position="after">
+                   <field string="Branch Name" name="branch_id"/>
+                </xpath>
+
+                 <xpath expr="//page/field[@name='payment_ids']" position="replace">
+
+                        <field name="payment_ids" colspan="4" nolabel="1">
+                            <list string="Payments">
+                                <field name="currency_id" invisible="1" />
+                                <field name="payment_date"/>
+                                <field name="payment_method_id"/>
+                                <field name="amount"/>
+                                <field string="Branch Name" name="branch_id"/>
+                            </list>
+                        </field>
+                </xpath>
+
+
+            </field>
+        </record>
+
+        <record id="view_pos_order_tree_inherit" model="ir.ui.view">
+            <field name="name">pos.order.tree.inherite</field>
+            <field name="model">pos.order</field>
+            <field name="inherit_id" ref="point_of_sale.view_pos_order_tree"/>
+            <field name="arch" type="xml">
+                <xpath expr="//field[@name='session_id']" position="after">
+                   <field string="Branch Name" name="branch_id"/>
+                </xpath>
+            </field>
+        </record>
+
+
+         <record id="view_pos_order_filter_inherit" model="ir.ui.view">
+            <field name="name">pos.order.filter.inherite</field>
+            <field name="model">pos.order</field>
+            <field name="inherit_id" ref="point_of_sale.view_pos_order_filter"/>
+            <field name="arch" type="xml">
+                <xpath expr="//group/filter[@name='order_month']" position="after">
+                    <filter string="Branch Name" name="branch_id" domain="[]" context="{'group_by': 'branch_id'}"/>
+                </xpath>
+            </field>
+        </record>
+
+
+
+    </data>
+</odoo>

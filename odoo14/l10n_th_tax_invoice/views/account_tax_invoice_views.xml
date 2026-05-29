@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_account_move_tax_invoice_list" model="ir.ui.view">
+        <field name="name">account.move.tax.invoice.list</field>
+        <field name="model">account.move.tax.invoice</field>
+        <field name="arch" type="xml">
+            <list string="Tax Invoices">
+                <field name="tax_invoice_number"/>
+                <field name="tax_invoice_date"/>
+                <field name="partner_id"/>
+                <field name="tax_base_amount"/>
+                <field name="balance"/>
+                <field name="move_id"/>
+            </list>
+        </field>
+    </record>
+</odoo>

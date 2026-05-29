@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<odoo>
+    <!-- This file is intentionally minimal.
+         All sale order views/menus are handled by pfb_npd_all_customs.
+         The XML content was commented out in the original Odoo 14 version. -->
+</odoo>

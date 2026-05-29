@@ -1,0 +1,15 @@
+<odoo>
+    <record id="view_users_form_inherit_refund_rental" model="ir.ui.view">
+        <field name="name">res.users.form.inherit.refund.rental</field>
+        <field name="model">res.users</field>
+        <field name="inherit_id" ref="base.view_users_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//page[@name='preferences']" position="inside">
+                <group string="สิทธิ์คืนเงินประกันค่าเช่า">
+                    <field name="refund_of_rental"/>
+                    <field name="can_edit_voucher_lines"/>
+                </group>
+            </xpath>
+        </field>
+    </record>
+</odoo>

@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    
+    <!-- Main Menu -->
+    <menuitem id="menu_vehicle_tracking_root"
+              name="GPS ติดตามรถ"
+              sequence="10"
+              web_icon="vehicle_tracking,static/description/icon.png"/>
+    
+    <!-- Submenu -->
+    <menuitem id="menu_vehicle_tracking_main"
+              name="รายการรถ"
+              parent="menu_vehicle_tracking_root"
+              action="action_vehicle_tracking"
+              sequence="10"/>
+    
+    <!-- Refresh Data Menu Action -->
+    <record id="action_refresh_vehicle_data" model="ir.actions.server">
+        <field name="name">รีเฟรชข้อมูลรถ</field>
+        <field name="model_id" ref="model_gps_vehicle_tracking"/>
+        <field name="state">code</field>
+        <field name="code">
+action = model.fetch_vehicle_data()
+        </field>
+    </record>
+    
+    <menuitem id="menu_refresh_vehicle_data"
+              name="รีเฟรชข้อมูล"
+              parent="menu_vehicle_tracking_root"
+              action="action_refresh_vehicle_data"
+              sequence="20"/>
+
+</odoo>

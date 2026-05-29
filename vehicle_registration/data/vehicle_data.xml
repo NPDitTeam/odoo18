@@ -1,0 +1,172 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        <!-- Sequence สำหรับบริษัทรถร่วม -->
+        <record id="seq_vehicle_partner_company" model="ir.sequence">
+            <field name="name">Vehicle Partner Company Sequence</field>
+            <field name="code">vehicle.partner.company</field>
+            <field name="prefix">VPC-</field>
+            <field name="padding">4</field>
+            <field name="number_next">1</field>
+            <field name="number_increment">1</field>
+        </record>
+
+        <!-- Sequence สำหรับผู้ขับขี่ -->
+        <record id="seq_vehicle_driver" model="ir.sequence">
+            <field name="name">Vehicle Driver Sequence</field>
+            <field name="code">vehicle.driver</field>
+            <field name="prefix">DRV-</field>
+            <field name="padding">4</field>
+            <field name="number_next">1</field>
+            <field name="number_increment">1</field>
+        </record>
+
+        <!-- Sequence สำหรับการแจ้งซ่อม -->
+        <record id="seq_vehicle_maintenance_request" model="ir.sequence">
+            <field name="name">Vehicle Maintenance Request Sequence</field>
+            <field name="code">vehicle.maintenance.request</field>
+            <field name="prefix">MR-%(year)s%(month)s-</field>
+            <field name="padding">4</field>
+            <field name="number_next">1</field>
+            <field name="number_increment">1</field>
+        </record>
+
+        <!-- Sequence สำหรับประวัติการซ่อม -->
+        <record id="seq_vehicle_maintenance_history" model="ir.sequence">
+            <field name="name">Vehicle Maintenance History Sequence</field>
+            <field name="code">vehicle.maintenance.history</field>
+            <field name="prefix">MH-%(year)s%(month)s-</field>
+            <field name="padding">4</field>
+            <field name="number_next">1</field>
+            <field name="number_increment">1</field>
+        </record>
+
+        <!-- Sequence สำหรับการอนุมัติการแจ้งซ่อม -->
+        <record id="seq_maintenance_approval" model="ir.sequence">
+            <field name="name">Maintenance Approval Sequence</field>
+            <field name="code">maintenance.approval</field>
+            <field name="prefix">APR-%(year)s%(month)s-</field>
+            <field name="padding">4</field>
+            <field name="number_next">1</field>
+            <field name="number_increment">1</field>
+        </record>
+
+        <!-- ==================== ข้อมูลเริ่มต้นประเภทน้ำมัน ==================== -->
+
+        <!-- ประเภทน้ำมันเครื่อง -->
+        <record id="engine_oil_0w20" model="vehicle.engine.oil.type">
+            <field name="name">0W-20</field><field name="sequence">1</field>
+        </record>
+        <record id="engine_oil_0w30" model="vehicle.engine.oil.type">
+            <field name="name">0W-30</field><field name="sequence">2</field>
+        </record>
+        <record id="engine_oil_5w30" model="vehicle.engine.oil.type">
+            <field name="name">5W-30</field><field name="sequence">3</field>
+        </record>
+        <record id="engine_oil_5w40" model="vehicle.engine.oil.type">
+            <field name="name">5W-40</field><field name="sequence">4</field>
+        </record>
+        <record id="engine_oil_10w30" model="vehicle.engine.oil.type">
+            <field name="name">10W-30</field><field name="sequence">5</field>
+        </record>
+        <record id="engine_oil_10w40" model="vehicle.engine.oil.type">
+            <field name="name">10W-40</field><field name="sequence">6</field>
+        </record>
+        <record id="engine_oil_15w30" model="vehicle.engine.oil.type">
+            <field name="name">15W-30</field><field name="sequence">7</field>
+        </record>
+        <record id="engine_oil_15w40" model="vehicle.engine.oil.type">
+            <field name="name">15W-40</field><field name="sequence">8</field>
+        </record>
+        <record id="engine_oil_20w50" model="vehicle.engine.oil.type">
+            <field name="name">20W-50</field><field name="sequence">9</field>
+        </record>
+
+        <!-- ประเภทน้ำมันเกียร์ -->
+        <record id="gear_oil_75w80" model="vehicle.gear.oil.type">
+            <field name="name">75W-80</field><field name="sequence">1</field>
+        </record>
+        <record id="gear_oil_75w90" model="vehicle.gear.oil.type">
+            <field name="name">75W-90</field><field name="sequence">2</field>
+        </record>
+        <record id="gear_oil_80w90" model="vehicle.gear.oil.type">
+            <field name="name">80W-90</field><field name="sequence">3</field>
+        </record>
+        <record id="gear_oil_85w140" model="vehicle.gear.oil.type">
+            <field name="name">85W-140</field><field name="sequence">4</field>
+        </record>
+        <record id="gear_oil_atf" model="vehicle.gear.oil.type">
+            <field name="name">ATF (Automatic Transmission Fluid)</field><field name="sequence">5</field>
+        </record>
+        <record id="gear_oil_cvtf" model="vehicle.gear.oil.type">
+            <field name="name">CVTF (CVT Fluid)</field><field name="sequence">6</field>
+        </record>
+        <record id="gear_oil_dctf" model="vehicle.gear.oil.type">
+            <field name="name">DCTF (Dual Clutch Fluid)</field><field name="sequence">7</field>
+        </record>
+
+        <!-- ประเภทน้ำมันเชื้อเพลิง -->
+        <record id="fuel_diesel_b7" model="vehicle.fuel.type">
+            <field name="name">ดีเซล B7</field><field name="sequence">1</field>
+        </record>
+        <record id="fuel_diesel_b10" model="vehicle.fuel.type">
+            <field name="name">ดีเซล B10</field><field name="sequence">2</field>
+        </record>
+        <record id="fuel_diesel_b20" model="vehicle.fuel.type">
+            <field name="name">ดีเซล B20</field><field name="sequence">3</field>
+        </record>
+        <record id="fuel_diesel_premium" model="vehicle.fuel.type">
+            <field name="name">ดีเซลพรีเมียม</field><field name="sequence">4</field>
+        </record>
+        <record id="fuel_gasoline_91" model="vehicle.fuel.type">
+            <field name="name">เบนซิน 91</field><field name="sequence">5</field>
+        </record>
+        <record id="fuel_gasohol_91" model="vehicle.fuel.type">
+            <field name="name">แก๊สโซฮอล์ 91</field><field name="sequence">6</field>
+        </record>
+        <record id="fuel_gasohol_95" model="vehicle.fuel.type">
+            <field name="name">แก๊สโซฮอล์ 95</field><field name="sequence">7</field>
+        </record>
+        <record id="fuel_gasohol_e20" model="vehicle.fuel.type">
+            <field name="name">แก๊สโซฮอล์ E20</field><field name="sequence">8</field>
+        </record>
+        <record id="fuel_gasohol_e85" model="vehicle.fuel.type">
+            <field name="name">แก๊สโซฮอล์ E85</field><field name="sequence">9</field>
+        </record>
+        <record id="fuel_ngv" model="vehicle.fuel.type">
+            <field name="name">NGV (ก๊าซธรรมชาติ)</field><field name="sequence">10</field>
+        </record>
+        <record id="fuel_lpg" model="vehicle.fuel.type">
+            <field name="name">LPG (ก๊าซหุงต้ม)</field><field name="sequence">11</field>
+        </record>
+        <record id="fuel_ev" model="vehicle.fuel.type">
+            <field name="name">ไฟฟ้า (EV)</field><field name="sequence">12</field>
+        </record>
+
+        <!-- ประเภทน้ำมันเบรก -->
+        <record id="brake_fluid_dot3" model="vehicle.brake.fluid.type">
+            <field name="name">DOT 3</field><field name="sequence">1</field>
+        </record>
+        <record id="brake_fluid_dot4" model="vehicle.brake.fluid.type">
+            <field name="name">DOT 4</field><field name="sequence">2</field>
+        </record>
+        <record id="brake_fluid_dot51" model="vehicle.brake.fluid.type">
+            <field name="name">DOT 5.1</field><field name="sequence">3</field>
+        </record>
+
+        <!-- ประเภทสารหล่อเย็น -->
+        <record id="coolant_ethylene" model="vehicle.coolant.type">
+            <field name="name">Ethylene Glycol (สีเขียว)</field><field name="sequence">1</field>
+        </record>
+        <record id="coolant_propylene" model="vehicle.coolant.type">
+            <field name="name">Propylene Glycol (สีชมพู)</field><field name="sequence">2</field>
+        </record>
+        <record id="coolant_oat" model="vehicle.coolant.type">
+            <field name="name">OAT - Organic Acid Technology (สีส้ม)</field><field name="sequence">3</field>
+        </record>
+        <record id="coolant_hoat" model="vehicle.coolant.type">
+            <field name="name">HOAT - Hybrid OAT (สีเหลือง)</field><field name="sequence">4</field>
+        </record>
+
+    </data>
+</odoo>

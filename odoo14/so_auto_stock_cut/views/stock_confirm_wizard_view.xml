@@ -1,0 +1,67 @@
+<odoo>
+    <record id="view_stock_cut_confirm_wizard" model="ir.ui.view">
+        <field name="name">stock.cut.confirm.wizard.form</field>
+        <field name="model">stock.cut.confirm.wizard</field>
+        <field name="arch" type="xml">
+            <form string="ยืนยันการตัดสต๊อก">
+                <group>
+                    <field name="order_id" readonly="1"/>
+                    <field name="can_return_greenhome" readonly="1"/>
+                </group>
+
+                <notebook>
+                    <page string="ตัดสต๊อก (odoo)">
+                        <group>
+                            <field name="confirm_line_ids" nolabel="1"
+                                   options="{'no_create': True, 'no_create_edit': True, 'no_open': True, 'no_delete': True}">
+                                <list editable="bottom" string="ตัดสต๊อกตาม SO">
+                                    <field name="product_id" string="สินค้า" readonly="1" force_save="1"/>
+                                    <field name="quantity" string="จำนวนที่ตัด" readonly="1" force_save="1"/>
+                                    <field name="location_name" string="คลังต้นทาง" readonly="1" force_save="1"/>
+                                    <field name="stock_remain" string="สต็อกคงเหลือ (บ้านเขียว)" readonly="1" force_save="1"/>
+                                    <field name="need_manual_input" column_invisible="1" force_save="1"/>
+                                    <field name="manual_stock_input" string="จำนวนสต็อกจริง (กรอกเมื่อไม่พอ)"
+                                           readonly="not need_manual_input"/>
+                                </list>
+                            </field>
+                        </group>
+                    </page>
+
+                    <page string="สต๊อกล่าสุด (บ้านเขียว)">
+                        <group>
+                            <field name="greenhome_line_ids"
+                                   nolabel="1"
+                                   readonly="1"
+                                   options="{'no_create': True, 'no_create_edit': True, 'no_edit': True, 'no_open': True, 'no_delete': True}">
+                                <list string="ข้อมูลบ้านเขียว" create="false" edit="false" delete="false">
+                                    <field name="pdn_code" string="รหัสสินค้า" readonly="1"/>
+                                    <field name="branch_name" string="สาขา" readonly="1"/>
+                                    <field name="product_name" string="รายการสินค้า" readonly="1"/>
+                                    <field name="stock_begin" string="สินค้าตั้งต้น" readonly="1"/>
+                                    <field name="stock_remain" string="สินค้าคงเหลือ" readonly="1"/>
+                                    <field name="stock_rented" string="สินค้าที่ถูกเช่า" readonly="1"/>
+                                    <field name="stock_lost" string="สินค้าที่ปรับหาย" readonly="1"/>
+                                </list>
+                            </field>
+                        </group>
+                    </page>
+                </notebook>
+
+                <footer>
+                    <button string="ยืนยันตัดสต๊อก"
+                            type="object"
+                            name="confirm_stock_cut"
+                            class="btn-primary"/>
+                    <button string="คืนสินค้าบ้านเขียว"
+                            type="object"
+                            name="return_greenhome_only"
+                            class="btn-warning"
+                            invisible="not can_return_greenhome"/>
+                    <button string="ยกเลิก"
+                            class="btn-secondary"
+                            special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+</odoo>

@@ -1,0 +1,7 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_jop_position_work,access.jop.position.work,model_jop_position_work,,1,1,1,1,
+access_purchase_agreement_line,access.purchase.agreement.line,model_purchase_agreement_line,,1,1,1,1,
+access_terms_conditions,access.terms.conditions,model_terms_conditions,,1,1,1,
+access_npd_flow_template,access.npd.flow.template,model_npd_flow_template,,1,1,1,
+access_npd_flow_template_approve,access.npd.flow.template.approve,model_npd_flow_template_approve,,1,1,1,1,
+access_method_recruitment,access.method.recruitment,model_method_recruitment,,1,1,1,1

@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<templates>
+    <t t-name="ks_expense_advance_search_view" t-inherit="hr_expense.ListRenderer" t-inherit-mode="extension" owl="1">
+            <xpath expr="//table/thead/tr" position="after">
+            <t t-call="ks_general_list_template"/>
+        </xpath>
+        </t>
+    <t t-name="ks_purchase_advance_search_view" t-inherit="purchase.PurchaseListView" t-inherit-mode="extension" owl="1">
+        <xpath expr="//table/thead/tr" position="after">
+            <t t-call="ks_general_list_template"/>
+        </xpath>
+    </t>
+    <t t-name="ks_expense_report_search_view" t-inherit="hr_expense.DashboardListRenderer" t-inherit-mode="extension" owl="1">
+       <xpath expr="//table/thead/tr" position="after">
+            <t t-call="ks_general_list_template"/>
+        </xpath>
+    </t>
+
+    <t t-name="ks_file_upload_new_advance_search_view" t-inherit="sale.SaleListRenderer" t-inherit-mode="extension" owl="1">
+        <xpath expr="//table/thead/tr" position="after">
+            <t t-call="ks_general_list_template"/>
+        </xpath>
+    </t>
+
+    <t t-name="ks_account_new_advance_search_view" t-inherit="account.AccountMoveListRenderer" t-inherit-mode="extension" owl="1">
+        <xpath expr="//table/thead/tr" position="after">
+            <t t-call="ks_general_list_template"/>
+        </xpath>
+    </t>
+    <t t-name="ks_accountupload_new_advance_search_view" t-inherit="account.FileUploadListRenderer" t-inherit-mode="extension" owl="1">
+        <xpath expr="//table/thead/tr" position="after">
+            <t t-call="ks_general_list_template"/>
+        </xpath>
+    </t>
+    <t t-name="ks_stock_new_advance_search_view" t-inherit="stock.StockListRenderer" t-inherit-mode="extension" owl="1">
+        <xpath expr="//table/thead/tr" position="after">
+            <t t-call="ks_general_list_template"/>
+        </xpath>
+    </t>
+    <t t-name="ks_general_list_template">
+         <t t-if="!this.isX2Many">
+            <t t-call="ks_general_template"/>
+        </t>
+    </t>
+</templates>

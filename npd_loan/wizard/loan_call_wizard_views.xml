@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Call Wizard Form -->
+    <record id="view_loan_call_wizard_form" model="ir.ui.view">
+        <field name="name">npd.loan.call.wizard.form</field>
+        <field name="model">npd.loan.call.wizard</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <group>
+                        <group string="ข้อมูลลูกค้า">
+                            <field name="loan_id" invisible="1"/>
+                            <field name="customer_name" readonly="1"/>
+                            <label for="phone_number" string="เบอร์โทร"/>
+                            <field name="phone_number" readonly="1" widget="phone" 
+                                   style="font-weight: bold; font-size: 20px;" nolabel="1"/>
+                            <field name="clean_phone" invisible="1"/>
+                        </group>
+                        <group string="ข้อมูลสินเชื่อ">
+                            <field name="loan_amount" readonly="1"/>
+                            <field name="current_remaining" readonly="1"/>
+                            <field name="total_collected" readonly="1"/>
+                        </group>
+                    </group>
+                    
+                    <separator string="งวดที่ติดตาม"/>
+                    
+                    <group>
+                        <group>
+                            <field name="installment_id" options="{'no_create': True}"/>
+                        </group>
+                    </group>
+                    
+                    <!-- ข้อมูลงวดที่เลือก -->
+                    <group invisible="not installment_id">
+                        <group string="ข้อมูลงวด">
+                            <field name="installment_due_date" readonly="1"/>
+                            <field name="installment_paid_date" readonly="1"/>
+                            <field name="installment_minimum" readonly="1" string="ชำระขั้นต่ำ"/>
+                        </group>
+                        <group string="สถานะ">
+                            <field name="installment_state" readonly="1" widget="badge"
+                                   decoration-info="installment_state == 'pending'"
+                                   decoration-success="installment_state == 'paid'"
+                                   decoration-danger="installment_state == 'overdue'"/>
+                            <field name="installment_overdue_days" readonly="1" 
+                                   style="color: red; font-weight: bold;"
+                                   invisible="installment_overdue_days == 0"/>
+                            <field name="installment_late_fee" readonly="1"
+                                   style="color: red;"
+                                   invisible="installment_late_fee == 0"/>
+                            <field name="installment_amount" readonly="1" string="ยอดงวด"
+                                   style="font-weight: bold; font-size: 16px;"/>
+                        </group>
+                    </group>
+                    
+                    <separator string="จับเวลาการโทร"/>
+                    
+                    <group>
+                        <group>
+                            <field name="is_calling" invisible="1"/>
+                            <field name="call_start_time" readonly="1" string="เวลาเริ่มโทร"/>
+                        </group>
+                        <group>
+                            <div invisible="is_calling">
+                                <p class="text-muted">1. คลิกที่เบอร์โทรด้านบนเพื่อโทรออก</p>
+                                <p class="text-muted">2. กดปุ่ม "โทรออก" เพื่อเริ่มนับเวลา</p>
+                            </div>
+                            <div invisible="not is_calling" class="alert alert-success" style="padding: 10px;">
+                                <strong>✓ เริ่มจับเวลาแล้ว</strong>
+                            </div>
+                        </group>
+                    </group>
+                    
+                    <separator string="บันทึกผลการโทร"/>
+                    
+                    <group>
+                        <group>
+                            <field name="call_status" widget="radio" required="is_calling"/>
+                        </group>
+                        <group>
+                            <field name="note" required="is_calling" placeholder="ใส่หมายเหตุผลการโทร..."/>
+                        </group>
+                    </group>
+                </sheet>
+                <footer>
+                    <button name="action_start_call" string="โทรออก"
+                            type="object" class="btn-warning" invisible="is_calling"/>
+                    <button name="action_end_call" string="✓ จบการโทรและบันทึก" 
+                            type="object" class="btn-primary"/>
+                    <button string="ปิด" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <!-- Action to open call wizard -->
+    <record id="action_loan_call_wizard" model="ir.actions.act_window">
+        <field name="name">โทรติดตาม</field>
+        <field name="res_model">npd.loan.call.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="view_id" ref="view_loan_call_wizard_form"/>
+        <field name="target">new</field>
+    </record>
+</odoo>

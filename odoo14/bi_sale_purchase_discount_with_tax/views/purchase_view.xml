@@ -1,0 +1,66 @@
+<?xml version="1.0"?>
+<odoo>
+        <record id="view_purchase_order_invoice_discount_form" model="ir.ui.view">
+            <field name="name">purchase.order.invoice.discount.form.view</field>
+            <field name="model">purchase.order</field>
+            <field name="inherit_id" ref="purchase.purchase_order_form"/>
+            <field name="arch" type="xml">
+
+                <field name="origin" position="before">
+                    <field name="discount_type" widget="radio" />
+                </field>
+
+                <!-- Discount method/amount after totals -->
+                <xpath expr="//group[@name='purchase_total']" position="after">
+                    <group style="width: 65%;" invisible="discount_type == 'line'">
+                        <span invisible="discount_type == 'line'">Discount Method</span>
+                        <div invisible="discount_type == 'line'">
+                            <field name="discount_method" class="oe_inline" invisible="discount_type == 'line'"/>
+                        </div>
+                        <span invisible="discount_type == 'line'">Discount Amount</span>
+                        <div invisible="discount_type == 'line'">
+                            <field name="discount_amount" class="oe_inline" invisible="discount_type == 'line'"/>
+                            <span string="%%"
+                                invisible="discount_method != 'per'" class="oe_inline"/>
+                         </div>
+                    </group>
+                </xpath>
+
+                <!-- Discount summary before tax_totals -->
+                <xpath expr="//group[@name='purchase_total']/field[@name='tax_totals']" position="before">
+                    <field name="amount_price_subtotal_without_discount" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                    <field name="discount_amt" widget="monetary" options="{'currency_field': 'currency_id'}" invisible="discount_type == 'line'"/>
+                    <field name="discount_amt_line" widget="monetary" options="{'currency_field': 'currency_id'}" invisible="discount_type == 'global'"/>
+                </xpath>
+
+                <!-- Add discount fields in purchase order line tree -->
+                <xpath expr="//field[@name='order_line']//list//field[@name='price_unit']" position="after">
+                    <field name="discount_type" column_invisible="True"/>
+                    <field name="discount_method" column_invisible="parent.discount_type == 'global'" invisible="discount_type == 'global'"/>
+                    <field name="discount_amount" column_invisible="parent.discount_type == 'global'" invisible="discount_type == 'global'" readonly="discount_method != 'per' and discount_method != 'fix'"/>
+                    <field name="discount_amt" column_invisible="True"/>
+                </xpath>
+
+                <!-- Add subtotal without discount -->
+                <xpath expr="//field[@name='order_line']//list//field[@name='price_subtotal']" position="before">
+                    <field name="price_subtotal_without_discount" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                </xpath>
+
+            </field>
+        </record>
+
+    <!-- Hide standard discount in purchase order -->
+    <record model="ir.ui.view" id="use_purchase_order_form">
+        <field name="name">use_purchase_order_form</field>
+        <field name="model">purchase.order</field>
+        <field name="inherit_id" ref="purchase.purchase_order_form" />
+        <field name="arch" type="xml">
+            <xpath
+                expr="//field[@name='order_line']//list//field[@name='discount']"
+                position="attributes"
+            >
+                <attribute name="column_invisible">True</attribute>
+            </xpath>
+        </field>
+    </record>
+</odoo>

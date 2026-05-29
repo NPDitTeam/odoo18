@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+
+        <record id="view_pos_payment_form_inherit" model="ir.ui.view">
+            <field name="name">pos.payment.form.inherite</field>
+            <field name="model">pos.payment</field>
+            <field name="inherit_id" ref="point_of_sale.view_pos_payment_form"/>
+            <field name="arch" type="xml">
+                <xpath expr="//field[@name='pos_order_id']" position="after">
+                   <field string="Branch Name" name="branch_id" invisible="0"/>
+                </xpath>
+            </field>
+        </record>
+
+
+         <record id="view_pos_payment_tree_inherit" model="ir.ui.view">
+            <field name="name">pos.payment.tree.inherite</field>
+            <field name="model">pos.payment</field>
+            <field name="inherit_id" ref="point_of_sale.view_pos_payment_tree"/>
+            <field name="arch" type="xml">
+                <xpath expr="//field[@name='amount']" position="after">
+                     <field string="Branch Name" name="branch_id" invisible="0"/>
+                </xpath>
+            </field>
+        </record>
+
+
+
+         <record id="pos_payment_method_view_form_inherit" model="ir.ui.view">
+            <field name="name">pos.payment.method.form.inherite</field>
+            <field name="model">pos.payment.method</field>
+            <field name="inherit_id" ref="point_of_sale.pos_payment_method_view_form"/>
+            <field name="arch" type="xml">
+                <xpath expr="//field[@name='company_id']" position="before">
+                   <field string="Branch Name" name="branch_id" invisible="0"/>
+                </xpath>
+            </field>
+        </record>
+
+
+         <record id="pos_payment_method_view_tree_inherit" model="ir.ui.view">
+           <field name="name">pos.payment.method.tree.inherite</field>
+            <field name="model">pos.payment.method</field>
+            <field name="inherit_id" ref="point_of_sale.pos_payment_method_view_tree"/>
+            <field name="arch" type="xml">
+                <xpath expr="//field[@name='company_id']" position="before">
+                     <field string="Branch Name" name="branch_id" invisible="0"/>
+                </xpath>
+            </field>
+        </record>
+
+
+
+    </data>
+</odoo>

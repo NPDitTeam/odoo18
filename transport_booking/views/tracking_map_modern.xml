@@ -1,0 +1,561 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Modern Tracking Map Template - Food Delivery Style -->
+    <template id="tracking_map_template_modern" name="Modern Real-time Tracking Map">
+        <html>
+            <head>
+                <meta charset="UTF-8"/>
+                <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+                <title>📍 ติดตามตำแหน่ง - <t t-esc="booking.name"/></title>
+                <style>
+                    * {
+                        margin: 0;
+                        padding: 0;
+                        box-sizing: border-box;
+                    }
+                    
+                    body {
+                        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+                        background: #f5f5f5;
+                    }
+                    
+                    /* Top Info Bar - Food Delivery Style */
+                    .top-bar {
+                        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                        color: white;
+                        padding: 20px;
+                        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+                        position: relative;
+                        z-index: 1000;
+                    }
+                    
+                    .booking-info {
+                        display: flex;
+                        justify-content: space-between;
+                        align-items: center;
+                        max-width: 1200px;
+                        margin: 0 auto;
+                    }
+                    
+                    .booking-id {
+                        font-size: 24px;
+                        font-weight: bold;
+                    }
+                    
+                    .status-badge {
+                        display: inline-flex;
+                        align-items: center;
+                        padding: 8px 16px;
+                        border-radius: 20px;
+                        font-size: 14px;
+                        font-weight: 600;
+                        gap: 8px;
+                    }
+                    
+                    .status-in_transit {
+                        background: rgba(255, 255, 255, 0.2);
+                        backdrop-filter: blur(10px);
+                    }
+                    
+                    .pulse {
+                        width: 8px;
+                        height: 8px;
+                        background: #4ade80;
+                        border-radius: 50%;
+                        animation: pulse 2s ease-in-out infinite;
+                    }
+                    
+                    @keyframes pulse {
+                        0%, 100% { opacity: 1; transform: scale(1); }
+                        50% { opacity: 0.5; transform: scale(1.2); }
+                    }
+                    
+                    /* Map Container */
+                    #map {
+                        width: 100%;
+                        height: calc(100vh - 200px);
+                        position: relative;
+                    }
+                    
+                    /* Floating Info Card - Modern Style */
+                    .info-card {
+                        position: absolute;
+                        top: 20px;
+                        left: 20px;
+                        background: white;
+                        border-radius: 16px;
+                        padding: 20px;
+                        box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+                        min-width: 280px;
+                        z-index: 999;
+                    }
+                    
+                    .info-item {
+                        display: flex;
+                        align-items: flex-start;
+                        margin-bottom: 16px;
+                        gap: 12px;
+                    }
+                    
+                    .info-item:last-child {
+                        margin-bottom: 0;
+                    }
+                    
+                    .info-icon {
+                        font-size: 24px;
+                        flex-shrink: 0;
+                    }
+                    
+                    .info-content {
+                        flex: 1;
+                    }
+                    
+                    .info-label {
+                        font-size: 12px;
+                        color: #6b7280;
+                        margin-bottom: 4px;
+                    }
+                    
+                    .info-value {
+                        font-size: 14px;
+                        color: #111827;
+                        font-weight: 500;
+                    }
+                    
+                    /* Live Update Indicator */
+                    .live-indicator {
+                        position: absolute;
+                        top: 20px;
+                        right: 20px;
+                        background: white;
+                        border-radius: 12px;
+                        padding: 12px 20px;
+                        box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+                        display: flex;
+                        align-items: center;
+                        gap: 10px;
+                        z-index: 999;
+                    }
+                    
+                    .live-dot {
+                        width: 10px;
+                        height: 10px;
+                        background: #ef4444;
+                        border-radius: 50%;
+                        animation: blink 1.5s ease-in-out infinite;
+                    }
+                    
+                    @keyframes blink {
+                        0%, 100% { opacity: 1; }
+                        50% { opacity: 0.3; }
+                    }
+                    
+                    .live-text {
+                        font-weight: 600;
+                        color: #111827;
+                        font-size: 14px;
+                    }
+                    
+                    .last-update {
+                        font-size: 11px;
+                        color: #6b7280;
+                    }
+                    
+                    /* Bottom Stats Bar */
+                    .stats-bar {
+                        position: absolute;
+                        bottom: 0;
+                        left: 0;
+                        right: 0;
+                        background: white;
+                        padding: 16px 20px;
+                        box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+                        display: flex;
+                        justify-content: space-around;
+                        z-index: 999;
+                    }
+                    
+                    .stat-item {
+                        text-align: center;
+                    }
+                    
+                    .stat-label {
+                        font-size: 11px;
+                        color: #6b7280;
+                        margin-bottom: 4px;
+                    }
+                    
+                    .stat-value {
+                        font-size: 18px;
+                        font-weight: bold;
+                        color: #111827;
+                    }
+                    
+                    /* Loading */
+                    .loading {
+                        position: absolute;
+                        top: 50%;
+                        left: 50%;
+                        transform: translate(-50%, -50%);
+                        text-align: center;
+                        z-index: 1000;
+                    }
+                    
+                    .spinner {
+                        width: 50px;
+                        height: 50px;
+                        border: 4px solid #f3f4f6;
+                        border-top-color: #667eea;
+                        border-radius: 50%;
+                        animation: spin 1s linear infinite;
+                    }
+                    
+                    @keyframes spin {
+                        to { transform: rotate(360deg); }
+                    }
+                </style>
+            </head>
+            <body>
+                <!-- Top Bar -->
+                <div class="top-bar">
+                    <div class="booking-info">
+                        <div>
+                            <div class="booking-id">
+                                <t t-esc="booking.name"/>
+                            </div>
+                            <div style="font-size: 14px; opacity: 0.9; margin-top: 4px;">
+                                🚚 <t t-esc="booking.vehicle_id.license_plate if booking.vehicle_id else 'ไม่ระบุรถ'"/>
+                                | 👤 <t t-esc="booking.driver_id.name if booking.driver_id else 'ไม่ระบุคนขับ'"/>
+                            </div>
+                        </div>
+                        <div>
+                            <span class="status-badge status-in_transit">
+                                <span class="pulse"></span>
+                                <t t-if="booking.tracking_status == 'pending'">รอออกเดินทาง</t>
+                                <t t-elif="booking.tracking_status == 'picked_up'">รับสินค้าแล้ว</t>
+                                <t t-elif="booking.tracking_status == 'in_transit'">กำลังขนส่ง</t>
+                                <t t-elif="booking.tracking_status == 'near_destination'">ใกล้ถึง</t>
+                                <t t-elif="booking.tracking_status == 'delivered'">ส่งถึงแล้ว</t>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Map -->
+                <div id="map">
+                    <div class="loading" id="loading">
+                        <div class="spinner"></div>
+                        <div style="margin-top: 16px; color: #6b7280;">กำลังโหลดแผนที่...</div>
+                    </div>
+                </div>
+                
+                <!-- Floating Info Card -->
+                <div class="info-card">
+                    <div class="info-item">
+                        <div class="info-icon">🎯</div>
+                        <div class="info-content">
+                            <div class="info-label">จุดรับสินค้า</div>
+                            <div class="info-value"><t t-esc="booking.pickup_location or 'ไม่ระบุ'"/></div>
+                        </div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-icon">📍</div>
+                        <div class="info-content">
+                            <div class="info-label">ปลายทาง</div>
+                            <div class="info-value"><t t-esc="booking.destination or 'ไม่ระบุ'"/></div>
+                        </div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-icon">📏</div>
+                        <div class="info-content">
+                            <div class="info-label">ระยะทาง</div>
+                            <div class="info-value"><t t-esc="'%.2f' % booking.distance_km if booking.distance_km else '0'"/> กม.</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Live Indicator -->
+                <div class="live-indicator">
+                    <div class="live-dot"></div>
+                    <div>
+                        <div class="live-text">LIVE</div>
+                        <div class="last-update" id="lastUpdateTime">อัพเดทล่าสุด: -</div>
+                    </div>
+                </div>
+                
+                <!-- Bottom Stats Bar -->
+                <div class="stats-bar">
+                    <div class="stat-item">
+                        <div class="stat-label">ความเร็ว</div>
+                        <div class="stat-value" id="currentSpeed">0</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">ระยะที่เหลือ</div>
+                        <div class="stat-value" id="remainingDistance">-</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">เวลาโดยประมาณ</div>
+                        <div class="stat-value" id="estimatedTime">-</div>
+                    </div>
+                </div>
+                
+                <script>
+                    <![CDATA[
+                    let map, vehicleMarker, pickupMarker, destinationMarker, routePolyline;
+                    let bookingId = ]]><t t-esc="booking.id"/><![CDATA[;
+                    let pathCoordinates = [];
+                    let lastKnownPosition = null;
+                    
+                    // Modern Truck SVG Icon
+                    const truckIcon = {
+                        path: 'M17.5 12v-5l-1.5-1.5h-3V4H3v9h1.5c0 1.38 1.12 2.5 2.5 2.5s2.5-1.12 2.5-2.5H14v-1h-3.5c0 1.38-1.12 2.5-2.5 2.5S5.5 14.38 5.5 13H4V5h8v5H6V8h6v2h-1.5v3H17.5zM7 14c.55 0 1-.45 1-1s-.45-1-1-1-1 .45-1 1 .45 1 1 1zm7 0c.55 0 1-.45 1-1s-.45-1-1-1-1 .45-1 1 .45 1 1 1z',
+                        fillColor: '#667eea',
+                        fillOpacity: 1,
+                        strokeColor: '#ffffff',
+                        strokeWeight: 2,
+                        scale: 2,
+                        anchor: new google.maps.Point(12, 12),
+                        rotation: 0
+                    };
+                    
+                    function initMap() {
+                        console.log('🗺️ Initializing modern tracking map...');
+                        
+                        // Hide loading
+                        document.getElementById('loading').style.display = 'none';
+                        
+                        const defaultCenter = { lat: 13.7563, lng: 100.5018 }; // Bangkok
+                        
+                        map = new google.maps.Map(document.getElementById('map'), {
+                            zoom: 14,
+                            center: defaultCenter,
+                            mapTypeId: 'roadmap',
+                            disableDefaultUI: false,
+                            zoomControl: true,
+                            mapTypeControl: false,
+                            scaleControl: true,
+                            streetViewControl: false,
+                            rotateControl: false,
+                            fullscreenControl: true,
+                            styles: [
+                                {
+                                    featureType: 'poi',
+                                    elementType: 'labels',
+                                    stylers: [{ visibility: 'off' }]
+                                }
+                            ]
+                        });
+                        
+                        // Vehicle Marker
+                        vehicleMarker = new google.maps.Marker({
+                            map: map,
+                            icon: truckIcon,
+                            title: 'ตำแหน่งรถปัจจุบัน',
+                            zIndex: 9999,
+                            optimized: false
+                        });
+                        
+                        // Pickup Marker (Green)
+                        pickupMarker = new google.maps.Marker({
+                            map: map,
+                            icon: {
+                                path: google.maps.SymbolPath.CIRCLE,
+                                scale: 12,
+                                fillColor: '#edf5f2',
+                                fillOpacity: 1,
+                                strokeColor: '#ffffff',
+                                strokeWeight: 3,
+                            },
+                            label: {
+                                text: 'A',
+                                color: 'white',
+                                fontWeight: 'bold',
+                                fontSize: '14px'
+                            },
+                            title: 'จุดรับสินค้า'
+                        });
+                        
+                        // Destination Marker (Red)
+                        destinationMarker = new google.maps.Marker({
+                            map: map,
+                            icon: {
+                                path: google.maps.SymbolPath.CIRCLE,
+                                scale: 12,
+                                fillColor: '#ef4444',
+                                fillOpacity: 1,
+                                strokeColor: '#ffffff',
+                                strokeWeight: 3,
+                            },
+                            label: {
+                                text: 'B',
+                                color: 'white',
+                                fontWeight: 'bold',
+                                fontSize: '14px'
+                            },
+                            title: 'ปลายทาง'
+                        });
+                        
+                        // Route Polyline (Purple gradient)
+                        routePolyline = new google.maps.Polyline({
+                            map: map,
+                            strokeColor: '#8b5cf6',
+                            strokeOpacity: 0.8,
+                            strokeWeight: 5,
+                            path: [],
+                            geodesic: true
+                        });
+                        
+                        // Start updating
+                        console.log('✅ Map initialized');
+                        updateLocation();
+                        
+                        // อัพเดทตาม tracking_refresh_interval (นาที -> มิลลิวินาที)
+                        const refreshMinutes = 2; // Default: 2 นาที
+                        const refreshInterval = refreshMinutes * 60 * 1000;
+                        console.log(`⏰ Update interval: ${refreshMinutes} minutes (${refreshInterval}ms)`);
+                        setInterval(updateLocation, refreshInterval);
+                    }
+                    
+                    function updateLocation() {
+                        console.log('📡 Fetching location data...');
+                        
+                        fetch('/web/dataset/call_kw', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({
+                                jsonrpc: '2.0',
+                                method: 'call',
+                                params: {
+                                    model: 'vehicle.booking',
+                                    method: 'read',
+                                    args: [[bookingId], [
+                                        'current_latitude',
+                                        'current_longitude',
+                                        'gps_last_update',
+                                        'pickup_latitude',
+                                        'pickup_longitude',
+                                        'destination_latitude',
+                                        'destination_longitude'
+                                    ]],
+                                    kwargs: {}
+                                },
+                                id: Math.floor(Math.random() * 1000000)
+                            })
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.result && data.result.length > 0) {
+                                const booking = data.result[0];
+                                console.log('📦 Received booking data:', booking);
+                                
+                                // Update vehicle position
+                                const lat = parseFloat(booking.current_latitude);
+                                const lng = parseFloat(booking.current_longitude);
+                                
+                                if (!isNaN(lat) && !isNaN(lng) && lat !== 0 && lng !== 0) {
+                                    const position = new google.maps.LatLng(lat, lng);
+                                    console.log('🚚 Vehicle at:', lat, lng);
+                                    
+                                    vehicleMarker.setPosition(position);
+                                    vehicleMarker.setVisible(true);
+                                    
+                                    // Add to path
+                                    pathCoordinates.push(position);
+                                    routePolyline.setPath(pathCoordinates);
+                                    
+                                    // Center map on vehicle
+                                    map.panTo(position);
+                                    
+                                    lastKnownPosition = position;
+                                } else {
+                                    console.log('⚠️ No valid GPS data');
+                                    vehicleMarker.setVisible(false);
+                                }
+                                
+                                // Update pickup marker
+                                if (booking.pickup_latitude && booking.pickup_longitude) {
+                                    const pickupLat = parseFloat(booking.pickup_latitude);
+                                    const pickupLng = parseFloat(booking.pickup_longitude);
+                                    if (!isNaN(pickupLat) && !isNaN(pickupLng) && pickupLat !== 0 && pickupLng !== 0) {
+                                        const pickupPos = new google.maps.LatLng(pickupLat, pickupLng);
+                                        pickupMarker.setPosition(pickupPos);
+                                        pickupMarker.setVisible(true);
+                                        console.log('📍 Pickup at:', pickupLat, pickupLng);
+                                    }
+                                }
+                                
+                                // Update destination marker
+                                if (booking.destination_latitude && booking.destination_longitude) {
+                                    const destLat = parseFloat(booking.destination_latitude);
+                                    const destLng = parseFloat(booking.destination_longitude);
+                                    if (!isNaN(destLat) && !isNaN(destLng) && destLat !== 0 && destLng !== 0) {
+                                        const destPos = new google.maps.LatLng(destLat, destLng);
+                                        destinationMarker.setPosition(destPos);
+                                        destinationMarker.setVisible(true);
+                                        console.log('📍 Destination at:', destLat, destLng);
+                                    }
+                                }
+                                
+                                // Fit bounds to show all markers
+                                if (pickupMarker.getVisible() || destinationMarker.getVisible() || vehicleMarker.getVisible()) {
+                                    const bounds = new google.maps.LatLngBounds();
+                                    if (pickupMarker.getVisible()) bounds.extend(pickupMarker.getPosition());
+                                    if (destinationMarker.getVisible()) bounds.extend(destinationMarker.getPosition());
+                                    if (vehicleMarker.getVisible()) bounds.extend(vehicleMarker.getPosition());
+                                    map.fitBounds(bounds);
+                                }
+                                
+                                // Update last update time
+                                if (booking.gps_last_update) {
+                                    const updateTime = new Date(booking.gps_last_update);
+                                    document.getElementById('lastUpdateTime').textContent = 
+                                        'อัพเดทล่าสุด: ' + updateTime.toLocaleString('th-TH');
+                                }
+                            }
+                        })
+                        .catch(error => {
+                            console.error('❌ Error:', error);
+                        });
+                        
+                        // Fetch tracking history for speed
+                        fetch('/web/dataset/call_kw', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({
+                                jsonrpc: '2.0',
+                                method: 'call',
+                                params: {
+                                    model: 'vehicle.tracking',
+                                    method: 'search_read',
+                                    args: [[['booking_id', '=', bookingId]]],
+                                    kwargs: {
+                                        fields: ['speed'],
+                                        limit: 1,
+                                        order: 'timestamp desc'
+                                    }
+                                },
+                                id: Math.floor(Math.random() * 1000000)
+                            })
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.result && data.result.length > 0) {
+                                const speed = data.result[0].speed || 0;
+                                document.getElementById('currentSpeed').textContent = Math.round(speed) + ' km/h';
+                            }
+                        });
+                    }
+                    ]]>
+                </script>
+                
+                <!-- Load Google Maps API with key from database -->
+                <t t-set="maps_url" t-value="'https://maps.googleapis.com/maps/api/js?key=' + str(api_key) + '&amp;callback=initMap&amp;v=weekly'"/>
+                <script t-att-src="maps_url" async="async" defer="defer"></script>
+            </body>
+        </html>
+    </template>
+</odoo>

@@ -1,0 +1,1219 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- 🚚 Food Delivery Style Tracking with Settings Support -->
+    <template id="tracking_map_food_delivery_style" name="Food Delivery Style Tracking Map">
+        <html>
+            <head>
+                <meta charset="UTF-8"/>
+                <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+                <title>🚚 ติดตามรถ - <t t-esc="booking.name"/></title>
+                
+                <!-- Google Fonts -->
+                <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+                
+                <style>
+                    * {
+                        margin: 0;
+                        padding: 0;
+                        box-sizing: border-box;
+                    }
+                    
+                    body {
+                        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+                        background: #f8f9fa;
+                        overflow: hidden;
+                    }
+                    
+                    /* 🎨 Top Header - Gradient Style */
+                    .header {
+                        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                        padding: 16px 20px;
+                        color: white;
+                        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+                        position: relative;
+                        z-index: 1000;
+                    }
+                    
+                    .header-content {
+                        display: flex;
+                        justify-content: space-between;
+                        align-items: center;
+                        max-width: 1200px;
+                        margin: 0 auto;
+                    }
+                    
+                    .booking-id {
+                        font-size: 18px;
+                        font-weight: 700;
+                        display: flex;
+                        align-items: center;
+                        gap: 8px;
+                    }
+                    
+                    .status-pill {
+                        display: inline-flex;
+                        align-items: center;
+                        gap: 8px;
+                        padding: 6px 14px;
+                        border-radius: 20px;
+                        background: rgba(255, 255, 255, 0.25);
+                        backdrop-filter: blur(10px);
+                        font-size: 13px;
+                        font-weight: 600;
+                    }
+                    
+                    .pulse-dot {
+                        width: 8px;
+                        height: 8px;
+                        background: #4ade80;
+                        border-radius: 50%;
+                        animation: pulse 2s ease-in-out infinite;
+                    }
+                    
+                    @keyframes pulse {
+                        0%, 100% { opacity: 1; transform: scale(1); }
+                        50% { opacity: 0.5; transform: scale(1.3); }
+                    }
+                    
+                    /* ⏰ Countdown Timer */
+                    .countdown-timer {
+                        display: inline-flex;
+                        align-items: center;
+                        gap: 6px;
+                        padding: 6px 12px;
+                        border-radius: 16px;
+                        background: rgba(255, 255, 255, 0.2);
+                        backdrop-filter: blur(10px);
+                        font-size: 12px;
+                        font-weight: 600;
+                        color: white;
+                        border: 1px solid rgba(255, 255, 255, 0.3);
+                    }
+                    
+                    .countdown-icon {
+                        font-size: 14px;
+                        animation: rotate 2s linear infinite;
+                    }
+                    
+                    @keyframes rotate {
+                        from { transform: rotate(0deg); }
+                        to { transform: rotate(360deg); }
+                    }
+                    
+                    .countdown-text {
+                        font-family: 'Courier New', monospace;
+                        letter-spacing: 0.5px;
+                    }
+                    
+                    /* 🗺️ Map Container */
+                    #map {
+                        width: 100%;
+                        height: calc(100vh - 160px);
+                        position: relative;
+                        background: #e5e7eb;
+                    }
+                    
+                    /* 📊 Info Cards - Floating */
+                    .info-card {
+                        position: absolute;
+                        top: 100px;
+                        left: 20px;
+                        background: white;
+                        border-radius: 16px;
+                        padding: 18px;
+                        box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+                        min-width: 300px;
+                        max-width: 350px;
+                        z-index: 999;
+                        animation: slideInLeft 0.4s ease-out;
+                        transition: all 0.3s ease;
+                    }
+                    
+                    /* Toggle Button */
+                    .info-card-toggle {
+                        position: absolute;
+                        top: 18px;
+                        right: 18px;
+                        width: 28px;
+                        height: 28px;
+                        border: none;
+                        background: #f3f4f6;
+                        border-radius: 8px;
+                        cursor: pointer;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        font-size: 16px;
+                        transition: all 0.2s ease;
+                        z-index: 1001;
+                    }
+                    
+                    .info-card-toggle:hover {
+                        background: #e5e7eb;
+                    }
+                    
+                    /* Hidden state */
+                    .info-card.hidden {
+                        left: -370px;
+                        opacity: 0.7;
+                    }
+                    
+                    @keyframes slideInLeft {
+                        from {
+                            opacity: 0;
+                            transform: translateX(-20px);
+                        }
+                        to {
+                            opacity: 1;
+                            transform: translateX(0);
+                        }
+                    }
+                    
+                    .info-row {
+                        display: flex;
+                        align-items: flex-start;
+                        gap: 12px;
+                        margin-bottom: 14px;
+                        padding-bottom: 14px;
+                        border-bottom: 1px solid #f3f4f6;
+                    }
+                    
+                    .info-row:last-child {
+                        margin-bottom: 0;
+                        padding-bottom: 0;
+                        border-bottom: none;
+                    }
+                    
+                    .info-icon {
+                        font-size: 22px;
+                        line-height: 1;
+                    }
+                    
+                    .info-text {
+                        flex: 1;
+                    }
+                    
+                    .info-label {
+                        font-size: 11px;
+                        color: #9ca3af;
+                        font-weight: 600;
+                        text-transform: uppercase;
+                        letter-spacing: 0.5px;
+                        margin-bottom: 4px;
+                    }
+                    
+                    .info-value {
+                        font-size: 14px;
+                        color: #1f2937;
+                        font-weight: 500;
+                        line-height: 1.4;
+                    }
+                    
+                    /* 📡 Live Indicator */
+                    .live-badge {
+                        position: absolute;
+                        top: 20px;
+                        right: 20px;
+                        background: white;
+                        border-radius: 12px;
+                        padding: 10px 16px;
+                        box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+                        display: flex;
+                        align-items: center;
+                        gap: 10px;
+                        z-index: 999;
+                        animation: slideInRight 0.4s ease-out;
+                    }
+                    
+                    @keyframes slideInRight {
+                        from {
+                            opacity: 0;
+                            transform: translateX(20px);
+                        }
+                        to {
+                            opacity: 1;
+                            transform: translateX(0);
+                        }
+                    }
+                    
+                    .live-dot {
+                        width: 10px;
+                        height: 10px;
+                        background: #ef4444;
+                        border-radius: 50%;
+                        animation: blink 1.5s ease-in-out infinite;
+                    }
+                    
+                    @keyframes blink {
+                        0%, 100% { opacity: 1; }
+                        50% { opacity: 0.3; }
+                    }
+                    
+                    .live-text {
+                        font-weight: 700;
+                        color: #1f2937;
+                        font-size: 13px;
+                    }
+                    
+                    .last-update {
+                        font-size: 10px;
+                        color: #6b7280;
+                    }
+                    
+                    /* 📊 Bottom Stats Bar */
+                    .stats-bar {
+                        position: fixed;
+                        bottom: 0;
+                        left: 0;
+                        right: 0;
+                        background: white;
+                        padding: 16px 20px;
+                        box-shadow: 0 -4px 12px rgba(0,0,0,0.08);
+                        display: grid;
+                        grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+                        gap: 16px;
+                        z-index: 1000;
+                        animation: slideInUp 0.4s ease-out;
+                    }
+                    
+                    @keyframes slideInUp {
+                        from {
+                            opacity: 0;
+                            transform: translateY(20px);
+                        }
+                        to {
+                            opacity: 1;
+                            transform: translateY(0);
+                        }
+                    }
+                    
+                    .stat-item {
+                        text-align: center;
+                    }
+                    
+                    .stat-label {
+                        font-size: 10px;
+                        color: #9ca3af;
+                        font-weight: 600;
+                        text-transform: uppercase;
+                        letter-spacing: 0.5px;
+                        margin-bottom: 6px;
+                    }
+                    
+                    .stat-value {
+                        font-size: 20px;
+                        font-weight: 800;
+                        color: #1f2937;
+                        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                        -webkit-background-clip: text;
+                        -webkit-text-fill-color: transparent;
+                        background-clip: text;
+                    }
+                    
+                    /* 🔄 Loading Spinner */
+                    .loading-overlay {
+                        position: absolute;
+                        top: 0;
+                        left: 0;
+                        right: 0;
+                        bottom: 0;
+                        background: white;
+                        display: flex;
+                        flex-direction: column;
+                        align-items: center;
+                        justify-content: center;
+                        z-index: 10000;
+                    }
+                    
+                    .spinner {
+                        width: 60px;
+                        height: 60px;
+                        border: 5px solid #f3f4f6;
+                        border-top-color: #667eea;
+                        border-radius: 50%;
+                        animation: spin 1s linear infinite;
+                    }
+                    
+                    @keyframes spin {
+                        to { transform: rotate(360deg); }
+                    }
+                    
+                    .loading-text {
+                        margin-top: 20px;
+                        color: #6b7280;
+                        font-size: 14px;
+                        font-weight: 500;
+                    }
+                    
+                    /* 📱 Responsive */
+                    @media (max-width: 768px) {
+                        .info-card {
+                            left: 10px;
+                            right: 10px;
+                            min-width: auto;
+                            max-width: none;
+                        }
+                        
+                        .live-badge {
+                            top: 10px;
+                            right: 10px;
+                        }
+                        
+                        .stats-bar {
+                            grid-template-columns: repeat(3, 1fr);
+                            gap: 12px;
+                            padding: 12px;
+                        }
+                    }
+                    
+                    /* 🎨 Settings Indicator */
+                    .settings-badge {
+                        position: absolute;
+                        bottom: 20px;
+                        right: 20px;
+                        background: white;
+                        border-radius: 12px;
+                        padding: 8px 12px;
+                        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+                        font-size: 11px;
+                        color: #6b7280;
+                        z-index: 999;
+                    }
+                </style>
+            </head>
+            <body>
+                <!-- Header -->
+                <div class="header">
+                    <div class="header-content">
+                        <div class="booking-id">
+                            <span>🚚</span>
+                            <span><t t-esc="booking.name"/></span>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 12px;">
+                            <!-- ⏰ Countdown Timer -->
+                            <div class="countdown-timer" id="countdownTimer">
+                                <span class="countdown-icon">🔄</span>
+                                <span class="countdown-text" id="countdownText">กำลังโหลด...</span>
+                            </div>
+                            <!-- Status Pill -->
+                            <div class="status-pill">
+                                <span class="pulse-dot"></span>
+                                <span>
+                                    <t t-if="booking.tracking_status == 'pending'">รอออกเดินทาง</t>
+                                    <t t-elif="booking.tracking_status == 'picked_up'">รับสินค้าแล้ว</t>
+                                    <t t-elif="booking.tracking_status == 'in_transit'">กำลังขนส่ง</t>
+                                    <t t-elif="booking.tracking_status == 'near_destination'">ใกล้ถึง</t>
+                                    <t t-elif="booking.tracking_status == 'delivered'">ส่งถึงแล้ว</t>
+                                    <t t-else="">กำลังขนส่ง</t>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Map -->
+                <div id="map">
+                    <div class="loading-overlay" id="loadingOverlay">
+                        <div class="spinner"></div>
+                        <div class="loading-text">กำลังโหลดแผนที่...</div>
+                    </div>
+                </div>
+                
+                <!-- Floating Info Card -->
+                <div class="info-card" id="infoCard">
+                    <button class="info-card-toggle" id="toggleInfoCard" title="ซ่อน/แสดง">✖️</button>
+                    <div class="info-row">
+                        <div class="info-icon">📦</div>
+                        <div class="info-text">
+                            <div class="info-label">เลขที่จอง</div>
+                            <div class="info-value"><t t-esc="booking.name"/></div>
+                        </div>
+                    </div>
+                    <div class="info-row">
+                        <div class="info-icon">🏢</div>
+                        <div class="info-text">
+                            <div class="info-label">ลูกค้า</div>
+                            <div class="info-value"><t t-esc="booking.partner_id.name if booking.partner_id else 'ไม่ระบุ'"/></div>
+                        </div>
+                    </div>
+                    <div class="info-row">
+                        <div class="info-icon">🎯</div>
+                        <div class="info-text">
+                            <div class="info-label">จุดรับสินค้า</div>
+                            <div class="info-value"><t t-esc="booking.pickup_location[:50] + '...' if booking.pickup_location and len(booking.pickup_location) > 50 else (booking.pickup_location or 'ไม่ระบุ')"/></div>
+                        </div>
+                    </div>
+                    <div class="info-row">
+                        <div class="info-icon">📍</div>
+                        <div class="info-text">
+                            <div class="info-label">ปลายทาง</div>
+                            <div class="info-value"><t t-esc="booking.destination[:50] + '...' if booking.destination and len(booking.destination) > 50 else (booking.destination or 'ไม่ระบุ')"/></div>
+                        </div>
+                    </div>
+                    <div class="info-row">
+                        <div class="info-icon">🚚</div>
+                        <div class="info-text">
+                            <div class="info-label">รถ</div>
+                            <div class="info-value">
+                                <t t-if="booking.vehicle_id">
+                                    <t t-esc="booking.vehicle_id.license_plate"/>
+                                    <t t-if="booking.vehicle_id.model_id">
+                                        (<t t-esc="booking.vehicle_id.model_id.name"/>)
+                                    </t>
+                                </t>
+                                <t t-else="">ไม่ระบุรถ</t>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="info-row">
+                        <div class="info-icon">👤</div>
+                        <div class="info-text">
+                            <div class="info-label">คนขับ</div>
+                            <div class="info-value"><t t-esc="driver_name"/></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Live Badge -->
+                <div class="live-badge">
+                    <div class="live-dot"></div>
+                    <div>
+                        <div class="live-text">LIVE</div>
+                        <div class="last-update" id="lastUpdate">อัพเดทล่าสุด: -</div>
+                    </div>
+                </div>
+                
+                <!-- Settings Indicator -->
+                <div class="settings-badge" id="settingsBadge">
+                    ⏱️ กำลังโหลดการตั้งค่า...
+                </div>
+                
+                <!-- Bottom Stats -->
+                <div class="stats-bar">
+                    <div class="stat-item">
+                        <div class="stat-label">ความเร็ว</div>
+                        <div class="stat-value" id="currentSpeed">-</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">ระยะทาง</div>
+                        <div class="stat-value"><t t-esc="'%.1f' % booking.distance_km if booking.distance_km else '0'"/> km</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">เวลาโดยประมาณ</div>
+                        <div class="stat-value" id="estimatedTime">-</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">ระยะที่เหลือ</div>
+                        <div class="stat-value" id="remainingDistance">-</div>
+                    </div>
+                </div>
+                
+                <script>
+                    <![CDATA[
+                    // ⚙️ Configuration
+                    const CONFIG = {
+                        bookingId: ]]><t t-esc="booking.id"/><![CDATA[,
+                        refreshIntervalMinutes: ]]><t t-esc="refresh_interval or 2"/><![CDATA[, // จากการตั้งค่าผู้ใช้
+                        defaultUpdateInterval: ]]><t t-esc="(refresh_interval or 2) * 60 * 1000"/><![CDATA[, // แปลงนาทีเป็น milliseconds
+                        defaultCenter: { lat: 13.7563, lng: 100.5018 }, // Bangkok
+                        defaultZoom: 13,
+                    };
+                    
+                    // 🗺️ Map Variables
+                    let map;
+                    let vehicleMarker;
+                    let pickupMarker;
+                    let destinationMarker;
+                    let routePolyline;
+                    let pathHistory = [];
+                    let updateInterval = CONFIG.defaultUpdateInterval;
+                    let updateTimer = null;
+                    let userSettings = null;
+                    let ICONS = null; // Will be initialized in initMap()
+                    let bookingState = null; // ✅ เก็บ state ของ booking เพื่อตรวจสอบว่า done หรือยัง
+                    
+                    // 🧭 Navigation Variables
+                    let directionsService;
+                    let directionsRenderer;
+                    let currentRoute = null;
+                    
+                    // 🎨 Function to create custom icons (called after Google Maps loads)
+                    function createIcons() {
+                        return {
+                            vehicle: {
+                                url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="56" height="56" viewBox="0 0 56 56">
+                                        <!-- Shadow -->
+                                        <ellipse cx="28" cy="50" rx="22" ry="4" fill="#000000" opacity="0.2"/>
+                                        
+                                        <!-- Truck Body (Container) -->
+                                        <rect x="14" y="22" width="24" height="16" rx="2" fill="#667eea" stroke="#4c51bf" stroke-width="1.5"/>
+                                        
+                                        <!-- Truck Cabin -->
+                                        <path d="M 38 28 L 38 38 L 44 38 L 44 32 L 42 28 Z" fill="#667eea" stroke="#4c51bf" stroke-width="1.5"/>
+                                        
+                                        <!-- Cabin Window -->
+                                        <rect x="39" y="29" width="4" height="6" rx="1" fill="#e0e7ff"/>
+                                        
+                                        <!-- Container Details (Lines) -->
+                                        <line x1="18" y1="26" x2="34" y2="26" stroke="#e0e7ff" stroke-width="1" opacity="0.6"/>
+                                        <line x1="18" y1="30" x2="34" y2="30" stroke="#e0e7ff" stroke-width="1" opacity="0.6"/>
+                                        <line x1="18" y1="34" x2="34" y2="34" stroke="#e0e7ff" stroke-width="1" opacity="0.6"/>
+                                        
+                                        <!-- Front Wheels -->
+                                        <circle cx="20" cy="38" r="4" fill="#2d3748" stroke="#1a202c" stroke-width="1"/>
+                                        <circle cx="20" cy="38" r="2" fill="#4a5568"/>
+                                        
+                                        <!-- Back Wheels -->
+                                        <circle cx="32" cy="38" r="4" fill="#2d3748" stroke="#1a202c" stroke-width="1"/>
+                                        <circle cx="32" cy="38" r="2" fill="#4a5568"/>
+                                        <circle cx="36" cy="38" r="4" fill="#2d3748" stroke="#1a202c" stroke-width="1"/>
+                                        <circle cx="36" cy="38" r="2" fill="#4a5568"/>
+                                        
+                                        <!-- Headlight -->
+                                        <circle cx="43" cy="36" r="1.5" fill="#fbbf24"/>
+                                        
+                                        <!-- Direction Arrow (pointing up by default) -->
+                                        <path d="M 28 12 L 32 18 L 30 18 L 30 22 L 26 22 L 26 18 L 24 18 Z" fill="#ef4444" stroke="#dc2626" stroke-width="1"/>
+                                    </svg>
+                                `),
+                                scaledSize: new google.maps.Size(56, 56),
+                                anchor: new google.maps.Point(28, 44),
+                                rotation: 0
+                            },
+                            pickup: {
+                                url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="40" height="48" viewBox="0 0 40 48">
+                                        <path d="M20 0 C10 0 2 8 2 18 C2 32 20 48 20 48 S38 32 38 18 C38 8 30 0 20 0 Z" fill="#10b981"/>
+                                        <circle cx="20" cy="18" r="8" fill="white"/>
+                                        <text x="20" y="23" font-size="12" font-weight="bold" text-anchor="middle" fill="#10b981">A</text>
+                                    </svg>
+                                `),
+                                scaledSize: new google.maps.Size(40, 48),
+                                anchor: new google.maps.Point(20, 48),
+                            },
+                            destination: {
+                                url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="40" height="48" viewBox="0 0 40 48">
+                                        <path d="M20 0 C10 0 2 8 2 18 C2 32 20 48 20 48 S38 32 38 18 C38 8 30 0 20 0 Z" fill="#ef4444"/>
+                                        <circle cx="20" cy="18" r="8" fill="white"/>
+                                        <text x="20" y="23" font-size="12" font-weight="bold" text-anchor="middle" fill="#ef4444">B</text>
+                                    </svg>
+                                `),
+                                scaledSize: new google.maps.Size(40, 48),
+                                anchor: new google.maps.Point(20, 48),
+                            }
+                        };
+                    }
+                    
+                    // 🚚 Create Rotated Truck Icon
+                    function createRotatedTruckIcon(heading) {
+                        // Normalize heading to 0-360
+                        const rotation = ((heading % 360) + 360) % 360;
+                        
+                        return {
+                            url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
+                                <svg xmlns="http://www.w3.org/2000/svg" width="56" height="56" viewBox="0 0 56 56">
+                                    <g transform="rotate(${rotation} 28 28)">
+                                        <!-- Shadow -->
+                                        <ellipse cx="28" cy="50" rx="22" ry="4" fill="#000000" opacity="0.2"/>
+                                        
+                                        <!-- Truck Body (Container) -->
+                                        <rect x="14" y="22" width="24" height="16" rx="2" fill="#667eea" stroke="#4c51bf" stroke-width="1.5"/>
+                                        
+                                        <!-- Truck Cabin -->
+                                        <path d="M 38 28 L 38 38 L 44 38 L 44 32 L 42 28 Z" fill="#667eea" stroke="#4c51bf" stroke-width="1.5"/>
+                                        
+                                        <!-- Cabin Window -->
+                                        <rect x="39" y="29" width="4" height="6" rx="1" fill="#e0e7ff"/>
+                                        
+                                        <!-- Container Details (Lines) -->
+                                        <line x1="18" y1="26" x2="34" y2="26" stroke="#e0e7ff" stroke-width="1" opacity="0.6"/>
+                                        <line x1="18" y1="30" x2="34" y2="30" stroke="#e0e7ff" stroke-width="1" opacity="0.6"/>
+                                        <line x1="18" y1="34" x2="34" y2="34" stroke="#e0e7ff" stroke-width="1" opacity="0.6"/>
+                                        
+                                        <!-- Front Wheels -->
+                                        <circle cx="20" cy="38" r="4" fill="#2d3748" stroke="#1a202c" stroke-width="1"/>
+                                        <circle cx="20" cy="38" r="2" fill="#4a5568"/>
+                                        
+                                        <!-- Back Wheels -->
+                                        <circle cx="32" cy="38" r="4" fill="#2d3748" stroke="#1a202c" stroke-width="1"/>
+                                        <circle cx="32" cy="38" r="2" fill="#4a5568"/>
+                                        <circle cx="36" cy="38" r="4" fill="#2d3748" stroke="#1a202c" stroke-width="1"/>
+                                        <circle cx="36" cy="38" r="2" fill="#4a5568"/>
+                                        
+                                        <!-- Headlight -->
+                                        <circle cx="43" cy="36" r="1.5" fill="#fbbf24"/>
+                                        
+                                        <!-- Direction Arrow (pointing up by default) -->
+                                        <path d="M 28 12 L 32 18 L 30 18 L 30 22 L 26 22 L 26 18 L 24 18 Z" fill="#ef4444" stroke="#dc2626" stroke-width="1"/>
+                                    </g>
+                                </svg>
+                            `),
+                            scaledSize: new google.maps.Size(56, 56),
+                            anchor: new google.maps.Point(28, 44)
+                        };
+                    }
+                    
+                    // 🚀 Initialize Everything
+                    async function initMap() {
+                        try {
+                            console.log('🗺️ Initializing map...');
+                            
+                            // Create icons AFTER Google Maps loads
+                            ICONS = createIcons();
+                            console.log('✅ Icons created');
+                            
+                            // Load user settings first
+                            await loadUserSettings();
+                            
+                            map = new google.maps.Map(document.getElementById('map'), {
+                                center: CONFIG.defaultCenter,
+                                zoom: CONFIG.defaultZoom,
+                                mapTypeId: userSettings?.map_type || 'roadmap',
+                                disableDefaultUI: false,
+                                zoomControl: true,
+                                mapTypeControl: false,
+                                streetViewControl: false,
+                                fullscreenControl: true,
+                                styles: [
+                                    { featureType: 'poi', elementType: 'labels', stylers: [{ visibility: 'off' }] },
+                                    { featureType: 'transit', elementType: 'labels', stylers: [{ visibility: 'off' }] }
+                                ]
+                            });
+                        
+                        // 🧭 Initialize Directions Service
+                        directionsService = new google.maps.DirectionsService();
+                        directionsRenderer = new google.maps.DirectionsRenderer({
+                            map: map,
+                            suppressMarkers: true, // ใช้ marker ของเราเอง
+                            polylineOptions: {
+                                strokeColor: '#4285F4', // สีน้ำเงิน Google Maps
+                                strokeOpacity: 0.8,
+                                strokeWeight: 6,
+                            }
+                        });
+                        console.log('✅ Directions service initialized');
+                        
+                        // Create markers
+                        vehicleMarker = new google.maps.Marker({
+                            map: map,
+                            icon: ICONS.vehicle,
+                            title: 'ตำแหน่งรถปัจจุบัน',
+                            zIndex: 1000,
+                            visible: false,
+                        });
+                        
+                        pickupMarker = new google.maps.Marker({
+                            map: map,
+                            icon: ICONS.pickup,
+                            title: 'จุดรับสินค้า',
+                            visible: false,
+                        });
+                        
+                        destinationMarker = new google.maps.Marker({
+                            map: map,
+                            icon: ICONS.destination,
+                            title: 'ปลายทาง',
+                            visible: false,
+                        });
+                        
+                        // Create route polyline
+                        routePolyline = new google.maps.Polyline({
+                            map: map,
+                            strokeColor: '#8b5cf6',
+                            strokeOpacity: 0.7,
+                            strokeWeight: 5,
+                            geodesic: true,
+                        });
+                        
+                        // Hide loading overlay (with null check)
+                        const loadingOverlay = document.getElementById('loadingOverlay');
+                        if (loadingOverlay) {
+                            loadingOverlay.style.display = 'none';
+                            console.log('✅ Loading overlay hidden');
+                        } else {
+                            console.warn('⚠️ Loading overlay element not found');
+                        }
+                        
+                        console.log('✅ Map initialized');
+                        
+                        // Start updates
+                        await updateTracking();
+                        startAutoUpdate();
+                        
+                        } catch (error) {
+                            console.error('❌ Error initializing map:', error);
+                            // Show error message to user
+                            const errorDiv = document.createElement('div');
+                            errorDiv.style.cssText = 'position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 30px; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.2); text-align: center; z-index: 9999;';
+                            errorDiv.innerHTML = `
+                                <h3 style="color: #ef4444; margin-bottom: 10px;">⚠️ ไม่สามารถโหลดแผนที่ได้</h3>
+                                <p style="color: #6b7280; margin-bottom: 20px;">${error.message}</p>
+                                <button onclick="location.reload()" style="background: #667eea; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer;">🔄 ลองใหม่</button>
+                            `;
+                            document.body.appendChild(errorDiv);
+                        }
+                    }
+                    
+                    // ⚙️ Load User Settings from Odoo
+                    async function loadUserSettings() {
+                        try {
+                            console.log('📋 Loading tracking settings from Odoo...');
+                            
+                            const response = await fetch('/api/settings/get', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                    jsonrpc: '2.0',
+                                    params: {},
+                                })
+                            });
+                            
+                            const data = await response.json();
+                            if (data.result && data.result.success) {
+                                userSettings = data.result.data;
+                                updateInterval = (userSettings.tracking_interval || 5) * 1000;
+                                
+                                console.log('✅ Settings loaded:', userSettings);
+                                console.log(`⏱️  Update interval: ${updateInterval}ms`);
+                                
+                                // Update settings badge
+                                document.getElementById('settingsBadge').textContent = 
+                                    `⏱️ อัพเดททุก ${userSettings.tracking_interval}s`;
+                                
+                                return true;
+                            } else {
+                                console.warn('⚠️ Could not load settings, using defaults');
+                                userSettings = {
+                                    tracking_interval: 5,
+                                    show_speed: true,
+                                    show_route: true,
+                                    map_type: 'roadmap'
+                                };
+                                updateInterval = CONFIG.defaultUpdateInterval;
+                                document.getElementById('settingsBadge').textContent = 
+                                    `⏱️ อัพเดททุก 5s (ค่าเริ่มต้น)`;
+                                return false;
+                            }
+                        } catch (error) {
+                            console.error('❌ Error loading settings:', error);
+                            userSettings = {
+                                tracking_interval: 5,
+                                show_speed: true,
+                                show_route: true,
+                                map_type: 'roadmap'
+                            };
+                            updateInterval = CONFIG.defaultUpdateInterval;
+                            document.getElementById('settingsBadge').textContent = 
+                                `⏱️ อัพเดททุก 5s (ค่าเริ่มต้น)`;
+                            return false;
+                        }
+                    }
+                    
+                    // 🔄 Start Auto Update Timer
+                    function startAutoUpdate() {
+                        // 🛑 ตรวจสอบ: ถ้า state = 'done' อยู่แล้ว ไม่ต้องเริ่ม timer
+                        if (bookingState === 'done') {
+                            console.log('🏁 Booking already completed. Skipping auto-update timer.');
+                            
+                            // แสดงข้อความเสร็จสิ้น
+                            const countdownEl = document.getElementById('countdownText');
+                            if (countdownEl) {
+                                countdownEl.textContent = '✅ การขนส่งเสร็จสิ้นแล้ว';
+                                countdownEl.style.color = '#edf5f2';
+                                countdownEl.style.fontWeight = 'bold';
+                            }
+                            return; // ออกจากฟังก์ชันทันที
+                        }
+                        
+                        if (updateTimer) {
+                            clearInterval(updateTimer);
+                        }
+                        
+                        console.log(`⏰ Starting auto-update timer (${updateInterval}ms)`);
+                        updateTimer = setInterval(updateTracking, updateInterval);
+                        
+                        // ✅ เริ่ม Countdown Timer
+                        startCountdownTimer();
+                    }
+                    
+                    // ⏰ Countdown Timer Function
+                    let countdownTimer = null;
+                    let countdownSeconds = 0;
+                    
+                    function startCountdownTimer() {
+                        // Clear existing countdown
+                        if (countdownTimer) {
+                            clearInterval(countdownTimer);
+                        }
+                        
+                        // Reset countdown (แปลงจาก มิลลิวินาที เป็น วินาที)
+                        countdownSeconds = Math.floor(updateInterval / 1000);
+                        
+                        // แสดงเวลาที่เหลือ
+                        updateCountdownDisplay();
+                        
+                        // อัปเดตทุกวินาที
+                        countdownTimer = setInterval(() => {
+                            countdownSeconds--;
+                            
+                            if (countdownSeconds <= 0) {
+                                countdownSeconds = Math.floor(updateInterval / 1000);
+                            }
+                            
+                            updateCountdownDisplay();
+                        }, 1000);
+                    }
+                    
+                    function updateCountdownDisplay() {
+                        const countdownEl = document.getElementById('countdownText');
+                        if (!countdownEl) return;
+                        
+                        const minutes = Math.floor(countdownSeconds / 60);
+                        const seconds = countdownSeconds % 60;
+                        
+                        // ✅ แสดงทั้งนาทีและวินาทีเสมอ
+                        countdownEl.textContent = `รีเฟรชอีก ${minutes} นาที ${seconds} วินาที`;
+                    }
+                    
+                    // 📡 Update Tracking Data
+                    async function updateTracking() {
+                        try {
+                            const response = await fetch('/web/dataset/call_kw', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                    jsonrpc: '2.0',
+                                    method: 'call',
+                                    params: {
+                                        model: 'vehicle.booking',
+                                        method: 'read',
+                                        args: [[CONFIG.bookingId]],
+                                        kwargs: {
+                                            fields: [
+                                                'current_latitude', 'current_longitude',
+                                                'pickup_latitude', 'pickup_longitude',
+                                                'destination_latitude', 'destination_longitude',
+                                                'gps_last_update',
+                                                'state'  // ✅ เพิ่ม state เพื่อตรวจสอบ
+                                            ]
+                                        }
+                                    },
+                                    id: Date.now(),
+                                })
+                            });
+                            
+                            const data = await response.json();
+                            console.log('📡 Tracking update response:', data);
+                            
+                            if (data.result && data.result.length > 0) {
+                                const booking = data.result[0];
+                                
+                                // ✅ เก็บ state ปัจจุบัน
+                                bookingState = booking.state;
+                                
+                                // 🛑 ตรวจสอบ: ถ้า state = 'done' ให้หยุดการรีเฟรชทันที
+                                if (booking.state === 'done') {
+                                    console.log('🏁 Booking completed! Stopping auto-refresh...');
+                                    
+                                    // หยุด Auto-refresh Timer
+                                    if (updateTimer) {
+                                        clearInterval(updateTimer);
+                                        updateTimer = null;
+                                    }
+                                    
+                                    // หยุด Countdown Timer
+                                    if (countdownTimer) {
+                                        clearInterval(countdownTimer);
+                                        countdownTimer = null;
+                                    }
+                                    
+                                    // แสดงข้อความว่าเสร็จสิ้นแล้ว
+                                    const countdownEl = document.getElementById('countdownText');
+                                    if (countdownEl) {
+                                        countdownEl.textContent = '✅ การขนส่งเสร็จสิ้นแล้ว';
+                                        countdownEl.style.color = '#10b981';
+                                        countdownEl.style.fontWeight = 'bold';
+                                    }
+                                    
+                                    // อัปเดตแผนที่ครั้งสุดท้าย
+                                    updateMapPositions(booking);
+                                    
+                                    return; // ออกจากฟังก์ชัน ไม่ทำอะไรต่อ
+                                }
+                                
+                                // ✅ ถ้ายังไม่เสร็จ ให้ทำงานปกติ
+                                updateMapPositions(booking);
+                                await updateSpeedData();
+                                
+                                // ✅ Reset Countdown หลังจาก Update สำเร็จ
+                                countdownSeconds = Math.floor(updateInterval / 1000);
+                                updateCountdownDisplay();
+                            } else {
+                                console.warn('⚠️ No tracking data received');
+                            }
+                        } catch (error) {
+                            console.error('❌ Error updating tracking:', error);
+                        }
+                    }
+                    
+                    // 🗺️ Update Map Positions
+                    function updateMapPositions(booking) {
+                        const bounds = new google.maps.LatLngBounds();
+                        let hasAnyMarker = false;
+                        
+                        // 🚗 Update vehicle position (ตำแหน่งจากแอป หรือ fallback ไปจุดรับ)
+                        let vehicleLat = booking.current_latitude;
+                        let vehicleLng = booking.current_longitude;
+                        
+                        // ถ้าไม่มีตำแหน่งปัจจุบัน ให้ใช้จุดรับแทน
+                        if (!vehicleLat || !vehicleLng) {
+                            vehicleLat = booking.pickup_latitude;
+                            vehicleLng = booking.pickup_longitude;
+                        }
+                        
+                        if (vehicleLat && vehicleLng) {
+                            const pos = new google.maps.LatLng(
+                                parseFloat(vehicleLat),
+                                parseFloat(vehicleLng)
+                            );
+                            
+                            // Calculate heading from last position or use booking heading
+                            let heading = 0;
+                            if (pathHistory.length > 0) {
+                                const lastPos = pathHistory[pathHistory.length - 1];
+                                heading = google.maps.geometry.spherical.computeHeading(lastPos, pos);
+                            }
+                            
+                            // Update marker position and rotation
+                            vehicleMarker.setPosition(pos);
+                            
+                            // Create rotated truck icon
+                            const rotatedIcon = createRotatedTruckIcon(heading);
+                            vehicleMarker.setIcon(rotatedIcon);
+                            vehicleMarker.setVisible(true);
+                            
+                            bounds.extend(pos);
+                            hasAnyMarker = true;
+                            
+                            // Add to path history (if enabled)
+                            if (userSettings?.show_route !== false) {
+                                pathHistory.push(pos);
+                                if (pathHistory.length > 100) pathHistory.shift();
+                                routePolyline.setPath(pathHistory);
+                            }
+                            
+                            console.log(`📍 Vehicle position: ${vehicleLat}, ${vehicleLng}, heading: ${heading.toFixed(0)}°`);
+                        }
+                        
+                        // 📍 Hide pickup marker - ใช้ตำแหน่งรถแทน
+                        pickupMarker.setVisible(false);
+                        
+                        // 🎯 Update destination marker
+                        if (booking.destination_latitude && booking.destination_longitude) {
+                            const pos = new google.maps.LatLng(
+                                parseFloat(booking.destination_latitude),
+                                parseFloat(booking.destination_longitude)
+                            );
+                            destinationMarker.setPosition(pos);
+                            destinationMarker.setVisible(true);
+                            bounds.extend(pos);
+                            hasAnyMarker = true;
+                        }
+                        
+                        // 🧭 Calculate and display route from vehicle to destination
+                        if (vehicleLat && vehicleLng && booking.destination_latitude && booking.destination_longitude) {
+                            calculateRoute(
+                                { lat: parseFloat(vehicleLat), lng: parseFloat(vehicleLng) },
+                                { lat: parseFloat(booking.destination_latitude), lng: parseFloat(booking.destination_longitude) }
+                            );
+                        }
+                        
+                        // Fit bounds with auto-center setting
+                        if (hasAnyMarker) {
+                            if (userSettings?.auto_center_map !== false) {
+                                map.fitBounds(bounds);
+                                const zoom = map.getZoom();
+                                if (zoom > 15) map.setZoom(15);
+                            }
+                        }
+                        
+                        // Update last update time
+                        if (booking.gps_last_update) {
+                            const updateTime = new Date(booking.gps_last_update);
+                            const now = new Date();
+                            const diff = Math.floor((now - updateTime) / 1000);
+                            let timeStr;
+                            if (diff < 60) timeStr = `${diff} วินาทีที่แล้ว`;
+                            else if (diff < 3600) timeStr = `${Math.floor(diff/60)} นาทีที่แล้ว`;
+                            else timeStr = updateTime.toLocaleTimeString('th-TH');
+                            document.getElementById('lastUpdate').textContent = `อัพเดทล่าสุด: ${timeStr}`;
+                        }
+                        
+                        // ✅ Toggle Info Card
+                        const infoCard = document.getElementById('infoCard');
+                        const toggleBtn = document.getElementById('toggleInfoCard');
+                        if (toggleBtn && infoCard) {
+                            toggleBtn.addEventListener('click', (e) => {
+                                e.stopPropagation();
+                                infoCard.classList.toggle('hidden');
+                                toggleBtn.textContent = infoCard.classList.contains('hidden') ? '☰' : '✖️';
+                            });
+                        }
+                    }
+                    
+                    // 🧭 Calculate Route from vehicle to destination
+                    async function calculateRoute(origin, destination) {
+                        try {
+                            console.log('🧭 Calculating route...', { origin, destination });
+                            
+                            const request = {
+                                origin: origin,
+                                destination: destination,
+                                travelMode: google.maps.TravelMode.DRIVING,
+                                drivingOptions: {
+                                    departureTime: new Date(),
+                                    trafficModel: google.maps.TrafficModel.BEST_GUESS
+                                },
+                                unitSystem: google.maps.UnitSystem.METRIC
+                            };
+                            
+                            directionsService.route(request, (result, status) => {
+                                if (status === google.maps.DirectionsStatus.OK) {
+                                    // Display route on map
+                                    directionsRenderer.setDirections(result);
+                                    currentRoute = result;
+                                    
+                                    // Get route info
+                                    const route = result.routes[0];
+                                    const leg = route.legs[0];
+                                    
+                                    // Update distance and time
+                                    const distanceKm = (leg.distance.value / 1000).toFixed(1);
+                                    const durationMin = Math.round(leg.duration.value / 60);
+                                    
+                                    console.log(`✅ Route calculated: ${distanceKm} km, ${durationMin} min`);
+                                    
+                                    // Update UI
+                                    document.getElementById('remainingDistance').textContent = `${distanceKm} km`;
+                                    document.getElementById('estimatedTime').textContent = `${durationMin} นาที`;
+                                    
+                                    // Hide path history polyline (use directions instead)
+                                    routePolyline.setVisible(false);
+                                } else {
+                                    console.error('❌ Directions request failed:', status);
+                                    // Show path history if route fails
+                                    routePolyline.setVisible(true);
+                                }
+                            });
+                        } catch (error) {
+                            console.error('❌ Error calculating route:', error);
+                        }
+                    }
+                    
+                    // 🚗 Update Speed Data
+                    async function updateSpeedData() {
+                        try {
+                            const response = await fetch('/web/dataset/call_kw', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                    jsonrpc: '2.0',
+                                    method: 'call',
+                                    params: {
+                                        model: 'vehicle.tracking',
+                                        method: 'search_read',
+                                        args: [[['booking_id', '=', CONFIG.bookingId]]],
+                                        kwargs: {
+                                            fields: ['speed'],
+                                            limit: 1,
+                                            order: 'timestamp desc'
+                                        }
+                                    },
+                                    id: Date.now(),
+                                })
+                            });
+                            
+                            const data = await response.json();
+                            if (data.result && data.result.length > 0 && userSettings?.show_speed !== false) {
+                                const speed = Math.round(data.result[0].speed || 0);
+                                document.getElementById('currentSpeed').textContent = `${speed} km/h`;
+                                
+                                // Estimate time
+                                if (speed > 0) {
+                                    const distanceKm = ]]><t t-esc="booking.distance_km or 0"/><![CDATA[;
+                                    const hoursRemaining = distanceKm / speed;
+                                    const minutesRemaining = Math.round(hoursRemaining * 60);
+                                    document.getElementById('estimatedTime').textContent = `${minutesRemaining} นาที`;
+                                    document.getElementById('remainingDistance').textContent = `${distanceKm.toFixed(1)} km`;
+                                }
+                            }
+                        } catch (error) {
+                            console.error('❌ Error updating speed:', error);
+                        }
+                    }
+                    
+                    // 🌍 Make initMap available globally for Google Maps callback
+                    // Wrap in DOM ready check to ensure elements exist
+                    let domReady = false;
+                    if (document.readyState === 'loading') {
+                        document.addEventListener('DOMContentLoaded', () => {
+                            domReady = true;
+                            console.log('✅ DOM ready');
+                        });
+                    } else {
+                        domReady = true;
+                        console.log('✅ DOM already loaded');
+                    }
+                    
+                    // Original initMap
+                    const originalInitMap = initMap;
+                    
+                    // Wrapped initMap that waits for DOM
+                    window.initMap = async function() {
+                        console.log('🚀 initMap called, DOM ready:', domReady);
+                        
+                        // Wait for DOM if not ready yet
+                        if (!domReady) {
+                            console.log('⏳ Waiting for DOM...');
+                            await new Promise(resolve => {
+                                if (document.readyState === 'loading') {
+                                    document.addEventListener('DOMContentLoaded', resolve, { once: true });
+                                } else {
+                                    resolve();
+                                }
+                            });
+                            domReady = true;
+                        }
+                        
+                        // Now call the original function
+                        await originalInitMap();
+                    };
+                    
+                    // ⚠️ Timeout handler in case Google Maps fails to load
+                    setTimeout(() => {
+                        if (!map) {
+                            console.error('❌ Google Maps failed to load after 10 seconds');
+                            const loadingOverlay = document.getElementById('loadingOverlay');
+                            if (loadingOverlay) {
+                                loadingOverlay.innerHTML = `
+                                    <div style="text-align: center; padding: 30px;">
+                                        <h3 style="color: #ef4444; margin-bottom: 10px;">⚠️ ไม่สามารถโหลด Google Maps ได้</h3>
+                                        <p style="color: #6b7280; margin-bottom: 20px;">กรุณาตรวจสอบการเชื่อมต่ออินเทอร์เน็ต หรือ Google Maps API Key</p>
+                                        <button onclick="location.reload()" style="background: #667eea; color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-size: 14px;">🔄 ลองใหม่</button>
+                                    </div>
+                                `;
+                            }
+                        }
+                    }, 10000);
+                    ]]>
+                </script>
+                
+                <!-- Load Google Maps with Geometry Library -->
+                <t t-set="maps_url" t-value="'https://maps.googleapis.com/maps/api/js?key=' + str(api_key) + '&amp;libraries=geometry&amp;callback=initMap'"/>
+                <script t-att-src="maps_url" async="async" defer="defer"></script>
+            </body>
+        </html>
+    </template>
+</odoo>

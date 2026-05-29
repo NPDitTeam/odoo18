@@ -1,0 +1,369 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Loan List View -->
+    <record id="view_npd_loan_list" model="ir.ui.view">
+        <field name="name">npd.loan.list</field>
+        <field name="model">npd.loan</field>
+        <field name="arch" type="xml">
+            <list decoration-success="state == 'completed'"
+                  decoration-muted="state == 'cancelled'">
+                <field name="name"/>
+                <field name="customer_id"/>
+                <field name="transfer_customer_name" optional="show"/>
+                <field name="loan_date"/>
+                <field name="loan_type_id"/>
+                <field name="loan_amount" sum="รวมเงินต้น"/>
+                <field name="interest_rate" string="ดอกเบี้ย%"/>
+                <field name="minimum_payment_initial" string="ชำระขั้นต่ำ"/>
+                <field name="current_remaining_principal" string="เงินต้นคงเหลือ" sum="รวมคงเหลือ"/>
+                <field name="paid_installments" string="งวดที่ชำระ"/>
+                <field name="actual_collected" sum="รวมเก็บได้" optional="show"/>
+                <field name="contract_status" optional="show" widget="badge"
+                       decoration-danger="contract_status == 'overdue'"
+                       decoration-success="contract_status == 'active'"
+                       decoration-warning="contract_status == 'lawsuit'"
+                       decoration-info="contract_status == 'closed_partial'"
+                       decoration-muted="contract_status == 'closed_none'"/>
+                <field name="total_commission_sale" string="ค่าคอม Sale" sum="รวมค่าคอม" optional="show"/>
+                <field name="advance_remaining" string="หักล่วงหน้าคงเหลือ" optional="show"/>
+                <field name="customer_received" string="ลูกค้าได้รับจริง" optional="show"/>
+                <field name="state" widget="badge" 
+                       decoration-info="state == 'draft'"
+                       decoration-primary="state == 'approved'"
+                       decoration-success="state == 'completed'"
+                       decoration-muted="state == 'cancelled'"/>
+            </list>
+        </field>
+    </record>
+
+
+    <!-- Loan Form View -->
+    <record id="view_npd_loan_form" model="ir.ui.view">
+        <field name="name">npd.loan.form</field>
+        <field name="model">npd.loan</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <button name="action_approve" string="อนุมัติ" type="object"
+                            class="btn-primary" invisible="state != 'draft'"/>
+                    <button name="action_complete" string="ปิดบัญชี" type="object"
+                            class="btn-success"
+                            invisible="state != 'approved' or not is_fully_paid"/>
+                    <button name="action_cancel" string="ยกเลิก" type="object"
+                            invisible="state not in ['draft', 'approved']"/>
+                    <button name="action_draft" string="กลับเป็นร่าง" type="object"
+                            invisible="state != 'cancelled'"/>
+                    <field name="state" widget="statusbar"
+                           statusbar_visible="draft,approved,completed"/>
+                </header>
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_call" type="object"
+                                class="oe_stat_button" icon="fa-phone"
+                                invisible="state == 'completed'">
+                            <span class="o_stat_text">โทรติดตาม</span>
+                        </button>
+                        <button name="action_view_call_history" type="object"
+                                class="oe_stat_button" icon="fa-history">
+                            <field name="call_history_count" widget="statinfo" string="ประวัติโทร"/>
+                        </button>
+                        <button name="action_view_installments" type="object"
+                                class="oe_stat_button" icon="fa-list-ol">
+                            <field name="installment_count" widget="statinfo" string="งวดชำระ"/>
+                        </button>
+                        <button name="action_view_documents" type="object"
+                                class="oe_stat_button" icon="fa-paperclip">
+                            <field name="document_count" widget="statinfo" string="เอกสาร"/>
+                        </button>
+                    </div>
+                    <field name="customer_image" widget="image" class="oe_avatar" readonly="state == 'completed'"/>
+                    <div class="oe_title">
+                        <h1><field name="name" readonly="1"/></h1>
+                    </div>
+
+                    <!-- แสดงสถานะการชำระครบ -->
+                    <div class="alert alert-success" role="alert" invisible="not is_fully_paid">
+                        <strong>✓ ชำระครบแล้ว - เงินต้นคงเหลือ 0</strong> - สามารถปิดบัญชีได้
+                    </div>
+                    
+                    <!-- สรุปยอด -->
+                    <div class="alert alert-info" role="alert" style="background-color: #e7f3ff; border: 1px solid #0d6efd;" invisible="installment_count == 0">
+                        <strong>เงินต้นคงเหลือ:</strong> <field name="current_remaining_principal" readonly="1" class="oe_inline"/> บาท | 
+                        <strong>เก็บได้:</strong> <field name="actual_collected" readonly="1" class="oe_inline"/> บาท | 
+                        <strong>ชำระแล้ว:</strong> <field name="paid_installments" readonly="1" class="oe_inline"/> งวด
+                    </div>
+                    
+                    <field name="is_fully_paid" invisible="1"/>
+                    
+                    <!-- ข้อมูลหลัก -->
+                    <group>
+                        <group string="ข้อมูลลูกค้า">
+                            <field name="customer_id" readonly="state == 'completed'"/>
+                            <field name="transfer_customer_name" readonly="1" force_save="1"
+                                   invisible="not rollover_from_id"/>
+                            <field name="phone" readonly="state == 'completed'"/>
+                            <field name="mobile" readonly="state == 'completed'"/>
+                            <field name="id_card" readonly="state == 'completed'"/>
+                            <field name="address" readonly="state == 'completed'"/>
+                            <field name="contract_status" readonly="state == 'completed'" widget="badge"
+                                   decoration-danger="contract_status == 'overdue'"
+                                   decoration-success="contract_status == 'active'"
+                                   decoration-warning="contract_status == 'lawsuit'"
+                                   decoration-info="contract_status == 'closed_partial'"
+                                   decoration-muted="contract_status == 'closed_none'"/>
+                        </group>
+                        <group string="ข้อมูลสินเชื่อ">
+                            <field name="loan_type_id" readonly="state == 'completed'"/>
+                            <field name="loan_date" readonly="state == 'completed'"/>
+                            <field name="rollover_from_id"
+                                   options="{'no_create': True}"
+                                   invisible="state not in ['draft']"
+                                   readonly="state == 'completed'"/>
+                            <field name="rollover_amount" readonly="1"
+                                   invisible="not rollover_from_id"
+                                   style="color: #cc6600; font-weight: bold;"/>
+                            <field name="additional_loan"
+                                   invisible="not rollover_from_id"
+                                   readonly="state == 'completed'"/>
+                            <field name="loan_amount" readonly="state == 'completed'"/>
+                            <field name="interest_rate" readonly="state == 'completed'"/>
+                            <field name="minimum_payment_initial" readonly="1" style="font-weight: bold; color: #0066cc;"/>
+                            <field name="late_fee_rate" readonly="state == 'completed'"/>
+                            <field name="late_fee_type" readonly="state == 'completed'"/>
+                            <field name="loan_period" readonly="state == 'completed'"/>
+                        </group>
+                    </group>
+
+                    <!-- หักล่วงหน้า / ค่าปรับ -->
+                    <group>
+                        <group string="หักล่วงหน้า">
+                            <field name="advance_deduction" readonly="state == 'completed'"/>
+                            <field name="additional_expense" readonly="state == 'completed'"/>
+                            <field name="additional_expense_note"
+                                   placeholder="ระบุรายละเอียดค่าใช้จ่ายเพิ่มเติม..."
+                                   readonly="state == 'completed'"/>
+                            <field name="customer_received" readonly="1"
+                                   style="font-weight: bold; color: #0066cc;"/>
+                            <field name="advance_remaining" readonly="1"
+                                   style="font-weight: bold; color: #cc6600;"/>
+                        </group>
+                        <group string="ค่าปรับ">
+                            <field name="total_overdue_days"/>
+                            <field name="total_late_fee"/>
+                            <field name="total_late_fee_paid" style="font-weight: bold; color: #0066cc;"/>
+                            <field name="fund_owner_ids" widget="many2many_tags" readonly="state == 'completed'"/>
+                        </group>
+                    </group>
+
+                    <group>
+                        <group string="สรุปยอดที่ชำระแล้ว">
+                            <field name="installment_count" string="จำนวนงวดที่ชำระ"/>
+                            <field name="total_principal_paid" string="รวมเงินต้นที่ชำระ"/>
+                            <field name="total_interest" string="รวมดอกเบี้ยที่ชำระ"/>
+                            <field name="actual_collected" string="รวมเก็บได้จริง" style="font-weight: bold;"/>
+                            <field name="current_remaining_principal" string="เงินต้นคงเหลือ" style="font-weight: bold; color: red;"/>
+                        </group>
+                        <group string="ค่าคอม Sale / กำไร">
+                            <field name="total_commission_sale" string="ค่าคอม Sale (หลัก)"/>
+                            <field name="total_commission_installment" string="ค่าคอม Sale (รายงวด)"/>
+                            <field name="net_profit" string="กำไรสุทธิของบริษัท"
+                                   style="font-weight: bold; font-size: 16px; color: green;"
+                                   decoration-danger="net_profit &lt; 0"/>
+                        </group>
+                    </group>
+                    
+                    <!-- แท็บ -->
+                    <notebook>
+                        <page string="งวดชำระ" name="installments">
+                            <div class="mb-3" invisible="state != 'approved' or is_fully_paid">
+                                <button name="action_add_installment" type="object"
+                                        string="➕ เพิ่มงวดชำระใหม่" class="btn-primary"/>
+                            </div>
+                            <div class="mb-2" invisible="installment_count == 0">
+                                <button name="action_recalculate_installments" type="object"
+                                        string="🔄 คำนวณดอกค้างใหม่" class="btn-outline-secondary btn-sm"
+                                        confirm="คำนวณดอกเบี้ยค้างยกมา/ส่งต่อ ทุกงวดใหม่ ยืนยัน?"/>
+                            </div>
+
+                            <!-- ตาราง installment ตามแบบใหม่ -->
+                            <field name="installment_ids" context="{'default_loan_id': id}" readonly="state == 'completed'">
+                                <list decoration-danger="state == 'overdue'"
+                                      decoration-success="state == 'paid'"
+                                      decoration-muted="state == 'cancelled'"
+                                      create="0">
+                                    <field name="installment_no" readonly="1" string="งวด"/>
+                                    <field name="actual_payment" string="จ่ายจริง" sum="รวมจ่ายจริง"/>
+                                    <field name="principal_amount" readonly="1" string="ยอดชำระเงินต้น" sum="รวมเงินต้น"/>
+                                    <field name="interest_amount" readonly="1" string="ยอดชำระดอก" sum="รวมดอก"/>
+                                    <field name="carried_interest" readonly="1" string="ดอกค้างยกมา" optional="show"/>
+                                    <field name="carry_forward_interest" readonly="1" string="ดอกค้างส่งต่อ" optional="show"/>
+                                    <field name="remaining_principal" readonly="1" string="คงเหลือ"/>
+                                    <field name="minimum_payment" readonly="1" string="ชำระขั้นต่ำ"/>
+                                    <field name="due_date"/>
+                                    <field name="paid_date"/>
+                                    <field name="advance_used" string="หักล่วงหน้า" sum="รวมหักล่วงหน้า"/>
+                                    <field name="total_commission" readonly="1" string="ค่าคอม Sale" sum="รวมค่าคอม"/>
+                                    <field name="overdue_days" string="วันเกิน" readonly="1"/>
+                                    <field name="late_fee" string="ค่าปรับ" readonly="1" sum="รวมค่าปรับ"/>
+                                    <field name="late_fee_paid" string="ค่าปรับจ่าย" readonly="1" sum="รวมค่าปรับจ่าย"/>
+                                    <field name="is_cancelled" column_invisible="1"/>
+                                    <field name="state" widget="badge"
+                                           decoration-info="state == 'pending'"
+                                           decoration-success="state == 'paid'"
+                                           decoration-danger="state == 'overdue'"
+                                           decoration-muted="state == 'cancelled'"/>
+                                    <button name="action_confirm_payment" type="object"
+                                            icon="fa-check" title="ยืนยันการชำระ"
+                                            invisible="state in ('paid', 'cancelled')"/>
+                                    <button name="action_cancel_installment" type="object"
+                                            icon="fa-times" title="ยกเลิกงวด"
+                                            invisible="state == 'cancelled'"
+                                            confirm="ยืนยันยกเลิกงวดนี้? ยอดชำระดอกจะถูกคืนกลับไปที่หักล่วงหน้า"/>
+                                    <button name="action_view_payment_proofs" type="object"
+                                            icon="fa-paperclip" title="หลักฐานการโอน"/>
+                                </list>
+                            </field>
+                        </page>
+
+                        <page string="ค่าคอมมิชชั่น" name="commission">
+                            <group>
+                                <group string="ตั้งค่าค่าคอม">
+                                    <field name="commission_template_id" options="{'no_create': True}" readonly="state == 'completed'"/>
+                                </group>
+                                <group string="สถานะการจ่าย">
+                                    <field name="commission_all_paid" readonly="1" widget="boolean_toggle"/>
+                                    <button name="action_open_commission_payout" type="object"
+                                            string="💰 จ่ายค่าคอม Sale" class="btn-primary"
+                                            invisible="not commission_line_ids"/>
+                                </group>
+                            </group>
+                            <separator string="รายชื่อ Sale และค่าคอม (หลัก)"/>
+                            <field name="commission_line_ids" create="0" delete="0" readonly="state == 'completed'">
+                                <list editable="bottom" create="0" delete="0">
+                                    <field name="sequence" widget="handle"/>
+                                    <field name="sale_user_id" readonly="1" force_save="1"/>
+                                    <field name="commission_amount"/>
+                                </list>
+                            </field>
+                            <separator string="ประวัติการจ่ายค่าคอม" invisible="not commission_payout_ids"/>
+                            <field name="commission_payout_ids" readonly="1"
+                                   invisible="not commission_payout_ids">
+                                <list decoration-info="payout_type == 'main'"
+                                      decoration-muted="is_paid == True">
+                                    <field name="sale_user_id" string="Sale"/>
+                                    <field name="display_label" string="รายการ"/>
+                                    <field name="commission_amount" string="ค่าคอม"
+                                           sum="รวมทั้งหมด"/>
+                                    <field name="is_paid" string="จ่ายแล้ว"/>
+                                    <field name="payment_date" string="วันที่จ่าย"/>
+                                    <field name="attachment" widget="image" string="สลิป"
+                                           options="{'size': [80, 80]}"/>
+                                    <field name="payout_type" column_invisible="1"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="ทรัพย์สิน/หลักประกัน" name="asset">
+                            <group>
+                                <group string="การใช้งานทรัพย์สิน">
+                                    <field name="asset_status" readonly="state == 'completed'"/>
+                                    <field name="collateral_type" readonly="state == 'completed'"/>
+                                    <field name="collateral_detail" readonly="state == 'completed'"/>
+                                </group>
+                                <group string="ข้อมูลรถ">
+                                    <field name="vehicle_brand" readonly="state == 'completed'"/>
+                                    <field name="vehicle_model" readonly="state == 'completed'"/>
+                                    <field name="vehicle_year" readonly="state == 'completed'"/>
+                                    <field name="vehicle_color" readonly="state == 'completed'"/>
+                                    <field name="license_plate" readonly="state == 'completed'"/>
+                                    <field name="chassis_no" readonly="state == 'completed'"/>
+                                    <field name="engine_no" readonly="state == 'completed'"/>
+                                </group>
+                            </group>
+                        </page>
+
+                        <page string="เอกสารแนบ" name="documents">
+                            <field name="document_ids" readonly="state == 'completed'">
+                                <list editable="bottom">
+                                    <field name="sequence" widget="handle"/>
+                                    <field name="name"/>
+                                    <field name="document_type"/>
+                                    <field name="attachment" filename="attachment_name"/>
+                                    <field name="attachment_name" column_invisible="1"/>
+                                    <field name="upload_date"/>
+                                    <field name="uploaded_by"/>
+                                    <field name="description"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="ประวัติการโทร" name="call_history">
+                            <field name="call_history_ids" readonly="1">
+                                <list>
+                                    <field name="call_datetime" string="วันเวลา"/>
+                                    <field name="phone_number" string="เบอร์"/>
+                                    <field name="call_duration_display" string="ระยะเวลา"/>
+                                    <field name="installment_no" string="งวดที่"/>
+                                    <field name="amount_due" string="ยอดติดตาม"/>
+                                    <field name="call_status" string="สถานะ" widget="badge"
+                                           decoration-success="call_status in ['answered', 'promise_pay']"
+                                           decoration-danger="call_status in ['no_answer', 'refuse_pay']"
+                                           decoration-warning="call_status in ['busy', 'wrong_number']"/>
+                                    <field name="note" string="หมายเหตุ"/>
+                                    <field name="caller_id" string="ผู้โทร"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="หมายเหตุ" name="notes">
+                            <group>
+                                <field name="problem_note" placeholder="ปัญหา/ทล..." readonly="state == 'completed'"/>
+                                <field name="note" placeholder="หมายเหตุเพิ่มเติม..." readonly="state == 'completed'"/>
+                            </group>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+
+    <!-- Loan Search View -->
+    <record id="view_npd_loan_search" model="ir.ui.view">
+        <field name="name">npd.loan.search</field>
+        <field name="model">npd.loan</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="name"/>
+                <field name="customer_id"/>
+                <field name="loan_type_id"/>
+                <separator/>
+                <filter string="ร่าง" name="draft" domain="[('state', '=', 'draft')]"/>
+                <filter string="อนุมัติ" name="approved" domain="[('state', '=', 'approved')]"/>
+                <filter string="ปิดบัญชี" name="completed" domain="[('state', '=', 'completed')]"/>
+                <separator/>
+                <filter string="ชำระครบแล้ว" name="fully_paid" domain="[('is_fully_paid', '=', True)]"/>
+                <filter string="ยังมียอดคงเหลือ" name="pending" domain="[('current_remaining_principal', '>', 0)]"/>
+                <separator/>
+                <group expand="0" string="จัดกลุ่มตาม">
+                    <filter string="ประเภทสินเชื่อ" name="group_loan_type" 
+                            context="{'group_by': 'loan_type_id'}"/>
+                    <filter string="สถานะ" name="group_state" 
+                            context="{'group_by': 'state'}"/>
+                    <filter string="วันที่ปล่อย" name="group_loan_date" 
+                            context="{'group_by': 'loan_date:month'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- Loan Action -->
+    <record id="action_npd_loan" model="ir.actions.act_window">
+        <field name="name">สินเชื่อ</field>
+        <field name="res_model">npd.loan</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                สร้างสินเชื่อใหม่
+            </p>
+        </field>
+    </record>
+</odoo>

@@ -1,0 +1,17 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_account_advance_request_user,account.advance.request user,model_account_advance_request,base.group_user,1,1,1,0
+access_account_advance_request_manager,account.advance.request manager,model_account_advance_request,account.group_account_manager,1,0,0,0
+access_account_advance_request_invoice,account.advance.request invoice,model_account_advance_request,account.group_account_invoice,1,1,1,0
+access_account_advance_user,account.advance user,model_account_advance,base.group_user,1,0,0,0
+access_account_advance_manager,account.advance manager,model_account_advance,account.group_account_manager,1,0,0,0
+access_account_advance_invoice,account.advance invoice,model_account_advance,account.group_account_invoice,1,1,1,0
+access_account_advance_clear_user,account.advance.clear user,model_account_advance_clear,base.group_user,1,0,0,0
+access_account_advance_clear_manager,account.advance.clear manager,model_account_advance_clear,account.group_account_manager,1,0,0,0
+access_account_advance_clear_invoice,account.advance.clear invoice,model_account_advance_clear,account.group_account_invoice,1,1,1,0
+access_advance_clear_line_user,advance.clear.line user,model_advance_clear_line,base.group_user,1,0,0,0
+access_advance_clear_line_manager,advance.clear.line manager,model_advance_clear_line,account.group_account_manager,1,0,0,0
+access_advance_clear_line_invoice,advance.clear.line invoice,model_advance_clear_line,account.group_account_invoice,1,1,1,0
+access_account_advance_payment_all,account.advance.payment all,model_account_advance_payment,,1,1,1,0
+access_account_advance_payment_user,account.advance.payment user,model_account_advance_payment,base.group_user,1,0,0,0
+access_account_advance_payment_manager,account.advance.payment manager,model_account_advance_payment,account.group_account_manager,1,0,0,0
+access_account_advance_payment_invoice,account.advance.payment invoice,model_account_advance_payment,account.group_account_invoice,1,1,1,0

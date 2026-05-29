@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+
+        <record id="multi_branch_on_prefrence_view" model="ir.ui.view">
+            <field name="name">res.users.groups</field>
+            <field name="model">res.users</field>
+            <field name="inherit_id" ref="base.view_users_form"/>
+            <field name="arch" type="xml">
+                <xpath expr="//notebook/page[@name='access_rights']" position="inside">
+                    <group string="Multi Branches">
+                        <field string="Allowed Branches" name="branch_ids" widget="many2many_tags"
+                               options="{'no_create': True}"/>
+                        <field string="Default Branch" name="branch_id" context="{'user_preference': 0}"/>
+                        <field string="Branch Count" name="branch_count" invisible="1"/>
+                        <field string="Multi Branch" name="multi_branch_id"/>
+                    </group>
+                </xpath>
+            </field>
+        </record>
+    </data>
+</odoo>

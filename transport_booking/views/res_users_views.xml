@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Extend User Preferences Form -->
+    <record id="view_users_form_inherit_branch_filter" model="ir.ui.view">
+        <field name="name">res.users.form.inherit.branch.filter</field>
+        <field name="model">res.users</field>
+        <field name="inherit_id" ref="base.view_users_form"/>
+        <field name="arch" type="xml">
+            <!-- เพิ่มฟิลด์ใน Preferences tab -->
+            <xpath expr="//page[@name='preferences']" position="inside">
+                <group string="🏢 การแสดงผลตามสาขา ของการจองคิวรถ">
+
+                    <field name="show_all_transport_booking_branches"
+                           widget="boolean_toggle"
+                           help="หากเปิด: แสดงข้อมูลจากทุกสาขา&#10;หากปิด: แสดงเฉพาะสาขาของตัวเองเท่านั้น"/>
+                </group>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Extend User Preferences Form (Simple Form) -->
+    <record id="view_users_form_simple_modif_inherit_branch" model="ir.ui.view">
+        <field name="name">res.users.form.simple.inherit.branch.filter</field>
+        <field name="model">res.users</field>
+        <field name="inherit_id" ref="base.view_users_form_simple_modif"/>
+        <field name="arch" type="xml">
+            <!-- เพิ่มฟิลด์ใน Preferences section สำหรับ My Profile -->
+            <xpath expr="//group[@name='preferences']" position="inside">
+                <field name="show_all_transport_booking_branches"
+                       widget="boolean_toggle"
+                       string="แสดงทุกสาขา ของการจองคิวรถ"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <!-- Form View -->
+        <record id="view_npd_connection_config_form" model="ir.ui.view">
+            <field name="name">NPD Connection Config Form</field>
+            <field name="model">npd.connection.config</field>
+            <field name="arch" type="xml">
+                <form string="Connection Configuration">
+                    <sheet>
+                        <div class="oe_title">
+                            <h1>
+                                <field name="name" placeholder="ชื่อการเชื่อมต่อ" class="oe_inline"/>
+                            </h1>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-6">
+                                <field name="is_active" widget="boolean_toggle"/>
+                            </div>
+                        </div>
+                        
+                        <group string="ข้อมูลการเชื่อมต่อเซิร์ฟเวอร์">
+                            <field name="server_url" placeholder="https://npd-solution.com หรือ http://192.168.1.100:8070"/>
+                            <field name="database_name" placeholder="NPD_Logistics"/>
+                        </group>
+                        
+                        <group string="ข้อมูลการยืนยันตัวตน">
+                            <field name="username" placeholder="Npd_admin"/>
+                            <field name="password" password="True" placeholder="กรอกรหัสผ่าน"/>
+                        </group>
+                        
+                        <group string="ข้อมูลเพิ่มเติม">
+                            <field name="description" nolabel="1"/>
+                        </group>
+                        
+                        <group string="ข้อมูลวันที่" readonly="1">
+                            <field name="created_date"/>
+                            <field name="last_modified"/>
+                        </group>
+                    </sheet>
+                </form>
+            </field>
+        </record>
+        
+        <!-- List View (Odoo 18 uses 'list' instead of 'tree') -->
+        <record id="view_npd_connection_config_list" model="ir.ui.view">
+            <field name="name">NPD Connection Config List</field>
+            <field name="model">npd.connection.config</field>
+            <field name="arch" type="xml">
+                <list string="การตั้งค่าการเชื่อมต่อ">
+                    <field name="name"/>
+                    <field name="server_url"/>
+                    <field name="database_name"/>
+                    <field name="username"/>
+                    <field name="is_active" decoration-success="is_active"/>
+                </list>
+            </field>
+        </record>
+        
+        <!-- Search View -->
+        <record id="view_npd_connection_config_search" model="ir.ui.view">
+            <field name="name">NPD Connection Config Search</field>
+            <field name="model">npd.connection.config</field>
+            <field name="arch" type="xml">
+                <search string="ค้นหาการตั้งค่าการเชื่อมต่อ">
+                    <field name="name" string="ชื่อการเชื่อมต่อ"/>
+                    <field name="server_url" string="URL เซิร์ฟเวอร์"/>
+                    <field name="database_name" string="ฐานข้อมูล"/>
+                    <separator/>
+                    <filter name="active_only" string="การเชื่อมต่อที่ใช้งาน" domain="[('is_active', '=', True)]"/>
+                    <filter name="inactive_only" string="การเชื่อมต่อที่ไม่ใช้งาน" domain="[('is_active', '=', False)]"/>
+                </search>
+            </field>
+        </record>
+        
+        <!-- Action -->
+        <record id="action_npd_connection_config" model="ir.actions.act_window">
+            <field name="name">NPD Connection Settings</field>
+            <field name="res_model">npd.connection.config</field>
+            <field name="view_mode">list,form</field>
+            <field name="help" type="html">
+                <p class="o_view_nocontent_smiling_face">
+                    ยังไม่มีการตั้งค่าการเชื่อมต่อ สร้างแบบใหม่ได้!
+                </p>
+                <p>
+                    จัดการการเชื่อมต่อไปยังเซิร์ฟเวอร์หรือ Instance ต่างๆ ของ Odoo
+                </p>
+            </field>
+        </record>
+    </data>
+</odoo>

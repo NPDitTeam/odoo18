@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_shipping_cost_form" model="ir.ui.view">
+        <field name="name">shipping.cost.form</field>
+        <field name="model">shipping.cost</field>
+        <field name="arch" type="xml">
+            <form string="การกำหนดค่าขนส่ง">
+                <sheet>
+                    <group>
+                        <field name="name"/>
+                        <field name="vehicle_type"/>
+                        <field name="fuel_price_per_liter"/>
+                        <field name="fuel_consumption_rate"/>
+                        <field name="vehicle"/>
+                        <field name="salvage_value"/>
+                        <field name="labor_costs"/>
+                        <field name="working_days_per_month"/>
+                        <field name="driver_salary"/>
+                        <field name="annual_vehicle_tax_y"/>
+                        <field name="annual_insurance_class2"/>
+                        <field name="annual_compulsory_insurance1"/>
+                        <field name="maintenance_cost"/>
+                        <field name="trips_per_day"/>
+                        <field name="labor_cost_per_trip"/>
+                        <field name="other_expenses"/>
+                        <field name="profit_per_trip_p"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+</odoo>

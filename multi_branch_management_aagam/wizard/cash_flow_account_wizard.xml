@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <record id="account_wizard_view" model="ir.ui.view">
+            <field name="name">Cash Flow Report</field>
+            <field name="model">account.cash.flow.wizard</field>
+            <field name="arch" type="xml">
+                <form string="Cash Flow Report">
+                    <group>
+                        <group>
+                            <field name="report_period"  required="1" widget="radio"/>
+                            <field name="date_from" invisible="report_period == 'yearly'"
+                                   required="report_period == 'datewise'"/>
+
+                            <field name="date_to"
+                                    invisible="report_period == 'yearly'"
+                                   required="report_period == 'datewise'"/>
+                            <field name="previous_period"
+                                   invisible="report_period == 'datewise'"
+                                   required="report_period == 'yearly'"
+                   />
+                        </group>
+                        <group>
+                          <field name="branch_id"/>
+                            <field name="company_id"/>
+                            <field name="levels"/>
+                        </group>
+                    </group>
+                    <footer>
+                        <button name="pdf_cash_flow_report" string="PDF"
+                                type="object" default_focus="1"
+                                class="oe_highlight"/>
+                        <button name="xlsx_cash_flow_report" string="Excel"
+                                type="object" default_focus="1"
+                                class="oe_highlight"/>
+                        <button string="Cancel" class="btn btn-secondary"
+                                special="cancel"/>
+                    </footer>
+                </form>
+            </field>
+        </record>
+        <record id="action_account_wizard" model="ir.actions.act_window">
+            <field name="name">Cash Flow Report</field>
+            <field name="type">ir.actions.act_window</field>
+            <field name="res_model">account.cash.flow.wizard</field>
+            <field name="view_id"
+                   ref="multi_branch_management_aagam.account_wizard_view"/>
+            <field name="view_mode">form</field>
+            <field name="target">new</field>
+        </record>
+        <menuitem id="menu_financial_reports" sequence="5"
+                  name="Financial reports"
+                  parent="account.menu_finance_reports"
+                  groups="account.group_account_manager"/>
+        <menuitem id="account_bank_book_menu" name="Cash Flow Report"
+                  sequence="3"
+                  action="multi_branch_management_aagam.action_account_wizard"
+                  parent="multi_branch_management_aagam.menu_financial_reports"
+                  groups="account.group_account_manager"/>
+    </data>
+</odoo>

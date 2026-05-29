@@ -1,0 +1,29 @@
+<odoo>
+    <record id="view_approval_picking_wizard_form" model="ir.ui.view">
+        <field name="name">stock.picking.approval.wizard.form</field>
+        <field name="model">stock.picking.approval.wizard</field>
+        <field name="arch" type="xml">
+            <form string="พิจารณาอนุมัติ">
+                <group string="ข้อมูลคำขอ">
+                    <field name="picking_id" invisible="1"/>
+                    <field name="request_note" readonly="1"/>
+                    <field name="rent_discount" readonly="1"/>
+                </group>
+                <group string="การพิจารณา">
+                    <field name="action" widget="radio"/>
+                    <field name="approval_note" placeholder="กรุณาระบุหมายเหตุ..."/>
+                </group>
+                <footer>
+                    <button string="ยืนยัน" type="object" name="action_process" class="btn-primary"/>
+                    <button string="ยกเลิก" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+    <record id="approval_picking_wizard_action" model="ir.actions.act_window">
+        <field name="name">พิจารณาอนุมัติ</field>
+        <field name="res_model">stock.picking.approval.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+</odoo>

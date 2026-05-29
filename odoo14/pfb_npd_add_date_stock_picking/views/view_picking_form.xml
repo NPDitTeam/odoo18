@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_picking_form_add_x_date_stock_picking" model="ir.ui.view">
+        <field name="name">view.picking.form.add.x.date.stock.picking</field>
+        <field name="model">stock.picking</field>
+        <field name="inherit_id" ref="stock.view_picking_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//div[@name='button_box']" position="after">
+                <widget name="web_ribbon"
+                        text="คืนเงินแล้ว"
+                        bg_color="text-bg-success"
+                        invisible="deposit_return_state != 'returned'"/>
+            </xpath>
+
+            <xpath expr="//header" position="inside">
+                <button name="button_scrap"
+                        string="แตกหักเสียหาย"
+                        type="object"
+                        invisible="state != 'done'"
+                        groups="base.group_user"
+                        data-hotkey="s"/>
+            </xpath>
+
+            <xpath expr="//field[@name='location_dest_id']" position="after">
+                <field name="start_x_date"/>
+                <field name="end_x_date"/>
+                <field name="deposit_return_state"/>
+                <field name="no_deduction"/>
+            </xpath>
+
+            <xpath expr="//field[@name='branch_id']" position="after">
+                <field name="is_return_date_readonly" invisible="1"/>
+                <field name="return_date" string="วันที่คืน" readonly="is_return_date_readonly"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

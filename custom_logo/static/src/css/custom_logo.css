@@ -1,0 +1,5 @@
+/* ปรับขนาดโลโก้หน้า database selector/manager */
+.o_database_list img.img-fluid {
+    max-height: 80px;
+    width: auto;
+}

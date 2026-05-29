@@ -1,0 +1,142 @@
+🔧 FIX SUMMARY: การส่งส่วนประวัติการจัดส่ง ค่าเที่ยว ไม่แสดง
+
+═════════════════════════════════════════════════════════════════
+
+📋 PROBLEMS IDENTIFIED:
+
+1️⃣ วันเวลาส่งจริง (actual_delivery_time) ไม่บันทึก
+   ─────────────────────────────────────────────
+   ❌ ปัญหา: 
+   - App ส่ง delivery_timestamp มาจาก GPS watermark
+   - Odoo ไม่นำไปใช้ คำใช้ fields.Datetime.now() แทน
+   - ทำให้เวลาส่งจริงไม่ตรงกับข้อมูลจริง
+
+   ✅ แก้ไข:
+   File: models/vehicle_booking.py
+   - Line ~688: เปลี่ยนจาก 'actual_delivery_time': fields.Datetime.now()
+               เป็น 'actual_delivery_time': delivery_timestamp (จากแอป)
+
+2️⃣ ค่าเที่ยว (travel_expenses) ไม่แสดงในประวัติการจัดส่ง
+   ──────────────────────────────────────────────
+   ❌ ปัญหา:
+   - delivery_history.py ใช้ hasattr() ตรวจสอบ field
+   - อาจไม่ได้ค่า เพราะ related field มีเงื่อนไข
+   - ทำให้ค่าเที่ยวเป็น 0 หรือ NULL
+
+   ✅ แก้ไข:
+   File: models/delivery_history.py
+   - Line ~113: เปลี่ยนจาก hasattr(booking, 'travel_expenses')
+               เป็น float(booking.travel_expenses or 0.0)
+
+═════════════════════════════════════════════════════════════════
+
+🔧 CHANGES MADE:
+
+1. models/vehicle_booking.py (Line 665-693)
+   ───────────────────────────────────────
+   ✏️ def action_done():
+   
+   อดเดต:
+   + ดึง delivery_timestamp จาก booking
+   + ใช้ delivery_timestamp สำหรับ actual_delivery_time 
+   + ถ้าไม่มี ใช้ fields.Datetime.now() แทน
+   
+   Code:
+   ```python
+   actual_delivery_time = delivery_timestamp if delivery_timestamp else fields.Datetime.now()
+   record.write({
+       'state': 'done',
+       'tracking_status': 'delivered',
+       'actual_delivery_time': actual_delivery_time,  # ✅ ใช้จากแอป
+   })
+   ```
+
+2. models/delivery_history.py (Line 113-114)
+   ──────────────────────────────────────────
+   ✏️ create_from_booking():
+   
+   อดเดต:
+   + ดึง travel_expenses ด้วย float() เพื่อแน่ใจว่าได้ค่า
+   + ทำให้ค่าเที่ยวแสดงในประวัติเสมอ
+   
+   Code:
+   ```python
+   'travel_expenses': float(booking.travel_expenses or 0.0),
+   'daily_allowance': float(booking.daily_allowance or 0.0),
+   ```
+
+═════════════════════════════════════════════════════════════════
+
+🗂️ FILE LOCATIONS:
+
+1. ✅ models/vehicle_booking.py
+   File: C:\Program Files\Odoo 18.0.20251009\server\custom-addons\transport_booking\models\vehicle_booking.py
+   Method: action_done() - Line 665
+
+2. ✅ models/delivery_history.py
+   File: C:\Program Files\Odoo 18.0.20251009\server\custom-addons\transport_booking\models\delivery_history.py
+   Method: create_from_booking() - Line 113
+
+═════════════════════════════════════════════════════════════════
+
+🧪 VERIFICATION QUERIES:
+
+File: CHECK_DELIVERY_DATA.sql
+Path: C:\Program Files\Odoo 18.0.20251009\server\custom-addons\transport_booking\
+
+ใช้คิวรี SQL เหล่านี้เพื่อตรวจสอบ:
+
+1. SELECT ... FROM vehicle_booking ORDER BY id DESC LIMIT 10;
+   → ดู actual_delivery_time และ travel_expenses ล่าสุด
+
+2. SELECT ... FROM delivery_history ORDER BY id DESC LIMIT 10;
+   → ดู travel_expenses ในประวัติการจัดส่ง
+
+3. LEFT JOIN vehicle_booking กับ delivery_history
+   → ตรวจสอบความแตกต่างระหว่างข้อมูล
+
+4. WHERE state = 'done' AND actual_delivery_time IS NULL;
+   → หา booking ที่ไม่มี actual_delivery_time
+
+═════════════════════════════════════════════════════════════════
+
+🚀 NEXT STEPS:
+
+1. Restart Odoo Server
+   ```bash
+   # Windows
+   net stop OdooServer
+   net start OdooServer
+   
+   # หรือ manual restart
+   ```
+
+2. Update Module (Force Reload)
+   - Web: Settings → Technical → Modules
+   - ค้นหา "transport_booking"
+   - Click "Upgrade"
+
+3. Test Flow:
+   - สร้าง vehicle.booking ใหม่
+   - ทำการจัดส่งจนเสร็จสิ้น
+   - ดู delivery_history 
+   - ตรวจสอบ actual_delivery_time และ travel_expenses
+
+4. Run SQL Queries:
+   - ใช้ phpmyadmin หรือ pgAdmin
+   - รันคิวรี CHECK_DELIVERY_DATA.sql
+   - เปรียบเทียบข้อมูล vehicle.booking กับ delivery.history
+
+═════════════════════════════════════════════════════════════════
+
+📊 EXPECTED RESULTS:
+
+✅ Before Fix:
+   - actual_delivery_time: 2025-01-21 10:30:45 (ถูกทำให้ผิด)
+   - travel_expenses: 0 หรือ NULL (ไม่มีค่า)
+
+✅ After Fix:
+   - actual_delivery_time: 2025-01-21 10:15:32 (จากแอป GPS)
+   - travel_expenses: 200.00 (แสดงค่าถูกต้อง)
+
+═════════════════════════════════════════════════════════════════

@@ -1,0 +1,26 @@
+{
+    "name": "Account Payment Invoice",
+    "version": "18.0.1.0.0",
+    "license": "LGPL-3",
+    "category": "Accounting",
+    "summary": "Custom payment with invoice lines, paid lines, and WHT certificates",
+    "author": "PFB",
+    "depends": [
+        "account",
+        "account_cheque",
+        "l10n_th_tax_invoice",
+        "l10n_th_account_tax",
+        "withholding_tax_cert_amount",
+        "pfb_npd_all_customs",
+        "payment_method",
+    ],
+    "data": [
+        "security/ir.model.access.csv",
+        "data/ir_sequence_data.xml",
+        "views/account_payment_invoice_view.xml",
+        "views/res_users_views.xml",
+        "wizard/account_payment_register_view.xml",
+    ],
+    "installable": True,
+    "auto_install": False,
+}

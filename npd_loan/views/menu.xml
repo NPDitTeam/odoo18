@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Main Menu -->
+    <menuitem id="menu_npd_loan_root"
+              name="สินเชื่อ"
+              sequence="10"
+              web_icon="npd_loan,static/description/icon.png"/>
+
+    <!-- Sub Menus -->
+    <menuitem id="menu_npd_loan_main"
+              name="จัดการสินเชื่อ"
+              parent="menu_npd_loan_root"
+              sequence="10"/>
+
+    <menuitem id="menu_npd_loan_list"
+              name="รายการสินเชื่อ"
+              parent="menu_npd_loan_main"
+              action="action_npd_loan"
+              sequence="10"/>
+
+    <!-- Configuration Menu -->
+    <menuitem id="menu_npd_loan_config"
+              name="ตั้งค่า"
+              parent="menu_npd_loan_root"
+              sequence="99"/>
+
+    <menuitem id="menu_npd_loan_type"
+              name="ประเภทสินเชื่อ"
+              parent="menu_npd_loan_config"
+              action="action_npd_loan_type"
+              sequence="10"/>
+
+    <menuitem id="menu_sale_commission_template"
+              name="เทมเพลตค่าคอม Sale"
+              parent="menu_npd_loan_config"
+              action="action_sale_commission_template"
+              sequence="20"/>
+</odoo>

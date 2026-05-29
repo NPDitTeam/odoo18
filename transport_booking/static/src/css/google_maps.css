@@ -1,0 +1,45 @@
+/* Google Maps Widget Styles */
+
+.o_google_maps_widget {
+    width: 100% !important;
+    min-width: 100% !important;
+    min-height: 600px !important;
+    height: 600px !important;
+    position: relative !important;
+    display: block !important;
+    box-sizing: border-box !important;
+}
+
+.o_google_maps_widget > div {
+    width: 100% !important;
+    height: 100% !important;
+    min-height: 600px !important;
+    min-width: 100% !important;
+}
+
+/* Fix for Odoo's form view */
+.o_form_sheet .o_google_maps_widget {
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+/* Fix for Odoo's notebook tabs */
+.o_notebook .tab-pane {
+    min-height: 650px !important;
+    width: 100% !important;
+}
+
+.o_notebook .tab-pane .o_field_widget {
+    width: 100% !important;
+}
+
+.o_notebook .tab-pane .o_google_maps_widget {
+    width: 100% !important;
+    display: block !important;
+}
+
+/* Force visibility */
+.o_notebook .tab-pane.active .o_google_maps_widget {
+    visibility: visible !important;
+    opacity: 1 !important;
+}

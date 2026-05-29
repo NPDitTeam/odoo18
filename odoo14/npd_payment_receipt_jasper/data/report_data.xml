@@ -1,0 +1,26 @@
+<?xml version="1.0"?>
+<odoo>
+    <!-- Jasper Report Action for Payment Receipt (Transport) -->
+    <record id="jasper_npd_payment_receipt_report" model="ir.actions.report">
+        <field name="name">ใบเสร็จรับเงินค่าขนส่ง</field>
+        <field name="model">account.payment</field>
+        <field name="report_type">jasper</field>
+        <field name="file">npd_payment_receipt_jasper/report/payment_receipt.jrxml</field>
+        <field name="attachment_use">False</field>
+        <field name="report_name">ใบเสร็จรับเงินค่าขนส่ง</field>
+        <field name="jasper_report">True</field>
+        <field name="jasper_output">pdf</field>
+        <field name="model_id" ref="account.model_account_payment"/>
+        <field name="binding_model_id" ref="account.model_account_payment"/>
+        <field name="binding_type">report</field>
+        <field name="print_report_name">'ใบเสร็จรับเงิน - %s' % (object.name)</field>
+    </record>
+
+    <!-- Attach the JRXML file to the report -->
+    <record id="jasper_npd_payment_receipt_file" model="ir.actions.report.xml.file">
+        <field name="default">True</field>
+        <field name="filename">payment_receipt.jrxml</field>
+        <field name="report_id" ref="npd_payment_receipt_jasper.jasper_npd_payment_receipt_report"/>
+        <field name="file" type="base64" file="npd_payment_receipt_jasper/report/payment_receipt.jrxml"/>
+    </record>
+</odoo>

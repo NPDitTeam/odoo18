@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    
+    <!-- ฟอร์มการตั้งค่าผู้ใช้ -->
+    <record id="view_transport_user_settings_form" model="ir.ui.view">
+        <field name="name">transport.user.settings.form</field>
+        <field name="model">transport.user.settings</field>
+        <field name="arch" type="xml">
+            <form string="⚙️ ตั้งค่าการติดตามรถ">
+                <sheet>
+                    <group>
+                        <group string="📍 การติดตามตำแหน่ง">
+                            <field name="user_id" readonly="1"/>
+                            <field name="tracking_enabled"/>
+                            <field name="tracking_refresh_interval"
+                                   widget="integer"
+                                   invisible="not tracking_enabled"/>
+                            <field name="high_accuracy_mode"
+                                   invisible="not tracking_enabled"/>
+                        </group>
+
+                        <group string="🔔 การแจ้งเตือน">
+                            <field name="notify_on_arrival"/>
+                            <field name="notify_on_delay"/>
+                            <field name="notify_off_route"/>
+                            <field name="off_route_distance"
+                                   invisible="not notify_off_route"/>
+                        </group>
+                    </group>
+
+                    <group>
+                        <group string="🗺️ การแสดงผลแผนที่">
+                            <field name="show_speed_indicator"/>
+                            <field name="show_route_history"/>
+                            <field name="map_type" widget="radio"/>
+                        </group>
+
+                        <group string="💾 การบันทึกข้อมูล">
+                            <field name="save_history"/>
+                            <field name="history_retention_days"
+                                   invisible="not save_history"/>
+                            <field name="active"/>
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- List View -->
+    <record id="view_transport_user_settings_tree" model="ir.ui.view">
+        <field name="name">transport.user.settings.list</field>
+        <field name="model">transport.user.settings</field>
+        <field name="arch" type="xml">
+            <list string="การตั้งค่าผู้ใช้">
+                <field name="user_id"/>
+                <field name="tracking_enabled"/>
+                <field name="tracking_refresh_interval"/>
+                <field name="notify_on_arrival"/>
+                <field name="notify_on_delay"/>
+                <field name="save_history"/>
+                <field name="active"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Action -->
+    <record id="action_transport_user_settings" model="ir.actions.act_window">
+        <field name="name">⚙️ ตั้งค่าการติดตาม</field>
+        <field name="res_model">transport.user.settings</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                🎯 ตั้งค่าการติดตามรถของคุณ
+            </p>
+            <p>
+                กำหนดเวลา Refresh, การแสดงผลแผนที่ และการแจ้งเตือน
+            </p>
+        </field>
+    </record>
+
+    <!-- เมนู -->
+    <menuitem id="menu_tracking_settings"
+              name="⚙️ ตั้งค่าการติดตาม"
+              parent="base.menu_administration"
+              action="action_transport_user_settings"
+              sequence="100"/>
+
+</odoo>

@@ -1,0 +1,177 @@
+/* Vehicle Tracking Map Styles */
+
+.o_tracking_kanban {
+    padding: 10px;
+}
+
+.o_tracking_kanban .oe_kanban_global_click {
+    padding: 15px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    transition: all 0.3s ease;
+}
+
+.o_tracking_kanban .oe_kanban_global_click:hover {
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    transform: translateY(-2px);
+}
+
+.o_tracking_kanban .o_kanban_record_title {
+    font-size: 16px;
+    color: #333;
+}
+
+.o_tracking_kanban .o_kanban_record_subtitle {
+    color: #666;
+    font-size: 13px;
+    margin-top: 5px;
+}
+
+.o_tracking_kanban .o_kanban_record_body {
+    margin-top: 10px;
+}
+
+.o_tracking_kanban .o_kanban_record_body > div {
+    margin: 5px 0;
+    font-size: 13px;
+}
+
+.o_tracking_kanban .badge {
+    font-size: 11px;
+    padding: 3px 8px;
+    margin-left: 5px;
+}
+
+/* Tracking Map View */
+.o_tracking_map_view {
+    height: 600px;
+    width: 100%;
+}
+
+.tracking_info_window {
+    max-width: 300px;
+}
+
+.tracking_info_window h4 {
+    margin: 0 0 10px 0;
+    color: #333;
+}
+
+.tracking_info_window .info_row {
+    margin: 5px 0;
+    font-size: 13px;
+}
+
+.tracking_info_window .info_label {
+    font-weight: bold;
+    color: #666;
+    display: inline-block;
+    min-width: 80px;
+}
+
+.tracking_info_window .status_badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 3px;
+    font-size: 11px;
+    font-weight: bold;
+}
+
+.tracking_info_window .status_badge.moving {
+    background-color: #28a745;
+    color: white;
+}
+
+.tracking_info_window .status_badge.stopped {
+    background-color: #ffc107;
+    color: #333;
+}
+
+/* Tracking Controls */
+.tracking_controls {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: white;
+    padding: 10px;
+    border-radius: 5px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+    z-index: 1000;
+}
+
+.tracking_controls button {
+    margin: 5px;
+    padding: 8px 15px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 13px;
+}
+
+.tracking_controls button.primary {
+    background-color: #007bff;
+    color: white;
+}
+
+.tracking_controls button.secondary {
+    background-color: #6c757d;
+    color: white;
+}
+
+.tracking_controls button:hover {
+    opacity: 0.9;
+}
+
+/* Vehicle Marker */
+.vehicle_marker {
+    width: 40px;
+    height: 40px;
+    background-color: #007bff;
+    border-radius: 50%;
+    border: 3px solid white;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 18px;
+}
+
+.vehicle_marker.moving {
+    background-color: #28a745;
+    animation: pulse 2s infinite;
+}
+
+.vehicle_marker.stopped {
+    background-color: #ffc107;
+}
+
+@keyframes pulse {
+    0% {
+        box-shadow: 0 0 0 0 rgba(40, 167, 69, 0.7);
+    }
+    70% {
+        box-shadow: 0 0 0 10px rgba(40, 167, 69, 0);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(40, 167, 69, 0);
+    }
+}
+
+/* Route Path */
+.tracking_route_path {
+    stroke: #007bff;
+    stroke-width: 3;
+    fill: none;
+    stroke-opacity: 0.7;
+}
+
+/* Settings Form */
+.o_tracking_settings_form {
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.o_tracking_settings_form .o_group {
+    margin-bottom: 20px;
+}

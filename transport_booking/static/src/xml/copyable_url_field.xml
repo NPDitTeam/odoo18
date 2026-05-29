@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="transport_booking.CopyableUrlField">
+        <div class="o_field_copyable_url d-flex align-items-center gap-2">
+            <input 
+                type="text" 
+                class="form-control" 
+                t-att-value="url" 
+                readonly="readonly"
+                style="flex: 1;"
+            />
+            <button 
+                class="btn btn-primary" 
+                t-on-click="copyToClipboard"
+                title="คัดลอก Link">
+                <i class="fa fa-copy"/> คัดลอก
+            </button>
+        </div>
+    </t>
+</templates>

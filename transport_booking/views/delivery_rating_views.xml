@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <!-- List View -->
+        <record id="view_delivery_rating_list" model="ir.ui.view">
+            <field name="name">delivery.rating.list</field>
+            <field name="model">delivery.rating</field>
+            <field name="arch" type="xml">
+                <list string="การประเมินความพึงพอใจ"
+                      create="0"
+                      delete="0"
+                      decoration-success="state=='done'"
+                      decoration-warning="state=='pending'"
+                      decoration-danger="state=='expired'">
+                    <field name="booking_id"/>
+                    <field name="driver_name"/>
+                    <field name="customer_name"/>
+                    <field name="create_date" string="วันที่สร้าง Link"/>
+                    <field name="rating_date"/>
+                    <field name="rating_stars" widget="badge"/>
+                    <field name="state" widget="badge"/>
+                </list>
+            </field>
+        </record>
+
+        <!-- Form View -->
+        <record id="view_delivery_rating_form" model="ir.ui.view">
+            <field name="name">delivery.rating.form</field>
+            <field name="model">delivery.rating</field>
+            <field name="arch" type="xml">
+                <form string="การประเมินความพึงพอใจ" delete="0">
+                    <header>
+                        <field name="state" widget="statusbar" 
+                               statusbar_visible="pending,done"/>
+                    </header>
+                    <sheet>
+                        <div class="oe_title">
+                            <h1>
+                                <field name="booking_id" readonly="1" class="oe_inline"/>
+                            </h1>
+                        </div>
+                        
+                        <group>
+                            <group string="📦 ข้อมูลการจอง">
+                                <field name="driver_name" readonly="1"/>
+                                <field name="customer_name" readonly="1"/>
+                                <field name="pickup_location" readonly="1"/>
+                                <field name="destination" readonly="1"/>
+                            </group>
+                            <group string="📅 วันที่">
+                                <field name="create_date" string="วันที่สร้าง Link" readonly="1"/>
+                                <field name="rating_date" readonly="1"/>
+                            </group>
+                        </group>
+                        
+                        <group string="🔗 Link ประเมิน" invisible="state != 'pending'">
+                            <field name="rating_url" widget="copyable_url" nolabel="1"/>
+                        </group>
+                        
+                        <group string="⭐ ผลการประเมิน" invisible="state != 'done'">
+                            <field name="rating_stars" readonly="1" widget="badge"/>
+                            <field name="rating_value" readonly="1"/>
+                        </group>
+                        
+                        <group string="💬 ความคิดเห็นจากลูกค้า" invisible="state != 'done'">
+                            <field name="customer_comment" readonly="1" nolabel="1"/>
+                        </group>
+                        
+                        <group invisible="1">
+                            <field name="rating_token"/>
+                        </group>
+                    </sheet>
+                </form>
+            </field>
+        </record>
+
+        <!-- Action -->
+        <record id="action_delivery_rating" model="ir.actions.act_window">
+            <field name="name">ประเมินความพึงพอใจ</field>
+            <field name="res_model">delivery.rating</field>
+            <field name="view_mode">list,form</field>
+            <field name="domain">[]</field>
+            <field name="context">{}</field>
+        </record>
+
+        <!-- Menu Item - ซ่อนเมนูหลัก เข้าถึงผ่านแท็บในการจองเท่านั้น -->
+        <!--
+        <menuitem id="menu_delivery_rating"
+                  name="ประเมินความพึงพอใจ"
+                  parent="menu_vehicle_booking_root"
+                  action="action_delivery_rating"
+                  sequence="30"/>
+        -->
+    </data>
+</odoo>

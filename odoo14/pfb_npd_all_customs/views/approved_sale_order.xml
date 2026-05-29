@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<odoo>
+    <record id="view_order_form_inherit" model="ir.ui.view">
+        <field name="name">view.order.form.inherit</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_order_form" />
+        <field name="arch" type="xml">
+            <xpath expr="/form/sheet/div[@class='oe_title']" position="before">
+                <widget name="web_ribbon" title="อนุมัติแล้ว" bg_color="text-bg-success" invisible="state_sale != 'approved'"/>
+                <widget name="web_ribbon" title="ไม่อนุมัติ" bg_color="text-bg-warning" invisible="state_sale != 'reject'"/>
+                <widget name="web_ribbon" title="รออนุมัติ" bg_color="text-bg-info" invisible="state_sale != 'waiting_to_approve'"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

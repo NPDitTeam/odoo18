@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="payment_method_view_tree" model="ir.ui.view">
+        <field name="name">Payment Method</field>
+        <field name="model">custom.payment.method</field>
+        <field name="arch" type="xml">
+            <list string="Payment method" editable="bottom">
+                <field name="type"/>
+                <field name="name"/>
+                <field name="account_id"/>
+                <field name="company_id" groups="base.group_multi_company"/>
+                <field name="is_active"/>
+            </list>
+        </field>
+    </record>
+    <record id="action_payment_method" model="ir.actions.act_window">
+        <field name="name">Payment Method</field>
+        <field name="type">ir.actions.act_window</field>
+        <field name="res_model">custom.payment.method</field>
+        <field name="view_id" ref="payment_method_view_tree"/>
+    </record>
+    <menuitem action="action_payment_method" id="menu_payment_method" parent="account.account_account_menu" sequence="6"/>
+</odoo>

@@ -1,0 +1,162 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- 🎨 Modern Tracking Views -->
+    
+    <!-- List View - รายการ Tracking พร้อม Auto-refresh จากฐานข้อมูล -->
+    <record id="view_vehicle_tracking_list_modern" model="ir.ui.view">
+        <field name="name">vehicle.tracking.list.modern</field>
+        <field name="model">vehicle.tracking</field>
+        <field name="arch" type="xml">
+            <list string="GPS Tracking History" default_order="timestamp desc" decoration-success="is_moving" decoration-muted="not is_moving">
+                <field name="timestamp" string="⏰ เวลา"/>
+                <field name="booking_id" string="📦 Booking"/>
+                <field name="driver_id" string="👤 คนขับ"/>
+                <field name="latitude" string="📍 Latitude"/>
+                <field name="longitude" string="📍 Longitude"/>
+                <field name="speed" string="🚗 ความเร็ว (km/h)"/>
+                <field name="is_moving" string="🏃 กำลังเคลื่อนที่" widget="boolean"/>
+                <field name="accuracy" string="🎯 ความแม่นยำ (m)" optional="hide"/>
+                <field name="heading" string="🧭 ทิศทาง (°)" optional="hide"/>
+                <field name="battery_level" string="🔋 แบต (%)" optional="hide"/>
+                <field name="address" string="📮 ที่อยู่" optional="show"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Form View - รายละเอียด Tracking Point -->
+    <record id="view_vehicle_tracking_form_modern" model="ir.ui.view">
+        <field name="name">vehicle.tracking.form.modern</field>
+        <field name="model">vehicle.tracking</field>
+        <field name="arch" type="xml">
+            <form string="GPS Tracking Point">
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <!-- ลบ button ที่อ้างถึง action ที่ไม่มี -->
+                    </div>
+                    
+                    <group>
+                        <group string="📦 ข้อมูลงาน">
+                            <field name="booking_id"/>
+                            <field name="driver_id"/>
+                            <field name="vehicle_id"/>
+                            <field name="timestamp"/>
+                        </group>
+                        <group string="📍 ตำแหน่ง GPS">
+                            <field name="latitude"/>
+                            <field name="longitude"/>
+                            <field name="accuracy"/>
+                            <field name="altitude"/>
+                        </group>
+                    </group>
+                    
+                    <group>
+                        <group string="🚗 การเคลื่อนที่">
+                            <field name="speed"/>
+                            <field name="heading"/>
+                            <field name="is_moving"/>
+                        </group>
+                        <group string="⚡ ข้อมูลเพิ่มเติม">
+                            <field name="battery_level"/>
+                            <field name="address"/>
+                        </group>
+                    </group>
+                    
+                    <group string="📝 หมายเหตุ">
+                        <field name="notes" nolabel="1"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Graph View - สำหรับวิเคราะห์ -->
+    <record id="view_vehicle_tracking_graph" model="ir.ui.view">
+        <field name="name">vehicle.tracking.graph</field>
+        <field name="model">vehicle.tracking</field>
+        <field name="arch" type="xml">
+            <graph string="GPS Tracking Analysis" type="line">
+                <field name="timestamp" interval="hour"/>
+                <field name="speed" type="measure"/>
+            </graph>
+        </field>
+    </record>
+
+    <!-- Search View -->
+    <record id="view_vehicle_tracking_search_modern" model="ir.ui.view">
+        <field name="name">vehicle.tracking.search.modern</field>
+        <field name="model">vehicle.tracking</field>
+        <field name="arch" type="xml">
+            <search string="ค้นหา GPS Tracking">
+                <field name="booking_id" string="Booking"/>
+                <field name="driver_id" string="คนขับ"/>
+                <field name="vehicle_id" string="รถ"/>
+                <field name="address" string="ที่อยู่"/>
+                
+                <filter name="filter_moving" string="🏃 กำลังเคลื่อนที่" 
+                        domain="[('is_moving', '=', True)]"/>
+                <filter name="filter_stopped" string="⏸️ หยุด" 
+                        domain="[('is_moving', '=', False)]"/>
+                
+                <separator/>
+                <filter name="filter_today" string="📅 วันนี้" 
+                        domain="[('timestamp', '&gt;=', context_today)]"/>
+                <filter name="filter_this_week" string="📅 สัปดาห์นี้" 
+                        domain="[('timestamp', '&gt;=', (context_today - datetime.timedelta(days=7)).strftime('%Y-%m-%d'))]"/>
+                
+                <separator/>
+                <filter name="filter_high_speed" string="⚡ ความเร็วสูง (&gt;80 km/h)" 
+                        domain="[('speed', '&gt;', 80)]"/>
+                <filter name="filter_low_battery" string="🔋 แบตต่ำ (&lt;20%)" 
+                        domain="[('battery_level', '&lt;', 20)]"/>
+                
+                <group expand="0" string="จัดกลุ่มตาม">
+                    <filter string="Booking" name="group_booking" 
+                            context="{'group_by': 'booking_id'}"/>
+                    <filter string="คนขับ" name="group_driver" 
+                            context="{'group_by': 'driver_id'}"/>
+                    <filter string="รถ" name="group_vehicle" 
+                            context="{'group_by': 'vehicle_id'}"/>
+                    <filter string="วันที่" name="group_date" 
+                            context="{'group_by': 'timestamp:day'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+<!--    &lt;!&ndash; Action &ndash;&gt;-->
+<!--    <record id="action_vehicle_tracking_modern" model="ir.actions.act_window">-->
+<!--        <field name="name">📡 GPS Tracking History</field>-->
+<!--        <field name="res_model">vehicle.tracking</field>-->
+<!--        <field name="view_mode">list,form,graph,pivot</field>-->
+<!--        <field name="context">{'search_default_filter_today': 1, 'search_default_filter_moving': 1}</field>-->
+<!--        <field name="help" type="html">-->
+<!--            <p class="o_view_nocontent_smiling_face">-->
+<!--                🚚 ไม่มีข้อมูล GPS Tracking-->
+<!--            </p>-->
+<!--            <p>-->
+<!--                ข้อมูล GPS จะถูกบันทึกอัตโนมัติเมื่อคนขับเริ่มงานผ่านแอปมือถือ-->
+<!--            </p>-->
+<!--        </field>-->
+<!--    </record>-->
+
+<!--    &lt;!&ndash; Menu Item &ndash;&gt;-->
+<!--    <menuitem id="menu_vehicle_tracking_modern" -->
+<!--              name="📡 GPS Tracking" -->
+<!--              parent="menu_vehicle_booking_root" -->
+<!--              action="action_vehicle_tracking_modern" -->
+<!--              sequence="30"/>-->
+
+    <!-- Pivot View - สำหรับวิเคราะห์เชิงลึก -->
+    <record id="view_vehicle_tracking_pivot" model="ir.ui.view">
+        <field name="name">vehicle.tracking.pivot</field>
+        <field name="model">vehicle.tracking</field>
+        <field name="arch" type="xml">
+            <pivot string="GPS Tracking Pivot">
+                <field name="booking_id" type="row"/>
+                <field name="timestamp" interval="day" type="col"/>
+                <field name="speed" type="measure"/>
+            </pivot>
+        </field>
+    </record>
+
+</odoo>

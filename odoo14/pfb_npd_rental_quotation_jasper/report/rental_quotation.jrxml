@@ -1,0 +1,838 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Created with Jaspersoft Studio version 6.21.5.final using JasperReports Library version 6.21.5-74d586df47b25dbd05bd0957999819196e59934a  -->
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="rental_quotation" pageWidth="595" pageHeight="842" columnWidth="565" leftMargin="15" rightMargin="15" topMargin="10" bottomMargin="10" isSummaryWithPageHeaderAndFooter="true" uuid="a1b2c3d4-e5f6-7890-abcd-ef1234567890">
+	<property name="com.jaspersoft.studio.data.defaultdataadapter" value="Odoo Jasper"/>
+	<property name="ODOO_RELATIONS">
+		<![CDATA[['order_line']]]>
+	</property>
+	<property name="com.jaspersoft.studio.unit." value="pixel"/>
+	<property name="net.sf.jasperreports.default.font.name" value="Sarabun"/>
+	<style name="Thai" isDefault="true" fontName="Sarabun" fontSize="14" pdfFontName="THSarabunNewBold.ttf" pdfEncoding="Identity-H" isPdfEmbedded="true"/>
+	<style name="ThaiBold" fontName="Sarabun" fontSize="14" isBold="true" pdfFontName="THSarabunNewBold.ttf" pdfEncoding="Identity-H" isPdfEmbedded="true"/>
+	<style name="ThaiSmall" fontName="Sarabun" fontSize="14" pdfFontName="THSarabunNewBold.ttf" pdfEncoding="Identity-H" isPdfEmbedded="true"/>
+	<style name="ThaiTitle" fontName="Sarabun" fontSize="22" isBold="true" pdfFontName="THSarabunNewBold.ttf" pdfEncoding="Identity-H" isPdfEmbedded="true"/>
+	<queryString language="xPath">
+		<![CDATA[/data/record]]>
+	</queryString>
+	<field name="Order_Reference-name" class="java.lang.String">
+		<fieldDescription><![CDATA[Order_Reference-name]]></fieldDescription>
+	</field>
+	<field name="Order_Date-date_order" class="java.lang.String">
+		<fieldDescription><![CDATA[Order_Date-date_order]]></fieldDescription>
+	</field>
+	<field name="Company_Name-company_id" class="java.lang.String">
+		<fieldDescription><![CDATA[Company-company_id/Name-name]]></fieldDescription>
+	</field>
+	<field name="Partner_Name-partner_id" class="java.lang.String">
+		<fieldDescription><![CDATA[Customer-partner_id/Name-name]]></fieldDescription>
+	</field>
+	<field name="Partner_Phone-phone" class="java.lang.String">
+		<fieldDescription><![CDATA[Customer-partner_id/Phone-phone]]></fieldDescription>
+	</field>
+	<field name="Partner_Fax-mobile" class="java.lang.String">
+		<fieldDescription><![CDATA[Customer-partner_id/Mobile-mobile]]></fieldDescription>
+	</field>
+	<field name="Partner_Email-email" class="java.lang.String">
+		<fieldDescription><![CDATA[Customer-partner_id/Email-email]]></fieldDescription>
+	</field>
+	<field name="On_Site-on_site" class="java.lang.String">
+		<fieldDescription><![CDATA[On_Site-on_site]]></fieldDescription>
+	</field>
+	<field name="Rent_Days-pfb_date_of_rent" class="java.lang.String">
+		<fieldDescription><![CDATA[Rent_Days-pfb_date_of_rent]]></fieldDescription>
+	</field>
+	<field name="Payment_Term-payment_term_id" class="java.lang.String">
+		<fieldDescription><![CDATA[Payment_Terms-payment_term_id/Name-name]]></fieldDescription>
+	</field>
+	<field name="Amount_Untaxed-amount_untaxed" class="java.lang.String">
+		<fieldDescription><![CDATA[Untaxed_Amount-amount_untaxed]]></fieldDescription>
+	</field>
+	<field name="Amount_Tax-amount_tax" class="java.lang.String">
+		<fieldDescription><![CDATA[Taxes-amount_tax]]></fieldDescription>
+	</field>
+	<field name="Amount_Total-amount_total" class="java.lang.String">
+		<fieldDescription><![CDATA[Total-amount_total]]></fieldDescription>
+	</field>
+	<field name="Insurance_Amount-pfb_amount_insurance" class="java.lang.String">
+		<fieldDescription><![CDATA[Insurance_Amount-pfb_amount_insurance]]></fieldDescription>
+	</field>
+	<field name="Insurance_Discount-pfb_dis_amount_insurance" class="java.lang.String">
+		<fieldDescription><![CDATA[Insurance_Discount-pfb_dis_amount_insurance]]></fieldDescription>
+	</field>
+	<field name="Insurance_Net-pfb_amount" class="java.lang.String">
+		<fieldDescription><![CDATA[Insurance_Net-pfb_amount]]></fieldDescription>
+	</field>
+	<field name="Shipping_Cost-shipping_cost" class="java.lang.String">
+		<fieldDescription><![CDATA[Shipping_Cost-shipping_cost]]></fieldDescription>
+	</field>
+	<field name="Note-note" class="java.lang.String">
+		<fieldDescription><![CDATA[Note-note]]></fieldDescription>
+	</field>
+	<field name="Salesperson_Name-user_id" class="java.lang.String">
+		<fieldDescription><![CDATA[Salesperson-user_id/Name-name]]></fieldDescription>
+	</field>
+	<field name="Baht_Text-jasper_baht_text_rental" class="java.lang.String">
+		<fieldDescription><![CDATA[Baht_Text-jasper_baht_text_rental]]></fieldDescription>
+	</field>
+	<field name="Total_Weight-jasper_total_weight" class="java.lang.String">
+		<fieldDescription><![CDATA[Total_Weight-jasper_total_weight]]></fieldDescription>
+	</field>
+	<field name="Rental_Per_Day-jasper_rental_per_day" class="java.lang.String">
+		<fieldDescription><![CDATA[Rental_Per_Day-jasper_rental_per_day]]></fieldDescription>
+	</field>
+	<field name="Grand_Total-jasper_grand_total" class="java.lang.String">
+		<fieldDescription><![CDATA[Grand_Total-jasper_grand_total]]></fieldDescription>
+	</field>
+	<field name="Branch_Address-user_id" class="java.lang.String">
+		<fieldDescription><![CDATA[Salesperson-user_id/Branch-branch_id/Address-address]]></fieldDescription>
+	</field>
+	<field name="Company_Logo-logo" class="java.lang.String">
+		<fieldDescription><![CDATA[Company-company_id/Logo-logo]]></fieldDescription>
+	</field>
+	<field name="Bank_Info-jasper_bank_info" class="java.lang.String">
+		<fieldDescription><![CDATA[Bank_Info-jasper_bank_info]]></fieldDescription>
+	</field>
+	<field name="Line_Code-jasper_product_code" class="java.lang.String">
+		<fieldDescription><![CDATA[Order_Lines-order_line/Product_Code-jasper_product_code]]></fieldDescription>
+	</field>
+	<field name="Line_Desc-jasper_product_desc" class="java.lang.String">
+		<fieldDescription><![CDATA[Order_Lines-order_line/Product_Desc-jasper_product_desc]]></fieldDescription>
+	</field>
+	<field name="Line_Weight-jasper_line_weight" class="java.lang.String">
+		<fieldDescription><![CDATA[Order_Lines-order_line/Line_Weight-jasper_line_weight]]></fieldDescription>
+	</field>
+	<field name="Line_Price_Unit-price_unit" class="java.lang.String">
+		<fieldDescription><![CDATA[Order_Lines-order_line/Unit_Price-price_unit]]></fieldDescription>
+	</field>
+	<field name="Line_Quantity-pfb_quantity" class="java.lang.String">
+		<fieldDescription><![CDATA[Order_Lines-order_line/Quantity-pfb_quantity]]></fieldDescription>
+	</field>
+	<field name="Line_Subtotal-price_subtotal" class="java.lang.String">
+		<fieldDescription><![CDATA[Order_Lines-order_line/Subtotal-price_subtotal]]></fieldDescription>
+	</field>
+	<field name="Line_Daily_Rental_Total-jasper_daily_rental_total" class="java.lang.String">
+		<fieldDescription><![CDATA[Order_Lines-order_line/Daily_Rental_Total-jasper_daily_rental_total]]></fieldDescription>
+	</field>
+	<field name="Line_Insurance_Price-pfb_insurance_price" class="java.lang.String">
+		<fieldDescription><![CDATA[Order_Lines-order_line/Insurance_Price-pfb_insurance_price]]></fieldDescription>
+	</field>
+	<field name="Line_Insurance_Total-jasper_insurance_total" class="java.lang.String">
+		<fieldDescription><![CDATA[Order_Lines-order_line/Insurance_Total-jasper_insurance_total]]></fieldDescription>
+	</field>
+	<variable name="rowNumber" class="java.lang.Integer" calculation="Count">
+		<variableExpression><![CDATA[Boolean.TRUE]]></variableExpression>
+		<initialValueExpression><![CDATA[0]]></initialValueExpression>
+	</variable>
+	<background>
+		<band splitType="Stretch"/>
+	</background>
+	<pageHeader>
+		<band height="215" splitType="Stretch">
+			<image onErrorType="Blank">
+				<reportElement x="3" y="2" width="82" height="78" uuid="30a77fbf-408b-4c67-8c21-0674af9129fb">
+					<property name="com.jaspersoft.studio.unit.width" value="px"/>
+					<property name="com.jaspersoft.studio.unit.height" value="px"/>
+				</reportElement>
+				<imageExpression><![CDATA[$F{Company_Logo-logo}]]></imageExpression>
+			</image>
+			<staticText>
+				<reportElement style="ThaiTitle" x="84" y="2" width="316" height="30" uuid="8bda4fb1-edc5-4abe-9997-207b86d8063d"/>
+				<textElement verticalAlignment="Middle">
+					<font fontName="Sarabun" size="22" isBold="true"/>
+				</textElement>
+				<text><![CDATA[ใบเสนอราคาเช่าสินค้า]]></text>
+			</staticText>
+			<textField isBlankWhenNull="true">
+				<reportElement style="ThaiBold" x="84" y="30" width="316" height="22" uuid="3a6e73b1-4557-4ea3-9f71-b796d0948951"/>
+				<textElement verticalAlignment="Middle">
+					<font fontName="Sarabun" size="14" isBold="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{Company_Name-company_id}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement style="ThaiSmall" x="84" y="44" width="316" height="24" uuid="b45aab9e-c313-40c0-95bb-faac640aeaca"/>
+				<textElement verticalAlignment="Top">
+					<font fontName="Sarabun" size="14"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{Branch_Address-user_id}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement style="ThaiBold" x="84" y="56" width="316" height="22" uuid="f2eeac36-eee8-412f-9570-ede5615693e8"/>
+				<textElement verticalAlignment="Middle">
+					<font fontName="Sarabun" size="14" isBold="true"/>
+				</textElement>
+				<text><![CDATA[เลขที่ผู้เสียภาษี : 0105560151261 (สำนักงานใหญ่)]]></text>
+			</staticText>
+			<staticText>
+				<reportElement style="ThaiBold" x="400" y="5" width="165" height="22" uuid="4f80c7b3-749d-4e6b-a465-f448c4db46b4"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Sarabun" size="16" isBold="true"/>
+				</textElement>
+				<text><![CDATA[เลขที่เอกสาร]]></text>
+			</staticText>
+			<textField isBlankWhenNull="true">
+				<reportElement style="ThaiBold" x="400" y="23" width="165" height="22" uuid="447e35e1-f344-4116-8648-900380f650be"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Sarabun" size="14" isBold="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{Order_Reference-name}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement style="Thai" x="400" y="42" width="165" height="22" uuid="6135630c-0d7c-4a75-9b4a-32746b70cebe"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Sarabun" size="14"/>
+				</textElement>
+				<text><![CDATA[วันที่ทำเอกสาร]]></text>
+			</staticText>
+			<textField isBlankWhenNull="true">
+				<reportElement style="Thai" x="400" y="56" width="165" height="22" uuid="09762b3b-b3ff-4425-afc6-8bf95470a24c"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Sarabun" size="14"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{Order_Date-date_order}]]></textFieldExpression>
+			</textField>
+			<rectangle radius="8">
+				<reportElement mode="Transparent" x="0" y="84" width="565" height="80" uuid="88a719f1-14cb-43ec-9f20-9e54d162b734"/>
+				<graphicElement>
+					<pen lineWidth="1.0"/>
+				</graphicElement>
+			</rectangle>
+			<staticText>
+				<reportElement style="ThaiBold" x="10" y="88" width="75" height="22" uuid="61f03fbf-5ecc-4bbe-b3a7-f312a8d06fbe"/>
+				<textElement>
+					<font fontName="Sarabun" size="14" isBold="true"/>
+				</textElement>
+				<text><![CDATA[ชื่อบริษัท :]]></text>
+			</staticText>
+			<textField isBlankWhenNull="true">
+				<reportElement style="Thai" x="87" y="88" width="235" height="22" uuid="c15482fe-085b-4359-99f1-d6072c14bdcf"/>
+				<textElement>
+					<font fontName="Sarabun" size="14"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{Partner_Name-partner_id}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement style="ThaiBold" x="10" y="102" width="75" height="22" uuid="ffb471f7-8e64-470c-8277-134914d5bbaa"/>
+				<textElement>
+					<font fontName="Sarabun" size="14" isBold="true"/>
+				</textElement>
+				<text><![CDATA[ชื่อลูกค้า :]]></text>
+			</staticText>
+			<staticText>
+				<reportElement style="Thai" x="87" y="102" width="235" height="22" uuid="d7972e57-6c20-45c9-9059-a05e163deb3e"/>
+				<textElement>
+					<font fontName="Sarabun" size="14"/>
+				</textElement>
+				<text><![CDATA[-]]></text>
+			</staticText>
+			<staticText>
+				<reportElement style="ThaiBold" x="10" y="116" width="75" height="22" uuid="da40b817-9fb0-4d0a-8866-d14ca03890fa"/>
+				<textElement>
+					<font fontName="Sarabun" size="14" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Line ID :]]></text>
+			</staticText>
+			<staticText>
+				<reportElement style="Thai" x="87" y="116" width="235" height="22" uuid="f3312abe-6d9a-4e53-ac53-731500af6201"/>
+				<textElement>
+					<font fontName="Sarabun" size="14"/>
+				</textElement>
+				<text><![CDATA[-]]></text>
+			</staticText>
+			<staticText>
+				<reportElement style="ThaiBold" x="10" y="130" width="75" height="22" uuid="ccc320ad-fda4-406b-b0bd-1f7f2ad94c82"/>
+				<textElement>
+					<font fontName="Sarabun" size="14" isBold="true"/>
+				</textElement>
+				<text><![CDATA[หน้างาน :]]></text>
+			</staticText>
+			<textField isBlankWhenNull="true">
+				<reportElement style="Thai" x="87" y="130" width="235" height="28" uuid="c1526fb1-872c-447d-bbad-589adff680fb"/>
+				<textElement>
+					<font fontName="Sarabun" size="14"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{On_Site-on_site}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement style="ThaiBold" x="330" y="88" width="92" height="22" uuid="bd1ca087-29e3-43be-9bf6-4ddfcea22c8e"/>
+				<textElement textAlignment="Right">
+					<font fontName="Sarabun" size="14" isBold="true"/>
+				</textElement>
+				<text><![CDATA[เบอร์โทร/Fax :]]></text>
+			</staticText>
+			<textField isBlankWhenNull="true">
+				<reportElement style="Thai" x="422" y="88" width="140" height="22" uuid="9be67127-4753-40aa-a55c-04eadb2e4999"/>
+				<textElement>
+					<font fontName="Sarabun" size="14"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{Partner_Fax-mobile}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement style="ThaiBold" x="330" y="102" width="92" height="22" uuid="e4eda349-7c70-4bff-87af-764045d2a836"/>
+				<textElement textAlignment="Right">
+					<font fontName="Sarabun" size="14" isBold="true"/>
+				</textElement>
+				<text><![CDATA[เบอร์โทร :]]></text>
+			</staticText>
+			<textField isBlankWhenNull="true">
+				<reportElement style="Thai" x="422" y="102" width="140" height="22" uuid="1ccf47f1-b086-422b-bcec-581565c981d8"/>
+				<textElement>
+					<font fontName="Sarabun" size="14"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{Partner_Phone-phone}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement style="ThaiBold" x="330" y="116" width="92" height="22" uuid="4ec21cf9-1822-4416-bd68-1af7cc1cacb5"/>
+				<textElement textAlignment="Right">
+					<font fontName="Sarabun" size="14" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Email :]]></text>
+			</staticText>
+			<textField isBlankWhenNull="true">
+				<reportElement style="Thai" x="422" y="116" width="140" height="22" uuid="ed7aae70-29bb-4e7c-a194-2acf9155e6aa"/>
+				<textElement>
+					<font fontName="Sarabun" size="14"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{Partner_Email-email}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement style="ThaiBold" x="330" y="130" width="92" height="22" uuid="924dc285-91a4-4fbc-b948-716f478b307c"/>
+				<textElement textAlignment="Right">
+					<font fontName="Sarabun" size="14" isBold="true"/>
+				</textElement>
+				<text><![CDATA[จำนวนวันเช่า :]]></text>
+			</staticText>
+			<textField isBlankWhenNull="true">
+				<reportElement style="Thai" x="422" y="130" width="70" height="22" uuid="928b7350-a5a3-46c3-8345-517959583932"/>
+				<textElement textAlignment="Center">
+					<font fontName="Sarabun" size="14"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{Rent_Days-pfb_date_of_rent} + " วัน"]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement style="ThaiBold" x="330" y="144" width="92" height="22" uuid="d4ee537c-cfb3-451f-9361-cb2705a08e12"/>
+				<textElement textAlignment="Right">
+					<font fontName="Sarabun" size="14" isBold="true"/>
+				</textElement>
+				<text><![CDATA[กำหนดยืมราคา :]]></text>
+			</staticText>
+			<textField isBlankWhenNull="true">
+				<reportElement style="Thai" x="422" y="144" width="140" height="22" uuid="8468e7bd-c41c-472f-a503-7952a51a4034"/>
+				<textElement textAlignment="Center">
+					<font fontName="Sarabun" size="14"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{Payment_Term-payment_term_id}]]></textFieldExpression>
+			</textField>
+			<line>
+				<reportElement x="-2" y="166" width="565" height="1" uuid="bde25a14-56e0-40b3-b665-b04412367ac1"/>
+				<graphicElement>
+					<pen lineWidth="1.0"/>
+				</graphicElement>
+			</line>
+			<staticText>
+				<reportElement style="ThaiBold" x="0" y="172" width="30" height="43" uuid="266ec8c5-9071-4b0f-9965-fb99d71cb540"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Sarabun" size="12" isBold="true"/>
+				</textElement>
+				<text><![CDATA[ลำดับ]]></text>
+			</staticText>
+			<staticText>
+				<reportElement style="ThaiBold" x="30" y="172" width="70" height="43" uuid="2e38e019-7ace-43a4-89a4-376190c96bda"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font fontName="Sarabun" size="12" isBold="true"/>
+				</textElement>
+				<text><![CDATA[รายการสินค้า]]></text>
+			</staticText>
+			<staticText>
+				<reportElement style="ThaiBold" x="100" y="172" width="44" height="43" uuid="b5db8732-4354-42d2-a70d-f940e61acf46"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="Sarabun" size="12" isBold="true"/>
+				</textElement>
+				<text><![CDATA[น้ำหนัก]]></text>
+			</staticText>
+			<staticText>
+				<reportElement style="ThaiBold" x="144" y="172" width="74" height="43" uuid="b5db8732-0001-0001-0001-000000000001"/>
+				<textElement textAlignment="Center" verticalAlignment="Top">
+					<font fontName="Sarabun" size="11" isBold="true"/>
+				</textElement>
+				<text><![CDATA[ค่าปรับ/เงินประกัน
+ราคาสินค้า(ชิ้น)]]></text>
+			</staticText>
+			<staticText>
+				<reportElement style="ThaiBold" x="218" y="172" width="42" height="43" uuid="b5db8732-0001-0001-0001-000000000002"/>
+				<textElement textAlignment="Center" verticalAlignment="Top">
+					<font fontName="Sarabun" size="11" isBold="true"/>
+				</textElement>
+				<text><![CDATA[ค่าซ่อมแซม
+(B/ชิ้น)]]></text>
+			</staticText>
+			<staticText>
+				<reportElement style="ThaiBold" x="260" y="172" width="42" height="43" uuid="b5db8732-0001-0001-0001-000000000003"/>
+				<textElement textAlignment="Center" verticalAlignment="Top">
+					<font fontName="Sarabun" size="11" isBold="true"/>
+				</textElement>
+				<text><![CDATA[ค่าเช่า
+รายวัน(บาท)]]></text>
+			</staticText>
+			<staticText>
+				<reportElement style="ThaiBold" x="300" y="172" width="52" height="43" uuid="b5db8732-0001-0001-0001-000000000004"/>
+				<textElement textAlignment="Center" verticalAlignment="Top">
+					<font fontName="Sarabun" size="11" isBold="true"/>
+				</textElement>
+				<text><![CDATA[รวมค่าเช่า
+รายวัน]]></text>
+			</staticText>
+			<staticText>
+				<reportElement style="ThaiBold" x="346" y="172" width="40" height="43" uuid="9b0269c0-9dae-461b-968c-8179e1774b88"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="Sarabun" size="12" isBold="true"/>
+				</textElement>
+				<text><![CDATA[ค่าเช่า]]></text>
+			</staticText>
+			<staticText>
+				<reportElement style="ThaiBold" x="380" y="172" width="40" height="43" uuid="851ad591-91f4-47c3-b69c-35590f74e291"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="Sarabun" size="12" isBold="true"/>
+				</textElement>
+				<text><![CDATA[จำนวน]]></text>
+			</staticText>
+			<staticText>
+				<reportElement style="ThaiBold" x="408" y="172" width="52" height="43" uuid="94de48d1-a9dc-4aeb-874f-a0d2093c75d5"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="Sarabun" size="12" isBold="true"/>
+				</textElement>
+				<text><![CDATA[รวมค่าเช่า]]></text>
+			</staticText>
+			<staticText>
+				<reportElement style="ThaiBold" x="460" y="172" width="50" height="43" uuid="23520ca6-5118-4fc3-8c4c-be0cd9095d29"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="Sarabun" size="12" isBold="true"/>
+				</textElement>
+				<text><![CDATA[ค่าประกัน]]></text>
+			</staticText>
+			<staticText>
+				<reportElement style="ThaiBold" x="505" y="172" width="60" height="43" uuid="793f53b4-cbed-48a9-af1a-395fcddac6f4"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="Sarabun" size="12" isBold="true"/>
+				</textElement>
+				<text><![CDATA[รวมประกัน]]></text>
+			</staticText>
+			<line>
+				<reportElement x="-2" y="212" width="565" height="1" uuid="edb5005a-8162-4020-8f35-c1dfaafee25a"/>
+				<graphicElement>
+					<pen lineWidth="1.0"/>
+				</graphicElement>
+			</line>
+		</band>
+	</pageHeader>
+	<detail>
+		<band height="24" splitType="Stretch">
+			<textField>
+				<reportElement style="Thai" x="0" y="-1" width="30" height="22" uuid="9659aca8-d619-4e4c-a5f2-2a2afc6798f3"/>
+				<textElement textAlignment="Center">
+					<font fontName="Sarabun" size="12"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$V{rowNumber}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement style="Thai" x="30" y="-1" width="70" height="22" uuid="cf72f076-9989-4e2d-be79-80c98ac07c45"/>
+				<textElement textAlignment="Left">
+					<font fontName="Sarabun" size="12"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{Line_Desc-jasper_product_desc}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement style="Thai" x="100" y="-1" width="44" height="22" uuid="4bf7b26a-3de7-44e9-8afd-e627e9e03636"/>
+				<textElement textAlignment="Right">
+					<font fontName="Sarabun" size="12"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{Line_Weight-jasper_line_weight} != null && !$F{Line_Weight-jasper_line_weight}.isEmpty() ? String.format("%,.2f", Double.parseDouble($F{Line_Weight-jasper_line_weight})) : "0.00"]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement style="Thai" x="144" y="-1" width="74" height="22" uuid="b5db8732-0002-0001-0001-000000000001"/>
+				<textElement textAlignment="Right">
+					<font fontName="Sarabun" size="12"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{Line_Insurance_Price-pfb_insurance_price} != null && !$F{Line_Insurance_Price-pfb_insurance_price}.isEmpty() ? String.format("%,.2f", Double.parseDouble($F{Line_Insurance_Price-pfb_insurance_price})) : "0.00"]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement style="Thai" x="218" y="-1" width="42" height="22" uuid="b5db8732-0002-0001-0001-000000000002"/>
+				<textElement textAlignment="Right">
+					<font fontName="Sarabun" size="12"/>
+				</textElement>
+				<text><![CDATA[ตามจริง]]></text>
+			</staticText>
+			<textField isBlankWhenNull="true">
+				<reportElement style="Thai" x="260" y="-1" width="40" height="22" uuid="b5db8732-0002-0001-0001-000000000003"/>
+				<textElement textAlignment="Right">
+					<font fontName="Sarabun" size="12"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{Line_Price_Unit-price_unit} != null && !$F{Line_Price_Unit-price_unit}.isEmpty() ? String.format("%,.2f", Double.parseDouble($F{Line_Price_Unit-price_unit})) : "0.00"]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement style="Thai" x="300" y="-1" width="52" height="22" uuid="b5db8732-0002-0001-0001-000000000004"/>
+				<textElement textAlignment="Right">
+					<font fontName="Sarabun" size="12"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{Line_Daily_Rental_Total-jasper_daily_rental_total} != null && !$F{Line_Daily_Rental_Total-jasper_daily_rental_total}.isEmpty() ? String.format("%,.2f", Double.parseDouble($F{Line_Daily_Rental_Total-jasper_daily_rental_total})) : "0.00"]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement style="Thai" x="347" y="-1" width="40" height="22" uuid="76eedaa0-43f6-4ec7-8016-ad2d63449777"/>
+				<textElement textAlignment="Right">
+					<font fontName="Sarabun" size="12"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{Line_Price_Unit-price_unit} != null && !$F{Line_Price_Unit-price_unit}.isEmpty() ? String.format("%,.2f", Double.parseDouble($F{Line_Price_Unit-price_unit})) : "0.00"]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement style="Thai" x="380" y="-1" width="40" height="22" uuid="c60a28d4-655c-4834-949a-58fe101fce6b"/>
+				<textElement textAlignment="Right">
+					<font fontName="Sarabun" size="12"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{Line_Quantity-pfb_quantity} != null && !$F{Line_Quantity-pfb_quantity}.isEmpty() ? String.format("%,.0f", Double.parseDouble($F{Line_Quantity-pfb_quantity})) : "0"]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement style="Thai" x="408" y="-1" width="52" height="22" uuid="eab29c88-84f2-4665-abda-f1a46ad92995"/>
+				<textElement textAlignment="Right">
+					<font fontName="Sarabun" size="12"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{Line_Subtotal-price_subtotal} != null && !$F{Line_Subtotal-price_subtotal}.isEmpty() ? String.format("%,.2f", Double.parseDouble($F{Line_Subtotal-price_subtotal})) : "0.00"]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement style="Thai" x="460" y="-1" width="50" height="22" uuid="1c4c721a-f241-460c-92c2-714fdf1993a1"/>
+				<textElement textAlignment="Right">
+					<font fontName="Sarabun" size="12"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{Line_Insurance_Price-pfb_insurance_price} != null && !$F{Line_Insurance_Price-pfb_insurance_price}.isEmpty() ? String.format("%,.2f", Double.parseDouble($F{Line_Insurance_Price-pfb_insurance_price})) : "0.00"]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement style="Thai" x="505" y="-1" width="60" height="22" uuid="39c3857c-2381-4473-bad0-d592da906102"/>
+				<textElement textAlignment="Right">
+					<font fontName="Sarabun" size="12"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{Line_Insurance_Total-jasper_insurance_total} != null && !$F{Line_Insurance_Total-jasper_insurance_total}.isEmpty() ? String.format("%,.2f", Double.parseDouble($F{Line_Insurance_Total-jasper_insurance_total})) : "0.00"]]></textFieldExpression>
+			</textField>
+		</band>
+	</detail>
+	<pageFooter>
+		<band height="24">
+			<textField>
+				<reportElement style="Thai" x="440" y="2" width="80" height="22" uuid="b984c05e-0a87-40b1-ae93-8cf2460bcc04"/>
+				<textElement textAlignment="Right">
+					<font fontName="Sarabun" size="14"/>
+				</textElement>
+				<textFieldExpression><![CDATA["หน้า " + $V{PAGE_NUMBER} + " / "]]></textFieldExpression>
+			</textField>
+			<textField evaluationTime="Report">
+				<reportElement style="Thai" x="520" y="2" width="40" height="22" uuid="0e242f2b-2030-4507-abb6-fe92295a81bc"/>
+				<textElement textAlignment="Left">
+					<font fontName="Sarabun" size="14"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$V{PAGE_NUMBER}]]></textFieldExpression>
+			</textField>
+		</band>
+	</pageFooter>
+	<lastPageFooter>
+		<band height="120">
+			<staticText>
+				<reportElement style="Thai" x="30" y="5" width="230" height="22" uuid="0d7fe0a8-47ea-464b-a56e-0ce0efb9c001"/>
+				<textElement textAlignment="Center">
+					<font fontName="Sarabun" size="14"/>
+				</textElement>
+				<text><![CDATA[[ตัวบรรจง]...........................................................]]></text>
+			</staticText>
+			<staticText>
+				<reportElement style="ThaiBold" x="30" y="23" width="230" height="22" uuid="7deee4cb-236b-47f8-a392-8c19ab36bf37"/>
+				<textElement textAlignment="Center">
+					<font fontName="Sarabun" size="14" isBold="true"/>
+				</textElement>
+				<text><![CDATA[ลงชื่อผู้มีอำนาจเช่าสินค้า]]></text>
+			</staticText>
+			<staticText>
+				<reportElement style="ThaiBold" x="30" y="41" width="230" height="22" uuid="06cd39b1-741a-4866-a9bc-329e4582218a"/>
+				<textElement textAlignment="Center">
+					<font fontName="Sarabun" size="14" isBold="true"/>
+				</textElement>
+				<text><![CDATA[พร้อมตราประทับบริษัท เพื่อยืนยันการเช่าสินค้า]]></text>
+			</staticText>
+			<staticText>
+				<reportElement style="ThaiBold" x="330" y="5" width="230" height="22" uuid="78695ddc-b88b-42d6-95c2-b736ab18d071"/>
+				<textElement textAlignment="Center">
+					<font fontName="Sarabun" size="14" isBold="true"/>
+				</textElement>
+				<text><![CDATA[ขอแสดงความนับถือ]]></text>
+			</staticText>
+			<textField isBlankWhenNull="true">
+				<reportElement style="Thai" x="330" y="23" width="230" height="22" uuid="a35d4bce-abb7-4f3b-858a-d997b43a1cb4"/>
+				<textElement textAlignment="Center">
+					<font fontName="Sarabun" size="14"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{Salesperson_Name-user_id}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement style="Thai" x="330" y="65" width="230" height="22" uuid="61d1d2cc-29c3-466b-84e4-b9f857b811f7"/>
+				<textElement textAlignment="Center">
+					<font fontName="Sarabun" size="14"/>
+				</textElement>
+				<textFieldExpression><![CDATA["น้ำหนักรวมสุทธิ : " + ($F{Total_Weight-jasper_total_weight} != null && !$F{Total_Weight-jasper_total_weight}.isEmpty() ? String.format("%,.2f", Double.parseDouble($F{Total_Weight-jasper_total_weight})) : "0.00") + " กิโลกรัม"]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement style="Thai" x="440" y="95" width="80" height="22" uuid="4d58f275-147d-4ee3-b425-a5334e5f29f5"/>
+				<textElement textAlignment="Right">
+					<font fontName="Sarabun" size="14"/>
+				</textElement>
+				<textFieldExpression><![CDATA["หน้า " + $V{PAGE_NUMBER} + " / "]]></textFieldExpression>
+			</textField>
+			<textField evaluationTime="Report">
+				<reportElement style="Thai" x="520" y="95" width="40" height="22" uuid="02594fb3-75d5-42a0-9cdf-21e7937e8e8f"/>
+				<textElement textAlignment="Left">
+					<font fontName="Sarabun" size="14"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$V{PAGE_NUMBER}]]></textFieldExpression>
+			</textField>
+		</band>
+	</lastPageFooter>
+	<summary>
+		<band height="300" splitType="Stretch">
+			<line>
+				<reportElement x="0" y="2" width="565" height="1" uuid="32b8ce3e-6b34-4b48-92fc-2ba9c544840c"/>
+				<graphicElement>
+					<pen lineWidth="1.0"/>
+				</graphicElement>
+			</line>
+			<rectangle radius="8">
+				<reportElement mode="Transparent" x="0" y="8" width="340" height="202" uuid="e0216131-103f-43f6-b6d7-9c43d42fc27f"/>
+				<graphicElement>
+					<pen lineWidth="1.0"/>
+				</graphicElement>
+			</rectangle>
+			<staticText>
+				<reportElement style="ThaiBold" x="3" y="10" width="65" height="22" uuid="c5c1928d-0a4c-42e4-8e5a-026ecb8fd45d"/>
+				<textElement>
+					<font fontName="Sarabun" size="14" isBold="true"/>
+				</textElement>
+				<text><![CDATA[หมายเหตุ :]]></text>
+			</staticText>
+			<textField isBlankWhenNull="true">
+				<reportElement style="Thai" x="75" y="13" width="255" height="62" uuid="852e18a3-0116-45f6-9a8a-708a50570d7d"/>
+				<textElement>
+					<font fontName="Sarabun" size="14"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{Note-note} != null ? $F{Note-note}.replaceAll("<[^>]*>", "") : ""]]></textFieldExpression>
+			</textField>
+			<line>
+				<reportElement x="10" y="75" width="320" height="1" uuid="cd90d3d4-d479-4293-8c28-b50da3645a3f"/>
+				<graphicElement>
+					<pen lineWidth="0.5"/>
+				</graphicElement>
+			</line>
+			<staticText>
+				<reportElement style="ThaiBold" x="3" y="78" width="328" height="26" uuid="9e55ba45-a2bc-4937-9c7d-aaf22ff5a188"/>
+				<textElement>
+					<font fontName="Sarabun" size="14" isBold="true"/>
+				</textElement>
+				<text><![CDATA[เงื่อนไขการเช่าสินค้า :]]></text>
+			</staticText>
+			<staticText>
+				<reportElement style="Thai" x="3" y="97" width="338" height="22" uuid="a82e72b1-4944-4dc3-bbce-e58cf5b38048"/>
+				<textElement>
+					<font fontName="Sarabun" size="12"/>
+				</textElement>
+				<text><![CDATA[1. ชำระค่าเช่า/เงินประกันสินค้าก่อนวันรับสินค้า เพื่อจัดเตรียมสินค้าให้พร้อม]]></text>
+			</staticText>
+			<staticText>
+				<reportElement style="Thai" x="3" y="115" width="338" height="22" uuid="c614fa67-72af-414c-b5c4-6094db391ce1"/>
+				<textElement>
+					<font fontName="Sarabun" size="12"/>
+				</textElement>
+				<text><![CDATA[2. วางเงินประกันด้วย(เงินสด/BG-หนังสือค้ำประกันของธนาคาร)]]></text>
+			</staticText>
+			<staticText>
+				<reportElement style="Thai" x="3" y="131" width="338" height="22" uuid="1965cbe8-4d60-4a22-a8dd-40841a22a18e"/>
+				<textElement>
+					<font fontName="Sarabun" size="12"/>
+				</textElement>
+				<text><![CDATA[3. การรับสินค้า(รับสินค้าที่สาขา ไม่รวมค่าขนย้ายสินค้า ขึ้น-ลง)]]></text>
+			</staticText>
+			<staticText>
+				<reportElement style="Thai" x="3" y="149" width="338" height="22" uuid="d1339488-6b44-44db-94c0-9eeaf802069e"/>
+				<textElement>
+					<font fontName="Sarabun" size="12"/>
+				</textElement>
+				<text><![CDATA[4. ระยะเวลาในการเช่าสินค้าอย่างน้อยตามจำนวนวันตามใบเสนอราคา]]></text>
+			</staticText>
+			<staticText>
+				<reportElement style="Thai" x="3" y="167" width="338" height="22" uuid="b6165b5a-a0be-4708-a419-b077ef9efcfa"/>
+				<textElement>
+					<font fontName="Sarabun" size="12"/>
+				</textElement>
+				<text><![CDATA[5. กรณีต่อสัญญาเช่าต้องกระทำภายใน7วันก่อนครบกำหนด]]></text>
+			</staticText>
+			<staticText>
+				<reportElement style="ThaiBold" x="340" y="12" width="120" height="22" uuid="da2ca17a-852e-4e68-b347-d2407034528d"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="Sarabun" size="14" isBold="true"/>
+				</textElement>
+				<text><![CDATA[ค่าเช่า :]]></text>
+			</staticText>
+			<textField isBlankWhenNull="true">
+				<reportElement style="ThaiBold" x="460" y="12" width="105" height="22" uuid="87def4b5-a355-4ab4-9e01-de207a372ef0"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="Sarabun" size="14" isBold="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{Amount_Untaxed-amount_untaxed} != null && !$F{Amount_Untaxed-amount_untaxed}.isEmpty() ? String.format("%,.2f", Double.parseDouble($F{Amount_Untaxed-amount_untaxed})) : "0.00"]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement style="Thai" x="340" y="30" width="120" height="22" uuid="0167d561-3986-4cb4-9213-2aaccc7e3f04"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="Sarabun" size="14" isBold="true"/>
+				</textElement>
+				<text><![CDATA[ภาษีมูลค่าเพิ่ม 7 % :]]></text>
+			</staticText>
+			<textField isBlankWhenNull="true">
+				<reportElement style="Thai" x="460" y="30" width="105" height="22" uuid="13e3d1c7-1c9c-472f-a64e-7ab57727d29d"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="Sarabun" size="14"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{Amount_Tax-amount_tax} != null && !$F{Amount_Tax-amount_tax}.isEmpty() ? String.format("%,.2f", Double.parseDouble($F{Amount_Tax-amount_tax})) : "0.00"]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement style="ThaiBold" x="340" y="46" width="120" height="22" uuid="b4cd9f04-9154-4e6a-8bba-85329627f995"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="Sarabun" size="14" isBold="true"/>
+				</textElement>
+				<text><![CDATA[รวมค่าเช่าทั้งสิ้น :]]></text>
+			</staticText>
+			<textField isBlankWhenNull="true">
+				<reportElement style="ThaiBold" x="460" y="46" width="105" height="22" uuid="9fb4767a-a06c-43cd-8944-03e5cac45350"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="Sarabun" size="14" isBold="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{Amount_Total-amount_total} != null && !$F{Amount_Total-amount_total}.isEmpty() ? String.format("%,.2f", Double.parseDouble($F{Amount_Total-amount_total})) : "0.00"]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement style="ThaiBold" x="340" y="64" width="120" height="22" uuid="4fd22bcd-6fc3-4c63-a9c3-188d92361b7a"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="Sarabun" size="14" isBold="true"/>
+				</textElement>
+				<text><![CDATA[ค่าประกัน :]]></text>
+			</staticText>
+			<textField isBlankWhenNull="true">
+				<reportElement style="ThaiBold" x="460" y="64" width="105" height="22" uuid="65200ba3-f499-48d5-8664-ca0eb25ff69d"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="Sarabun" size="14" isBold="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{Insurance_Amount-pfb_amount_insurance} != null && !$F{Insurance_Amount-pfb_amount_insurance}.isEmpty() ? String.format("%,.2f", Double.parseDouble($F{Insurance_Amount-pfb_amount_insurance})) : "0.00"]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement style="ThaiBold" x="340" y="82" width="120" height="22" uuid="bdac78c7-842a-45cd-9c12-6f5664945f84"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="Sarabun" size="14" isBold="true"/>
+				</textElement>
+				<text><![CDATA[ส่วนลดค่าประกัน :]]></text>
+			</staticText>
+			<textField isBlankWhenNull="true">
+				<reportElement style="ThaiBold" x="460" y="82" width="105" height="22" uuid="9f94e61d-1802-4a60-81e5-d6d5fe2b5463"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="Sarabun" size="14" isBold="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{Insurance_Discount-pfb_dis_amount_insurance} != null && !$F{Insurance_Discount-pfb_dis_amount_insurance}.isEmpty() ? String.format("%,.2f", Double.parseDouble($F{Insurance_Discount-pfb_dis_amount_insurance})) : "0.00"]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement style="ThaiBold" x="340" y="100" width="120" height="22" uuid="6c48ae87-1817-4106-901d-fa02ae2ded20"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="Sarabun" size="14" isBold="true"/>
+				</textElement>
+				<text><![CDATA[ประกันสุทธิ :]]></text>
+			</staticText>
+			<textField isBlankWhenNull="true">
+				<reportElement style="ThaiBold" x="460" y="100" width="105" height="22" uuid="86099f34-9ff4-40ae-8bab-eb42feec6ccd"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="Sarabun" size="14" isBold="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{Insurance_Net-pfb_amount} != null && !$F{Insurance_Net-pfb_amount}.isEmpty() ? String.format("%,.2f", Double.parseDouble($F{Insurance_Net-pfb_amount})) : "0.00"]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement style="Thai" x="340" y="118" width="120" height="22" uuid="8a650578-f66d-47f5-9f1a-7f27cfdc8104"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="Sarabun" size="14" isBold="true"/>
+				</textElement>
+				<text><![CDATA[ค่าขนส่ง :]]></text>
+			</staticText>
+			<textField isBlankWhenNull="true">
+				<reportElement style="Thai" x="460" y="118" width="105" height="22" uuid="152541a0-7b20-464e-b965-bc6f6fd3d32b"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="Sarabun" size="14"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{Shipping_Cost-shipping_cost} != null && !$F{Shipping_Cost-shipping_cost}.isEmpty() ? String.format("%,.2f", Double.parseDouble($F{Shipping_Cost-shipping_cost})) : "0.0"]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement style="Thai" x="340" y="134" width="120" height="22" uuid="449f9265-c729-4d56-90dc-8db34184e7d7"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="Sarabun" size="14" isBold="true"/>
+				</textElement>
+				<text><![CDATA[ค่าเช่าต่อวัน :]]></text>
+			</staticText>
+			<textField isBlankWhenNull="true">
+				<reportElement style="Thai" x="460" y="134" width="105" height="22" uuid="10534ae7-192a-47ad-921e-79ba31b15323"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="Sarabun" size="14"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{Rental_Per_Day-jasper_rental_per_day} != null && !$F{Rental_Per_Day-jasper_rental_per_day}.isEmpty() ? String.format("%,.2f", Double.parseDouble($F{Rental_Per_Day-jasper_rental_per_day})) : "0.00"]]></textFieldExpression>
+			</textField>
+			<rectangle radius="8">
+				<reportElement mode="Transparent" x="0" y="215" width="565" height="30" uuid="28dd1e26-1be4-40ba-987e-661a3ed80eaa"/>
+				<graphicElement>
+					<pen lineWidth="1.0"/>
+				</graphicElement>
+			</rectangle>
+			<staticText>
+				<reportElement style="ThaiBold" x="10" y="218" width="60" height="24" uuid="c36d1c96-3ad7-45ba-a205-4a3923fde293"/>
+				<textElement verticalAlignment="Middle">
+					<font fontName="Sarabun" size="14" isBold="true"/>
+				</textElement>
+				<text><![CDATA[รวมสุทธิ :]]></text>
+			</staticText>
+			<textField isBlankWhenNull="true">
+				<reportElement style="Thai" x="75" y="218" width="300" height="24" uuid="a747d967-c884-4ddd-a696-f226ae8d0891"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Sarabun" size="14"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{Baht_Text-jasper_baht_text_rental} != null && !$F{Baht_Text-jasper_baht_text_rental}.isEmpty() ? "(" + $F{Baht_Text-jasper_baht_text_rental} + ")" : ""]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement style="ThaiBold" x="380" y="218" width="20" height="24" uuid="8a07b2ed-8036-4b0d-9398-49cf9e5f47a5"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Sarabun" size="14" isBold="true"/>
+				</textElement>
+				<text><![CDATA[|]]></text>
+			</staticText>
+			<textField isBlankWhenNull="true">
+				<reportElement style="ThaiBold" x="405" y="218" width="150" height="24" uuid="cd959f9e-bf50-494a-be9d-9a3125e5cf34"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="Sarabun" size="14" isBold="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{Grand_Total-jasper_grand_total} != null && !$F{Grand_Total-jasper_grand_total}.isEmpty() ? String.format("%,.2f", Double.parseDouble($F{Grand_Total-jasper_grand_total})) : "0.00"]]></textFieldExpression>
+			</textField>
+			<rectangle radius="8">
+				<reportElement mode="Transparent" x="0" y="250" width="565" height="40" uuid="4c60f1ac-f9be-4192-82d1-8226f962dc31"/>
+				<graphicElement>
+					<pen lineWidth="1.0"/>
+				</graphicElement>
+			</rectangle>
+			<staticText>
+				<reportElement style="ThaiBold" x="10" y="254" width="545" height="22" uuid="653179e0-655a-4e45-9ce2-ea8995873341"/>
+				<textElement verticalAlignment="Middle">
+					<font fontName="Sarabun" size="14" isBold="true"/>
+				</textElement>
+				<text><![CDATA[วิธีการชำระเงิน : โอนเงินเข้าบัญชี]]></text>
+			</staticText>
+			<textField isBlankWhenNull="true">
+				<reportElement style="Thai" x="30" y="268" width="525" height="22" uuid="093d5e93-6f7d-4e96-83d9-73c6ec8bb000"/>
+				<textElement verticalAlignment="Middle">
+					<font fontName="Sarabun" size="14"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{Bank_Info-jasper_bank_info} != null && !$F{Bank_Info-jasper_bank_info}.isEmpty() ? $F{Bank_Info-jasper_bank_info} : ""]]></textFieldExpression>
+			</textField>
+		</band>
+	</summary>
+</jasperReport>

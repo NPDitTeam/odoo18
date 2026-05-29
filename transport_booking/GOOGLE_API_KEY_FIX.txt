@@ -1,0 +1,94 @@
+🔑 GOOGLE API KEY FIX - QUICK GUIDE
+===================================
+
+## ❌ ปัญหา
+RefererNotAllowedMapError
+URL ที่ต้องได้รับอนุญาต: http://119.59.124.50:8070/
+
+## ✅ วิธีแก้ (5 ขั้นตอน)
+
+### ขั้นที่ 1: เข้า Google Cloud Console
+https://console.cloud.google.com/
+
+### ขั้นที่ 2: ไปที่ Credentials
+APIs & Services → Credentials
+
+### ขั้นที่ 3: หา API Key
+หา key ที่ชื่อ "Maps API" หรือดูในโค้ด controller
+
+Key ปัจจุบัน: AIzaSyAorvWR_...
+
+### ขั้นที่ 4: Edit Key
+1. คลิก pencil icon ข้าง API key
+2. ดูที่ "HTTP referrers (web sites)"
+3. เปลี่ยนจาก: [specific domains]
+   เป็น: [None. All referrers allowed]
+
+OR
+
+เพิ่ม: http://119.59.124.50/*
+
+### ขั้นที่ 5: Save & Wait
+1. คลิก Save
+2. รอ 2-5 นาที
+3. Refresh browser (Ctrl+Shift+R)
+4. Test map - ควรเป็นปกติ ✅
+
+## 🧪 ทดสอบ
+
+บ้านบนไปที่:
+- Odoo → Booking
+- Click Map
+- ควรเห็นแผนที่ ✅
+
+ถ้ายังไม่ได้:
+
+1. Restart Odoo
+```
+net stop "Odoo 18.0"
+timeout /t 5
+net start "Odoo 18.0"
+```
+
+2. Clear cache
+```
+Ctrl + Shift + Delete (Browser)
+```
+
+3. Use private window
+```
+Ctrl + Shift + N (Chrome/Edge)
+Cmd + Shift + N (Firefox)
+```
+
+## 📋 ตัวเลือกอื่น
+
+### ถ้า Key ไม่ทำงาน:
+
+**Generate New Key:**
+1. Google Cloud → Credentials
+2. + Create Credentials
+3. Select API Key
+4. Set HTTP Referrer: http://119.59.124.50/*
+5. Copy key
+6. Update: C:\Program Files\Odoo 18.0.20251009\server\custom-addons\transport_booking\controllers\map_controller.py
+   - Line 5: GOOGLE_API_KEY = "YOUR_NEW_KEY"
+7. Restart Odoo
+
+## ✨ What to Check
+
+✅ API Key exists in Google Cloud
+✅ Maps JavaScript API enabled
+✅ Directions API enabled
+✅ HTTP Referrer: http://119.59.124.50/* allowed
+✅ API limits not exceeded
+
+## 🎯 Expected Result
+
+After fix:
+- Map displays ✅
+- Route shows ✅
+- Distance & time ✅
+- No error ✅
+
+===================================

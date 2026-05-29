@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+<!--    <record id="model_res_branch" model="ir.model">-->
+<!--        <field name="name">res.branch</field>-->
+<!--        <field name="model">res.branch</field>-->
+<!--    </record>-->
+</odoo>

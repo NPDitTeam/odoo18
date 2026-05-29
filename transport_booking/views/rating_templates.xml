@@ -1,0 +1,293 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <!-- Rating Form Template - Public -->
+        <template id="rating_form_template" name="Customer Rating Form">
+            <t t-call="web.frontend_layout">
+                <div class="container mt-5 mb-5">
+                    <div class="row justify-content-center">
+                        <div class="col-md-8 col-lg-6">
+                            <div class="card shadow-lg">
+                                <div class="card-header bg-primary text-white text-center py-4">
+                                    <h2 class="mb-0">
+                                        <i class="fa fa-star"></i> ประเมินความพึงพอใจ
+                                    </h2>
+                                    <p class="mb-0">การขนส่ง NPD Transport</p>
+                                </div>
+                                
+                                <div class="card-body p-4">
+                                    <!-- ข้อมูลการจอง -->
+                                    <div class="alert alert-info">
+                                        <h5><i class="fa fa-truck"></i> ข้อมูลการจัดส่ง</h5>
+                                        <div class="row mt-3">
+                                            <div class="col-6">
+                                                <strong>เลขที่จอง:</strong><br/>
+                                                <span t-esc="rating_info['booking_name']"/>
+                                            </div>
+                                            <div class="col-6">
+                                                <strong>พนักงานขับรถ:</strong><br/>
+                                                <span t-esc="rating_info['driver_name']"/>
+                                            </div>
+                                        </div>
+                                        <div class="row mt-2">
+                                            <div class="col-12">
+                                                <strong>ลูกค้า:</strong><br/>
+                                                <span t-esc="rating_info['customer_name']"/>
+                                            </div>
+                                        </div>
+                                        <div class="row mt-2">
+                                            <div class="col-12">
+                                                <strong>จาก:</strong> <span t-esc="rating_info['pickup_location']"/><br/>
+                                                <strong>ถึง:</strong> <span t-esc="rating_info['destination']"/>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- ฟอร์มประเมิน -->
+                                    <form id="ratingForm" class="mt-4">
+                                        <input type="hidden" id="token" t-att-value="token"/>
+                                        
+                                        <!-- คะแนนดาว -->
+                                        <div class="form-group text-center mb-4">
+                                            <label class="h5 mb-3">กรุณาให้คะแนนความพึงพอใจ</label>
+                                            <div class="star-rating" id="starRating">
+                                                <i class="fa fa-star star" data-rating="1"></i>
+                                                <i class="fa fa-star star" data-rating="2"></i>
+                                                <i class="fa fa-star star" data-rating="3"></i>
+                                                <i class="fa fa-star star" data-rating="4"></i>
+                                                <i class="fa fa-star star" data-rating="5"></i>
+                                            </div>
+                                            <input type="hidden" id="ratingStars" name="rating_stars" required="1"/>
+                                            <div class="rating-text mt-2 text-muted h6"></div>
+                                        </div>
+                                        
+                                        <!-- ความคิดเห็น -->
+                                        <div class="form-group">
+                                            <label for="customerComment" class="h6">
+                                                <i class="fa fa-comment"></i> ความคิดเห็นเพิ่มเติม (ถ้ามี)
+                                            </label>
+                                            <textarea class="form-control" id="customerComment" 
+                                                      name="customer_comment" rows="4" 
+                                                      placeholder="กรุณาแสดงความคิดเห็นเกี่ยวกับการบริการ..."></textarea>
+                                        </div>
+                                        
+                                        <!-- ปุ่มส่ง -->
+                                        <button type="submit" class="btn btn-primary btn-lg btn-block mt-4" id="submitBtn">
+                                            <i class="fa fa-paper-plane"></i> ส่งการประเมิน
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- CSS -->
+                <style>
+                    .star-rating {
+                        font-size: 3rem;
+                        cursor: pointer;
+                    }
+                    .star {
+                        color: #ddd;
+                        transition: color 0.2s;
+                    }
+                    .star:hover,
+                    .star.active {
+                        color: #ffc107;
+                    }
+                    .rating-text {
+                        min-height: 30px;
+                    }
+                    .card {
+                        border-radius: 15px;
+                        overflow: hidden;
+                    }
+                    .card-header {
+                        border-bottom: 3px solid rgba(255,255,255,0.2);
+                    }
+                </style>
+                
+                <!-- JavaScript -->
+                <script type="text/javascript">
+                    document.addEventListener('DOMContentLoaded', function() {
+                        var selectedRating = 0;
+                        var ratingTexts = {
+                            1: '⭐ แย่มาก',
+                            2: '⭐⭐ แย่',
+                            3: '⭐⭐⭐ ปานกลาง',
+                            4: '⭐⭐⭐⭐ ดี',
+                            5: '⭐⭐⭐⭐⭐ ดีมาก'
+                        };
+                        
+                        var stars = document.querySelectorAll('.star');
+                        var ratingInput = document.getElementById('ratingStars');
+                        var ratingText = document.querySelector('.rating-text');
+                        var submitBtn = document.getElementById('submitBtn');
+                        var ratingForm = document.getElementById('ratingForm');
+                        
+                        // Star hover and click
+                        stars.forEach(function(star) {
+                            // Hover effect
+                            star.addEventListener('mouseenter', function() {
+                                var rating = parseInt(this.getAttribute('data-rating'));
+                                highlightStars(rating);
+                            });
+                            
+                            star.addEventListener('mouseleave', function() {
+                                highlightStars(selectedRating);
+                            });
+                            
+                            // Click event
+                            star.addEventListener('click', function() {
+                                selectedRating = parseInt(this.getAttribute('data-rating'));
+                                ratingInput.value = selectedRating;
+                                ratingText.textContent = ratingTexts[selectedRating];
+                                highlightStars(selectedRating);
+                            });
+                        });
+                        
+                        function highlightStars(rating) {
+                            stars.forEach(function(star) {
+                                var starRating = parseInt(star.getAttribute('data-rating'));
+                                if (starRating &lt;= rating) {
+                                    star.classList.add('active');
+                                } else {
+                                    star.classList.remove('active');
+                                }
+                            });
+                        }
+                        
+                        // Form submit
+                        ratingForm.addEventListener('submit', function(e) {
+                            e.preventDefault();
+                            
+                            if (selectedRating === 0) {
+                                alert('กรุณาให้คะแนน');
+                                return;
+                            }
+                            
+                            var token = document.getElementById('token').value;
+                            var comment = document.getElementById('customerComment').value;
+                            
+                            submitBtn.disabled = true;
+                            submitBtn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> กำลังส่ง...';
+                            
+                            // ✅ FIX: ใช้ Odoo RPC format ที่ถูกต้อง
+                            fetch('/rating/submit', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                },
+                                body: JSON.stringify({
+                                    jsonrpc: '2.0',
+                                    method: 'call',
+                                    params: {
+                                        token: token,
+                                        rating_stars: selectedRating,
+                                        customer_comment: comment
+                                    }
+                                })
+                            })
+                            .then(response => response.json())
+                            .then(data => {
+                                console.log('Response data:', data);
+                                
+                                // ✅ FIX: ตรวจสอบ result หรือ error
+                                if ((data.result &amp;&amp; data.result.success) || (data.success === true)) {
+                                    console.log('✅ Rating submitted successfully');
+                                    setTimeout(function() {
+                                        window.location.href = '/rating/success';
+                                    }, 1000);
+                                } else {
+                                    var errorMsg = (data.result &amp;&amp; data.result.error) || 
+                                                   (data.error) || 
+                                                   'ไม่สามารถส่งการประเมินได้';
+                                    alert('เกิดข้อผิดพลาด: ' + errorMsg);
+                                    console.error('Error:', errorMsg);
+                                    submitBtn.disabled = false;
+                                    submitBtn.innerHTML = '<i class="fa fa-paper-plane"></i> ส่งการประเมิน';
+                                }
+                            })
+                            .catch(error => {
+                                console.error('Connection error:', error);
+                                alert('เกิดข้อผิดพลาดในการเชื่อมต่อ: ' + error);
+                                submitBtn.disabled = false;
+                                submitBtn.innerHTML = '<i class="fa fa-paper-plane"></i> ส่งการประเมิน';
+                            });
+                        });
+                    });
+                </script>
+            </t>
+        </template>
+        
+        <!-- Success Template -->
+        <template id="rating_success_template" name="Rating Success">
+            <t t-call="web.frontend_layout">
+                <div class="container mt-5 mb-5">
+                    <div class="row justify-content-center">
+                        <div class="col-md-6">
+                            <div class="card shadow-lg text-center">
+                                <div class="card-body p-5">
+                                    <i class="fa fa-check-circle text-success" style="font-size: 5rem;"></i>
+                                    <h2 class="mt-4">ขอบคุณสำหรับการประเมิน!</h2>
+                                    <p class="text-muted mt-3">
+                                        ความคิดเห็นของคุณจะช่วยให้เราพัฒนาการบริการให้ดียิ่งขึ้น
+                                    </p>
+                                    <hr class="my-4"/>
+                                    <p class="mb-0">
+                                        <strong>NPD Transport</strong><br/>
+                                        บริการขนส่งที่คุณวางใจ
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </t>
+        </template>
+        
+        <!-- Expired/Error Template -->
+        <template id="rating_expired_template" name="Rating Expired">
+            <t t-call="web.frontend_layout">
+                <div class="container mt-5 mb-5">
+                    <div class="row justify-content-center">
+                        <div class="col-md-6">
+                            <div class="card shadow-lg text-center">
+                                <div class="card-body p-5">
+                                    <i class="fa fa-exclamation-triangle text-warning" style="font-size: 5rem;"></i>
+                                    <h2 class="mt-4">Link หมดอายุหรือไม่ถูกต้อง</h2>
+                                    <p class="text-muted mt-3">
+                                        Link ประเมินนี้อาจหมดอายุหรือถูกใช้งานไปแล้ว<br/>
+                                        กรุณาติดต่อเจ้าหน้าที่หากต้องการประเมินอีกครั้ง
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </t>
+        </template>
+        
+        <template id="rating_error_template" name="Rating Error">
+            <t t-call="web.frontend_layout">
+                <div class="container mt-5 mb-5">
+                    <div class="row justify-content-center">
+                        <div class="col-md-6">
+                            <div class="card shadow-lg text-center">
+                                <div class="card-body p-5">
+                                    <i class="fa fa-times-circle text-danger" style="font-size: 5rem;"></i>
+                                    <h2 class="mt-4">เกิดข้อผิดพลาด</h2>
+                                    <p class="text-muted mt-3">
+                                        ไม่สามารถโหลดหน้าประเมินได้<br/>
+                                        กรุณาลองใหม่อีกครั้งหรือติดต่อเจ้าหน้าที่
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </t>
+        </template>
+    </data>
+</odoo>

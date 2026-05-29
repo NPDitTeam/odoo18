@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="action_fleet_license_plate" model="ir.actions.act_window">
+        <field name="name">ทะเบียนรถ</field>
+        <field name="res_model">fleet.license_plate</field>
+        <field name="view_mode">list,form</field>
+    </record>
+    <menuitem id="menu_fleet_license_plate_main" name="ทะเบียนรถ" parent="sale.menu_sale_config"/>
+    <menuitem id="menu_fleet_license_plate" name="ทะเบียนรถ" parent="menu_fleet_license_plate_main" action="action_fleet_license_plate"/>
+</odoo>

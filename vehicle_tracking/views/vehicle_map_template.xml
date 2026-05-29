@@ -1,0 +1,359 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    
+    <!-- Vehicle Map View Template with Longdo Map + Pulsing Dot -->
+    <template id="vehicle_map_view" name="Vehicle Map View">
+        <t t-call="web.layout">
+            <div class="container-fluid" style="padding: 0; height: 100vh;">
+                <div id="map-container" style="height: 100%;">
+                    <!-- Vehicle Info Panel -->
+                    <div id="vehicle-info-panel" style="position: absolute; top: 20px; left: 20px; 
+                         background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+                         z-index: 1000; max-width: 350px;">
+                        <h4 style="margin: 0 0 10px 0; color: #333;">
+                            <i class="fa fa-truck"></i>
+                            <span id="vehicle-name"><t t-esc="vehicle.device_name or vehicle.lpn"/></span>
+                        </h4>
+                        <div style="font-size: 13px; line-height: 1.6;">
+                            <div><strong>เลขทะเบียน:</strong> <span id="vehicle-lpn"><t t-esc="vehicle.lpn"/></span></div>
+                            <div><strong>IMEI:</strong> <span id="vehicle-imei"><t t-esc="vehicle.imei"/></span></div>
+                            <div><strong>กลุ่มรถ:</strong> <span id="vehicle-fleet"><t t-esc="vehicle.fleet_name or '-'"/></span></div>
+                            <div><strong>สถานะ:</strong> <span id="vehicle-status" class="badge badge-info"><t t-esc="vehicle.status_text"/></span></div>
+                            <div><strong>ความเร็ว:</strong> <span id="vehicle-speed"><t t-esc="'%.1f' % vehicle.speed"/></span> กม./ชม.</div>
+                            <div><strong>เลขไมล์:</strong> <span id="vehicle-mileage"><t t-esc="'%.2f' % vehicle.mileage_km"/></span> กม.</div>
+                            <div><strong>อัปเดตล่าสุด:</strong> <span id="vehicle-updated"><t t-esc="vehicle.utc_timestamp.strftime('%d/%m/%Y %H:%M:%S') if vehicle.utc_timestamp else '-'"/></span></div>
+                            <hr style="margin: 10px 0;"/>
+                            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                                <button id="btn-refresh" class="btn btn-sm btn-primary" onclick="refreshVehicleData()" style="flex: 1; min-width: 120px;">
+                                    <i class="fa fa-refresh"></i> รีเฟรชเดี๋ยวนี้
+                                </button>
+                                <div style="flex: 1; min-width: 150px;">
+                                    <small id="auto-refresh-status" style="color: #666; display: block;">
+                                        <i class="fa fa-clock-o"></i> รีเฟรชใน <span id="countdown">60</span> วินาที
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Longdo Map -->
+                    <div id="map" style="height: 100%; width: 100%;"></div>
+                </div>
+                
+                <!-- Longdo Map API -->
+                <script type="text/javascript" src="https://api.longdo.com/map3/?key=7b14be3925326c8779d890e55ac4bb0d"></script>
+                
+                <script type="text/javascript">
+                    let map;
+                    let countdownInterval;
+                    let refreshInterval;
+                    let secondsUntilRefresh = 60;
+                    const vehicleId = <t t-esc="vehicle.id"/>;
+                    const size = 150; // Pulsing dot size
+                    
+                    // Pulsing Dot implementation for Longdo Map
+                    var pulsingDot = {
+                        width: size,
+                        height: size,
+                        data: new Uint8Array(size * size * 4),
+                        engineOn: true, // Will be updated based on vehicle status
+                        
+                        onAdd: function() {
+                            var canvas = document.createElement('canvas');
+                            canvas.width = this.width;
+                            canvas.height = this.height;
+                            this.context = canvas.getContext('2d');
+                        },
+                        
+                        render: function() {
+                            var duration = 1500;
+                            var t = (performance.now() % duration) / duration;
+                            var radius = (size / 2) * 0.25;
+                            var outerRadius = (size / 2) * 0.7 * t + radius;
+                            var context = this.context;
+                            
+                            // Color based on engine status (green = on, red = off)
+                            var pulseColor = this.engineOn ? 'rgba(40, 167, 69,' : 'rgba(220, 53, 69,';
+                            var innerColor = this.engineOn ? 'rgba(40, 167, 69, 1)' : 'rgba(220, 53, 69, 1)';
+                            
+                            // Clear canvas
+                            context.clearRect(0, 0, this.width, this.height);
+                            
+                            // Draw outer pulsing circle
+                            context.beginPath();
+                            context.arc(this.width / 2, this.height / 2, outerRadius, 0, Math.PI * 2);
+                            context.fillStyle = pulseColor + (1 - t) + ')';
+                            context.fill();
+                            
+                            // Draw inner circle
+                            context.beginPath();
+                            context.arc(this.width / 2, this.height / 2, radius, 0, Math.PI * 2);
+                            context.fillStyle = innerColor;
+                            context.strokeStyle = 'white';
+                            context.lineWidth = 3 + 3 * (1 - t);
+                            context.fill();
+                            context.stroke();
+                            
+                            // Draw direction arrow
+                            var course = window.vehicleCourse || 0;
+                            context.save();
+                            context.translate(this.width / 2, this.height / 2);
+                            context.rotate((course * Math.PI) / 180);
+                            
+                            // Arrow pointing up
+                            context.beginPath();
+                            context.moveTo(0, -radius * 0.7);
+                            context.lineTo(radius * 0.4, radius * 0.3);
+                            context.lineTo(-radius * 0.4, radius * 0.3);
+                            context.closePath();
+                            context.fillStyle = 'white';
+                            context.fill();
+                            context.restore();
+                            
+                            // Update image data
+                            this.data = context.getImageData(0, 0, this.width, this.height).data;
+                            
+                            // Trigger repaint for animation
+                            if (map &amp;&amp; map.Renderer) {
+                                map.Renderer.triggerRepaint();
+                            }
+                            
+                            return true;
+                        }
+                    };
+                    
+                    // Global vehicle course for arrow direction
+                    window.vehicleCourse = <t t-esc="vehicle.course or 0"/>;
+                    
+                    // Initialize Longdo Map
+                    function initMap() {
+                        const lat = <t t-esc="vehicle.latitude"/>;
+                        const lng = <t t-esc="vehicle.longitude"/>;
+                        const engineStatus = '<t t-esc="vehicle.engine_status"/>';
+                        
+                        // Set initial engine status
+                        pulsingDot.engineOn = (engineStatus === '1');
+                        
+                        // Create Longdo Map
+                        map = new longdo.Map({
+                            placeholder: document.getElementById('map'),
+                            lastView: false,
+                            zoom: 15
+                        });
+                        
+                        // Center map on vehicle
+                        map.location({ lon: lng, lat: lat }, true);
+                        
+                        // Add pulsing dot when map is ready
+                        map.Event.bind('ready', function() {
+                            // Add pulsing dot image
+                            map.Renderer.addImage('pulsing-dot', pulsingDot, { pixelRatio: 2 });
+                            
+                            // Add GeoJSON source for vehicle position
+                            map.Renderer.addSource('vehicle-point', {
+                                type: 'geojson',
+                                data: {
+                                    type: 'FeatureCollection',
+                                    features: [{
+                                        type: 'Feature',
+                                        properties: {
+                                            name: '<t t-esc="vehicle.device_name or vehicle.lpn"/>',
+                                            lpn: '<t t-esc="vehicle.lpn"/>',
+                                            status: '<t t-esc="vehicle.status_text"/>'
+                                        },
+                                        geometry: {
+                                            type: 'Point',
+                                            coordinates: [lng, lat]
+                                        }
+                                    }]
+                                }
+                            });
+                            
+                            // Add pulsing dot layer
+                            map.Renderer.addLayer({
+                                id: 'vehicle-layer',
+                                type: 'symbol',
+                                source: 'vehicle-point',
+                                layout: {
+                                    'icon-image': 'pulsing-dot',
+                                    'icon-allow-overlap': true
+                                }
+                            });
+                        });
+                    }
+                    
+                    // Refresh vehicle data from API
+                    async function refreshVehicleData() {
+                        const btnRefresh = document.getElementById('btn-refresh');
+                        btnRefresh.disabled = true;
+                        btnRefresh.innerHTML = '&lt;i class="fa fa-spinner fa-spin"&gt;&lt;/i&gt; กำลังโหลด...';
+                        
+                        try {
+                            const response = await fetch('/vehicle_tracking/get_vehicle/' + vehicleId, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                    jsonrpc: '2.0',
+                                    method: 'call',
+                                    params: {}
+                                })
+                            });
+                            
+                            const data = await response.json();
+                            
+                            if (data.result &amp;&amp; data.result.success) {
+                                updateVehicleDisplay(data.result.data);
+                                resetCountdown();
+                            } else {
+                                console.error('Failed to fetch vehicle data');
+                            }
+                        } catch (error) {
+                            console.error('Error refreshing data:', error);
+                        } finally {
+                            btnRefresh.disabled = false;
+                            btnRefresh.innerHTML = '&lt;i class="fa fa-refresh"&gt;&lt;/i&gt; รีเฟรชเดี๋ยวนี้';
+                        }
+                    }
+                    
+                    // Update vehicle display with new data
+                    function updateVehicleDisplay(vehicleData) {
+                        // Update info panel
+                        document.getElementById('vehicle-name').textContent = vehicleData.device_name || vehicleData.lpn;
+                        document.getElementById('vehicle-lpn').textContent = vehicleData.lpn || '-';
+                        document.getElementById('vehicle-imei').textContent = vehicleData.imei || '-';
+                        document.getElementById('vehicle-fleet').textContent = vehicleData.fleet_name || '-';
+                        document.getElementById('vehicle-status').textContent = vehicleData.status || '-';
+                        document.getElementById('vehicle-speed').textContent = vehicleData.speed.toFixed(1);
+                        document.getElementById('vehicle-mileage').textContent = vehicleData.mileage_km.toFixed(2);
+                        
+                        if (vehicleData.utc_timestamp) {
+                            const date = new Date(vehicleData.utc_timestamp);
+                            document.getElementById('vehicle-updated').textContent = 
+                                date.toLocaleString('th-TH', { 
+                                    year: 'numeric', month: '2-digit', day: '2-digit',
+                                    hour: '2-digit', minute: '2-digit', second: '2-digit'
+                                });
+                        }
+                        
+                        // Update engine status for pulsing dot color
+                        pulsingDot.engineOn = (vehicleData.engine_status === '1');
+                        
+                        // Update direction
+                        window.vehicleCourse = vehicleData.course || 0;
+                        
+                        // Update map position
+                        const newLat = vehicleData.latitude;
+                        const newLng = vehicleData.longitude;
+                        
+                        // Move map to new position
+                        map.location({ lon: newLng, lat: newLat }, true);
+                        
+                        // Update GeoJSON source with new position
+                        try {
+                            const source = map.Renderer.getSource('vehicle-point');
+                            if (source) {
+                                source.setData({
+                                    type: 'FeatureCollection',
+                                    features: [{
+                                        type: 'Feature',
+                                        properties: {
+                                            name: vehicleData.device_name || vehicleData.lpn,
+                                            lpn: vehicleData.lpn,
+                                            status: vehicleData.status
+                                        },
+                                        geometry: {
+                                            type: 'Point',
+                                            coordinates: [newLng, newLat]
+                                        }
+                                    }]
+                                });
+                            }
+                        } catch (e) {
+                            console.log('Source update pending...');
+                        }
+                        
+                        // Update status badge color
+                        const statusBadge = document.getElementById('vehicle-status');
+                        statusBadge.className = 'badge';
+                        if (vehicleData.status.includes('เคลื่อนที่')) {
+                            statusBadge.className += ' badge-success';
+                        } else if (vehicleData.status.includes('ติด')) {
+                            statusBadge.className += ' badge-warning';
+                        } else {
+                            statusBadge.className += ' badge-secondary';
+                        }
+                    }
+                    
+                    // Countdown timer
+                    function startCountdown() {
+                        countdownInterval = setInterval(function() {
+                            secondsUntilRefresh--;
+                            document.getElementById('countdown').textContent = secondsUntilRefresh;
+                            if (secondsUntilRefresh &lt;= 0) {
+                                secondsUntilRefresh = 60;
+                            }
+                        }, 1000);
+                    }
+                    
+                    // Reset countdown
+                    function resetCountdown() {
+                        secondsUntilRefresh = 60;
+                        document.getElementById('countdown').textContent = secondsUntilRefresh;
+                    }
+                    
+                    // Auto-refresh every 60 seconds
+                    function startAutoRefresh() {
+                        refreshInterval = setInterval(function() {
+                            refreshVehicleData();
+                        }, 60000);
+                    }
+                    
+                    // Initialize on page load
+                    window.onload = function() {
+                        initMap();
+                        startCountdown();
+                        startAutoRefresh();
+                    };
+                    
+                    // Cleanup on page unload
+                    window.onbeforeunload = function() {
+                        if (countdownInterval) clearInterval(countdownInterval);
+                        if (refreshInterval) clearInterval(refreshInterval);
+                    };
+                </script>
+                
+                <style>
+                    html, body {
+                        margin: 0;
+                        padding: 0;
+                        height: 100%;
+                        overflow: hidden;
+                    }
+                    .badge {
+                        padding: 4px 8px;
+                        border-radius: 4px;
+                        font-size: 12px;
+                        font-weight: 500;
+                        display: inline-block;
+                    }
+                    .badge-success { background-color: #28a745; color: white; }
+                    .badge-warning { background-color: #ffc107; color: #333; }
+                    .badge-secondary { background-color: #6c757d; color: white; }
+                    .badge-info { background-color: #17a2b8; color: white; }
+                    
+                    /* Responsive design for mobile */
+                    @media (max-width: 768px) {
+                        #vehicle-info-panel {
+                            max-width: 280px !important;
+                            font-size: 12px !important;
+                        }
+                        #vehicle-info-panel h4 {
+                            font-size: 16px !important;
+                        }
+                    }
+                </style>
+            </div>
+        </t>
+    </template>
+    
+</odoo>

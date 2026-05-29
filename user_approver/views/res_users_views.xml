@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Extend User Preferences Form -->
+    <record id="view_users_form_inherit_approver" model="ir.ui.view">
+        <field name="name">res.users.form.inherit.approver</field>
+        <field name="model">res.users</field>
+        <field name="inherit_id" ref="base.view_users_form"/>
+        <field name="arch" type="xml">
+            <!-- เพิ่มฟิลด์ใน Preferences tab -->
+            <xpath expr="//page[@name='preferences']" position="inside">
+                <group string="สิทธิ์อนุมัติงานซ่อม">
+                    <field name="is_approver" widget="boolean_toggle"/>
+                </group>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- เพิ่มฟิลด์ใน List View (ถ้าต้องการ) -->
+    <record id="view_users_tree_inherit_approver" model="ir.ui.view">
+        <field name="name">res.users.tree.inherit.approver</field>
+        <field name="model">res.users</field>
+        <field name="inherit_id" ref="base.view_users_tree"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='login']" position="after">
+                <field name="is_approver" widget="boolean_toggle" optional="show"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

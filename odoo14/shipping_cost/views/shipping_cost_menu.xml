@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="action_shipping_cost" model="ir.actions.act_window">
+        <field name="name">การกำหนดค่าขนส่ง</field>
+        <field name="res_model">shipping.cost</field>
+        <field name="view_mode">list,form</field>
+    </record>
+    <menuitem id="menu_shipping_cost_main" name="การกำหนดค่าขนส่ง" parent="sale.menu_sale_config"/>
+    <menuitem id="menu_shipping_cost" name="การกำหนดค่าขนส่ง" parent="menu_shipping_cost_main" action="action_shipping_cost"/>
+</odoo>

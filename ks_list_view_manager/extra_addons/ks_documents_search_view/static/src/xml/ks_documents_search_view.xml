@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<templates>
+    <t t-name="ks_documents_new_advance_search_view" t-inherit="documents.DocumentsListRenderer" t-inherit-mode="extension" owl="1">
+        <xpath expr="//table/thead/tr" position="after">
+            <t t-call="ks_general_list_template"/>
+        </xpath>
+    </t>
+</templates>

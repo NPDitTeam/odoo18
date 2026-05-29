@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        <!-- Receipt Voucher sequence (inbound / รับชำระ) -->
+        <record id="seq_receipt_voucher" model="ir.sequence">
+            <field name="name">Receipt Voucher (RV)</field>
+            <field name="code">account.payment.receipt.voucher</field>
+            <field name="prefix">RV-%(y)s%(month)s%(day)s</field>
+            <field name="padding">4</field>
+            <field name="number_increment">1</field>
+            <field name="number_next">1</field>
+        </record>
+
+        <!-- Payment Voucher sequence (outbound / จ่ายชำระ) -->
+        <record id="seq_payment_voucher" model="ir.sequence">
+            <field name="name">Payment Voucher (PV)</field>
+            <field name="code">account.payment.payment.voucher</field>
+            <field name="prefix">PV-%(y)s%(month)s%(day)s</field>
+            <field name="padding">4</field>
+            <field name="number_increment">1</field>
+            <field name="number_next">1</field>
+        </record>
+    </data>
+</odoo>

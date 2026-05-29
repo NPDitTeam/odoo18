@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+
+        <record id="view_sale_order_branch_inherit" model="ir.ui.view">
+            <field name="name">sale.order.inherite</field>
+            <field name="model">sale.order</field>
+            <field name="inherit_id" ref="sale.view_order_form"/>
+            <field name="arch" type="xml">
+                <xpath expr="//page[@name='other_information']" position="inside">
+                    <group string="Branch">
+                        <label for="branch_id" string="Branch Name"/>
+                        <div class="o_row">
+                            <field string="Branch Name" name="branch_id"/>
+                        </div>
+                    </group>
+                </xpath>
+            </field>
+        </record>
+
+        <record id="view_quotation_tree_with_onboarding_branch_inherit" model="ir.ui.view">
+            <field name="name">sale.order.tree.inherite</field>
+            <field name="model">sale.order</field>
+            <field name="inherit_id" ref="sale.view_quotation_tree_with_onboarding"/>
+            <field name="arch" type="xml">
+                <xpath expr="//field[@name='company_id']" position="before">
+                            <field string="Branch Name" name="branch_id"/>
+                </xpath>
+            </field>
+        </record>
+
+        <record id="view_view_order_tree_branch_inherit" model="ir.ui.view">
+            <field name="name">sale.order.tree.inherite</field>
+            <field name="model">sale.order</field>
+            <field name="inherit_id" ref="sale.view_order_tree"/>
+            <field name="arch" type="xml">
+                <xpath expr="//field[@name='company_id']" position="before">
+                            <field string="Branch Name" name="branch_id"/>
+                </xpath>
+            </field>
+        </record>
+
+
+
+
+         <record id="view_sales_order_filter_branch_inherit" model="ir.ui.view">
+            <field name="name">sale.order.inherite</field>
+            <field name="model">sale.order</field>
+            <field name="inherit_id" ref="sale.view_sales_order_filter"/>
+            <field name="arch" type="xml">
+                <xpath expr="//filter[@name='order_month']" position="after">
+                    <filter name="Branch" domain="[]" context="{'group_by': 'branch_id'}"/>
+                </xpath>
+            </field>
+        </record>
+    </data>
+</odoo>

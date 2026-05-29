@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <menuitem id="menu_cash_payment_root"
+              name="ชำระเงินสด"
+              parent="account.menu_finance_receivables"
+              action="action_cash_payment_form"
+              sequence="99"/>
+</odoo>

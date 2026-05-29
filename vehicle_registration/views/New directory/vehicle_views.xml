@@ -1,0 +1,911 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ==================== บริษัทรถร่วม ==================== -->
+    <record id="view_vehicle_partner_company_list" model="ir.ui.view">
+        <field name="name">vehicle.partner.company.list</field>
+        <field name="model">vehicle.partner.company</field>
+        <field name="arch" type="xml">
+            <list string="บริษัทรถร่วม">
+                <field name="code"/>
+                <field name="name"/>
+                <field name="persona"/>
+                <field name="contact_person"/>
+                <field name="phone"/>
+                <field name="email"/>
+                <field name="vehicle_count"/>
+                <field name="active" widget="boolean_toggle"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_vehicle_partner_company_form" model="ir.ui.view">
+        <field name="name">vehicle.partner.company.form</field>
+        <field name="model">vehicle.partner.company</field>
+        <field name="arch" type="xml">
+            <form string="บริษัทรถร่วม">
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_view_vehicles" type="object" class="oe_stat_button" icon="fa-truck">
+                            <field name="vehicle_count" widget="statinfo" string="รถ"/>
+                        </button>
+                    </div>
+                    <div class="oe_title">
+                        <h1><field name="name" placeholder="ชื่อบริษัท"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="code"/>
+                            <field name="company_type" widget="radio"/>
+                            <field name="persona" widget="radio"/>
+                            <field name="contact_person"/>
+                            <field name="phone" widget="phone"/>
+                            <field name="email" widget="email"/>
+                        </group>
+                        <group>
+                            <field name="street"/>
+                            <field name="city"/>
+                            <field name="state_id"/>
+                            <field name="tax_id"/>
+                            <field name="branch_id"/>
+                            <field name="active" invisible="1"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="หมายเหตุ">
+                            <field name="note"/>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter>
+                    <field name="message_follower_ids"/>
+                    <field name="message_ids"/>
+                </chatter>
+            </form>
+        </field>
+    </record>
+
+    <!-- ==================== ลงทะเบียนรถ (Fleet Vehicle Extension) ==================== -->
+    <record id="view_fleet_vehicle_list_inherit" model="ir.ui.view">
+        <field name="name">fleet.vehicle.list.inherit</field>
+        <field name="model">fleet.vehicle</field>
+        <field name="inherit_id" ref="fleet.fleet_vehicle_view_tree"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='driver_id']" position="after">
+                <field name="vehicle_type_t" optional="hide"/>
+                <field name="ownership" optional="hide"/>
+                <field name="vehicle_status" optional="hide" decoration-success="vehicle_status=='available'" decoration-danger="vehicle_status=='maintenance'"/>
+            </xpath>
+        </field>
+    </record>
+
+
+    <record id="view_fleet_vehicle_list_inherit" model="ir.ui.view">
+    <field name="name">fleet.vehicle.list.inherit</field>
+    <field name="model">fleet.vehicle</field>
+    <field name="inherit_id" ref="fleet.fleet_vehicle_view_tree"/>
+    <field name="priority">20</field>
+    <field name="arch" type="xml">
+
+        <!-- ซ่อน driver_id เดิม -->
+        <xpath expr="//field[@name='driver_id']" position="replace">
+            <field name="driver_r_id" string="คนขับ" optional="show"/>
+            <field name="driver_id" column_invisible="1"/>
+        </xpath>
+
+        <!-- เพิ่มฟิลด์อื่นๆ -->
+        <xpath expr="//field[@name='driver_id']" position="after">
+            <field name="vehicle_type_t" optional="hide"/>
+            <field name="ownership" optional="hide"/>
+            <field name="vehicle_status" optional="hide"
+                   decoration-success="vehicle_status=='available'"
+                   decoration-danger="vehicle_status=='maintenance'"/>
+        </xpath>
+
+    </field>
+</record>
+
+    <record id="view_fleet_vehicle_form_inherit" model="ir.ui.view">
+        <field name="name">fleet.vehicle.form.inherit</field>
+        <field name="model">fleet.vehicle</field>
+        <field name="inherit_id" ref="fleet.fleet_vehicle_view_form"/>
+        <field name="arch" type="xml">
+
+            <!-- ✅ ซ่อน driver_id เดิม (res.partner) -->
+            <xpath expr="//field[@name='driver_id']" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+
+            <!-- ✅ เพิ่ม driver_r_id (vehicle.driver) ก่อน driver_id เดิม -->
+            <xpath expr="//field[@name='driver_id']" position="before">
+                <field name="driver_r_id" string="คนขับ"/>
+            </xpath>
+
+            <!-- เพิ่มฟิลด์อื่นๆ หลัง driver_id -->
+            <xpath expr="//field[@name='driver_id']" position="after">
+                <field name="vehicle_type_t" optional="hide"/>
+                <field name="ownership" optional="hide"/>
+                <field name="vehicle_status" optional="hide"
+                       decoration-success="vehicle_status=='available'"
+                       decoration-danger="vehicle_status=='maintenance'"/>
+            </xpath>
+
+            <!-- ซ่อนฟิลด์ที่ไม่ต้องการ -->
+            <xpath expr="//field[@name='plan_to_change_car']" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+            <xpath expr="//field[@name='future_driver_id']" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+            
+            <xpath expr="//div[@name='button_box']" position="inside">
+                <button name="action_view_documents" type="object" class="oe_stat_button" icon="fa-file-text-o">
+                    <field name="document_count" widget="statinfo" string="เอกสาร"/>
+                </button>
+                <button name="action_view_maintenance" type="object" class="oe_stat_button" icon="fa-wrench">
+                    <field name="maintenance_count" widget="statinfo" string="การซ่อม"/>
+                </button>
+            </xpath>
+            <xpath expr="//field[@name='model_id']" position="after">
+                <field name="ownership"/>
+                <field name="partner_company_id" invisible="ownership == 'own'"/>
+                <field name="vehicle_status"/>
+                <field name="current_driver_id"/>
+            </xpath>
+            
+            <!-- เพิ่มฟิลด์หลังวันที่มอบหมาย (next_assignation_date) -->
+            <xpath expr="//field[@name='next_assignation_date']" position="after">
+                <field name="has_gps" widget="boolean_toggle"/>
+                <field name="affiliation" placeholder="ระบุหน่วยงานหรือแผนก"/>
+                <field name="branch_id" placeholder="เลือกสาขา"/>
+                <field name="has_fuel_card" widget="boolean_toggle"/>
+                <field name="vehicle_rating" widget="priority" />
+<!--                <field name="vehicle_rating_x" widget="priority"/>-->
+            </xpath>
+            <xpath expr="//field[@name='category_id']" position="after">
+                <field name="vehicle_check_status"/>
+            </xpath>
+            <xpath expr="//notebook" position="inside">
+                <page string="ข้อมูลรถ">
+                    <group>
+                        <group string="ข้อมูลทั่วไป">
+                            <field name="vehicle_type_t" widget="selection"/>
+                            <field name="payload_capacity"/>
+                            <field name="registration_year"/>
+                            <field name="engine_number"/>
+                            <field name="chassis_number"/>
+                        </group>
+                        <group string="เอกสาร">
+                            <field name="tax_expiry_date"/>
+                            <field name="insurance_expiry_date"/>
+                            <field name="compulsory_insurance_expiry"/>
+                        </group>
+                    </group>
+                    <group>
+                        <group string="ข้อมูลน้ำมันเครื่อง">
+                            <field name="engine_oil_type" placeholder="เลือกประเภทน้ำมันเครื่อง"/>
+                            <field name="engine_oil_capacity" placeholder="0.00"/>
+                        </group>
+                        <group>
+                        </group>
+                    </group>
+                </page>
+                <page string="เอกสาร">
+                    <field name="document_ids">
+                        <list>
+                            <field name="name"/>
+                            <field name="document_type"/>
+                            <field name="document_number"/>
+                            <field name="expiry_date"/>
+                            <field name="status" decoration-success="status=='valid'" decoration-warning="status=='expiring_soon'" decoration-danger="status=='expired'"/>
+                        </list>
+                    </field>
+                </page>
+                <page string="การซ่อมบำรุง">
+                    <separator string="การแจ้งซ่อม"/>
+                    <field name="maintenance_request_ids">
+                        <list>
+                            <field name="name"/>
+                            <field name="request_date"/>
+                            <field name="problem_category"/>
+                            <field name="priority" widget="priority"/>
+                            <field name="state"/>
+                        </list>
+                    </field>
+                    <separator string="รายการแจ้งซ่อม"/>
+                    <field name="maintenance_history_ids">
+                        <list>
+                            <field name="name"/>
+                            <field name="maintenance_date"/>
+                            <field name="problem_category"/>
+                            <field name="cost" sum="รวม"/>
+                        </list>
+                    </field>
+                </page>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- ==================== ผู้ขับขี่ ==================== -->
+    <record id="view_vehicle_driver_list" model="ir.ui.view">
+        <field name="name">vehicle.driver.list</field>
+        <field name="model">vehicle.driver</field>
+        <field name="arch" type="xml">
+            <list string="ผู้ขับขี่">
+                <field name="code"/>
+                <field name="name"/>
+                <field name="pin" password="True" optional="hide"/>
+                <field name="phone"/>
+                <field name="license_number"/>
+                <field name="license_type"/>
+                <field name="license_status" decoration-success="license_status=='valid'" decoration-warning="license_status=='expiring_soon'" decoration-danger="license_status=='expired'"/>
+                <field name="employment_status"/>
+                <field name="branch_id"/>
+                <field name="active" widget="boolean_toggle"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_vehicle_driver_form" model="ir.ui.view">
+        <field name="name">vehicle.driver.form</field>
+        <field name="model">vehicle.driver</field>
+        <field name="arch" type="xml">
+            <form string="ผู้ขับขี่">
+                <sheet>
+                    <field name="image_1920" widget="image" class="oe_avatar" options="{'preview_image': 'image_128'}"/>
+                    <div class="oe_title">
+                        <h1><field name="name" placeholder="ชื่อ-นามสกุล"/></h1>
+                        <h3><field name="code" readonly="1"/></h3>
+                    </div>
+                    <group>
+                        <group string="ข้อมูลพื้นฐาน">
+                            <field name="pin" password="True" placeholder="กรอก PIN 6 หลัก"/>
+                            <field name="citizen_id"/>
+                            <field name="birth_date"/>
+                            <field name="phone" widget="phone"/>
+                            <field name="email" widget="email"/>
+                            <field name="employment_status"/>
+                            <field name="branch_id"/>
+                            <field name="said_date" placeholder="วันที่มอบหมาย"/>
+                            <field name="partner_company_id" invisible="employment_status != 'partner'"/>
+                        </group>
+                        <group string="ใบขับขี่">
+                            <field name="license_number"/>
+                            <field name="license_type"/>
+                            <field name="license_issue_date"/>
+                            <field name="license_expiry_date"/>
+                            <field name="license_status"/>
+                            <field name="vehicle_id"/>
+                            <field name="active" invisible="1"/>
+                        </group>
+                    </group>
+                    <notebook>
+<!--                        <page string="ประวัติการขับรถ">-->
+<!--                            <field name="trip_ids">-->
+<!--                                <list>-->
+<!--                                    <field name="start_date"/>-->
+<!--                                    <field name="vehicle_id"/>-->
+<!--                                    <field name="origin"/>-->
+<!--                                    <field name="destination"/>-->
+<!--                                    <field name="distance"/>-->
+<!--                                    <field name="status"/>-->
+<!--                                </list>-->
+<!--                            </field>-->
+<!--                        </page>-->
+                        <page string="ประวัติอุบัติเหตุ">
+                            <field name="accident_ids">
+                                <list>
+                                    <field name="accident_date"/>
+                                    <field name="vehicle_id"/>
+                                    <field name="location"/>
+                                    <field name="severity" decoration-success="severity=='minor'" decoration-warning="severity=='moderate'" decoration-danger="severity=='major'"/>
+                                    <field name="damage_cost"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="หมายเหตุ">
+                            <field name="note"/>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter>
+                    <field name="message_follower_ids"/>
+                    <field name="message_ids"/>
+                </chatter>
+            </form>
+        </field>
+    </record>
+
+    <!-- ==================== การแจ้งซ่อม ==================== -->
+    <record id="view_vehicle_maintenance_request_list" model="ir.ui.view">
+        <field name="name">vehicle.maintenance.request.list</field>
+        <field name="model">vehicle.maintenance.request</field>
+        <field name="arch" type="xml">
+            <list string="การแจ้งซ่อม" decoration-info="state=='draft'" decoration-warning="state in ['pending','in_progress']" decoration-success="state=='done'">
+                <field name="name"/>
+                <field name="request_date"/>
+                <field name="vehicle_id"/>
+                <field name="license_plate"/>
+                <field name="problem_category"/>
+                <field name="priority" widget="priority"/>
+                <field name="assigned_to_id"/>
+                <field name="actual_cost" sum="Total"/>
+                <field name="state" widget="badge"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_vehicle_maintenance_request_form" model="ir.ui.view">
+        <field name="name">vehicle.maintenance.request.form</field>
+        <field name="model">vehicle.maintenance.request</field>
+        <field name="arch" type="xml">
+            <form string="การแจ้งซ่อม">
+                <header>
+                    <button name="action_confirm" string="ยืนยันการแจ้งซ่อม" 
+                        type="object" class="btn-primary" 
+                        invisible="state != 'draft' or approval_state == 'pending'"/>
+                    <button name="action_view_approvals" string="📋 ดูการอนุมัติ" 
+                        type="object" class="btn-info"
+                        invisible="approval_count == 0"/>
+                    <button name="action_start" string="เริ่มซ่อม" 
+                        type="object" class="btn-primary" 
+                        invisible="state != 'pending' or approval_state != 'approved'"/>
+                    <button name="action_done" string="ซ่อมเสร็จสิ้น" 
+                        type="object" class="btn-success" 
+                        invisible="state != 'in_progress'"/>
+                    <button name="action_cancel" string="ยกเลิก" 
+                        type="object" 
+                        invisible="state in ['done','cancelled']"/>
+                    <field name="state" widget="statusbar" 
+                        statusbar_visible="draft,pending,in_progress,done"/>
+                </header>
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_view_approvals" type="object" 
+                            class="oe_stat_button" icon="fa-check-circle"
+                            invisible="approval_count == 0">
+                            <field name="approval_count" widget="statinfo" string="การอนุมัติ"/>
+                        </button>
+                    </div>
+                    
+                    <!-- แสดงสถานะการอนุมัติ -->
+                    <div class="alert alert-warning" role="alert" 
+                        invisible="approval_state != 'pending'">
+                        <strong>⏳ รออนุมัติ</strong>
+                        <p>รออนุมัติจากผู้อนุมัติที่เลือก</p>
+                    </div>
+                    <div class="alert alert-success" role="alert" 
+                        invisible="approval_state != 'approved'">
+                        <strong>✅ อนุมัติแล้ว</strong>
+                        <p>ได้รับการอนุมัติแล้ว สามารถดำเนินการต่อได้</p>
+                    </div>
+                    <div class="alert alert-danger" role="alert" 
+                        invisible="approval_state != 'rejected'">
+                        <strong>❌ ให้แก้ไข</strong>
+                        <p>กรุณาแก้ไขตามที่ผู้อนุมัติแนะนำ แล้วส่งอนุมัติใหม่</p>
+                    </div>
+                    
+                    <div class="oe_title">
+                        <h1><field name="name" readonly="1"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="vehicle_id" readonly="approval_state == 'approved'"/>
+                            <field name="license_plate" readonly="1"/>
+                            <field name="requester_id" readonly="approval_state == 'approved'"/>
+                            <field name="request_date" readonly="approval_state == 'approved'"/>
+                        </group>
+                        <group>
+                            <field name="problem_category" readonly="approval_state == 'approved'"/>
+                            <field name="priority" widget="priority" readonly="approval_state == 'approved'"/>
+                            <field name="assigned_to_id" readonly="approval_state == 'approved'"/>
+                            <field name="approval_state" 
+                                widget="badge"
+                                decoration-warning="approval_state=='waiting'"
+                                decoration-success="approval_state=='approved'"
+                                decoration-danger="approval_state=='rejected'"/>
+                        </group>
+                    </group>
+                    <group>
+                        <field name="problem_description" 
+                            placeholder="อธิบายปัญหาโดยละเอียด..." 
+                            readonly="approval_state == 'approved'"/>
+                    </group>
+                    <group>
+                        <group>
+                            <field name="estimated_cost" readonly="approval_state == 'approved'"/>
+                            <!-- ค่าใช้จ่ายจริง - แก้ไขได้แม้อนุมัติแล้ว -->
+                            <field name="actual_cost"/>
+                        </group>
+                        <group>
+                            <field name="start_date" readonly="approval_state == 'approved'"/>
+                            <!-- วันเวลาที่ซ่อมเสร็จ - แก้ไขได้แม้อนุมัติแล้ว -->
+                            <field name="completion_date"/>
+                            <field name="is_used_in_history" invisible="1"/>
+                            <field name="history_id" readonly="1" invisible="not is_used_in_history"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="การอนุมัติ" invisible="approval_count == 0">
+                            <field name="approval_ids" nolabel="1">
+                                <list>
+                                    <field name="sequence" widget="handle"/>
+                                    <field name="approver_id"/>
+                                    <field name="state" 
+                                        decoration-warning="state=='pending'"
+                                        decoration-success="state=='approved'"
+                                        decoration-danger="state=='rejected'"/>
+                                    <field name="approval_date"/>
+                                    <button name="action_approve" string="✅ อนุมัติ" 
+                                        type="object" 
+                                        invisible="state != 'pending'"/>
+                                    <button name="action_reject" string="❌ ให้แก้ไข" 
+                                        type="object" 
+                                        invisible="state != 'pending'"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="หมายเหตุ">
+                            <field name="note"/>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter>
+                    <field name="message_follower_ids"/>
+                    <field name="message_ids"/>
+                </chatter>
+            </form>
+        </field>
+    </record>
+
+    <!-- ==================== รายการแจ้งซ่อม ==================== -->
+    <record id="view_vehicle_maintenance_history_list" model="ir.ui.view">
+        <field name="name">vehicle.maintenance.history.list</field>
+        <field name="model">vehicle.maintenance.history</field>
+        <field name="arch" type="xml">
+            <list string="รายการแจ้งซ่อม">
+                <field name="name"/>
+                <field name="maintenance_date"/>
+                <field name="vehicle_id"/>
+                <field name="license_plate"/>
+                <field name="problem_category"/>
+                <field name="service_provider"/>
+                <field name="cost" sum="Total"/>
+                <field name="completed_date"/>
+                <field name="state" widget="badge" 
+                    decoration-info="state=='draft'"
+                    decoration-success="state=='confirmed'"
+                    decoration-muted="state=='cancelled'"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_vehicle_maintenance_history_form" model="ir.ui.view">
+        <field name="name">vehicle.maintenance.history.form</field>
+        <field name="model">vehicle.maintenance.history</field>
+        <field name="arch" type="xml">
+            <form string="รายการแจ้งซ่อม">
+                <header>
+                    <button name="action_confirm_usage" 
+                        string="✅ ยืนยัน" 
+                        type="object" 
+                        class="btn-primary"
+                        invisible="state != 'draft'"
+                        confirm="ยืนยันการบันทึกรายการแจ้งซ่อมนี้? หลังจากยืนยันแล้วจะไม่สามารถแก้ไขได้"/>
+                    <button name="action_cancel" 
+                        string="❌ ยกเลิก" 
+                        type="object" 
+                        class="btn-warning"
+                        invisible="state != 'confirmed'"
+                        confirm="ยืนยันการยกเลิกรายการแจ้งซ่อมนี้? การแจ้งซ่อมที่เชื่อมโยงจะถูกปลดล็อก"/>
+                    <button name="action_set_to_draft" 
+                        string="🔄 กลับไปแบบร่าง" 
+                        type="object"
+                        invisible="state == 'draft'"/>
+                    <field name="state" widget="statusbar" 
+                        statusbar_visible="draft,confirmed"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="name" readonly="1"/></h1>
+                    </div>
+                    
+                    <!-- แสดงสถานะการใช้งาน -->
+                    <div class="alert alert-success" role="alert" 
+                        invisible="state != 'confirmed'">
+                        <strong>✅ ยืนยันแล้ว</strong>
+                        <p>รายการแจ้งซ่อมนี้ถูกยืนยันแล้ว การแจ้งซ่อมที่เชื่อมโยงจะถูกล็อก</p>
+                    </div>
+                    
+                    <div class="alert alert-warning" role="alert" 
+                        invisible="state != 'cancelled'">
+                        <strong>❌ ยกเลิกแล้ว</strong>
+                        <p>รายการแจ้งซ่อมนี้ถูกยกเลิกแล้ว</p>
+                    </div>
+                    
+                    <group>
+                        <group>
+                            <field name="maintenance_request_id"
+                                domain="[('approval_state', '=', 'approved'), ('is_used_in_history', '=', False)]"
+                                context="{'default_approval_state': 'approved'}"
+                                readonly="state != 'draft'"/>
+                            <field name="vehicle_id" readonly="state == 'confirmed'"/>
+                            <field name="license_plate" readonly="1"/>
+                            <field name="problem_category" readonly="state == 'confirmed'"/>
+                            <field name="maintenance_date" readonly="state == 'confirmed'"/>
+                            <field name="completed_date" readonly="state == 'confirmed'"/>
+                        </group>
+                        <group>
+                            <field name="service_provider" readonly="state == 'confirmed'"/>
+                            <field name="technician_id" 
+                                invisible="service_provider != 'internal'" 
+                                readonly="state == 'confirmed'"/>
+                            <field name="service_center" 
+                                invisible="service_provider != 'external'" 
+                                readonly="state == 'confirmed'"/>
+                            <field name="cost" readonly="state == 'confirmed'"/>
+
+                        </group>
+                    </group>
+                    <group>
+                        <field name="description" 
+                            placeholder="รายละเอียดการซ่อมบำรุง..." 
+                            readonly="state == 'confirmed'"/>
+                    </group>
+                    <notebook>
+                        <page string="หมายเหตุ">
+                            <field name="note"/>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter>
+                    <field name="message_follower_ids"/>
+                    <field name="message_ids"/>
+                </chatter>
+            </form>
+        </field>
+    </record>
+
+    <!-- ========== ACTIONS (ต้องมาก่อน MENUS) ========== -->
+    <record id="action_vehicle_partner_company" model="ir.actions.act_window">
+        <field name="name">บริษัทรถร่วม</field>
+        <field name="res_model">vehicle.partner.company</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+
+    <record id="action_vehicle_driver" model="ir.actions.act_window">
+        <field name="name">ผู้ขับขี่</field>
+        <field name="res_model">vehicle.driver</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <record id="action_vehicle_maintenance_request" model="ir.actions.act_window">
+        <field name="name">การแจ้งซ่อม</field>
+        <field name="res_model">vehicle.maintenance.request</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <record id="action_vehicle_maintenance_history" model="ir.actions.act_window">
+        <field name="name">รายการแจ้งซ่อม</field>
+        <field name="res_model">vehicle.maintenance.history</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <!-- ==================== MENUS ==================== -->
+    <!-- ระบบจัดการยานพาหนะ - อยู่ภายใต้เมนู Fleet -->
+
+
+    <!-- บริษัทรถร่วม -->
+    <menuitem id="menu_vehicle_partner_company"
+              name="บริษัทรถร่วม"
+              parent="fleet.menu_root"
+              action="action_vehicle_partner_company"
+              sequence="15"/>
+
+    <!-- ผู้ขับขี่ -->
+    <menuitem id="menu_vehicle_driver"
+              name="ผู้ขับขี่"
+              parent="fleet.menu_root"
+              action="action_vehicle_driver"
+              sequence="20"/>
+
+    <!-- การซ่อมบำรุง (เมนูหลัก) -->
+    <menuitem id="menu_vehicle_maintenance"
+              name="การซ่อมบำรุง"
+              parent="fleet.menu_root"
+              sequence="30"/>
+
+    <!-- การแจ้งซ่อม (sub-menu) -->
+    <menuitem id="menu_vehicle_maintenance_request"
+              name="การแจ้งซ่อม"
+              parent="menu_vehicle_maintenance"
+              action="action_vehicle_maintenance_request"
+              sequence="10"/>
+
+    <!-- รายการแจ้งซ่อม (sub-menu) -->
+    <menuitem id="menu_vehicle_maintenance_history"
+              name="รายการแจ้งซ่อม"
+              parent="menu_vehicle_maintenance"
+              action="action_vehicle_maintenance_history"
+              sequence="20"/>
+
+    <!-- ======================================= การแจ้งเตือน ======================================= -->
+    
+    <!-- มุมมองรายการสำหรับการแจ้งเตือน -->
+    <record id="view_vehicle_maintenance_notification_tree" model="ir.ui.view">
+        <field name="name">vehicle.maintenance.notification.tree</field>
+        <field name="model">vehicle.maintenance.notification</field>
+        <field name="arch" type="xml">
+            <list string="📱 การแจ้งเตือน" decoration-warning="not notification_enabled">
+                <field name="problem_category" widget="badge" decoration-info="problem_category=='engine'" decoration-warning="problem_category=='transmission'" decoration-danger="problem_category=='brake'"/>
+                <field name="license_plate"/>
+                <field name="notification_enabled" widget="boolean_toggle"/>
+                <field name="notification_interval"/>
+                <field name="notification_last_sent"/>
+                <field name="notification_count" sum="รวม"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- List View สำหรับ notification.history (Embedded) -->
+    <record id="view_notification_history_list_embedded" model="ir.ui.view">
+        <field name="name">notification.history.list.embedded</field>
+        <field name="model">notification.history</field>
+        <field name="arch" type="xml">
+            <list string="ประวัติการแจ้งเตือน">
+                <field name="create_date" string="วันที่ส่ง"/>
+                <field name="title"/>
+                <field name="status"/>
+                <field name="is_read"/>
+                <field name="read_date"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Form View สำหรับ Microsoft Teams Notification -->
+    <record id="view_vehicle_maintenance_notification_form" model="ir.ui.view">
+        <field name="name">vehicle.maintenance.notification.form</field>
+        <field name="model">vehicle.maintenance.notification</field>
+        <field name="arch" type="xml">
+            <form string="📱 ตั้งค่าการแจ้งเตือน">
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_send_notification_if_interval_complete" type="object" class="oe_highlight" string="🚀 ส่งแจ้งเตือน (ถ้าครบการแจ้งเตือน)"/>
+                    </div>
+                    <h2>📱 ตั้งค่าการแจ้งเตือนการซ่อมบำรุง</h2>
+                    
+                    <group>
+                        <group string="📌 ข้อมูลการซ่อม">
+                            <field name="problem_category"/>
+                            <field name="vehicle_id"/>
+                            <field name="license_plate" readonly="1"/>
+                        </group>
+                        <group string="👥 ผู้รับแจ้งเตือน">
+                            <field name="recipient_ids" widget="many2many_tags"/>
+                        </group>
+                    </group>
+
+                    <separator string="📅 ตั้งค่าวันที่แจ้งเตือน"/>
+                    <group>
+                        <group>
+                            <field name="notification_enabled" widget="boolean_toggle" string="✅ เปิดการแจ้งเตือน"/>
+                            <field name="notification_start_date"/>
+                            <field name="notification_interval"/>
+                        </group>
+                        <group>
+                            <field name="notification_end_date" readonly="1"/>
+                        </group>
+                    </group>
+
+                    <separator string="📊 ประวัติการส่ง"/>
+                    <group>
+                        <group>
+                            <field name="notification_last_sent" readonly="1"/>
+                            <field name="notification_count" readonly="1"/>
+                        </group>
+                    </group>
+
+                    <separator string="หมายเหตุ"/>
+                    <field name="note"/>
+
+                    <separator string="📝 ประวัติการแจ้งเตือน"/>
+                    <field name="notification_history_ids" readonly="1" widget="one2many_list" view_mode="list">
+                        <list string="ประวัติการแจ้งเตือน">
+                            <field name="create_date" string="วันที่ส่ง"/>
+                            <field name="title"/>
+                            <field name="status"/>
+                            <field name="is_read"/>
+                            <field name="read_date"/>
+                        </list>
+                    </field>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Action สำหรับการแจ้งเตือน -->
+    <record id="action_vehicle_maintenance_notification" model="ir.actions.act_window">
+        <field name="name">📱 การแจ้งเตือน</field>
+        <field name="res_model">vehicle.maintenance.notification</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                ไม่มีข้อมูลการแจ้งเตือน
+            </p>
+        </field>
+    </record>
+
+    <!-- เมนูสำหรับการแจ้งเตือน - ชี้ไปยังประวัติการแจ้งเตือน -->
+    <menuitem id="menu_vehicle_maintenance_notification"
+              name="📱 การแจ้งเตือน"
+              parent="menu_vehicle_maintenance"
+              action="action_notification_history"
+              sequence="30"/>
+
+    <!-- ======================================= ประวัติการแจ้งเตือน ======================================= -->
+
+    <!-- มุมมองรายการสำหรับประวัติการแจ้งเตือน -->
+    <record id="view_notification_history_tree" model="ir.ui.view">
+        <field name="name">notification.history.tree</field>
+        <field name="model">notification.history</field>
+        <field name="arch" type="xml">
+            <list string="📝 ประวัติการแจ้งเตือน" decoration-warning="status=='sent'" decoration-success="status=='read'">
+                <field name="problem_category" widget="badge" decoration-info="problem_category=='engine'" decoration-warning="problem_category=='transmission'" decoration-danger="problem_category=='brake'"/>
+                <field name="vehicle_id"/>
+                <field name="license_plate"/>
+                <field name="create_date" string="วันที่ส่ง"/>
+                <field name="title"/>
+                <field name="status" widget="badge"/>
+                <field name="is_read" widget="boolean"/>
+                <field name="read_date"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- มุมมองแบบฟอร์มสำหรับประวัติการแจ้งเตือน -->
+    <record id="view_notification_history_form" model="ir.ui.view">
+        <field name="name">notification.history.form</field>
+        <field name="model">notification.history</field>
+        <field name="arch" type="xml">
+            <form string="📝 ประวัติการแจ้งเตือน">
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="mark_as_read" type="object" class="oe_highlight" string="✓ ทำเครื่องหมายว่าอ่านแล้ว" invisible="is_read"/>
+                    </div>
+                    
+                    <h2>📝 ประวัติการแจ้งเตือน</h2>
+                    
+                    <group>
+                        <group string="📌 ข้อมูลการแจ้งเตือน">
+                            <field name="problem_category" widget="badge"/>
+                            <field name="vehicle_id"/>
+                            <field name="license_plate"/>
+                        </group>
+                        <group string="📋 รายละเอียด">
+                            <field name="title" readonly="1"/>
+                            <field name="create_date" readonly="1" string="วันที่ส่ง"/>
+                            <field name="status" widget="badge" readonly="1"/>
+                        </group>
+                    </group>
+                    
+                    <group>
+                        <group string="📊 สถานะการอ่าน">
+                            <field name="is_read" readonly="1"/>
+                            <field name="read_date" readonly="1"/>
+                            <field name="notification_type" readonly="1"/>
+                        </group>
+                    </group>
+
+                    <separator string="ผู้รับแจ้งเตือน"/>
+                    <field name="recipient_ids" readonly="1" widget="many2many_tags"/>
+                    
+                    <separator string="หมายเหตุ"/>
+                    <field name="note"/>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Action สำหรับประวัติการแจ้งเตือน -->
+    <record id="action_notification_history" model="ir.actions.act_window">
+        <field name="name">📝 ประวัติการแจ้งเตือน</field>
+        <field name="res_model">notification.history</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                ไม่มีข้อมูลประวัติการแจ้งเตือน
+            </p>
+        </field>
+    </record>
+
+    <!-- เมนูสำหรับประวัติการแจ้งเตือน (Submenu) -->
+    <menuitem id="menu_notification_history"
+              name="📝 ประวัติการแจ้งเตือน"
+              parent="menu_vehicle_maintenance_notification"
+              action="action_notification_history"
+              sequence="10"/>
+
+    <!-- เมนูสำหรับตั้งค่าการแจ้งเตือน (Submenu) -->
+    <menuitem id="menu_vehicle_maintenance_notification_settings"
+              name="⚙️ ตั้งค่าการแจ้งเตือน"
+              parent="menu_vehicle_maintenance_notification"
+              action="action_vehicle_maintenance_notification"
+              sequence="20"/>
+
+    <!-- ======================================= Server Actions ======================================= -->
+    
+    <!-- Server Action: ส่งแจ้งเตือนไปยัง Teams ===== -->
+    <record id="action_send_teams_notification" model="ir.actions.server">
+        <field name="name">📤 ส่งแจ้งเตือน Microsoft Teams</field>
+        <field name="model_id" ref="vehicle_registration.model_vehicle_maintenance_history"/>
+        <field name="binding_model_id" ref="vehicle_registration.model_vehicle_maintenance_history"/>
+        <field name="state">code</field>
+        <field name="code">
+for record in records:
+    notification = record.env['vehicle.maintenance.notification'].search([('maintenance_id', '=', record.id)], limit=1)
+    if notification:
+        notification.action_send_notification()
+    else:
+        record.env['vehicle.maintenance.notification'].create({
+            'maintenance_id': record.id,
+            'teams_webhook_url': record.env['ir.config_parameter'].sudo().get_param('vehicle.teams_webhook_url', '')
+        }).action_send_notification()
+        </field>
+    </record>
+
+    <!-- Server Action: เปิดการแจ้งเตือนสำหรับการซ่อม ===== -->
+    <record id="action_enable_teams_notification" model="ir.actions.server">
+        <field name="name">✅ เปิดการแจ้งเตือน Microsoft Teams</field>
+        <field name="model_id" ref="vehicle_registration.model_vehicle_maintenance_history"/>
+        <field name="binding_model_id" ref="vehicle_registration.model_vehicle_maintenance_history"/>
+        <field name="state">code</field>
+        <field name="code">
+for record in records:
+    notification = record.env['vehicle.maintenance.notification'].search([('maintenance_id', '=', record.id)], limit=1)
+    if not notification:
+        record.env['vehicle.maintenance.notification'].create({
+            'maintenance_id': record.id,
+            'notification_enabled': True,
+            'teams_webhook_url': record.env['ir.config_parameter'].sudo().get_param('vehicle.teams_webhook_url', '')
+        })
+    else:
+        notification.write({'notification_enabled': True})
+        </field>
+    </record>
+
+    <!-- Server Action: ปิดการแจ้งเตือน ===== -->
+    <record id="action_disable_teams_notification" model="ir.actions.server">
+        <field name="name">❌ ปิดการแจ้งเตือน Microsoft Teams</field>
+        <field name="model_id" ref="vehicle_registration.model_vehicle_maintenance_history"/>
+        <field name="binding_model_id" ref="vehicle_registration.model_vehicle_maintenance_history"/>
+        <field name="state">code</field>
+        <field name="code">
+for record in records:
+    notification = record.env['vehicle.maintenance.notification'].search([('maintenance_id', '=', record.id)], limit=1)
+    if notification:
+        notification.write({'notification_enabled': False})
+        </field>
+    </record>
+
+    <!-- Server Action: ส่งแจ้งเตือน (ถ้าครบการแจ้งเตือน) ===== -->
+    <record id="action_send_notification_if_interval_complete" model="ir.actions.server">
+        <field name="name">🚀 ส่งแจ้งเตือน (ถ้าครบการแจ้งเตือน)</field>
+        <field name="model_id" ref="vehicle_registration.model_vehicle_maintenance_notification"/>
+        <field name="binding_model_id" ref="vehicle_registration.model_vehicle_maintenance_notification"/>
+        <field name="state">code</field>
+        <field name="code">
+# ตรวจสอบ records เป็น None หรือว่าง (เมื่อรันจาก ir.cron)
+if not records:
+    # ค้นหาทุก record ที่เปิดการแจ้งเตือน
+    records = env['vehicle.maintenance.notification'].search([('notification_enabled', '=', True)])
+
+# ส่งแจ้งเตือน
+for record in records:
+    try:
+        record.action_send_notification_if_interval_complete()
+    except Exception as e:
+        # บันทึก error แต่ไม่หยุด loop
+        _logger.warning(f"⚠️ ส่งแจ้งเตือน {record.id} ล้มเหลว: {str(e)}")
+        </field>
+    </record>
+</odoo>

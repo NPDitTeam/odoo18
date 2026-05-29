@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="res_config_settings_view_form" model="ir.ui.view">
+        <field name="name">res.config.settings.view.form.inherit.account.advance</field>
+        <field name="model">res.config.settings</field>
+        <field name="priority" eval="40"/>
+        <field name="inherit_id" ref="account.res_config_settings_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//app[@name='account']" position="inside">
+                <block title="Account Advance Config" name="advance_config_setting">
+                    <setting string="Advance Account Setting"
+                             help="Setting account for Account Advance"
+                             company_dependent="1">
+                        <div class="content-group">
+                            <div class="row mt16">
+                                <label for="advance_journal_id" class="col-lg-3 o_light_label"/>
+                                <field name="advance_journal_id"
+                                       context="{'active_test': False}"/>
+                            </div>
+                            <div class="row mt16">
+                                <label for="advance_account_id" class="col-lg-3 o_light_label"/>
+                                <field name="advance_account_id"
+                                       context="{'active_test': False}"/>
+                            </div>
+                        </div>
+                    </setting>
+                </block>
+            </xpath>
+        </field>
+    </record>
+</odoo>

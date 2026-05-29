@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+        <record id="view_sale_rent_inv" model="ir.ui.view">
+            <field name="name">Invoice Orders</field>
+            <field name="model">sale.advance.rent.inv</field>
+            <field name="arch" type="xml">
+                <form string="สร้างใบรับเงินประกัน">
+                    <group>
+                        <field name="advance_payment_method" class="oe_inline" widget="radio"/>
+                        <field name="amount"/>
+                    </group>
+                    <footer>
+                        <button name="create_invoices" id="create_invoice_open" string="สร้างและดูใบแจ้งหนี้" type="object"
+                            context="{'open_invoices': True}" class="btn-primary"/>
+                        <button name="create_invoices" id="create_invoice" string="สร้างใบแจ้งหนี้" type="object"/>
+                        <button string="ยกเลิก" class="btn-secondary" special="cancel"/>
+                    </footer>
+                </form>
+            </field>
+        </record>
+
+        <record id="action_view_sale_rent_inv" model="ir.actions.act_window">
+            <field name="name">สร้างใบรับเงินประกัน</field>
+            <field name="type">ir.actions.act_window</field>
+            <field name="res_model">sale.advance.rent.inv</field>
+            <field name="view_mode">form</field>
+            <field name="target">new</field>
+            <field name="binding_model_id" ref="sale.model_sale_order" />
+            <field name="binding_view_types">list</field>
+        </record>
+</odoo>

@@ -1,0 +1,4 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_vehicle_inspection_user,vehicle.inspection.user,model_vehicle_inspection,base.group_user,1,1,1,1
+access_vehicle_inspection_line_user,vehicle.inspection.line.user,model_vehicle_inspection_line,base.group_user,1,1,1,1
+access_vehicle_inspection_maintenance_user,vehicle.inspection.maintenance.user,model_vehicle_inspection_maintenance,base.group_user,1,1,1,1

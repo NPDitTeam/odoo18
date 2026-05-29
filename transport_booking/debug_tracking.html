@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Debug Tracking Data</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .debug-box {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        pre {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+        .btn {
+            background: #007bff;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 10px;
+        }
+        .btn:hover {
+            background: #0056b3;
+        }
+        .success {
+            color: #28a745;
+        }
+        .error {
+            color: #dc3545;
+        }
+    </style>
+</head>
+<body>
+    <div class="debug-box">
+        <h2>🔍 Debug Tracking Data for BOOK-20251026-0013</h2>
+        <button class="btn" onclick="fetchBookingData()">Fetch Booking Data</button>
+        <button class="btn" onclick="fetchTrackingHistory()">Fetch Tracking History</button>
+        <button class="btn" onclick="testMapInitialization()">Test Map Initialization</button>
+    </div>
+    
+    <div class="debug-box">
+        <h3>Results:</h3>
+        <pre id="results">Click a button above to test...</pre>
+    </div>
+
+    <script>
+        const BOOKING_ID = 25; // BOOK-20251026-0013
+        
+        function log(message) {
+            const results = document.getElementById('results');
+            results.textContent += message + '\n';
+            console.log(message);
+        }
+        
+        function clearLog() {
+            document.getElementById('results').textContent = '';
+        }
+        
+        async function fetchBookingData() {
+            clearLog();
+            log('📡 Fetching booking data...\n');
+            
+            try {
+                const response = await fetch('/web/dataset/call_kw', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        jsonrpc: '2.0',
+                        method: 'call',
+                        params: {
+                            model: 'vehicle.booking',
+                            method: 'read',
+                            args: [[BOOKING_ID], [
+                                'name',
+                                'state',
+                                'tracking_status',
+                                'current_latitude',
+                                'current_longitude',
+                                'gps_last_update',
+                                'current_location',
+                                'pickup_latitude',
+                                'pickup_longitude',
+                                'pickup_location',
+                                'destination_latitude',
+                                'destination_longitude',
+                                'destination'
+                            ]],
+                            kwargs: {}
+                        },
+                        id: Math.floor(Math.random() * 1000000)
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.result && data.result.length > 0) {
+                    const booking = data.result[0];
+                    log('✅ SUCCESS!\n');
+                    log('📦 Booking Data:');
+                    log(JSON.stringify(booking, null, 2));
+                    
+                    log('\n🔍 Analysis:');
+                    log(`  Name: ${booking.name}`);
+                    log(`  State: ${booking.state}`);
+                    log(`  Tracking Status: ${booking.tracking_status}`);
+                    log(`\n📍 Current Position:`);
+                    log(`  Latitude: ${booking.current_latitude}`);
+                    log(`  Longitude: ${booking.current_longitude}`);
+                    log(`  Address: ${booking.current_location || 'N/A'}`);
+                    log(`  Last Update: ${booking.gps_last_update || 'N/A'}`);
+                    log(`\n📍 Pickup Location:`);
+                    log(`  Latitude: ${booking.pickup_latitude}`);
+                    log(`  Longitude: ${booking.pickup_longitude}`);
+                    log(`  Address: ${booking.pickup_location || 'N/A'}`);
+                    log(`\n📍 Destination:`);
+                    log(`  Latitude: ${booking.destination_latitude}`);
+                    log(`  Longitude: ${booking.destination_longitude}`);
+                    log(`  Address: ${booking.destination || 'N/A'}`);
+                } else {
+                    log('❌ ERROR: No data returned');
+                    log(JSON.stringify(data, null, 2));
+                }
+            } catch (error) {
+                log('❌ ERROR: ' + error.message);
+                console.error(error);
+            }
+        }
+        
+        async function fetchTrackingHistory() {
+            clearLog();
+            log('📡 Fetching tracking history...\n');
+            
+            try {
+                const response = await fetch('/web/dataset/call_kw', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        jsonrpc: '2.0',
+                        method: 'call',
+                        params: {
+                            model: 'vehicle.tracking',
+                            method: 'search_read',
+                            args: [[['booking_id', '=', BOOKING_ID]]],
+                            kwargs: {
+                                fields: ['timestamp', 'latitude', 'longitude', 'speed', 'address'],
+                                limit: 10,
+                                order: 'timestamp desc'
+                            }
+                        },
+                        id: Math.floor(Math.random() * 1000000)
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.result && data.result.length > 0) {
+                    log(`✅ Found ${data.result.length} tracking records:\n`);
+                    data.result.forEach((record, index) => {
+                        log(`Record ${index + 1}:`);
+                        log(`  Time: ${record.timestamp}`);
+                        log(`  Position: ${record.latitude}, ${record.longitude}`);
+                        log(`  Speed: ${record.speed} km/h`);
+                        log(`  Address: ${record.address || 'N/A'}`);
+                        log('');
+                    });
+                } else {
+                    log('⚠️ No tracking records found');
+                }
+            } catch (error) {
+                log('❌ ERROR: ' + error.message);
+                console.error(error);
+            }
+        }
+        
+        function testMapInitialization() {
+            clearLog();
+            log('🗺️ Testing Google Maps API...\n');
+            
+            if (typeof google !== 'undefined' && google.maps) {
+                log('✅ Google Maps API is loaded');
+                log(`   Version: ${google.maps.version || 'Unknown'}`);
+            } else {
+                log('❌ Google Maps API is NOT loaded');
+            }
+            
+            log('\n🔍 Checking map elements...');
+            const mapElement = document.getElementById('map');
+            if (mapElement) {
+                log('✅ Map element exists');
+            } else {
+                log('❌ Map element NOT found');
+            }
+        }
+    </script>
+</body>
+</html>

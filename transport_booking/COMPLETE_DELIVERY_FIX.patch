@@ -1,0 +1,89 @@
+================================================================================
+FIX: complete_delivery() API - Add action_done() call
+================================================================================
+
+FILE: controllers/tracking_controller.py
+METHOD: complete_delivery()
+
+PROBLEM:
+--------
+❌ API ส่ง request ไปยัง `/api/delivery/complete` 
+❌ อัพเดท booking ด้วย booking.write() ตรง ๆ
+❌ ไม่เรียก action_done()
+❌ ผลลัพธ์:
+   - Vehicle status ยังเป็น 'in_delivery' (ไม่ปล่อยกลับมา)
+   - ไม่สร้าง delivery.history
+   - Logs ไม่แสดงข้อมูลครบ
+
+SOLUTION:
+---------
+✅ เรียก booking.action_done() แทนการใช้ booking.write() ตรง ๆ
+✅ action_done() จะ:
+   1. ปล่อยรถเป็น 'available' (vehicle.write({'vehicle_check_status': 'available'}))
+   2. สร้าง delivery.history
+   3. บันทึก logs ครบถ้วน
+
+================================================================================
+
+STEP 1: บันทึกรูปและลายเซ็น
+---------
+booking.write({
+    'delivery_photo': delivery_photo,
+    'receiver_signature': receiver_signature,
+    'receiver_name': receiver_name,
+    'delivery_timestamp': delivery_timestamp,
+    'delivery_latitude': delivery_latitude,
+    'delivery_longitude': delivery_longitude,
+})
+
+STEP 2: เรียก action_done() เพื่อทำให้เสร็จ
+---------
+booking.action_done()
+
+# action_done() จะทำการ:
+# - vehicle_id.write({'vehicle_check_status': 'available'})
+# - booking.write({'state': 'done', 'tracking_status': 'delivered', ...})
+# - สร้าง delivery_history จากข้อมูล booking
+
+================================================================================
+
+EXPECTED LOGS AFTER FIX:
+---------
+
+✅ [Complete Delivery] API called
+   📦 Booking ID: BOOK-20251103-0018
+   📸 Photo size: 45680 bytes
+   ✍️  Signature size: 12340 bytes
+   👤 Receiver: Mr. Customer
+   🎨 Watermark - Time: 2025-11-03 15:30:45.123456
+   🎨 Watermark - Lat: 13.7563, Lng: 100.5018
+
+🔹 [Step 1] Saving delivery photos and signatures...
+✅ [Step 1] Delivery photos and signatures saved
+
+🔹 [Step 2] Calling action_done() to finalize delivery...
+✅ [Step 2] action_done() completed successfully
+   🚚 Vehicle status: available                    ✅ ← Vehicle RELEASED!
+   📊 Booking state: done
+   📍 Tracking status: delivered
+
+✅ [Complete Delivery] DELIVERY COMPLETED SUCCESSFULLY!
+   📦 Booking: BOOK-20251103-0018
+   ✅ Vehicle released as available
+   ✅ Delivery history created
+
+================================================================================
+
+HOW TO APPLY FIX:
+---------
+
+In file: controllers/tracking_controller.py
+Around line 779-820, replace the current complete_delivery() method with the
+fixed version from artifact: fix_complete_delivery
+
+Key changes:
+1. Remove 'state', 'tracking_status', 'actual_delivery_time' from update_vals
+2. Call booking.action_done() instead of booking.write() for full state change
+3. Add detailed logging for each step
+
+================================================================================

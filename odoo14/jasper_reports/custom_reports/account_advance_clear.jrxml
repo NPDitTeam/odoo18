@@ -1,0 +1,316 @@
+<!-- Created with Jaspersoft Studio version 7.0.3.final using JasperReports Library version 7.0.3  -->
+<jasperReport name="account_advance_clear" language="java" pageWidth="595" pageHeight="842" columnWidth="555" leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20" uuid="fe9b37e1-ad2f-4633-bc3d-531f4b80142d">
+	<property name="ODOO_RELATIONS" value="[&apos;clear_ids&apos;]"/>
+	<property name="com.jaspersoft.studio.data.defaultdataadapter" value="Account Advance Clear"/>
+	<property name="com.jaspersoft.studio.unit." value="pixel"/>
+
+	<query language="xPath"><![CDATA[data/record]]></query>
+
+	<!-- ===== FIELDS: Header (account.advance.clear) ===== -->
+	<field name="id" class="java.lang.String">
+		<description><![CDATA[id]]></description>
+	</field>
+	<field name="Number-name" class="java.lang.String">
+		<description><![CDATA[Number-name]]></description>
+	</field>
+	<field name="Doc_Date-doc_date" class="java.lang.String">
+		<description><![CDATA[Doc_Date-doc_date]]></description>
+	</field>
+	<field name="Amount_Advance-advance_amount" class="java.lang.String">
+		<description><![CDATA[Amount_Advance-advance_amount]]></description>
+	</field>
+	<field name="Description-description" class="java.lang.String">
+		<description><![CDATA[Description-description]]></description>
+	</field>
+	<field name="Note-note" class="java.lang.String">
+		<description><![CDATA[Note-note]]></description>
+	</field>
+	<field name="UnTaxed_Amount-untaxed_amount" class="java.lang.String">
+		<description><![CDATA[UnTaxed_Amount-untaxed_amount]]></description>
+	</field>
+	<field name="Tax_Amount-tax_amount" class="java.lang.String">
+		<description><![CDATA[Tax_Amount-tax_amount]]></description>
+	</field>
+	<field name="Total-amount" class="java.lang.String">
+		<description><![CDATA[Total-amount]]></description>
+	</field>
+	<field name="Withholding_Tax_Amount-wht_amount" class="java.lang.String">
+		<description><![CDATA[Withholding_Tax_Amount-wht_amount]]></description>
+	</field>
+	<field name="Clear_Amount-clear_amount" class="java.lang.String">
+		<description><![CDATA[Clear_Amount-clear_amount]]></description>
+	</field>
+	<field name="Total_Exclude_WHT-exclude_amount" class="java.lang.String">
+		<description><![CDATA[Total_Exclude_WHT-exclude_amount]]></description>
+	</field>
+
+	<!-- ===== FIELDS: Many2one nested ===== -->
+	<field name="Employee_Name" class="java.lang.String">
+		<description><![CDATA[Employee-employee_id/Name-name]]></description>
+	</field>
+	<field name="Department_Name" class="java.lang.String">
+		<description><![CDATA[Advance-advance_id/Department-department_id/Name-name]]></description>
+	</field>
+	<field name="Advance_Request_Name" class="java.lang.String">
+		<description><![CDATA[Advance-advance_id/Advance_Request-advance_request_id/Name-name]]></description>
+	</field>
+	<field name="Company_Name" class="java.lang.String">
+		<description><![CDATA[Company-company_id/Name-name]]></description>
+	</field>
+
+	<!-- ===== FIELDS: One2many lines (advance.clear.line) ===== -->
+	<field name="Line_Description" class="java.lang.String">
+		<description><![CDATA[Advance_Clear-clear_ids/Name-name]]></description>
+	</field>
+	<field name="Line_Invoice_Date" class="java.lang.String">
+		<description><![CDATA[Advance_Clear-clear_ids/Invoice_Date-invoice_date]]></description>
+	</field>
+	<field name="Line_Invoice_Number" class="java.lang.String">
+		<description><![CDATA[Advance_Clear-clear_ids/Invoice_Number-invoice_number]]></description>
+	</field>
+	<field name="Line_Amount" class="java.lang.String">
+		<description><![CDATA[Advance_Clear-clear_ids/Subtotal-price_subtotal]]></description>
+	</field>
+	<field name="Line_Analytic" class="java.lang.String">
+		<description><![CDATA[Advance_Clear-clear_ids/Analytic_Distribution-analytic_distribution]]></description>
+	</field>
+
+	<!-- ===== VARIABLES ===== -->
+	<variable name="line_no" class="java.lang.Integer" resetType="Group" resetGroup="doc_group" calculation="Count">
+		<expression><![CDATA[Boolean.TRUE]]></expression>
+	</variable>
+
+	<!-- ===== GROUP ===== -->
+	<group name="doc_group" startNewPage="true">
+		<expression><![CDATA[$F{id}]]></expression>
+		<groupHeader>
+			<band height="170" splitType="Stretch">
+				<!-- Company Name -->
+				<element kind="textField" x="0" y="5" width="555" height="25" blankWhenNull="true" hTextAlign="Center" vTextAlign="Middle" fontSize="14.0" bold="true" pdfEncoding="Identity-H" pdfEmbedded="true">
+					<expression><![CDATA[$F{Company_Name} != null ? $F{Company_Name} : ""]]></expression>
+				</element>
+				<!-- Document Title -->
+				<element kind="staticText" x="0" y="30" width="555" height="22" hTextAlign="Center" vTextAlign="Middle" fontSize="12.0" bold="true" pdfEncoding="Identity-H" pdfEmbedded="true">
+					<text><![CDATA[ใบเคลียร์เงินทดรองจ่าย]]></text>
+				</element>
+				<!-- Separator Line -->
+				<element kind="line" x="0" y="55" width="555" height="1"/>
+				<!-- Row 1: ผู้เบิก -->
+				<element kind="staticText" x="5" y="60" width="50" height="18" vTextAlign="Middle" fontSize="9.0" pdfEncoding="Identity-H" pdfEmbedded="true">
+					<text><![CDATA[ผู้เบิก :]]></text>
+				</element>
+				<element kind="textField" x="55" y="60" width="220" height="18" blankWhenNull="true" vTextAlign="Middle" fontSize="9.0" bold="true" pdfEncoding="Identity-H" pdfEmbedded="true">
+					<expression><![CDATA[$F{Employee_Name} != null ? $F{Employee_Name} : ""]]></expression>
+				</element>
+				<!-- Row 1: เลขที่เอกสาร -->
+				<element kind="staticText" x="340" y="60" width="80" height="18" hTextAlign="Right" vTextAlign="Middle" fontSize="9.0" pdfEncoding="Identity-H" pdfEmbedded="true">
+					<text><![CDATA[เลขที่เอกสาร :]]></text>
+				</element>
+				<element kind="textField" x="425" y="60" width="125" height="18" blankWhenNull="true" vTextAlign="Middle" fontSize="9.0" pdfEncoding="Identity-H" pdfEmbedded="true">
+					<expression><![CDATA[$F{Number-name} != null && !$F{Number-name}.equals("name") ? $F{Number-name} : ""]]></expression>
+				</element>
+				<!-- Row 2: ฝ่าย -->
+				<element kind="staticText" x="5" y="78" width="50" height="18" vTextAlign="Middle" fontSize="9.0" pdfEncoding="Identity-H" pdfEmbedded="true">
+					<text><![CDATA[ฝ่าย :]]></text>
+				</element>
+				<element kind="textField" x="55" y="78" width="220" height="18" blankWhenNull="true" vTextAlign="Middle" fontSize="9.0" pdfEncoding="Identity-H" pdfEmbedded="true">
+					<expression><![CDATA[$F{Department_Name} != null ? $F{Department_Name} : ""]]></expression>
+				</element>
+				<!-- Row 2: วันที่ -->
+				<element kind="staticText" x="340" y="78" width="80" height="18" hTextAlign="Right" vTextAlign="Middle" fontSize="9.0" pdfEncoding="Identity-H" pdfEmbedded="true">
+					<text><![CDATA[วันที่ :]]></text>
+				</element>
+				<element kind="textField" x="425" y="78" width="125" height="18" blankWhenNull="true" vTextAlign="Middle" fontSize="9.0" pdfEncoding="Identity-H" pdfEmbedded="true">
+					<expression><![CDATA[($F{Doc_Date-doc_date} != null && $F{Doc_Date-doc_date}.length() >= 10 && !$F{Doc_Date-doc_date}.equals("doc_date"))
+? new java.text.SimpleDateFormat("dd/MM/").format(new java.text.SimpleDateFormat("yyyy-MM-dd").parse($F{Doc_Date-doc_date}.substring(0,10)))
+  + String.valueOf(Integer.parseInt(new java.text.SimpleDateFormat("yyyy").format(new java.text.SimpleDateFormat("yyyy-MM-dd").parse($F{Doc_Date-doc_date}.substring(0,10)))) + 543)
+: ""]]></expression>
+				</element>
+				<!-- Row 3: ยอดเงินทดรอง -->
+				<element kind="staticText" x="5" y="96" width="80" height="18" vTextAlign="Middle" fontSize="9.0" pdfEncoding="Identity-H" pdfEmbedded="true">
+					<text><![CDATA[ยอดเงินทดรอง :]]></text>
+				</element>
+				<element kind="textField" x="85" y="96" width="120" height="18" blankWhenNull="true" vTextAlign="Middle" fontSize="9.0" bold="true" pdfEncoding="Identity-H" pdfEmbedded="true">
+					<expression><![CDATA[($F{Amount_Advance-advance_amount} != null && $F{Amount_Advance-advance_amount}.matches("-?[\\d.]+"))
+? String.format("%,.2f", Double.parseDouble($F{Amount_Advance-advance_amount})) : ""]]></expression>
+				</element>
+				<element kind="staticText" x="205" y="96" width="30" height="18" vTextAlign="Middle" fontSize="9.0" pdfEncoding="Identity-H" pdfEmbedded="true">
+					<text><![CDATA[บาท]]></text>
+				</element>
+				<!-- Row 3: เลขที่ใบขอเบิก -->
+				<element kind="staticText" x="340" y="96" width="80" height="18" hTextAlign="Right" vTextAlign="Middle" fontSize="9.0" pdfEncoding="Identity-H" pdfEmbedded="true">
+					<text><![CDATA[เลขที่ใบขอเบิก :]]></text>
+				</element>
+				<element kind="textField" x="425" y="96" width="125" height="18" blankWhenNull="true" vTextAlign="Middle" fontSize="9.0" pdfEncoding="Identity-H" pdfEmbedded="true">
+					<expression><![CDATA[$F{Advance_Request_Name} != null ? $F{Advance_Request_Name} : ""]]></expression>
+				</element>
+				<!-- Row 4: Description -->
+				<element kind="staticText" x="5" y="118" width="70" height="16" vTextAlign="Top" fontSize="9.0" pdfEncoding="Identity-H" pdfEmbedded="true">
+					<text><![CDATA[Description :]]></text>
+				</element>
+				<element kind="textField" x="75" y="118" width="475" height="40" blankWhenNull="true" vTextAlign="Top" fontSize="9.0" pdfEncoding="Identity-H" pdfEmbedded="true">
+					<expression><![CDATA[$F{Description-description} != null && !$F{Description-description}.equals("description") ? $F{Description-description} : ""]]></expression>
+				</element>
+				<!-- Separator Line -->
+				<element kind="line" x="0" y="165" width="555" height="1"/>
+			</band>
+		</groupHeader>
+		<groupFooter>
+			<band height="290" splitType="Stretch">
+				<!-- Top border -->
+				<element kind="line" x="0" y="0" width="555" height="1"/>
+				<!-- หมายเหตุ -->
+				<element kind="staticText" x="5" y="10" width="60" height="16" vTextAlign="Top" fontSize="9.0" bold="true" pdfEncoding="Identity-H" pdfEmbedded="true">
+					<text><![CDATA[หมายเหตุ :]]></text>
+				</element>
+				<element kind="textField" x="65" y="10" width="220" height="50" blankWhenNull="true" vTextAlign="Top" fontSize="9.0" pdfEncoding="Identity-H" pdfEmbedded="true">
+					<expression><![CDATA[$F{Note-note} != null && !$F{Note-note}.equals("note") ? $F{Note-note} : ""]]></expression>
+				</element>
+				<!-- Summary Box -->
+				<element kind="rectangle" x="295" y="5" width="260" height="130" mode="Transparent"/>
+				<!-- จำนวนเงิน -->
+				<element kind="staticText" x="300" y="8" width="130" height="16" vTextAlign="Middle" fontSize="9.0" pdfEncoding="Identity-H" pdfEmbedded="true">
+					<text><![CDATA[จำนวนเงิน]]></text>
+				</element>
+				<element kind="textField" x="430" y="8" width="120" height="16" blankWhenNull="true" hTextAlign="Right" vTextAlign="Middle" fontSize="9.0" pdfEncoding="Identity-H" pdfEmbedded="true">
+					<expression><![CDATA[($F{UnTaxed_Amount-untaxed_amount} != null && $F{UnTaxed_Amount-untaxed_amount}.matches("-?[\\d.]+"))
+? String.format("%,.2f", Double.parseDouble($F{UnTaxed_Amount-untaxed_amount})) : ""]]></expression>
+				</element>
+				<!-- ภาษีมูลค่าเพิ่ม 7% -->
+				<element kind="staticText" x="300" y="25" width="130" height="16" vTextAlign="Middle" fontSize="9.0" pdfEncoding="Identity-H" pdfEmbedded="true">
+					<text><![CDATA[ภาษีมูลค่าเพิ่ม 7%]]></text>
+				</element>
+				<element kind="textField" x="430" y="25" width="120" height="16" blankWhenNull="true" hTextAlign="Right" vTextAlign="Middle" fontSize="9.0" pdfEncoding="Identity-H" pdfEmbedded="true">
+					<expression><![CDATA[($F{Tax_Amount-tax_amount} != null && $F{Tax_Amount-tax_amount}.matches("-?[\\d.]+"))
+? String.format("%,.2f", Double.parseDouble($F{Tax_Amount-tax_amount})) : ""]]></expression>
+				</element>
+				<!-- ยอดรวม -->
+				<element kind="staticText" x="300" y="42" width="130" height="16" vTextAlign="Middle" fontSize="9.0" pdfEncoding="Identity-H" pdfEmbedded="true">
+					<text><![CDATA[ยอดรวม]]></text>
+				</element>
+				<element kind="textField" x="430" y="42" width="120" height="16" blankWhenNull="true" hTextAlign="Right" vTextAlign="Middle" fontSize="9.0" pdfEncoding="Identity-H" pdfEmbedded="true">
+					<expression><![CDATA[($F{Total-amount} != null && $F{Total-amount}.matches("-?[\\d.]+"))
+? String.format("%,.2f", Double.parseDouble($F{Total-amount})) : ""]]></expression>
+				</element>
+				<!-- หัก ณ ที่จ่าย -->
+				<element kind="staticText" x="300" y="59" width="130" height="16" vTextAlign="Middle" fontSize="9.0" pdfEncoding="Identity-H" pdfEmbedded="true">
+					<text><![CDATA[หัก ณ ที่จ่าย]]></text>
+				</element>
+				<element kind="textField" x="430" y="59" width="120" height="16" blankWhenNull="true" hTextAlign="Right" vTextAlign="Middle" fontSize="9.0" pdfEncoding="Identity-H" pdfEmbedded="true">
+					<expression><![CDATA[($F{Withholding_Tax_Amount-wht_amount} != null && $F{Withholding_Tax_Amount-wht_amount}.matches("-?[\\d.]+"))
+? String.format("%,.2f", Double.parseDouble($F{Withholding_Tax_Amount-wht_amount})) : ""]]></expression>
+				</element>
+				<!-- ยอดสุทธิ -->
+				<element kind="staticText" x="300" y="76" width="130" height="16" vTextAlign="Middle" fontSize="9.0" bold="true" pdfEncoding="Identity-H" pdfEmbedded="true">
+					<text><![CDATA[ยอดสุทธิ]]></text>
+				</element>
+				<element kind="textField" x="430" y="76" width="120" height="16" blankWhenNull="true" hTextAlign="Right" vTextAlign="Middle" fontSize="9.0" bold="true" pdfEncoding="Identity-H" pdfEmbedded="true">
+					<expression><![CDATA[($F{Total_Exclude_WHT-exclude_amount} != null && $F{Total_Exclude_WHT-exclude_amount}.matches("-?[\\d.]+"))
+? String.format("%,.2f", Double.parseDouble($F{Total_Exclude_WHT-exclude_amount})) : ""]]></expression>
+				</element>
+				<!-- ยอดเบิกทดรอง -->
+				<element kind="staticText" x="300" y="96" width="130" height="16" vTextAlign="Middle" fontSize="9.0" pdfEncoding="Identity-H" pdfEmbedded="true">
+					<text><![CDATA[ยอดเบิกทดรอง]]></text>
+				</element>
+				<element kind="textField" x="430" y="96" width="120" height="16" blankWhenNull="true" hTextAlign="Right" vTextAlign="Middle" fontSize="9.0" pdfEncoding="Identity-H" pdfEmbedded="true">
+					<expression><![CDATA[($F{Amount_Advance-advance_amount} != null && $F{Amount_Advance-advance_amount}.matches("-?[\\d.]+"))
+? String.format("%,.2f", Double.parseDouble($F{Amount_Advance-advance_amount})) : ""]]></expression>
+				</element>
+				<!-- ยอดเคลียร์คืน(เบิกเพิ่ม) -->
+				<element kind="staticText" x="300" y="113" width="130" height="16" vTextAlign="Middle" fontSize="9.0" bold="true" pdfEncoding="Identity-H" pdfEmbedded="true">
+					<text><![CDATA[ยอดเคลียร์คืน(เบิกเพิ่ม)]]></text>
+				</element>
+				<element kind="textField" x="430" y="113" width="120" height="16" blankWhenNull="true" hTextAlign="Right" vTextAlign="Middle" fontSize="9.0" bold="true" pdfEncoding="Identity-H" pdfEmbedded="true">
+					<expression><![CDATA[($F{Clear_Amount-clear_amount} != null && $F{Clear_Amount-clear_amount}.matches("-?[\\d.]+"))
+? String.format("%,.2f", Double.parseDouble($F{Clear_Amount-clear_amount})) : ""]]></expression>
+				</element>
+				<!-- ===== SIGNATURES ===== -->
+				<element kind="line" x="10" y="190" width="120" height="1"/>
+				<element kind="staticText" x="10" y="193" width="120" height="16" hTextAlign="Center" vTextAlign="Middle" fontSize="8.0" bold="true" pdfEncoding="Identity-H" pdfEmbedded="true">
+					<text><![CDATA[Prepared By]]></text>
+				</element>
+				<element kind="line" x="150" y="190" width="120" height="1"/>
+				<element kind="staticText" x="150" y="193" width="120" height="16" hTextAlign="Center" vTextAlign="Middle" fontSize="8.0" bold="true" pdfEncoding="Identity-H" pdfEmbedded="true">
+					<text><![CDATA[Checked By]]></text>
+				</element>
+				<element kind="line" x="290" y="190" width="120" height="1"/>
+				<element kind="staticText" x="290" y="193" width="120" height="16" hTextAlign="Center" vTextAlign="Middle" fontSize="8.0" bold="true" pdfEncoding="Identity-H" pdfEmbedded="true">
+					<text><![CDATA[Approved By]]></text>
+				</element>
+				<element kind="line" x="430" y="190" width="120" height="1"/>
+				<element kind="staticText" x="430" y="193" width="120" height="16" hTextAlign="Center" vTextAlign="Middle" fontSize="8.0" bold="true" pdfEncoding="Identity-H" pdfEmbedded="true">
+					<text><![CDATA[Approved By]]></text>
+				</element>
+				<!-- Print DateTime -->
+				<element kind="textField" x="10" y="215" width="150" height="14" vTextAlign="Middle" fontSize="7.0" pdfEncoding="Identity-H" pdfEmbedded="true">
+					<expression><![CDATA[new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm").format(new java.util.Date())]]></expression>
+				</element>
+			</band>
+		</groupFooter>
+	</group>
+
+	<background splitType="Stretch"/>
+
+	<!-- ===== COLUMN HEADER: Table headers ===== -->
+	<columnHeader height="25" splitType="Stretch">
+		<element kind="line" x="0" y="0" width="555" height="1"/>
+		<element kind="line" x="0" y="24" width="555" height="1"/>
+		<element kind="staticText" x="0" y="1" width="30" height="23" hTextAlign="Center" vTextAlign="Middle" fontSize="9.0" bold="true" pdfEncoding="Identity-H" pdfEmbedded="true">
+			<text><![CDATA[No.]]></text>
+		</element>
+		<element kind="staticText" x="30" y="1" width="180" height="23" hTextAlign="Center" vTextAlign="Middle" fontSize="9.0" bold="true" pdfEncoding="Identity-H" pdfEmbedded="true">
+			<text><![CDATA[Description]]></text>
+		</element>
+		<element kind="staticText" x="210" y="1" width="80" height="23" hTextAlign="Center" vTextAlign="Middle" fontSize="9.0" bold="true" pdfEncoding="Identity-H" pdfEmbedded="true">
+			<text><![CDATA[Invoice Date]]></text>
+		</element>
+		<element kind="staticText" x="290" y="1" width="85" height="23" hTextAlign="Center" vTextAlign="Middle" fontSize="9.0" bold="true" pdfEncoding="Identity-H" pdfEmbedded="true">
+			<text><![CDATA[Invoice No.]]></text>
+		</element>
+		<element kind="staticText" x="375" y="1" width="85" height="23" hTextAlign="Center" vTextAlign="Middle" fontSize="9.0" bold="true" pdfEncoding="Identity-H" pdfEmbedded="true">
+			<text><![CDATA[Analytic]]></text>
+		</element>
+		<element kind="staticText" x="460" y="1" width="95" height="23" hTextAlign="Center" vTextAlign="Middle" fontSize="9.0" bold="true" pdfEncoding="Identity-H" pdfEmbedded="true">
+			<text><![CDATA[Amount]]></text>
+		</element>
+	</columnHeader>
+
+	<!-- ===== DETAIL: Line items ===== -->
+	<detail>
+		<band height="20" splitType="Stretch">
+			<element kind="textField" x="0" y="0" width="30" height="20" hTextAlign="Center" vTextAlign="Middle" fontSize="9.0" pdfEncoding="Identity-H" pdfEmbedded="true">
+				<expression><![CDATA[$V{line_no}]]></expression>
+			</element>
+			<element kind="textField" x="30" y="0" width="180" height="20" blankWhenNull="true" vTextAlign="Middle" fontSize="9.0" pdfEncoding="Identity-H" pdfEmbedded="true">
+				<expression><![CDATA[$F{Line_Description} != null ? $F{Line_Description} : ""]]></expression>
+			</element>
+			<element kind="textField" x="210" y="0" width="80" height="20" blankWhenNull="true" hTextAlign="Center" vTextAlign="Middle" fontSize="9.0" pdfEncoding="Identity-H" pdfEmbedded="true">
+				<expression><![CDATA[($F{Line_Invoice_Date} != null && $F{Line_Invoice_Date}.length() >= 10 && !$F{Line_Invoice_Date}.equals("invoice_date"))
+? new java.text.SimpleDateFormat("dd/MM/").format(new java.text.SimpleDateFormat("yyyy-MM-dd").parse($F{Line_Invoice_Date}.substring(0,10)))
+  + String.valueOf(Integer.parseInt(new java.text.SimpleDateFormat("yyyy").format(new java.text.SimpleDateFormat("yyyy-MM-dd").parse($F{Line_Invoice_Date}.substring(0,10)))) + 543)
+: ""]]></expression>
+			</element>
+			<element kind="textField" x="290" y="0" width="85" height="20" blankWhenNull="true" hTextAlign="Center" vTextAlign="Middle" fontSize="9.0" pdfEncoding="Identity-H" pdfEmbedded="true">
+				<expression><![CDATA[$F{Line_Invoice_Number} != null ? $F{Line_Invoice_Number} : ""]]></expression>
+			</element>
+			<element kind="textField" x="375" y="0" width="85" height="20" blankWhenNull="true" hTextAlign="Center" vTextAlign="Middle" fontSize="8.0" pdfEncoding="Identity-H" pdfEmbedded="true">
+				<expression><![CDATA[$F{Line_Analytic} != null ? $F{Line_Analytic} : ""]]></expression>
+			</element>
+			<element kind="textField" x="460" y="0" width="95" height="20" blankWhenNull="true" hTextAlign="Right" vTextAlign="Middle" fontSize="9.0" pdfEncoding="Identity-H" pdfEmbedded="true">
+				<expression><![CDATA[($F{Line_Amount} != null && $F{Line_Amount}.matches("-?[\\d.]+"))
+? String.format("%,.2f", Double.parseDouble($F{Line_Amount})) : ""]]></expression>
+			</element>
+		</band>
+	</detail>
+
+	<!-- ===== PAGE FOOTER ===== -->
+	<pageFooter height="25" splitType="Stretch">
+		<element kind="textField" x="420" y="5" width="100" height="15" hTextAlign="Right" vTextAlign="Middle" fontSize="7.0" pdfEncoding="Identity-H" pdfEmbedded="true">
+			<expression><![CDATA["Page " + $V{PAGE_NUMBER} + " of"]]></expression>
+		</element>
+		<element kind="textField" x="520" y="5" width="35" height="15" evaluationTime="Report" vTextAlign="Middle" fontSize="7.0" pdfEncoding="Identity-H" pdfEmbedded="true">
+			<expression><![CDATA[" " + $V{PAGE_NUMBER}]]></expression>
+		</element>
+	</pageFooter>
+
+</jasperReport>
