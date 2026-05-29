@@ -99,6 +99,7 @@ class VehicleBookingAPI(http.Controller):
                     'daily_allowance': b.daily_allowance or 0.0,
                     'driver_id': b.driver_id.id if b.driver_id else False,
                     'driver_name': b.driver_id.name if b.driver_id else '',
+                    'employee_code': b.driver_id.employee_code if b.driver_id else '',  # ✅ รหัสพนักงาน HR
                     'planned_start_date_t': planned_start_str,
                     'month': month_val,
                     'year': year_val,

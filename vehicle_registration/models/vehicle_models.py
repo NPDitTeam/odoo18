@@ -505,6 +505,12 @@ class VehicleDriver(models.Model):
 
     name = fields.Char('ชื่อ-นามสกุล', required=True, tracking=True)
     code = fields.Char('รหัสพนักงาน', copy=False)
+    employee_code = fields.Char(
+        'รหัสพนักงาน (HR)',
+        required=True, copy=False, tracking=True,
+        help='อิงจากรหัสพนักงานในระบบ HR (เช่น 0817, 0264) — '
+             'ใช้สำหรับเชื่อมโยงคนขับกับพนักงานในระบบ HR'
+    )
     pin = fields.Char('PIN 6 หลัก', size=6, required=True, tracking=True,
                       help='PIN 6 หลักสำหรับการล็อกอิน (ห้ามซ้ำ)')
     phone = fields.Char('เบอร์โทรศัพท์', required=True)
