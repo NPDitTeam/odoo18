@@ -6,7 +6,7 @@
         <field name="res_model">sale.order</field>
         <field name="view_mode">list,kanban,form,calendar,pivot,graph,activity</field>
         <field name="context">{'default_pfb_so_type':'sale'}</field>
-        <field name="domain">[('pfb_so_type','=','sale'),('name', 'like', 'QT%')]</field>
+        <field name="domain">[('pfb_so_type','=','sale'),('name', 'like', 'QT%'),('company_id','=',allowed_company_ids[0])]</field>
         <field name="help" type="html">
             <p class="o_view_nocontent_smiling_face">
                 Create a new quotation, the first step of a new sale!
@@ -25,7 +25,7 @@
         <field name="res_model">sale.order</field>
         <field name="view_mode">list,kanban,form,calendar,pivot,graph,activity</field>
         <field name="context">{'default_pfb_so_type':'rent'}</field>
-        <field name="domain">[('pfb_so_type','=','rent'),('name', 'like', 'QT%')]</field>
+        <field name="domain">[('pfb_so_type','=','rent'),('name', 'like', 'QT%'),('company_id','=',allowed_company_ids[0])]</field>
         <field name="help" type="html">
             <p class="o_view_nocontent_smiling_face">
                 Create a new quotation, the first step of a new sale!
@@ -44,7 +44,7 @@
         <field name="res_model">sale.order</field>
         <field name="view_mode">list,kanban,form,calendar,pivot,graph,activity</field>
         <field name="context">{}</field>
-        <field name="domain">[('state', 'not in', ('draft', 'sent', 'cancel')),('pfb_so_type','=','sale'),('name', 'like', 'SO%')]</field>
+        <field name="domain">[('state', 'not in', ('draft', 'sent', 'cancel')),('pfb_so_type','=','sale'),('name', 'like', 'SO%'),('company_id','=',allowed_company_ids[0])]</field>
         <field name="help" type="html">
             <p class="o_view_nocontent_smiling_face">
                 Create a new quotation, the first step of a new sale!
@@ -68,7 +68,8 @@
         <field name="domain">
             [('state', 'not in', ('sent', 'cancel')),
              ('pfb_so_type', '=', 'rent'),
-             ('name', 'like', 'SO%')]
+             ('name', 'like', 'SO%'),
+             ('company_id', '=', allowed_company_ids[0])]
         </field>
         <field name="help" type="html">
             <p class="o_view_nocontent_smiling_face">

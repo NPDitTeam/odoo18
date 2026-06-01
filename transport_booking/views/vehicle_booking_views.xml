@@ -225,7 +225,8 @@
 
                         <notebook>
                             <page string="🗺️ แผนที่เส้นทาง">
-                                <field name="map_route" widget="google_maps_widget" nolabel="1"/>
+                                <!-- ล็อกแผนที่: readonly=1 -> ปิดการลาก/แก้ไขเส้นทาง (ดูได้อย่างเดียว) -->
+                                <field name="map_route" widget="google_maps_widget" nolabel="1" readonly="1"/>
                             </page>
                             
                             <page string="ติดตามข้อมูลการขนส่ง" invisible="state == 'draft'">

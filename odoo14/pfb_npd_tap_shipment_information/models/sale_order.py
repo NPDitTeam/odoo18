@@ -90,34 +90,50 @@ class ShipmentInformation(models.Model):
                 else:
                     self.shipping_cost = math.floor(self.shipping_cost_raw / 100) * 100
 
+    def _get_distance_km(self, pickup, destination):
+        """ เรียก Google Routes API คืนระยะทาง (กม.) คืน 0.0 หากกรอกไม่ครบหรือเกิดข้อผิดพลาด """
+        if not pickup or not destination:
+            return 0.0
+        try:
+            google_api_key = "AIzaSyCHKkMOyDdI29v52SULcRx_OcB3i-MD7lw"
+            url = "https://routes.googleapis.com/distanceMatrix/v2:computeRouteMatrix"
+            headers = {
+                "Content-Type": "application/json",
+                "X-Goog-Api-Key": google_api_key,
+                "X-Goog-FieldMask": "originIndex,destinationIndex,distanceMeters,duration,condition,status",
+            }
+            payload = {
+                "origins": [{"waypoint": {"address": pickup}}],
+                "destinations": [{"waypoint": {"address": destination}}],
+                "travelMode": "DRIVE",
+            }
+            response = requests.post(url, headers=headers, json=payload, timeout=10)
+            data = response.json()
+            _logger.info("Google Routes API [%s] -> %s", response.status_code, data)
+            if response.status_code == 200 and data and "distanceMeters" in data[0]:
+                return data[0]["distanceMeters"] / 1000.0
+            # ไม่มี distanceMeters มักเกิดจากที่อยู่ไม่สมบูรณ์/หาเส้นทางไม่ได้ (condition=ROUTE_NOT_FOUND)
+            _logger.warning(
+                "Google Routes API: หาระยะทางไม่ได้ (ที่อยู่อาจไม่สมบูรณ์) "
+                "ต้นทาง=%r ปลายทาง=%r ผลลัพธ์=%s", pickup, destination, data
+            )
+            return 0.0
+        except Exception as e:
+            _logger.error("Google Routes API Error: %s", e)
+            return 0.0
+
     @api.depends('pickup_location', 'destination')
     def _compute_distance(self):
         for order in self:
-            if order.pickup_location and order.destination:
-                try:
-                    google_api_key = "AIzaSyCHKkMOyDdI29v52SULcRx_OcB3i-MD7lw"
-                    url = "https://routes.googleapis.com/distanceMatrix/v2:computeRouteMatrix"
-                    headers = {
-                        "Content-Type": "application/json",
-                        "X-Goog-Api-Key": google_api_key,
-                        "X-Goog-FieldMask": "originIndex,destinationIndex,distanceMeters,duration",
-                    }
-                    payload = {
-                        "origins": [{"waypoint": {"address": order.pickup_location}}],
-                        "destinations": [{"waypoint": {"address": order.destination}}],
-                        "travelMode": "DRIVE",
-                    }
-                    response = requests.post(url, headers=headers, json=payload, timeout=10)
-                    data = response.json()
-                    if response.status_code == 200 and data and "distanceMeters" in data[0]:
-                        order.distance_km = data[0]["distanceMeters"] / 1000
-                    else:
-                        order.distance_km = 0.0
-                except Exception as e:
-                    order.distance_km = 0.0
-                    _logger.error(f"Google Routes API Error: {e}")
-            else:
-                order.distance_km = 0.0
+            order.distance_km = order._get_distance_km(order.pickup_location, order.destination)
+
+    @api.onchange('pickup_location', 'destination')
+    def _onchange_locations_compute_distance(self):
+        """ คำนวณระยะทาง + ค่าเที่ยว/เบี้ยเลี้ยงทันที เมื่อกรอกต้นทาง-ปลายทางในฟอร์ม (ไม่ต้องรอ save) """
+        for order in self:
+            order.distance_km = order._get_distance_km(order.pickup_location, order.destination)
+            order._compute_trip_allowance()
+            order._compute_daily_allowance()
 
     @api.depends('vehicle_type_id', 'distance_km')
     def _compute_trip_allowance(self):

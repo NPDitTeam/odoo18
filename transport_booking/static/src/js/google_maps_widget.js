@@ -53,9 +53,9 @@ export class GoogleMapsWidget extends Component {
             console.log("  - state.isCalculating:", this.state.isCalculating);
             console.log("=".repeat(50));
             
-            // อัพเดท draggable เมื่อสถานะเปลี่ยน
+            // อัพเดท draggable เมื่อสถานะเปลี่ยน (ปิดถาวรถ้า readonly)
             if (newState !== oldState && this.directionsRenderer) {
-                const isDraggable = (newState !== 'done' && newState !== 'cancelled');
+                const isDraggable = !nextProps.readonly && (newState !== 'done' && newState !== 'cancelled');
                 this.directionsRenderer.setOptions({ draggable: isDraggable });
                 console.log("🔄 Updated map draggable to:", isDraggable, "(state:", newState + ")");
             }
@@ -163,9 +163,9 @@ export class GoogleMapsWidget extends Component {
 
             this.directionsService = new google.maps.DirectionsService();
             
-            // ตรวจสอบสถานะ - ปิดการลากเส้นทางถ้าเป็นสถานะ 'done' หรือ 'cancelled'
+            // ตรวจสอบสถานะ - ปิดการลากเส้นทางถ้า readonly หรือสถานะ 'done'/'cancelled'
             const currentState = this.props.record.data.state || 'draft';
-            const isDraggable = (currentState !== 'done' && currentState !== 'cancelled'); // ปิด draggable เมื่อสถานะเป็น done หรือ cancelled
+            const isDraggable = !this.props.readonly && (currentState !== 'done' && currentState !== 'cancelled'); // readonly -> ล็อกไม่ให้ลาก/แก้ไข
             
             console.log('🔍 Map draggable status:', {
                 currentState: currentState,

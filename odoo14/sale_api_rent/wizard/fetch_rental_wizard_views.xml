@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <record id="view_sale_rent_fetch_wizard_form" model="ir.ui.view">
+        <field name="name">sale.rent.fetch.wizard.form</field>
+        <field name="model">sale.rent.fetch.wizard</field>
+        <field name="arch" type="xml">
+            <form string="ดึงข้อมูลการเช่า">
+                <group>
+                    <field name="order_id" invisible="1"/>
+                    <field name="company_id" invisible="1"/>
+                    <!-- แหล่งดึง: ตัดบริษัทตัวเอง (โลจิสติกส์) และ เอ็นพีดี สตีลเทค (registry '4') ออก -->
+                    <field name="source_company_id"
+                           options="{'no_create': True, 'no_open': True}"
+                           domain="[('id', '!=', company_id), ('company_registry', '!=', '4')]"/>
+                    <field name="so_number" placeholder="เช่น SO-260601-0003"/>
+                </group>
+                <footer>
+                    <button string="ดึงข้อมูล" name="action_fetch" type="object" class="btn-primary"/>
+                    <button string="ยกเลิก" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+</odoo>

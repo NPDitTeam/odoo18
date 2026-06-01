@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <record id="view_order_form_sale_api_rent" model="ir.ui.view">
+        <field name="name">sale.order.form.inherit.sale.api.rent</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_order_form"/>
+        <field name="arch" type="xml">
+            <!-- ปุ่มเปิด popup ดึงข้อมูลการเช่า (แสดงเฉพาะบริษัท เอ็นพีดี โลจิสติกส์ จำกัด) -->
+            <!-- header เดิม: แสดงตอนเป็นคำสั่งขาย (order_sequence) -->
+            <xpath expr="//header" position="inside">
+                <field name="is_npd_logistics_company" invisible="1"/>
+                <button name="action_fetch_rental_data" type="object"
+                        class="btn-primary"
+                        icon="fa-download"
+                        string="ดึงข้อมูลการเช่า"
+                        invisible="not is_npd_logistics_company"/>
+            </xpath>
+            <!-- header 'quotation' (จาก sale_isolated_quotation): แสดงตอนเป็นใบเสนอราคา Rent -->
+            <xpath expr="//header[@name='quotation']" position="inside">
+                <button name="action_fetch_rental_data" type="object"
+                        class="btn-primary"
+                        icon="fa-download"
+                        string="ดึงข้อมูลการเช่า"
+                        invisible="not is_npd_logistics_company"/>
+            </xpath>
+
+            <!-- แสดงแหล่งที่ดึงมาล่าสุด (อ่านอย่างเดียว — กรอกจริงใน popup) -->
+            <xpath expr="//field[@name='partner_id']" position="after">
+                <field name="is_renew_green_house"
+                       invisible="not is_npd_logistics_company"/>
+                <field name="source_company_id"
+                       invisible="not is_npd_logistics_company"
+                       readonly="1"/>
+                <field name="so_number"
+                       invisible="not is_npd_logistics_company"
+                       readonly="1"/>
+            </xpath>
+
+            <!-- ฟิลด์ในรายการสินค้า -->
+            <xpath expr="//field[@name='order_line']/list//field[@name='name']" position="after">
+                <field name="pfb_quantity"/>
+                <field name="is_renew_green_house_line" column_invisible="1"/>
+                <field name="total_weight"
+                       readonly="not is_renew_green_house_line"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>
