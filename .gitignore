@@ -1,0 +1,16 @@
+# Python bytecode
+__pycache__/
+*.pyc
+*.pyo
+
+# Jasper runtime/compiled outputs (auto-generated โดย JasperServer)
+**/jasper_reports/java/*.log
+**/jasper_reports/java/*.log.*
+**/jasper_reports/custom_reports/*.jasper
+**/jasper_reports/custom_reports/*.jrprint
+**/report/*.jrprint
+*.jrprint
+
+# OS junk
+.DS_Store
+Thumbs.db
