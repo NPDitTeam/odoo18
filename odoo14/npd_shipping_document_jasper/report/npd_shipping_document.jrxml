@@ -1,0 +1,428 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Created with Jaspersoft Studio version 6.21.5.final using JasperReports Library version 6.21.5-74d586df47b25dbd05bd0957999819196e59934a  -->
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="npd_shipping_document" pageWidth="595" pageHeight="842" columnWidth="565" leftMargin="15" rightMargin="15" topMargin="15" bottomMargin="15" uuid="f588e809-67c6-43af-b95e-7164b854fef2">
+	<property name="net.sf.jasperreports.default.font.name" value="Sarabun"/>
+	<property name="ODOO_RELATIONS" value="jasper_ship_line_ids"/>
+	<style name="Thai" isDefault="true" fontName="Sarabun" fontSize="14" pdfFontName="THSarabunNewBold.ttf" pdfEncoding="Identity-H" isPdfEmbedded="true"/>
+	<style name="ThaiBold" fontName="Sarabun" fontSize="14" isBold="true" pdfFontName="THSarabunNewBold.ttf" pdfEncoding="Identity-H" isPdfEmbedded="true"/>
+	<style name="ThaiBig" fontName="Sarabun" fontSize="22" isBold="true" pdfFontName="THSarabunNewBold.ttf" pdfEncoding="Identity-H" isPdfEmbedded="true"/>
+	<style name="ThaiTitle" fontName="Sarabun" fontSize="19" isBold="true" pdfFontName="THSarabunNewBold.ttf" pdfEncoding="Identity-H" isPdfEmbedded="true"/>
+	<queryString language="xPath">
+		<![CDATA[/data/record]]>
+	</queryString>
+	<field name="Doc_Number-name" class="java.lang.String">
+		<fieldDescription><![CDATA[Doc_Number-name]]></fieldDescription>
+	</field>
+	<field name="Company_Name-jasper_company_name" class="java.lang.String">
+		<fieldDescription><![CDATA[Company_Name-jasper_company_name]]></fieldDescription>
+	</field>
+	<field name="Company_Address-jasper_company_address" class="java.lang.String">
+		<fieldDescription><![CDATA[Company_Address-jasper_company_address]]></fieldDescription>
+	</field>
+	<field name="Date_Return-jasper_doc_date_return" class="java.lang.String">
+		<fieldDescription><![CDATA[Date_Return-jasper_doc_date_return]]></fieldDescription>
+	</field>
+	<field name="Company_Logo-jasper_company_logo" class="java.lang.String">
+		<fieldDescription><![CDATA[Company_Logo-jasper_company_logo]]></fieldDescription>
+	</field>
+	<field name="Origin-jasper_origin" class="java.lang.String">
+		<fieldDescription><![CDATA[Origin-jasper_origin]]></fieldDescription>
+	</field>
+	<field name="Sender_Name-jasper_sender_name" class="java.lang.String">
+		<fieldDescription><![CDATA[Sender_Name-jasper_sender_name]]></fieldDescription>
+	</field>
+	<field name="Sender_Address-jasper_sender_address" class="java.lang.String">
+		<fieldDescription><![CDATA[Sender_Address-jasper_sender_address]]></fieldDescription>
+	</field>
+	<field name="Destination-jasper_destination" class="java.lang.String">
+		<fieldDescription><![CDATA[Destination-jasper_destination]]></fieldDescription>
+	</field>
+	<field name="Receiver_Name-jasper_receiver_name" class="java.lang.String">
+		<fieldDescription><![CDATA[Receiver_Name-jasper_receiver_name]]></fieldDescription>
+	</field>
+	<field name="Receiver_Address-jasper_receiver_address" class="java.lang.String">
+		<fieldDescription><![CDATA[Receiver_Address-jasper_receiver_address]]></fieldDescription>
+	</field>
+	<field name="Shipping_Cost-jasper_shipping_cost" class="java.lang.String">
+		<fieldDescription><![CDATA[Shipping_Cost-jasper_shipping_cost]]></fieldDescription>
+	</field>
+	<field name="Distance-jasper_distance" class="java.lang.String">
+		<fieldDescription><![CDATA[Distance-jasper_distance]]></fieldDescription>
+	</field>
+	<field name="Total_Weight-jasper_total_weight" class="java.lang.String">
+		<fieldDescription><![CDATA[Total_Weight-jasper_total_weight]]></fieldDescription>
+	</field>
+	<field name="Note-jasper_note" class="java.lang.String">
+		<fieldDescription><![CDATA[Note-jasper_note]]></fieldDescription>
+	</field>
+	<field name="Bank_Line-jasper_bank_transfer_line" class="java.lang.String">
+		<fieldDescription><![CDATA[Bank_Line-jasper_bank_transfer_line]]></fieldDescription>
+	</field>
+	<field name="Officer_Name-jasper_officer_name" class="java.lang.String">
+		<fieldDescription><![CDATA[Officer_Name-jasper_officer_name]]></fieldDescription>
+	</field>
+	<field name="Driver_Info-jasper_driver_info" class="java.lang.String">
+		<fieldDescription><![CDATA[Driver_Info-jasper_driver_info]]></fieldDescription>
+	</field>
+	<field name="Line_Name-jasper_ship_line_ids/name" class="java.lang.String">
+		<fieldDescription><![CDATA[Line_Name-jasper_ship_line_ids/name]]></fieldDescription>
+	</field>
+	<field name="Line_Qty-jasper_ship_line_ids/jasper_qty" class="java.lang.String">
+		<fieldDescription><![CDATA[Line_Qty-jasper_ship_line_ids/jasper_qty]]></fieldDescription>
+	</field>
+	<field name="Line_Uom-jasper_ship_line_ids/jasper_uom_weight" class="java.lang.String">
+		<fieldDescription><![CDATA[Line_Uom-jasper_ship_line_ids/jasper_uom_weight]]></fieldDescription>
+	</field>
+	<field name="Line_TW-jasper_ship_line_ids/jasper_line_weight" class="java.lang.String">
+		<fieldDescription><![CDATA[Line_TW-jasper_ship_line_ids/jasper_line_weight]]></fieldDescription>
+	</field>
+	<title>
+		<band height="250" splitType="Stretch">
+			<image onErrorType="Blank">
+				<reportElement x="0" y="0" width="85" height="80" uuid="b2c3d4e5-1000-0000-0000-000000000001"/>
+				<imageExpression><![CDATA[$F{Company_Logo-jasper_company_logo}]]></imageExpression>
+			</image>
+			<textField isBlankWhenNull="true">
+				<reportElement style="ThaiTitle" x="95" y="2" width="325" height="26" uuid="b2c3d4e5-1000-0000-0000-000000000002"/>
+				<textElement verticalAlignment="Middle">
+					<font fontName="Sarabun" size="19" isBold="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{Company_Name-jasper_company_name}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement style="Thai" x="95" y="30" width="325" height="48" uuid="b2c3d4e5-1000-0000-0000-000000000003"/>
+				<textElement verticalAlignment="Top">
+					<font fontName="Sarabun" size="13"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{Company_Address-jasper_company_address}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement style="ThaiTitle" x="425" y="0" width="140" height="28" uuid="b2c3d4e5-1000-0000-0000-000000000004"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Sarabun" size="19" isBold="true"/>
+				</textElement>
+				<text><![CDATA[ใบขนส่งสินค้า]]></text>
+			</staticText>
+			<textField isBlankWhenNull="true">
+				<reportElement style="Thai" x="415" y="30" width="150" height="18" uuid="b2c3d4e5-1000-0000-0000-000000000005"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Sarabun" size="13"/>
+				</textElement>
+				<textFieldExpression><![CDATA["เลขที่: " + ($F{Doc_Number-name} == null ? "" : $F{Doc_Number-name})]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement style="Thai" x="415" y="50" width="150" height="18" uuid="b2c3d4e5-1000-0000-0000-000000000006"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Sarabun" size="13"/>
+				</textElement>
+				<textFieldExpression><![CDATA["วันที่ส่งคืนสินค้า: " + ($F{Date_Return-jasper_doc_date_return} == null ? "" : $F{Date_Return-jasper_doc_date_return})]]></textFieldExpression>
+			</textField>
+			<rectangle>
+				<reportElement mode="Transparent" x="0" y="88" width="410" height="78" uuid="b2c3d4e5-1000-0000-0000-000000000010"/>
+				<graphicElement>
+					<pen lineWidth="1.0"/>
+				</graphicElement>
+			</rectangle>
+			<rectangle>
+				<reportElement mode="Transparent" x="410" y="88" width="155" height="78" uuid="b2c3d4e5-1000-0000-0000-000000000011"/>
+				<graphicElement>
+					<pen lineWidth="1.0"/>
+				</graphicElement>
+			</rectangle>
+			<staticText>
+				<reportElement style="ThaiBold" x="5" y="90" width="200" height="20" uuid="b2c3d4e5-1000-0000-0000-000000000012"/>
+				<textElement>
+					<font fontName="Sarabun" size="15" isBold="true"/>
+				</textElement>
+				<text><![CDATA[ผู้ส่ง]]></text>
+			</staticText>
+			<textField isBlankWhenNull="true">
+				<reportElement style="Thai" x="5" y="110" width="400" height="17" uuid="b2c3d4e5-1000-0000-0000-000000000013"/>
+				<textElement>
+					<font fontName="Sarabun" size="13"/>
+				</textElement>
+				<textFieldExpression><![CDATA["ต้นทาง: " + ($F{Origin-jasper_origin} == null ? "" : $F{Origin-jasper_origin})]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement style="Thai" x="5" y="127" width="400" height="17" uuid="b2c3d4e5-1000-0000-0000-000000000014"/>
+				<textElement>
+					<font fontName="Sarabun" size="13"/>
+				</textElement>
+				<textFieldExpression><![CDATA["ชื่อผู้ส่ง: " + ($F{Sender_Name-jasper_sender_name} == null ? "" : $F{Sender_Name-jasper_sender_name})]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement style="Thai" x="5" y="144" width="400" height="17" uuid="b2c3d4e5-1000-0000-0000-000000000015"/>
+				<textElement>
+					<font fontName="Sarabun" size="13"/>
+				</textElement>
+				<textFieldExpression><![CDATA["ที่อยู่ผู้ส่ง: " + ($F{Sender_Address-jasper_sender_address} == null ? "" : $F{Sender_Address-jasper_sender_address})]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement style="ThaiBold" x="410" y="92" width="155" height="20" uuid="b2c3d4e5-1000-0000-0000-000000000016"/>
+				<textElement textAlignment="Center">
+					<font fontName="Sarabun" size="14" isBold="true"/>
+				</textElement>
+				<text><![CDATA[ค่าขนส่งสินค้า]]></text>
+			</staticText>
+			<textField isBlankWhenNull="true">
+				<reportElement style="ThaiBig" x="410" y="120" width="155" height="36" uuid="b2c3d4e5-1000-0000-0000-000000000017"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Sarabun" size="22" isBold="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{Shipping_Cost-jasper_shipping_cost}]]></textFieldExpression>
+			</textField>
+			<rectangle>
+				<reportElement mode="Transparent" x="0" y="166" width="410" height="78" uuid="b2c3d4e5-1000-0000-0000-000000000020"/>
+				<graphicElement>
+					<pen lineWidth="1.0"/>
+				</graphicElement>
+			</rectangle>
+			<rectangle>
+				<reportElement mode="Transparent" x="410" y="166" width="155" height="78" uuid="b2c3d4e5-1000-0000-0000-000000000021"/>
+				<graphicElement>
+					<pen lineWidth="1.0"/>
+				</graphicElement>
+			</rectangle>
+			<staticText>
+				<reportElement style="ThaiBold" x="5" y="168" width="200" height="20" uuid="b2c3d4e5-1000-0000-0000-000000000022"/>
+				<textElement>
+					<font fontName="Sarabun" size="15" isBold="true"/>
+				</textElement>
+				<text><![CDATA[ผู้รับ]]></text>
+			</staticText>
+			<textField isBlankWhenNull="true">
+				<reportElement style="Thai" x="5" y="188" width="400" height="17" uuid="b2c3d4e5-1000-0000-0000-000000000023"/>
+				<textElement>
+					<font fontName="Sarabun" size="13"/>
+				</textElement>
+				<textFieldExpression><![CDATA["ปลายทาง: " + ($F{Destination-jasper_destination} == null ? "" : $F{Destination-jasper_destination})]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement style="Thai" x="5" y="205" width="400" height="17" uuid="b2c3d4e5-1000-0000-0000-000000000024"/>
+				<textElement>
+					<font fontName="Sarabun" size="13"/>
+				</textElement>
+				<textFieldExpression><![CDATA["ชื่อผู้รับ: " + ($F{Receiver_Name-jasper_receiver_name} == null ? "" : $F{Receiver_Name-jasper_receiver_name})]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement style="Thai" x="5" y="222" width="400" height="17" uuid="b2c3d4e5-1000-0000-0000-000000000025"/>
+				<textElement>
+					<font fontName="Sarabun" size="13"/>
+				</textElement>
+				<textFieldExpression><![CDATA["ที่อยู่ผู้รับ: " + ($F{Receiver_Address-jasper_receiver_address} == null ? "" : $F{Receiver_Address-jasper_receiver_address})]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement style="ThaiBold" x="410" y="170" width="155" height="20" uuid="b2c3d4e5-1000-0000-0000-000000000026"/>
+				<textElement textAlignment="Center">
+					<font fontName="Sarabun" size="14" isBold="true"/>
+				</textElement>
+				<text><![CDATA[ระยะทาง (กิโลเมตร)]]></text>
+			</staticText>
+			<textField isBlankWhenNull="true">
+				<reportElement style="ThaiBig" x="410" y="198" width="155" height="36" uuid="b2c3d4e5-1000-0000-0000-000000000027"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Sarabun" size="22" isBold="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{Distance-jasper_distance}]]></textFieldExpression>
+			</textField>
+		</band>
+	</title>
+	<columnHeader>
+		<band height="26" splitType="Stretch">
+			<line>
+				<reportElement x="0" y="0" width="565" height="1" uuid="b2c3d4e5-2000-0000-0000-000000000001"/>
+				<graphicElement>
+					<pen lineWidth="1.0"/>
+				</graphicElement>
+			</line>
+			<line>
+				<reportElement x="0" y="25" width="565" height="1" uuid="b2c3d4e5-2000-0000-0000-000000000002"/>
+				<graphicElement>
+					<pen lineWidth="1.0"/>
+				</graphicElement>
+			</line>
+			<staticText>
+				<reportElement style="ThaiBold" x="0" y="3" width="40" height="20" uuid="b2c3d4e5-2000-0000-0000-000000000003"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Sarabun" size="14" isBold="true"/>
+				</textElement>
+				<text><![CDATA[ลำดับ]]></text>
+			</staticText>
+			<staticText>
+				<reportElement style="ThaiBold" x="40" y="3" width="290" height="20" uuid="b2c3d4e5-2000-0000-0000-000000000004"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font fontName="Sarabun" size="14" isBold="true"/>
+				</textElement>
+				<text><![CDATA[ รายการสินค้า]]></text>
+			</staticText>
+			<staticText>
+				<reportElement style="ThaiBold" x="330" y="3" width="75" height="20" uuid="b2c3d4e5-2000-0000-0000-000000000005"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="Sarabun" size="14" isBold="true"/>
+				</textElement>
+				<text><![CDATA[จำนวน]]></text>
+			</staticText>
+			<staticText>
+				<reportElement style="ThaiBold" x="405" y="3" width="85" height="20" uuid="b2c3d4e5-2000-0000-0000-000000000006"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="Sarabun" size="14" isBold="true"/>
+				</textElement>
+				<text><![CDATA[น้ำหนัก/หน่วย]]></text>
+			</staticText>
+			<staticText>
+				<reportElement style="ThaiBold" x="490" y="3" width="75" height="20" uuid="b2c3d4e5-2000-0000-0000-000000000007"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="Sarabun" size="14" isBold="true"/>
+				</textElement>
+				<text><![CDATA[น้ำหนักรวม]]></text>
+			</staticText>
+		</band>
+	</columnHeader>
+	<detail>
+		<band height="20" splitType="Stretch">
+			<textField>
+				<reportElement style="Thai" x="0" y="0" width="40" height="20" uuid="b2c3d4e5-3000-0000-0000-000000000001"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Sarabun" size="13"/>
+				</textElement>
+				<textFieldExpression><![CDATA[String.valueOf($V{REPORT_COUNT})]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement style="Thai" x="42" y="0" width="293" height="20" uuid="b2c3d4e5-3000-0000-0000-000000000002"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font fontName="Sarabun" size="13"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{Line_Name-jasper_ship_line_ids/name}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement style="Thai" x="335" y="0" width="73" height="20" uuid="b2c3d4e5-3000-0000-0000-000000000003"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="Sarabun" size="13"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{Line_Qty-jasper_ship_line_ids/jasper_qty}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement style="Thai" x="410" y="0" width="78" height="20" uuid="b2c3d4e5-3000-0000-0000-000000000004"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="Sarabun" size="13"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{Line_Uom-jasper_ship_line_ids/jasper_uom_weight}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement style="Thai" x="490" y="0" width="73" height="20" uuid="b2c3d4e5-3000-0000-0000-000000000005"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="Sarabun" size="13"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{Line_TW-jasper_ship_line_ids/jasper_line_weight}]]></textFieldExpression>
+			</textField>
+		</band>
+	</detail>
+	<lastPageFooter>
+		<band height="175" splitType="Stretch">
+			<textField isBlankWhenNull="true">
+				<reportElement style="ThaiBold" x="255" y="2" width="310" height="20" uuid="b2c3d4e5-4000-0000-0000-000000000001"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="Sarabun" size="15" isBold="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA["น้ำหนักรวมสุทธิ์ (กิโลกรัม) : " + ($F{Total_Weight-jasper_total_weight} == null ? "0.00" : $F{Total_Weight-jasper_total_weight})]]></textFieldExpression>
+			</textField>
+			<line>
+				<reportElement x="0" y="24" width="565" height="1" uuid="b2c3d4e5-4000-0000-0000-000000000002"/>
+				<graphicElement>
+					<pen lineWidth="1.0"/>
+				</graphicElement>
+			</line>
+			<textField isBlankWhenNull="true">
+				<reportElement style="Thai" x="0" y="25" width="565" height="23" uuid="b2c3d4e5-4000-0000-0000-000000000003"/>
+				<textElement verticalAlignment="Middle">
+					<font fontName="Sarabun" size="14"/>
+				</textElement>
+				<textFieldExpression><![CDATA["หมายเหตุ: " + ($F{Note-jasper_note} == null ? "" : $F{Note-jasper_note})]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement style="ThaiBold" x="0" y="48" width="400" height="22" uuid="b2c3d4e5-4000-0000-0000-000000000004"/>
+				<textElement verticalAlignment="Middle">
+					<font fontName="Sarabun" size="14" isBold="true"/>
+				</textElement>
+				<text><![CDATA[วิธีการชำระเงิน โอนเงินเข้าบัญชี]]></text>
+			</staticText>
+			<textField isBlankWhenNull="true">
+				<reportElement style="Thai" x="20" y="71" width="545" height="17" uuid="b2c3d4e5-4000-0000-0000-000000000005"/>
+				<textElement verticalAlignment="Middle">
+					<font fontName="Sarabun" size="13"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{Bank_Line-jasper_bank_transfer_line}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement style="Thai" x="0" y="108" width="141" height="18" uuid="b2c3d4e5-4000-0000-0000-000000000010"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Sarabun" size="13"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{Officer_Name-jasper_officer_name}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement style="Thai" x="0" y="126" width="141" height="15" uuid="b2c3d4e5-4000-0000-0000-000000000011"/>
+				<textElement textAlignment="Center">
+					<font fontName="Sarabun" size="13"/>
+				</textElement>
+				<text><![CDATA[________________]]></text>
+			</staticText>
+			<staticText>
+				<reportElement style="Thai" x="0" y="141" width="141" height="18" uuid="b2c3d4e5-4000-0000-0000-000000000012"/>
+				<textElement textAlignment="Center">
+					<font fontName="Sarabun" size="13"/>
+				</textElement>
+				<text><![CDATA[(เจ้าหน้าที่ออกเอกสาร)]]></text>
+			</staticText>
+			<staticText>
+				<reportElement style="Thai" x="141" y="126" width="141" height="15" uuid="b2c3d4e5-4000-0000-0000-000000000013"/>
+				<textElement textAlignment="Center">
+					<font fontName="Sarabun" size="13"/>
+				</textElement>
+				<text><![CDATA[________________]]></text>
+			</staticText>
+			<staticText>
+				<reportElement style="Thai" x="141" y="141" width="141" height="18" uuid="b2c3d4e5-4000-0000-0000-000000000014"/>
+				<textElement textAlignment="Center">
+					<font fontName="Sarabun" size="13"/>
+				</textElement>
+				<text><![CDATA[(เจ้าหน้าที่ใบสินค้า)]]></text>
+			</staticText>
+			<textField isBlankWhenNull="true">
+				<reportElement style="Thai" x="282" y="108" width="141" height="18" uuid="b2c3d4e5-4000-0000-0000-000000000015"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Sarabun" size="13"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{Driver_Info-jasper_driver_info}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement style="Thai" x="282" y="126" width="141" height="15" uuid="b2c3d4e5-4000-0000-0000-000000000016"/>
+				<textElement textAlignment="Center">
+					<font fontName="Sarabun" size="13"/>
+				</textElement>
+				<text><![CDATA[________________]]></text>
+			</staticText>
+			<staticText>
+				<reportElement style="Thai" x="282" y="141" width="141" height="18" uuid="b2c3d4e5-4000-0000-0000-000000000017"/>
+				<textElement textAlignment="Center">
+					<font fontName="Sarabun" size="13"/>
+				</textElement>
+				<text><![CDATA[(ทะเบียนรถ / ชื่อผู้ขับ)]]></text>
+			</staticText>
+			<staticText>
+				<reportElement style="Thai" x="423" y="126" width="141" height="15" uuid="b2c3d4e5-4000-0000-0000-000000000018"/>
+				<textElement textAlignment="Center">
+					<font fontName="Sarabun" size="13"/>
+				</textElement>
+				<text><![CDATA[________________]]></text>
+			</staticText>
+			<staticText>
+				<reportElement style="Thai" x="423" y="141" width="141" height="18" uuid="b2c3d4e5-4000-0000-0000-000000000019"/>
+				<textElement textAlignment="Center">
+					<font fontName="Sarabun" size="13"/>
+				</textElement>
+				<text><![CDATA[ผู้รับสินค้า]]></text>
+			</staticText>
+		</band>
+	</lastPageFooter>
+</jasperReport>

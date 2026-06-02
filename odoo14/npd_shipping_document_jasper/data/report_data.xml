@@ -1,0 +1,25 @@
+<?xml version="1.0"?>
+<odoo>
+    <!-- Jasper Report Action: ใบขนส่งสินค้า (stock.picking) -->
+    <record id="jasper_npd_shipping_document_report" model="ir.actions.report">
+        <field name="name">ใบขนส่งสินค้า</field>
+        <field name="model">stock.picking</field>
+        <field name="report_type">jasper</field>
+        <field name="file">npd_shipping_document_jasper/report/npd_shipping_document.jrxml</field>
+        <field name="attachment_use">False</field>
+        <field name="report_name">ใบขนส่งสินค้า</field>
+        <field name="jasper_report">True</field>
+        <field name="jasper_output">pdf</field>
+        <field name="model_id" ref="stock.model_stock_picking"/>
+        <field name="binding_model_id" ref="stock.model_stock_picking"/>
+        <field name="binding_type">report</field>
+        <field name="print_report_name">'ใบขนส่งสินค้า - %s' % (object.name)</field>
+    </record>
+
+    <record id="jasper_npd_shipping_document_file" model="ir.actions.report.xml.file">
+        <field name="default">True</field>
+        <field name="filename">npd_shipping_document.jrxml</field>
+        <field name="report_id" ref="npd_shipping_document_jasper.jasper_npd_shipping_document_report"/>
+        <field name="file" type="base64" file="npd_shipping_document_jasper/report/npd_shipping_document.jrxml"/>
+    </record>
+</odoo>

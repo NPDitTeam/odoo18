@@ -361,19 +361,24 @@ class SaleOrder(models.Model):
         # ตรวจสอบว่าเป็นการ Convert QT → SO หรือไม่
         is_convert_to_order = default.get('order_sequence', False)
 
+        # บริษัท เอ็นพีดี โลจิสติกส์ (company_registry '5') และ เอ็นพีดี สตีลเทค ('4')
+        # ไม่ใช้ฟังก์ชันสะสมเลขอ้างอิงเงินประกัน (deposit_ref) ต่อกันเมื่อกดซ้ำ
+        skip_deposit_ref = self.company_id.company_registry in ('4', '5')
+
         # กรองเฉพาะค่าใน deposit_ref ที่ขึ้นต้นด้วย "SO"
         deposit_list = []
-        if self.deposit_ref:
+        if self.deposit_ref and not skip_deposit_ref:
             deposit_list = [x.strip() for x in self.deposit_ref.split(',') if x.strip().startswith('SO')]
 
         # เพิ่ม self.name ถ้าเป็น SO เช่นกัน
         if self.name.startswith('SO'):
-            deposit_list.append(self.name)
+            if not skip_deposit_ref:
+                deposit_list.append(self.name)
 
             self.pfb_amount_insurance_c = self.pfb_amount_insurance
             self.pfb_amount_c = self.pfb_amount
 
-        # สร้าง deposit_ref ใหม่
+        # สร้าง deposit_ref ใหม่ (ว่างสำหรับบริษัทที่ยกเว้น)
         default['deposit_ref'] = ",".join(deposit_list)
 
         # ตั้งค่าอื่นๆ

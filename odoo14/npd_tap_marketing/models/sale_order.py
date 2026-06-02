@@ -13,6 +13,10 @@ class SaleOrder(models.Model):
         string='ช่องทางลูกค้า',
         required=True,
     )
+    freelance_salesperson_id = fields.Many2one(
+        'res.partner',
+        string='Freelance Salesperson',
+    )
 
     @api.constrains('customer_channel_id')
     def _check_customer_channel(self):

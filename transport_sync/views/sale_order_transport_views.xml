@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <record id="view_order_form_send_transport" model="ir.ui.view">
+        <field name="name">sale.order.form.send.transport</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_order_form"/>
+        <field name="arch" type="xml">
+            <!-- ปุ่ม smart button: ส่งไปยังระบบขนส่ง
+                 แสดงเฉพาะ สถานะคำสั่งขาย (sale) และบริษัท เอ็นพีดี โลจิสติกส์ -->
+            <xpath expr="//div[@name='button_box']" position="inside">
+                <field name="tr_is_npd_logistics" invisible="1"/>
+                <field name="transport_sent" invisible="1"/>
+                <button name="action_send_to_transport" type="object"
+                        class="oe_stat_button"
+                        icon="fa-paper-plane"
+                        string="ส่งไปยังระบบขนส่ง"
+                        invisible="state != 'sale' or not tr_is_npd_logistics"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

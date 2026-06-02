@@ -21,6 +21,7 @@
         'views/transport_order_views.xml',
         'views/transport_sync_menu.xml',
         'views/res_users_views.xml',  # ✅ เพิ่ม view สำหรับ User Preferences
+        'views/sale_order_transport_views.xml',  # ปุ่มส่งไปยังระบบขนส่ง (odoo18)
     ],
     'images': ['static/description/icon.png'],
     'installable': True,

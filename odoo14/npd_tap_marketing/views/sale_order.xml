@@ -15,6 +15,7 @@
                         </group>
                         <group string="ช่องทางลูกค้า">
                             <field name="customer_channel_id" required="1"/>
+                            <field name="freelance_salesperson_id"/>
                         </group>
                     </group>
                 </page>

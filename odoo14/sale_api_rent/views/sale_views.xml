@@ -5,20 +5,12 @@
         <field name="model">sale.order</field>
         <field name="inherit_id" ref="sale.view_order_form"/>
         <field name="arch" type="xml">
-            <!-- ปุ่มเปิด popup ดึงข้อมูลการเช่า (แสดงเฉพาะบริษัท เอ็นพีดี โลจิสติกส์ จำกัด) -->
-            <!-- header เดิม: แสดงตอนเป็นคำสั่งขาย (order_sequence) -->
-            <xpath expr="//header" position="inside">
+            <!-- ปุ่มเปิด popup ดึงข้อมูลการเช่า — เป็น smart button (ตำแหน่งเดียวกับ "การจัดส่ง") -->
+            <!-- แสดงเฉพาะบริษัท เอ็นพีดี โลจิสติกส์ จำกัด -->
+            <xpath expr="//div[@name='button_box']" position="inside">
                 <field name="is_npd_logistics_company" invisible="1"/>
                 <button name="action_fetch_rental_data" type="object"
-                        class="btn-primary"
-                        icon="fa-download"
-                        string="ดึงข้อมูลการเช่า"
-                        invisible="not is_npd_logistics_company"/>
-            </xpath>
-            <!-- header 'quotation' (จาก sale_isolated_quotation): แสดงตอนเป็นใบเสนอราคา Rent -->
-            <xpath expr="//header[@name='quotation']" position="inside">
-                <button name="action_fetch_rental_data" type="object"
-                        class="btn-primary"
+                        class="oe_stat_button"
                         icon="fa-download"
                         string="ดึงข้อมูลการเช่า"
                         invisible="not is_npd_logistics_company"/>

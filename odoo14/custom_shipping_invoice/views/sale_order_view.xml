@@ -1,0 +1,30 @@
+<odoo>
+    <record id="view_sale_order_form_custom_shipping" model="ir.ui.view">
+        <field name="name">sale.order.form.custom.shipping</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_order_form"/>
+        <field name="arch" type="xml">
+
+            <!-- ปุ่มค่าขนส่ง — เป็น smart button (ตำแหน่งเดียวกับ "การจัดส่ง") แสดงเฉพาะบริษัท เอ็นพีดี โลจิสติกส์ -->
+            <xpath expr="//div[@name='button_box']" position="inside">
+                <field name="shipping_invoice_id" invisible="1"/>
+                <field name="is_npd_logistics_company" invisible="1"/>
+                <!-- เปิด popup สร้างใบค่าขนส่ง -->
+                <button name="action_open_shipping_popup"
+                        type="object"
+                        class="oe_stat_button"
+                        icon="fa-truck"
+                        string="ค่าขนส่ง"
+                        invisible="not is_npd_logistics_company"/>
+                <!-- ดูใบ Invoice ค่าขนส่ง (เมื่อสร้างแล้ว) -->
+                <button name="action_view_shipping_invoice"
+                        type="object"
+                        class="oe_stat_button"
+                        icon="fa-file-text-o"
+                        string="ดูใบค่าขนส่ง"
+                        invisible="not shipping_invoice_id or not is_npd_logistics_company"/>
+            </xpath>
+
+        </field>
+    </record>
+</odoo>

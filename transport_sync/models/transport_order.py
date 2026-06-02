@@ -140,6 +140,47 @@ class TransportOrder(models.Model):
     ], string='สถานะซิงค์', default='pending')
     sync_error = fields.Text('ข้อผิดพลาด')
 
+    # ✅ ส่งตรงจาก Odoo 18 (ปุ่ม "ส่งไปยังระบบขนส่ง") ไม่ใช่ sync จาก Odoo 14
+    # ใช้แยก record คนละแหล่ง กันชนกับข้อมูลที่ sync มาจาก Odoo 14
+    is_from_odoo18 = fields.Boolean('ส่งจาก Odoo 18', default=False, readonly=True)
+
+    def _receive_from_sale_order(self, order_data):
+        """ รับข้อมูลจาก sale.order (odoo18) ส่งตรง — create/update โดยจับคู่ด้วย name
+            เฉพาะ record ที่มาจาก odoo18 (กันชนกับข้อมูล sync จาก odoo14)
+            คืนค่า (record, status) โดย status = 'created' / 'updated' / 'skipped' """
+        name = order_data.get('name')
+        if not name:
+            raise UserError(_('ไม่พบเลขเอกสาร'))
+        # ตั้ง id = 0 เพื่อไม่ให้ไปเซ็ต odoo14_id ชนกับของจริงจาก odoo14
+        order_data = dict(order_data)
+        order_data['id'] = 0
+
+        existing = self.search([
+            ('name', '=', name),
+            ('is_from_odoo18', '=', True),
+        ], limit=1)
+
+        if existing:
+            # ป้องกัน: ถ้ารายการเดิมถูกดึงไปใช้/อ้างอิงแล้วจนลบ-อัพเดทไม่ได้
+            # ให้ rollback แล้ว"ข้าม" (ไม่ทำให้ทั้ง transaction พัง)
+            try:
+                with self.env.cr.savepoint():
+                    self._update_existing_order(existing, order_data)
+                    existing.write({'is_from_odoo18': True, 'odoo14_id': 0})
+            except Exception as e:
+                _logger.warning(
+                    "⏭️ ข้ามการอัพเดทคำสั่งขนส่ง %s (ลบ/อัพเดทรายการเดิมไม่ได้ "
+                    "อาจถูกดึงไปใช้แล้ว): %s", name, e)
+                return existing, 'skipped'
+            _logger.info("🔄 อัพเดทคำสั่งขนส่งจาก Odoo18: %s", name)
+            return existing, 'updated'
+
+        order = self._process_order(order_data)
+        if order:
+            order.write({'is_from_odoo18': True, 'odoo14_id': 0})
+            _logger.info("✅ สร้างคำสั่งขนส่งจาก Odoo18: %s", name)
+        return order, 'created'
+
     @api.model_create_multi
     def create(self, vals_list):
         """Override create - ใช้เลขเอกสารจาก Odoo 14 โดยตรง (ไม่ generate sequence)"""
@@ -461,12 +502,19 @@ class TransportOrder(models.Model):
                     existing = False
                     
                     # ✅ เช็คว่า name มีอยู่แล้วหรือไม่ (เช็คจาก name เป็นหลัก)
+                    # กรองเฉพาะ record ที่มาจาก odoo14 (ไม่ยุ่งกับที่ส่งตรงจาก odoo18)
                     if order_name:
-                        existing = self.search([('name', '=', order_name)], limit=1)
-                    
+                        existing = self.search([
+                            ('name', '=', order_name),
+                            ('is_from_odoo18', '=', False),
+                        ], limit=1)
+
                     # ✅ เช็คจาก odoo14_id ด้วย (กันซ้ำจาก ID)
                     if not existing:
-                        existing = self.search([('odoo14_id', '=', order_data['id'])], limit=1)
+                        existing = self.search([
+                            ('odoo14_id', '=', order_data['id']),
+                            ('is_from_odoo18', '=', False),
+                        ], limit=1)
                     
                     if existing:
                         # ✅ อัพเดทข้อมูลที่มีอยู่แล้ว (แทนที่จะข้าม)
