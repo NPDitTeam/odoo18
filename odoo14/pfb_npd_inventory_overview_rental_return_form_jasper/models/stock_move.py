@@ -1,4 +1,12 @@
+import re
 from odoo import models, fields, api
+
+
+def _strip_product_code(name):
+    """ตัดรหัสสินค้านำหน้าแบบ '[RAA-0104] ' ออก เหลือเฉพาะชื่อสินค้า"""
+    if not name:
+        return ''
+    return re.sub(r'^\[[^\]]*\]\s*', '', name)
 
 
 class StockMove(models.Model):
@@ -44,7 +52,7 @@ class StockMove(models.Model):
     def _compute_jasper_line(self):
         for move in self:
             move.jasper_seq = 0
-            move.jasper_line_name = move.product_id.display_name if move.product_id else ''
+            move.jasper_line_name = _strip_product_code(move.product_id.display_name) if move.product_id else ''
             move.jasper_line_weight = 0.0
             move.jasper_line_price_unit = 0.0
             move.jasper_line_qty_rent = move.product_uom_qty or 0.0
@@ -92,7 +100,7 @@ class StockMove(models.Model):
             days_used = picking.jasper_days_used or 0
             subtotal = days_used * qty_rent * (sale_line.price_unit or 0.0)
 
-            move.jasper_line_name = sale_line.name or move.product_id.display_name or ''
+            move.jasper_line_name = _strip_product_code(sale_line.name or move.product_id.display_name or '')
             move.jasper_line_weight = getattr(sale_line, 'second_uom_qty', 0.0) or 0.0
             move.jasper_line_price_unit = sale_line.price_unit or 0.0
             move.jasper_line_qty_rent = qty_rent

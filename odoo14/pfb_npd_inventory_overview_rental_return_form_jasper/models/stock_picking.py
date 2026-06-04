@@ -377,6 +377,25 @@ class StockPicking(models.Model):
         for rec in self:
             rec.jasper_company_logo = rec.company_id.logo if rec.company_id else False
 
+    # ที่อยู่บริษัทของเอกสาร (เปลี่ยนตามบริษัทที่เลือก) — ประกอบจาก res.company
+    # เดิม header ใช้ branch_id.address ซึ่งมักว่าง ทำให้ที่อยู่ไม่แสดง
+    jasper_company_address = fields.Char(
+        string='Company Address',
+        compute='_compute_jasper_company_address',
+    )
+
+    @api.depends('company_id')
+    def _compute_jasper_company_address(self):
+        for rec in self:
+            c = rec.company_id
+            parts = []
+            if c:
+                for v in [c.street, c.street2, c.city,
+                          c.state_id.name if c.state_id else '', c.zip]:
+                    if v:
+                        parts.append(str(v))
+            rec.jasper_company_address = ' '.join(parts)
+
     @api.depends('sale_id')
     def _compute_jasper_create_info(self):
         for rec in self:

@@ -95,6 +95,56 @@ class SaleOrder(models.Model):
                 addr += ' [{}]'.format(p.phone)
             rec.jasper_partner_full_address = addr
 
+    # --- หัวกระดาษ: ใช้บริษัทที่กำลังเลือกอยู่ (active company / env.company) ---
+    jasper_active_company_name = fields.Char(
+        string='Active Company Name',
+        compute='_compute_jasper_active_company',
+    )
+    jasper_active_company_vat = fields.Char(
+        string='Active Company VAT',
+        compute='_compute_jasper_active_company',
+    )
+    jasper_active_company_address = fields.Char(
+        string='Active Company Address',
+        compute='_compute_jasper_active_company',
+    )
+    # Many2one ชี้บริษัทที่กำลังเลือกอยู่ เพื่อให้ jasper_reports ดึง logo ผ่าน relation
+    # (export เป็นไฟล์รูปเอง เหมือน Company-company_id/Logo-logo เดิม)
+    jasper_active_company_id = fields.Many2one(
+        'res.company',
+        string='Active Company',
+        compute='_compute_jasper_active_company',
+    )
+    jasper_active_company_head_office = fields.Char(
+        string='Active Company Head Office Suffix',
+        compute='_compute_jasper_active_company',
+    )
+
+    @api.depends_context('allowed_company_ids')
+    def _compute_jasper_active_company(self):
+        company = self.env.company
+        parts = []
+        if company.street:
+            parts.append(company.street)
+        if company.street2:
+            parts.append(company.street2)
+        if company.city:
+            parts.append(company.city)
+        if company.state_id:
+            parts.append(company.state_id.name)
+        if company.zip:
+            parts.append(company.zip)
+        address = ' '.join(parts)
+        head_office = '' if company.parent_id else ' (สำนักงานใหญ่)'
+        name = company.name or ''
+        vat = company.vat or ''
+        for rec in self:
+            rec.jasper_active_company_id = company
+            rec.jasper_active_company_name = name
+            rec.jasper_active_company_vat = vat
+            rec.jasper_active_company_address = address
+            rec.jasper_active_company_head_office = head_office
+
     # --- Baht text ---
     jasper_baht_text_rental = fields.Char(
         string='Baht Text Rental',
@@ -134,13 +184,16 @@ class SaleOrder(models.Model):
         compute='_compute_jasper_rental_per_day',
     )
 
-    @api.depends('amount_total', 'pfb_date_of_rent')
+    # ค่าเช่าต่อวันรวม(vat) = ยอดรวมสุทธิ / จำนวนวันเช่า (end_rent_date - start_rent_date)
+    @api.depends('amount_total', 'start_rent_date', 'end_rent_date')
     def _compute_jasper_rental_per_day(self):
         for rec in self:
-            if rec.pfb_date_of_rent:
-                rec.jasper_rental_per_day = rec.amount_total / rec.pfb_date_of_rent
-            else:
-                rec.jasper_rental_per_day = 0.0
+            days = 0
+            if rec.start_rent_date and rec.end_rent_date:
+                days = (rec.end_rent_date - rec.start_rent_date).days
+            if not days:
+                days = 1
+            rec.jasper_rental_per_day = (rec.amount_total or 0.0) / days
 
     # --- Grand total (rental + insurance) ---
     jasper_grand_total = fields.Float(
@@ -201,6 +254,24 @@ class SaleOrderLine(models.Model):
     def _compute_jasper_line_weight(self):
         for line in self:
             line.jasper_line_weight = (line.second_uom_qty or 0.0) * (line.pfb_quantity or 0.0)
+
+    # ค่าเช่าต่อหน่วย (ถอด VAT 7% แบบ price-included) เทียบเท่า price_unit_no_vat ฝั่ง Odoo 14
+    jasper_price_unit_no_vat = fields.Float(
+        string='Unit Price (ex VAT)',
+        compute='_compute_jasper_price_unit_no_vat',
+    )
+
+    @api.depends('price_unit', 'tax_id')
+    def _compute_jasper_price_unit_no_vat(self):
+        for line in self:
+            has_vat_7_incl = any(
+                t.price_include and abs(t.amount - 7.0) < 0.01
+                for t in line.tax_id
+            )
+            if has_vat_7_incl:
+                line.jasper_price_unit_no_vat = round((line.price_unit or 0.0) / 1.07, 2)
+            else:
+                line.jasper_price_unit_no_vat = line.price_unit or 0.0
 
     jasper_daily_rental_total = fields.Float(
         string='Daily Rental Total',
