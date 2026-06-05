@@ -3,6 +3,7 @@
 from odoo import api, fields, _, models
 import datetime
 from odoo.exceptions import UserError
+from odoo.tools import SQL
 
 
 class PurchaseOrder(models.Model):
@@ -51,10 +52,8 @@ class PurchaseReport(models.Model):
 
     def _select(self):
         """select"""
-        return super(PurchaseReport, self)._select() + \
-               ", spt.branch_id as branch_id"
+        return SQL("%s, po.branch_id as branch_id", super()._select())
 
     def _group_by(self):
         """group by"""
-        return super(PurchaseReport, self)._group_by() + \
-               ", spt.branch_id"
+        return SQL("%s, po.branch_id", super()._group_by())

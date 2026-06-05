@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name' : 'Multiple Branch Operations Management, Branchwise Sales, Orders, Quotations, Purchase, Inventory Management',
-    'version' : '18.0.0.0.4',
+    'version' : '18.0.0.0.5',
     'summary': 'Multiple Branch Management POS Multi Branch Sales Multi branch management CRM Multiple location manage multiple operating unit multiple warehouse branch multi branch app multiple Unit Operations Account cashflow Reports',
     'sequence': 15,
     'description': """
@@ -15,8 +15,8 @@ The specific and easy-to-use multi branch system that allows you to keep track o
     'depends' : ['base_setup','base', 'point_of_sale', 'stock', 'account', 'purchase', 'sale_management', ],
     'data': [
         'data/ir_module_category.xml',
-        # 'security/branch_security.xml',
         'security/ir.model.access.csv',
+        'security/branch_security.xml',
         'wizard/view_branch_warehouse.xml',
         'views/branch_view.xml',
         'security/branch_group_security.xml',
@@ -51,6 +51,12 @@ The specific and easy-to-use multi branch system that allows you to keep track o
          #seperate menu not needed
 
     ],
+    'assets': {
+        'web.assets_backend': [
+            'multi_branch_management_aagam/static/src/js/branch_switcher/branch_switcher.js',
+            'multi_branch_management_aagam/static/src/js/branch_switcher/branch_switcher.xml',
+        ],
+    },
     'demo': [],
     'post_init_hook': 'post_init_hook',
 

@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <t t-name="multi_branch_management_aagam.BranchSwitcher">
+        <div class="o_branch_switcher_menu">
+            <Dropdown position="'bottom-end'" menuClass="'o_branch_switcher_dropdown'">
+                <button class="btn" t-att-title="currentLabel">
+                    <i class="fa fa-code-fork me-1"/>
+                    <span class="d-none d-md-inline text-truncate" t-esc="currentLabel"/>
+                </button>
+
+                <t t-set-slot="content">
+                    <div class="o_branch_switcher_items">
+                        <t t-foreach="allowedBranches" t-as="branch" t-key="branch.id">
+                            <div class="o_branch_switcher_item dropdown-item d-flex align-items-center gap-2"
+                                 t-att-data-branch-id="branch.id">
+                                <span class="btn btn-link border-0 p-0"
+                                      t-on-click="() => this.toggleBranch(branch.id)">
+                                    <i class="fa fa-fw"
+                                       t-att-class="isSelected(branch.id) ? 'fa-check-square text-primary' : 'fa-square-o'"/>
+                                </span>
+                                <span class="flex-grow-1 text-truncate"
+                                      style="cursor: pointer;"
+                                      t-on-click="() => this.logInto(branch.id)"
+                                      t-esc="branch.name"/>
+                            </div>
+                        </t>
+                    </div>
+
+                    <div class="o_branch_switcher_buttons d-flex justify-content-end px-2 pt-2">
+                        <button class="btn btn-primary btn-sm flex-grow-1"
+                                t-on-click="() => this.confirm()">
+                            Confirm
+                        </button>
+                    </div>
+                </t>
+            </Dropdown>
+        </div>
+    </t>
+
+</templates>

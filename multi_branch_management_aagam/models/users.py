@@ -31,6 +31,34 @@ class ResUsers(models.Model):
             res.multi_branch_id =  [(6, 0, branch_id.ids)]
         return res
 
+    @api.model
+    def set_active_branches(self, branch_ids):
+        """Called from the navbar branch switcher.
+
+        Stores the branches the current user has ticked as their active
+        selection (``multi_branch_id``). Record rules read this field to filter
+        the data shown across the app. The selection is intersected with the
+        user's allowed branches so it can never grant access beyond
+        ``branch_ids``.
+        """
+        user = self.env.user
+        allowed = user.branch_ids.ids
+        selected = [bid for bid in branch_ids if bid in allowed]
+        if not selected:
+            # Never leave the user with zero active branches.
+            selected = allowed[:1]
+        user.sudo().write({
+            'multi_branch_id': [(6, 0, selected)],
+            'branch_id': selected[0] if selected else False,
+        })
+        # The branch record rules embed user.multi_branch_id at evaluation time,
+        # but ir.rule._compute_domain is cached per (uid, model, mode) and does
+        # NOT vary with multi_branch_id. Clear the registry cache so the rules
+        # are recomputed with the new selection on the next request (same thing
+        # Odoo does when record rules themselves change).
+        self.env.registry.clear_cache()
+        return True
+
     def res_user_branch(self, *args,**kwargs):
         
         branch = kwargs['branch']

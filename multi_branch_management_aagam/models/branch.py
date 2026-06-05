@@ -11,7 +11,10 @@ class ResBranch(models.Model):
 
     name = fields.Char(required=True, string='Branch Name')
     sequence = fields.Integer(help='Used to order Companies in the branch switcher', default=10)
-    company_id = fields.Many2one('res.company', default=lambda self: self.env.company,required=True)
+    company_ids = fields.Many2many(
+        'res.company', 'res_branch_res_company_rel', 'res_branch_id', 'res_company_id',
+        string='Companies', default=lambda self: self.env.company,
+        help='Companies this branch belongs to. A branch can be shared by several companies.')
     email = fields.Char(string='Email')
     phone = fields.Char(string='Mobile No.')
 

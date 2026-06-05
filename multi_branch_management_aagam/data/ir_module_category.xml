@@ -17,7 +17,7 @@
         <record model="res.branch" id="main_branch">
             <field name="name">Branch</field>
 
-            <field name="company_id" ref="base.main_company"/>
+            <field name="company_ids" eval="[(6, 0, [ref('base.main_company')])]"/>
         </record>
 
 
