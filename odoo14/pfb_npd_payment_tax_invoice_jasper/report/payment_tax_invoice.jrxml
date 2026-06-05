@@ -65,35 +65,35 @@
 				<imageExpression><![CDATA[$F{Company_Logo-company_id}]]></imageExpression>
 			</image>
 			<textField isBlankWhenNull="true">
-				<reportElement style="ThaiSubTitle" x="80" y="2" width="320" height="20" uuid="c1d2e3f4-0001-0001-0001-000000000002"/>
+				<reportElement style="ThaiSubTitle" x="90" y="2" width="310" height="20" uuid="c1d2e3f4-0001-0001-0001-000000000002"/>
 				<textElement verticalAlignment="Middle">
 					<font fontName="Sarabun" size="14" isBold="true"/>
 				</textElement>
 				<textFieldExpression><![CDATA[$F{Company_Name_Display-jasper_company_name_display}]]></textFieldExpression>
 			</textField>
 			<textField isBlankWhenNull="true">
-				<reportElement style="Thai" x="80" y="22" width="320" height="34" uuid="c1d2e3f4-0001-0001-0001-000000000003"/>
+				<reportElement style="Thai" x="90" y="22" width="390" height="18" uuid="c1d2e3f4-0001-0001-0001-000000000003"/>
 				<textElement verticalAlignment="Top">
-					<font fontName="Sarabun" size="13"/>
+					<font fontName="Sarabun" size="12"/>
 				</textElement>
 				<textFieldExpression><![CDATA[$F{Branch_Address-jasper_branch_address}]]></textFieldExpression>
 			</textField>
 			<textField isBlankWhenNull="true">
-				<reportElement style="Thai" x="80" y="57" width="320" height="18" uuid="c1d2e3f4-0001-0001-0001-000000000004"/>
+				<reportElement style="Thai" x="90" y="41" width="310" height="18" uuid="c1d2e3f4-0001-0001-0001-000000000004"/>
 				<textElement verticalAlignment="Middle">
 					<font fontName="Sarabun" size="13"/>
 				</textElement>
 				<textFieldExpression><![CDATA["เลขประจำตัวผู้เสียภาษี " + ($F{Company_VAT-company_id} == null ? "" : $F{Company_VAT-company_id})]]></textFieldExpression>
 			</textField>
 			<staticText>
-				<reportElement style="ThaiTitle" x="410" y="2" width="155" height="32" uuid="c1d2e3f4-0001-0001-0001-000000000005"/>
+				<reportElement style="ThaiTitle" x="435" y="2" width="130" height="32" uuid="c1d2e3f4-0001-0001-0001-000000000005"/>
 				<textElement textAlignment="Center" verticalAlignment="Middle">
 					<font fontName="Sarabun" size="22" isBold="true"/>
 				</textElement>
 				<text><![CDATA[ใบกำกับภาษี]]></text>
 			</staticText>
 			<staticText>
-				<reportElement style="ThaiSubTitle" x="410" y="34" width="155" height="22" uuid="c1d2e3f4-0001-0001-0001-000000000006"/>
+				<reportElement style="ThaiSubTitle" x="435" y="34" width="130" height="22" uuid="c1d2e3f4-0001-0001-0001-000000000006"/>
 				<textElement textAlignment="Center" verticalAlignment="Middle">
 					<font fontName="Sarabun" size="14" isBold="true"/>
 				</textElement>
@@ -133,7 +133,7 @@
 				<text><![CDATA[ที่อยู่ :]]></text>
 			</staticText>
 			<textField isBlankWhenNull="true">
-				<reportElement style="Thai" x="60" y="99" width="305" height="17" uuid="c1d2e3f4-0001-0001-0001-000000000015"/>
+				<reportElement style="Thai" x="60" y="99" width="330" height="17" uuid="c1d2e3f4-0001-0001-0001-000000000015"/>
 				<textElement verticalAlignment="Middle">
 					<font fontName="Sarabun" size="13"/>
 				</textElement>
@@ -244,6 +244,12 @@ AMOUNT]]></text>
 				<reportElement x="565" y="0" width="1" height="25" uuid="c1d2e3f4-0002-0001-0001-000000000004">
 					<property name="com.jaspersoft.studio.unit.x" value="px"/>
 				</reportElement>
+				<graphicElement>
+					<pen lineWidth="1.0"/>
+				</graphicElement>
+			</line>
+			<line>
+				<reportElement x="-1" y="24" width="567" height="1" uuid="c1d2e3f4-0002-0001-0001-00000000000a"/>
 				<graphicElement>
 					<pen lineWidth="1.0"/>
 				</graphicElement>

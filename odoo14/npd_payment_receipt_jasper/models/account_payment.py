@@ -95,6 +95,14 @@ class AccountPayment(models.Model):
         string='Company Name Display',
         compute='_compute_jasper_company_name_display',
     )
+    jasper_company_logo = fields.Binary(
+        string='Company Logo (branch company)',
+        compute='_compute_jasper_company_branch_info',
+    )
+    jasper_company_vat = fields.Char(
+        string='Company VAT (branch company)',
+        compute='_compute_jasper_company_branch_info',
+    )
     jasper_branch_address = fields.Char(
         string='Branch Address',
         compute='_compute_jasper_branch_address',
@@ -180,17 +188,22 @@ class AccountPayment(models.Model):
         for rec in self:
             rec.jasper_rcp_partner_vat = rec.partner_id.vat or ''
 
-    @api.depends(
-        'company_id.street', 'company_id.street2',
-        'company_id.city', 'company_id.state_id',
-        'company_id.zip',
-    )
+    @api.depends_context('company', 'allowed_company_ids')
     def _compute_jasper_company_name_display(self):
         for rec in self:
-            name = rec.company_id.name or ''
-            rec.jasper_company_name_display = (
-                '{} (สำนักงานใหญ่)'.format(name) if name else ''
-            )
+            # ใช้บริษัทที่ active ใน switcher (ไม่ใช่ company_id ที่เก็บใน payment)
+            name = rec.env.company.name or ''
+            # กัน "(สำนักงานใหญ่)" ซ้ำ ถ้าชื่อบริษัทมีอยู่แล้ว
+            if name and '(สำนักงานใหญ่)' not in name:
+                name = '{} (สำนักงานใหญ่)'.format(name)
+            rec.jasper_company_name_display = name
+
+    @api.depends_context('company', 'allowed_company_ids')
+    def _compute_jasper_company_branch_info(self):
+        for rec in self:
+            company = rec.env.company
+            rec.jasper_company_logo = company.logo
+            rec.jasper_company_vat = company.vat or ''
 
     @api.depends(
         'branch_id', 'branch_id.street', 'branch_id.street2',

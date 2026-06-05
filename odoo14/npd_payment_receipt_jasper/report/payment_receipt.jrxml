@@ -70,11 +70,11 @@
 	<field name="Partner_Name-partner_id" class="java.lang.String">
 		<fieldDescription><![CDATA[Customer-partner_id/Name-name]]></fieldDescription>
 	</field>
-	<field name="Company_VAT-company_id" class="java.lang.String">
-		<fieldDescription><![CDATA[Company-company_id/VAT-vat]]></fieldDescription>
+	<field name="Company_VAT-jasper_company_vat" class="java.lang.String">
+		<fieldDescription><![CDATA[Company_VAT-jasper_company_vat]]></fieldDescription>
 	</field>
-	<field name="Company_Logo-company_id" class="java.lang.String">
-		<fieldDescription><![CDATA[Company-company_id/Logo-logo]]></fieldDescription>
+	<field name="Company_Logo-jasper_company_logo" class="java.lang.String">
+		<fieldDescription><![CDATA[Company_Logo-jasper_company_logo]]></fieldDescription>
 	</field>
 	<background>
 		<band splitType="Stretch"/>
@@ -83,28 +83,28 @@
 		<band height="165" splitType="Stretch">
 			<image onErrorType="Blank">
 				<reportElement x="0" y="0" width="75" height="75" uuid="d2e3f4a5-0001-0001-0001-000000000001"/>
-				<imageExpression><![CDATA[$F{Company_Logo-company_id}]]></imageExpression>
+				<imageExpression><![CDATA[$F{Company_Logo-jasper_company_logo}]]></imageExpression>
 			</image>
 			<textField isBlankWhenNull="true">
-				<reportElement style="ThaiSubTitle" x="80" y="2" width="320" height="20" uuid="d2e3f4a5-0001-0001-0001-000000000002"/>
+				<reportElement style="ThaiSubTitle" x="90" y="2" width="310" height="20" uuid="d2e3f4a5-0001-0001-0001-000000000002"/>
 				<textElement verticalAlignment="Middle">
 					<font fontName="Sarabun" size="14" isBold="true"/>
 				</textElement>
 				<textFieldExpression><![CDATA[$F{Company_Name_Display-jasper_company_name_display}]]></textFieldExpression>
 			</textField>
 			<textField isBlankWhenNull="true">
-				<reportElement style="Thai" x="80" y="22" width="320" height="34" uuid="d2e3f4a5-0001-0001-0001-000000000003"/>
+				<reportElement style="Thai" x="90" y="22" width="360" height="18" uuid="d2e3f4a5-0001-0001-0001-000000000003"/>
 				<textElement verticalAlignment="Top">
-					<font fontName="Sarabun" size="13"/>
+					<font fontName="Sarabun" size="12"/>
 				</textElement>
 				<textFieldExpression><![CDATA[$F{Branch_Address-jasper_branch_address}]]></textFieldExpression>
 			</textField>
 			<textField isBlankWhenNull="true">
-				<reportElement style="Thai" x="80" y="57" width="320" height="18" uuid="d2e3f4a5-0001-0001-0001-000000000004"/>
+				<reportElement style="Thai" x="90" y="41" width="310" height="18" uuid="d2e3f4a5-0001-0001-0001-000000000004"/>
 				<textElement verticalAlignment="Middle">
 					<font fontName="Sarabun" size="13"/>
 				</textElement>
-				<textFieldExpression><![CDATA["เลขประจำตัวผู้เสียภาษี " + ($F{Company_VAT-company_id} == null ? "" : $F{Company_VAT-company_id})]]></textFieldExpression>
+				<textFieldExpression><![CDATA["เลขประจำตัวผู้เสียภาษี " + ($F{Company_VAT-jasper_company_vat} == null ? "" : $F{Company_VAT-jasper_company_vat})]]></textFieldExpression>
 			</textField>
 			<staticText>
 				<reportElement style="ThaiTitle" x="410" y="2" width="155" height="32" uuid="d2e3f4a5-0001-0001-0001-000000000005"/>
@@ -154,9 +154,9 @@
 				<text><![CDATA[ที่อยู่ :]]></text>
 			</staticText>
 			<textField isBlankWhenNull="true">
-				<reportElement style="Thai" x="60" y="99" width="305" height="17" uuid="d2e3f4a5-0001-0001-0001-000000000015"/>
+				<reportElement style="Thai" x="60" y="99" width="350" height="17" uuid="d2e3f4a5-0001-0001-0001-000000000015"/>
 				<textElement verticalAlignment="Middle">
-					<font fontName="Sarabun" size="13"/>
+					<font fontName="Sarabun" size="12"/>
 				</textElement>
 				<textFieldExpression><![CDATA[$F{Partner_Address-jasper_partner_full_address}]]></textFieldExpression>
 			</textField>
