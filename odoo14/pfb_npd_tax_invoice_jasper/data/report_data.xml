@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+<odoo>
+    <record id="jasper_tax_invoice_report" model="ir.actions.report">
+        <field name="name">ใบแจ้งหนี้ขาย/ใบกำกับภาษี</field>
+        <field name="model">account.move</field>
+        <field name="report_type">jasper</field>
+        <field name="file">pfb_npd_tax_invoice_jasper/report/tax_invoice.jrxml</field>
+        <field name="attachment_use">False</field>
+        <field name="report_name">ใบแจ้งหนี้ขายใบกำกับภาษี</field>
+        <field name="jasper_report">True</field>
+        <field name="jasper_output">pdf</field>
+        <field name="model_id" ref="account.model_account_move"/>
+        <field name="binding_model_id" ref="account.model_account_move"/>
+        <field name="binding_type">report</field>
+        <field name="print_report_name">'ใบแจ้งหนี้ขาย - %s' % (object.name)</field>
+    </record>
+
+    <record id="jasper_tax_invoice_file" model="ir.actions.report.xml.file">
+        <field name="default">True</field>
+        <field name="filename">tax_invoice.jrxml</field>
+        <field name="report_id" ref="pfb_npd_tax_invoice_jasper.jasper_tax_invoice_report"/>
+        <field name="file" type="base64" file="pfb_npd_tax_invoice_jasper/report/tax_invoice.jrxml"/>
+    </record>
+</odoo>
