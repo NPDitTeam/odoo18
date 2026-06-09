@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+<odoo>
+    <record id="jasper_purchase_voucher_report" model="ir.actions.report">
+        <field name="name">ใบสำคัญซื้อ</field>
+        <field name="model">account.move</field>
+        <field name="report_type">jasper</field>
+        <field name="file">pfb_npd_purchase_voucher_jasper/report/purchase_voucher.jrxml</field>
+        <field name="attachment_use">False</field>
+        <field name="report_name">ใบสำคัญซื้อ</field>
+        <field name="jasper_report">True</field>
+        <field name="jasper_output">pdf</field>
+        <field name="model_id" ref="account.model_account_move"/>
+        <field name="binding_model_id" ref="account.model_account_move"/>
+        <field name="binding_type">report</field>
+        <field name="print_report_name">'ใบสำคัญซื้อ - %s' % (object.name)</field>
+    </record>
+
+    <record id="jasper_purchase_voucher_file" model="ir.actions.report.xml.file">
+        <field name="default">True</field>
+        <field name="filename">purchase_voucher.jrxml</field>
+        <field name="report_id" ref="pfb_npd_purchase_voucher_jasper.jasper_purchase_voucher_report"/>
+        <field name="file" type="base64" file="pfb_npd_purchase_voucher_jasper/report/purchase_voucher.jrxml"/>
+    </record>
+</odoo>
