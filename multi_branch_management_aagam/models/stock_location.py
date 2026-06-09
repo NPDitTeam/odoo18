@@ -31,5 +31,10 @@ class StockPickingType(models.Model):
 class AccountAccount(models.Model):
     _inherit = "account.account"
 
-    branch_id = fields.Many2one('res.branch', string='Branch', help='The default branch for this user.',
-                                context={'user_preference': True},  default=lambda self: self.env.user.branch_id.id)
+    # No default branch: the chart of accounts is shared across companies/branches
+    # in Odoo 18, so accounts must be created with branch_id = False (global),
+    # otherwise the "Account multi-branch" record rule rejects creation/import
+    # whenever the creator's home branch is outside the active company selection.
+    branch_id = fields.Many2one('res.branch', string='Branch',
+                                help='Optional branch this account is restricted to. '
+                                     'Leave empty to share the account across all branches.')
