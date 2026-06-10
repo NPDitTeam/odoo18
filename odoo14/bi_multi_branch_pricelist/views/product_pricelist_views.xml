@@ -8,9 +8,23 @@
             <xpath expr="//field[@name='company_id']" position="after">
                     <field name="pricelist_branch_id"/>
             </xpath>
+            <xpath expr="//field[@name='item_ids']/list/field[@name='price']" position="after">
+                <field name="price_exclude_vat"/>
+            </xpath>
             <xpath expr="//field[@name='item_ids']/list/field[@name='min_quantity']" position="before">
                 <field name="branch_id"/>
             </xpath>
+        </field>
+    </record>
+
+    <record model="ir.ui.view" id="bi_product_pricelist_item_form_view">
+        <field name="name">product.pricelist.item.form.exvat</field>
+        <field name="model">product.pricelist.item</field>
+        <field name="inherit_id" ref="product.product_pricelist_item_form_view"/>
+        <field name="arch" type="xml">
+            <field name="fixed_price" position="after">
+                <field name="price_exclude_vat"/>
+            </field>
         </field>
     </record>
 

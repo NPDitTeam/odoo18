@@ -8,7 +8,7 @@
     'summary': 'Multi Branch for pricelist',
     'author': 'BrowseInfo',
     'website': 'https://www.browseinfo.in',
-    'depends': ['multi_branch_management_aagam', 'product'],
+    'depends': ['multi_branch_management_aagam', 'product', 'sale'],
     'data': [
         'views/product_pricelist_views.xml',
     ],
