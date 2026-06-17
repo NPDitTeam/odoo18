@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="0">
+
+        <!--
+            กรองเอกสารชำระเงินสดตามบริษัท + สาขาของผู้ใช้
+            - company_ids        : บริษัทที่ผู้ใช้ active อยู่ (มาตรฐาน Odoo)
+            - multi_branch_id    : สาขาที่ผู้ใช้เลือก (จาก multi_branch_management_aagam)
+            - cash_payment_show_all : ถ้าติ๊กที่หน้าตั้งค่าผู้ใช้ -> เห็นทั้งหมด (ข้ามตัวกรอง)
+            หมายเหตุ: domain_force ต้องอยู่บรรทัดเดียว เพราะเป็น conditional expression
+            (ขึ้นบรรทัดใหม่นอกวงเล็บจะทำให้ Python parse ไม่ผ่าน)
+        -->
+        <record id="cash_payment_branch_company_rule" model="ir.rule">
+            <field name="name">Cash Payment: filter by company &amp; branch</field>
+            <field name="model_id" ref="model_cash_payment"/>
+            <field name="groups" eval="[(4, ref('base.group_user'))]"/>
+            <field name="domain_force">[(1, '=', 1)] if user.cash_payment_show_all else ['&amp;', '|', ('company_id', '=', False), ('company_id', 'in', company_ids), '|', ('branch_id', '=', False), ('branch_id', 'in', multi_branch_id)]</field>
+        </record>
+
+        <record id="cash_payment_line_branch_company_rule" model="ir.rule">
+            <field name="name">Cash Payment Line: filter by company &amp; branch</field>
+            <field name="model_id" ref="model_cash_payment_line"/>
+            <field name="groups" eval="[(4, ref('base.group_user'))]"/>
+            <field name="domain_force">[(1, '=', 1)] if user.cash_payment_show_all else ['&amp;', '|', ('cash_payment_id.company_id', '=', False), ('cash_payment_id.company_id', 'in', company_ids), '|', ('cash_payment_id.branch_id', '=', False), ('cash_payment_id.branch_id', 'in', multi_branch_id)]</field>
+        </record>
+
+    </data>
+</odoo>

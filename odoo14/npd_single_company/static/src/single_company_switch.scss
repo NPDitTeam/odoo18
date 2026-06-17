@@ -1,0 +1,14 @@
+// โหมดบริษัทเดียว: ปรับ UI ให้เหลือแค่ชื่อบริษัท + เครื่องหมายถูกหน้าตัวที่เลือก
+.o_switch_company_menu_dropdown {
+    // ซ่อนปุ่ม Confirm / Reset (ใช้เฉพาะโหมด multi)
+    .o_switch_company_menu_buttons {
+        display: none !important;
+    }
+
+    // ช่องติ๊กของแต่ละบริษัท -> ทำให้เป็นแค่ไอคอนถูก ไม่ใช่ปุ่ม checkbox
+    // (เอาเส้นขอบออก และให้คลิกที่ชื่อบริษัทเพื่อสลับแทน)
+    .o_switch_company_item [role="menuitemcheckbox"] {
+        border: 0 !important;
+        pointer-events: none;
+    }
+}

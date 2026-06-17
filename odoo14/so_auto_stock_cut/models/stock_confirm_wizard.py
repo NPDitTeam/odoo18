@@ -1,7 +1,10 @@
 # -*- coding: utf-8 -*-
 from odoo import models, api, fields
 from odoo.exceptions import UserError
-import pymysql
+try:
+    import pymysql
+except ImportError:
+    pymysql = None  # ไม่มี package pymysql -> โหลดโมดูลได้ แต่ฟีเจอร์ที่ใช้ MySQL จะใช้ไม่ได้
 import logging
 
 _logger = logging.getLogger(__name__)

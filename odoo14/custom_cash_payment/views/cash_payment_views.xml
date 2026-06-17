@@ -6,6 +6,8 @@
         <field name="arch" type="xml">
             <list string="ชำระเงินสด">
                 <field name="name"/>
+                <field name="company_id" optional="show"/>
+                <field name="branch_id" optional="show"/>
                 <field name="state"/>
                 <field name="payment_ids"/>
                 <field name="total_amount"/>
@@ -36,15 +38,29 @@
 
                 <sheet>
                     <group>
-                        <field name="name" readonly="1"/>
-                        <field name="branch_id" readonly="1"/>
+                        <group>
+                            <field name="name" readonly="1"/>
+                            <field name="company_id" readonly="1"
+                                   groups="base.group_multi_company"/>
+                            <field name="branch_id"
+                                   readonly="state != 'draft'"
+                                   domain="['|', ('company_ids', '=', False), ('company_ids', 'in', company_id)]"/>
+                        </group>
+                        <group>
+                            <field name="move_id" readonly="1"/>
+                            <field name="total_amount"/>
+                            <field name="date_created"/>
+                        </group>
+                    </group>
+                    <group>
                         <field name="payment_ids"
                                widget="many2many_tags"
-                               domain="[('payment_type', '=', 'inbound')]"
+                               domain="[('payment_method_one_id.name', '=', 'เงินสด'),
+                                        ('payment_type', '=', 'inbound'),
+                                        ('company_id', '=', company_id),
+                                        ('branch_id', '=', branch_id),
+                                        ('cash_status', '=', False)]"
                                readonly="state == 'confirmed'"/>
-                        <field name="move_id" readonly="1"/>
-                        <field name="total_amount"/>
-                        <field name="date_created"/>
                     </group>
 
                     <notebook>

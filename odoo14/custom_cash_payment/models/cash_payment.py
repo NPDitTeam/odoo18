@@ -33,18 +33,30 @@ class CashPayment(models.Model):
         ('draft', 'Draft'),
         ('confirmed', 'Confirmed')],
         string='Status', default='draft', tracking=True)
+
+    # บริษัทที่สร้างเอกสาร (ใช้กรองข้อมูล + กรองรายการ payment) เลือกได้ตอน Draft
+    company_id = fields.Many2one(
+        'res.company',
+        string="Company",
+        required=True,
+        default=lambda self: self.env.company,
+    )
+    # สาขา: ค่าเริ่มต้น = สาขาของผู้ใช้ แต่เลือกเปลี่ยนได้ตอน Draft
     branch_id = fields.Many2one(
         'res.branch',
         string="Branch",
-        default=lambda self: self.env.user.branch_id.id if hasattr(self.env.user, 'branch_id') and self.env.user.branch_id else False,
-        readonly=True
+        default=lambda self: self.env.user.branch_id.id if self.env.user.branch_id else False,
     )
     move_id = fields.Many2one('account.move', string='Journal Entry', readonly=True)
 
     payment_ids = fields.Many2many(
         'account.payment',
         string='Payments',
-        domain="[('payment_type', '=', 'inbound')]"
+        domain="[('payment_method_one_id.name', '=', 'เงินสด'),"
+               " ('payment_type', '=', 'inbound'),"
+               " ('company_id', '=', company_id),"
+               " ('branch_id', '=', branch_id),"
+               " ('cash_status', '=', False)]"
     )
 
     payment_lines = fields.One2many(
@@ -80,6 +92,46 @@ class CashPayment(models.Model):
         for record in self:
             record.total_amount = sum(record.payment_lines.mapped('amount'))
 
+    def _next_document_number(self):
+        """รันเลขเอกสารแยกตามสาขา (และบริษัท).
+
+        ใช้ ir.sequence หนึ่งชุดต่อ (branch_id, company_id) โดย code = 'cash.payment'
+        ถ้ายังไม่มีจะสร้างให้อัตโนมัติ พร้อม prefix ที่ระบุชื่อสาขา เพื่อให้แต่ละสาขา
+        มีเลขรันของตัวเองเป็นอิสระจากกัน. ถ้าเอกสารไม่มีสาขา จะถอยไปใช้ sequence กลาง.
+        """
+        self.ensure_one()
+        Sequence = self.env['ir.sequence'].sudo()
+        company = self.company_id or self.env.company
+        branch = self.branch_id
+        if not branch:
+            # ไม่มีสาขา -> ใช้ sequence กลาง (branch_id ว่าง) ที่ติดตั้งจาก data
+            base_seq = Sequence.search([
+                ('code', '=', 'cash.payment'),
+                ('branch_id', '=', False),
+            ], limit=1)
+            if base_seq:
+                return base_seq.next_by_id() or "CP/%s/0001" % fields.Date.today().year
+            return Sequence.with_company(company).next_by_code('cash.payment') \
+                or "CP/%s/0001" % fields.Date.today().year
+
+        seq = Sequence.search([
+            ('code', '=', 'cash.payment'),
+            ('branch_id', '=', branch.id),
+            ('company_id', 'in', (company.id, False)),
+        ], limit=1)
+        if not seq:
+            seq = Sequence.create({
+                'name': 'Cash Payment - %s' % (branch.name or ''),
+                'code': 'cash.payment',
+                'branch_id': branch.id,
+                'company_id': company.id,
+                'prefix': 'CP/' + (branch.name or '') + '/%(year)s/%(month)s/',
+                'padding': 4,
+                'number_next': 1,
+                'number_increment': 1,
+            })
+        return seq.next_by_id() or "CP/%s/0001" % fields.Date.today().year
+
     def action_reset_to_draft(self):
         for rec in self:
             if rec.move_id:
@@ -97,6 +149,12 @@ class CashPayment(models.Model):
                     p.cash_invoice_id = False
 
             rec.message_post(body='ยกเลิกรายการและกลับเป็นฉบับร่างเรียบร้อยแล้ว')
+
+    @api.onchange('company_id', 'branch_id')
+    def _onchange_company_branch(self):
+        """เปลี่ยนบริษัท/สาขา -> ล้างรายการ payment ที่เลือกไว้ เพราะ domain เปลี่ยน"""
+        self.payment_ids = [(5, 0, 0)]
+        self.payment_lines = [(5, 0, 0)]
 
     @api.onchange('payment_ids')
     def _onchange_payment_ids(self):
@@ -120,18 +178,23 @@ class CashPayment(models.Model):
             if not rec.payment_lines:
                 raise UserError(_("กรุณาเลือกรายการชำระเงินอย่างน้อย 1 รายการ"))
 
-            if rec.name in ['New', '/']:
-                rec.name = self.env['ir.sequence'].next_by_code('cash.payment') or f"CP/{fields.Date.today().year}/0001"
+            company = rec.company_id or self.env.company
 
-            cash_account = self.env['account.account'].search([('code', '=', '1111-00')], limit=1)
-            ar_account = self.env['account.account'].search([('code', '=', '1113-01')], limit=1)
+            if rec.name in ['New', '/']:
+                rec.name = rec._next_document_number()
+
+            cash_account = self.env['account.account'].with_company(company).search(
+                [('code', '=', '1111-00')], limit=1)
+            ar_account = self.env['account.account'].with_company(company).search(
+                [('code', '=', '1113-01')], limit=1)
 
             if not cash_account or not ar_account:
-                raise UserError(_("กรุณาตั้งค่าบัญชี 1111-00 หรือ 1113-01 ให้เรียบร้อยก่อน"))
+                raise UserError(_("กรุณาตั้งค่าบัญชี 1111-00 หรือ 1113-01 ของบริษัท %s ให้เรียบร้อยก่อน" % company.name))
 
-            journal = self.env['account.journal'].search([('type', '=', 'cash')], limit=1)
+            journal = self.env['account.journal'].search(
+                [('type', '=', 'cash'), ('company_id', '=', company.id)], limit=1)
             if not journal:
-                raise UserError(_("ไม่พบสมุดรายวันประเภทเงินสด กรุณาสร้างหรือเปิดใช้งาน"))
+                raise UserError(_("ไม่พบสมุดรายวันประเภทเงินสดของบริษัท %s กรุณาสร้างหรือเปิดใช้งาน" % company.name))
 
             lines = []
             total_amount = 0
@@ -143,6 +206,7 @@ class CashPayment(models.Model):
                     'credit': line.amount,
                     'debit': 0,
                     'partner_id': line.partner_id.id if line.partner_id else False,
+                    'branch_id': rec.branch_id.id if rec.branch_id else False,
                 }))
 
                 lines.append((0, 0, {
@@ -151,6 +215,7 @@ class CashPayment(models.Model):
                     'debit': line.amount,
                     'credit': 0,
                     'partner_id': line.partner_id.id if line.partner_id else False,
+                    'branch_id': rec.branch_id.id if rec.branch_id else False,
                 }))
 
                 total_amount += line.amount
@@ -160,12 +225,15 @@ class CashPayment(models.Model):
 
             move_vals = {
                 'journal_id': journal.id,
+                'company_id': company.id,
                 'date': fields.Date.today(),
                 'ref': rec.name,
                 'line_ids': lines,
             }
+            if rec.branch_id:
+                move_vals['branch_id'] = rec.branch_id.id
 
-            move = self.env['account.move'].create(move_vals)
+            move = self.env['account.move'].with_company(company).create(move_vals)
             move.action_post()
             rec.move_id = move.id
 

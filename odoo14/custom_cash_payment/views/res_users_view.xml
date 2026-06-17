@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_users_form_cash_payment" model="ir.ui.view">
+        <field name="name">res.users.form.cash.payment</field>
+        <field name="model">res.users</field>
+        <field name="inherit_id" ref="base.view_users_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//notebook/page[@name='access_rights']" position="inside">
+                <group string="Cash Payment (ชำระเงินสด)">
+                    <field name="cash_payment_show_all"/>
+                </group>
+            </xpath>
+        </field>
+    </record>
+</odoo>

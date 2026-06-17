@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <!--
+        โหมดบริษัทเดียว: แสดงเครื่องหมายถูก (✓) นำหน้าเฉพาะบริษัทที่กำลังเลือกอยู่
+        ส่วนบริษัทอื่นเว้นว่าง (ไม่โชว์ช่อง checkbox ว่างแบบ multi-select)
+    -->
+    <t t-name="npd_single_company.SwitchCompanyItem"
+       t-inherit="web.SwitchCompanyItem" t-inherit-mode="extension">
+        <xpath expr="//div[@role='menuitemcheckbox']//i" position="attributes">
+            <attribute name="t-att-class">isCompanySelected ? 'fa-check text-primary' : ''</attribute>
+        </xpath>
+    </t>
+
+</templates>

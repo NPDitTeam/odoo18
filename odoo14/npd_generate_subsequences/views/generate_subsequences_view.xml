@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- เพิ่ม prefix/suffix ในตารางช่วงวันที่ + ปุ่ม Generate บนฟอร์ม ir.sequence -->
+    <record id="sequence_view_inherit_subseq" model="ir.ui.view">
+        <field name="name">ir.sequence.form.inherit.subseq</field>
+        <field name="model">ir.sequence</field>
+        <field name="inherit_id" ref="base.sequence_view"/>
+        <field name="arch" type="xml">
+
+            <xpath expr="//field[@name='date_range_ids']/list/field[@name='number_next_actual']" position="before">
+                <field name="prefix" optional="show"/>
+                <field name="suffix" optional="hide"/>
+            </xpath>
+
+            <xpath expr="//field[@name='date_range_ids']" position="after">
+                <button string="Generate Sub Sequences"
+                        name="generate_sub_sequences" type="object"
+                        class="btn-primary"
+                        invisible="not use_date_range"/>
+                <button string="Cancel Generate Sub Sequences"
+                        name="delete_sub_sequences" type="object"
+                        confirm="ต้องการลบ Sub Sequence ที่ยังไม่ถูกใช้ออกเลข?"
+                        invisible="not use_date_range"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- ฟอร์ม wizard -->
+    <record id="generate_sub_sequences_view_form" model="ir.ui.view">
+        <field name="name">generate.sub.sequences.form</field>
+        <field name="model">generate.sub.sequences</field>
+        <field name="arch" type="xml">
+            <form string="Generate Sub Sequence">
+                <sheet>
+                    <group>
+                        <separator string="Generate Sub Sequence" colspan="4"/>
+                        <group>
+                            <field name="prefix" string="Format Sub Seq"/>
+                            <field name="generate_date_month"/>
+                            <field name="year"/>
+                        </group>
+                    </group>
+                </sheet>
+                <footer>
+                    <button string="Confirm" name="action_generate" type="object" class="oe_highlight"/>
+                    <button string="Cancel" class="btn btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+</odoo>

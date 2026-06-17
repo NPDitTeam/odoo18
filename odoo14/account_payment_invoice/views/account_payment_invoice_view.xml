@@ -42,6 +42,11 @@
                         invisible="state != 'canceled'"/>
             </xpath>
 
+            <!-- ซ่อนฟิลด์ ประเภทการชำระเงิน (payment_type) -->
+            <xpath expr="//field[@name='payment_type'][@widget='radio']" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+
             <!-- Custom fields — จัดตำแหน่งเหมือน Odoo 14 (ซ้าย-ขวา) -->
             <xpath expr="//field[@name='partner_id']" position="after">
                 <field name="search_invoice_name" string="เลขใบแจ้งหนี้"/>
@@ -63,6 +68,7 @@
                 <field name="wht_amount" invisible="1"/>
             </xpath>
             <xpath expr="//field[@name='partner_bank_id']" position="after">
+                <field name="company_id" string="บริษัท" readonly="state != 'draft'"/>
                 <field name="payment_method_one_id" string="Payment Method"
                        invisible="is_payment_multi"
                        readonly="state == 'paid'"
@@ -347,6 +353,19 @@
                     </group>
                 </sheet>
             </form>
+        </field>
+    </record>
+
+    <!-- List การชำระเงิน: แสดงคอลัมน์บริษัทเป็นค่าเริ่มต้น -->
+    <record id="view_account_payment_tree_company" model="ir.ui.view">
+        <field name="name">account.payment.list.company</field>
+        <field name="model">account.payment</field>
+        <field name="inherit_id" ref="account.view_account_payment_tree"/>
+        <field name="priority">50</field>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='company_id']" position="attributes">
+                <attribute name="optional">show</attribute>
+            </xpath>
         </field>
     </record>
 
