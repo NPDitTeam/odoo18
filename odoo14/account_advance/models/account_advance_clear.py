@@ -63,11 +63,11 @@ class AccountAdvanceClear(models.Model):
         required=False,
     )
     payment_method_id = fields.Many2one(
-        comodel_name="account.journal",
+        comodel_name="custom.payment.method",
         string="Payment Method Clear",
         required=False,
         tracking=True,
-        domain="[('type', 'in', ['bank', 'cash'])]",
+        domain="[('is_active', '=', True), '|', ('company_id', '=', False), ('company_id', '=', company_id)]",
     )
     state = fields.Selection(
         string="State",
@@ -313,6 +313,7 @@ class AccountAdvanceClear(models.Model):
             ),
             "date": self.doc_date,
             "date_maturity": self.doc_date,
+            "branch_id": self.branch_id.id,
         }
         return move_line
 
@@ -327,7 +328,7 @@ class AccountAdvanceClear(models.Model):
             "name": self.payment_method_id.name or "/",
             "debit": abs(debit),
             "credit": abs(credit),
-            "account_id": self.payment_method_id.default_account_id.id,
+            "account_id": self.payment_method_id.account_id.id,
             "move_id": move_id,
             "journal_id": self.journal_id.id,
             "currency_id": current_currency
@@ -340,6 +341,7 @@ class AccountAdvanceClear(models.Model):
             ),
             "date": self.doc_date,
             "date_maturity": self.doc_date,
+            "branch_id": self.branch_id.id,
         }
         return move_line
 
@@ -348,6 +350,7 @@ class AccountAdvanceClear(models.Model):
             "journal_id": self.journal_id.id,
             "date": self.doc_date,
             "ref": self.name,
+            "branch_id": self.branch_id.id,
         }
         return move
 
@@ -386,6 +389,7 @@ class AccountAdvanceClear(models.Model):
                 "currency_id": current_currency
                 if company_currency != current_currency
                 else company_currency,
+                "branch_id": self.branch_id.id,
             }
             self.env["account.move.line"].with_context(
                 check_move_validity=False
@@ -425,6 +429,7 @@ class AccountAdvanceClear(models.Model):
             ),
             "date": self.doc_date,
             "date_maturity": self.doc_date,
+            "branch_id": self.branch_id.id,
         }
         return move_line
 
@@ -649,6 +654,7 @@ class AccountAdvanceClear(models.Model):
                 "partner_id": tax_vals[tax]["partner_id"],
                 "debit": tax_vals[tax]["amount"] or 0.0,
                 "credit": 0.0,
+                "branch_id": self.branch_id.id,
             }
             if company_currency != current_currency:
                 sign = -1 if temp["credit"] else 1
@@ -705,6 +711,11 @@ class AccountAdvanceClear(models.Model):
     @api.onchange("advance_id")
     def _onchange_advance_id(self):
         self.advance_amount = self.advance_id.remain
+        # Inherit the branch from the advance being cleared, so the clear
+        # entry posts to the same branch/company instead of the user's
+        # personal default branch (which may belong to another company).
+        if self.advance_id.branch_id:
+            self.branch_id = self.advance_id.branch_id
 
 
 class AdvanceClearLine(models.Model):

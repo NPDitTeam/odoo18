@@ -11,6 +11,21 @@ class ResBranch(models.Model):
 
     name = fields.Char(required=True, string='Branch Name')
     sequence = fields.Integer(help='Used to order Companies in the branch switcher', default=10)
+
+    @api.model
+    def _search(self, domain, offset=0, limit=None, order=None):
+        # Only show branches belonging to the active company/companies so that
+        # Branch fields (advance, sale, purchase, invoice, payment, ...) cannot
+        # select a branch from another company. Branches with no company
+        # (company_ids empty) are shared and always visible. Set the context
+        # key 'bypass_branch_company_filter' to disable this (e.g. cross-company
+        # reports or maintenance scripts).
+        if not self.env.context.get('bypass_branch_company_filter'):
+            domain = ['&'] + list(domain) + [
+                '|', ('company_ids', '=', False),
+                     ('company_ids', 'in', self.env.companies.ids),
+            ]
+        return super()._search(domain, offset=offset, limit=limit, order=order)
     company_ids = fields.Many2many(
         'res.company', 'res_branch_res_company_rel', 'res_branch_id', 'res_company_id',
         string='Companies', default=lambda self: self.env.company,

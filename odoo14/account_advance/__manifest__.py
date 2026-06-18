@@ -13,6 +13,7 @@
         "hr",
         "l10n_th_account_tax",
         "multi_branch_management_aagam",
+        "payment_method",
     ],
     "data": [
         "data/ir_sequence_data.xml",

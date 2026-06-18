@@ -75,7 +75,7 @@
                             <list editable="bottom" string="Payment">
                                 <field name="company_id" column_invisible="1"/>
                                 <field name="payment_method_id"
-                                       domain="[('type', 'in', ['bank', 'cash'])]"/>
+                                       domain="[('is_active', '=', True), '|', ('company_id', '=', False), ('company_id', '=', company_id)]"/>
                                 <field name="bank_account_id"/>
                                 <field name="ref"/>
                                 <field name="total" sum="Total Amount"/>

@@ -89,10 +89,10 @@ class AccountAdvance(models.Model):
         required=False,
     )
     payment_method_id = fields.Many2one(
-        comodel_name="account.journal",
+        comodel_name="custom.payment.method",
         string="Payment Method",
         required=False,
-        domain="[('type', 'in', ['bank', 'cash'])]",
+        domain="[('is_active', '=', True), '|', ('company_id', '=', False), ('company_id', '=', company_id)]",
     )
     advance_total = fields.Float(
         string="Request Amount",
@@ -216,6 +216,7 @@ class AccountAdvance(models.Model):
                     "debit": abs(self.payment_total) if self.payment_total > 0 else 0,
                     "credit": abs(self.payment_total) if self.payment_total < 0 else 0,
                     "name": name,
+                    "branch_id": self.branch_id.id,
                 },
             )
         )
@@ -227,10 +228,11 @@ class AccountAdvance(models.Model):
                         0,
                         0,
                         {
-                            "account_id": pm.payment_method_id.default_account_id.id,
+                            "account_id": pm.payment_method_id.account_id.id,
                             "debit": abs(paid_total) if paid_total < 0 else 0,
                             "credit": abs(paid_total) if paid_total > 0 else 0,
                             "name": name,
+                            "branch_id": self.branch_id.id,
                         },
                     )
                 )
@@ -240,7 +242,7 @@ class AccountAdvance(models.Model):
                     0,
                     0,
                     {
-                        "account_id": self.payment_method_id.default_account_id.id,
+                        "account_id": self.payment_method_id.account_id.id,
                         "debit": (
                             abs(self.payment_total)
                             if self.payment_total < 0
@@ -252,6 +254,7 @@ class AccountAdvance(models.Model):
                             else 0
                         ),
                         "name": name,
+                        "branch_id": self.branch_id.id,
                     },
                 )
             )
@@ -261,6 +264,7 @@ class AccountAdvance(models.Model):
                 "date": self.advance_date,
                 "journal_id": self.journal_id.id,
                 "ref": self.name,
+                "branch_id": self.branch_id.id,
                 "line_ids": vals,
             }
         )
@@ -311,17 +315,17 @@ class AccountAdvancePayment(models.Model):
         readonly=True,
     )
     payment_method_id = fields.Many2one(
-        "account.journal",
+        "custom.payment.method",
         string="Payment Method",
         required=True,
-        domain="[('type', 'in', ['bank', 'cash'])]",
+        domain="[('is_active', '=', True), '|', ('company_id', '=', False), ('company_id', '=', company_id)]",
     )
     bank_account_id = fields.Many2one(
         "res.partner.bank", string="Bank Account"
     )
     account_id = fields.Many2one(
         "account.account",
-        related="payment_method_id.default_account_id",
+        related="payment_method_id.account_id",
         string="Account",
     )
     total = fields.Float(string="Total", digits=(36, 2), required=True)
