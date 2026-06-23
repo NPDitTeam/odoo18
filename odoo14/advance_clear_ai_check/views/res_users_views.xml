@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <!-- Add "สิทธิ์ Reset Draft (Keep AI)" tab to User Settings -->
+        <record id="view_users_form_allow_reset_draft_keep_ai" model="ir.ui.view">
+            <field name="name">res.users.form.allow.reset.draft.keep.ai</field>
+            <field name="model">res.users</field>
+            <field name="inherit_id" ref="base.view_users_form"/>
+            <field name="arch" type="xml">
+                <xpath expr="//page[@name='access_rights']" position="after">
+                    <page string="สิทธิ์ Reset Draft (Keep AI)" name="reset_draft_keep_ai_rights">
+                        <group string="สิทธิ์การ Reset to Draft โดยเก็บผลการตรวจสอบ AI">
+                            <field name="allow_reset_draft_keep_ai"/>
+                        </group>
+                        <group>
+                            <div class="alert alert-info" role="alert" style="margin-bottom:0px;">
+                                <p><strong>คำอธิบาย:</strong></p>
+                                <ul>
+                                    <li><strong>อนุญาตให้ Reset to Draft (Keep AI):</strong>
+                                        อนุญาตให้ผู้ใช้กดปุ่ม Reset To Draft (Keep AI)
+                                        เพื่อกลับไปแก้ไข Detail Lines โดยไม่ต้องตรวจสอบ AI ใหม่</li>
+                                </ul>
+                                <p class="text-danger"><strong>หมายเหตุ:</strong>
+                                    ผู้ดูแลระบบ (Administrator) มีสิทธิ์ทั้งหมดโดยอัตโนมัติ</p>
+                            </div>
+                        </group>
+                    </page>
+                </xpath>
+            </field>
+        </record>
+    </data>
+</odoo>

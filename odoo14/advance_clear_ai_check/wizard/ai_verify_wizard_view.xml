@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <record id="ai_verify_wizard_form_view" model="ir.ui.view">
+            <field name="name">ai.verify.wizard.form</field>
+            <field name="model">ai.verify.wizard</field>
+            <field name="arch" type="xml">
+                <form string="ผลการตรวจสอบด้วย AI">
+                    <group>
+                        <field name="is_pass" invisible="1"/>
+                        <field name="advance_clear_id" invisible="1"/>
+                    </group>
+                    <div>
+                        <field name="result_html" readonly="1" nolabel="1"/>
+                    </div>
+                    <footer>
+                        <button string="ปิด" type="object" name="action_close" class="btn-primary"/>
+                    </footer>
+                </form>
+            </field>
+        </record>
+    </data>
+</odoo>

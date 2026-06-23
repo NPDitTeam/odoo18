@@ -1,0 +1,144 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <record id="account_advance_clear_form_view_inherit_ai" model="ir.ui.view">
+            <field name="name">account.advance.clear.form.inherit.ai</field>
+            <field name="model">account.advance.clear</field>
+            <field name="inherit_id" ref="account_advance.account_advance_clear_form_view"/>
+            <field name="arch" type="xml">
+
+                <!-- Add ai_verified, is_approved, cash_bill_count, receipt_condition_count fields (invisible, needed for visibility expressions) -->
+                <xpath expr="//field[@name='branch_id']" position="after">
+                    <field name="ai_verified" invisible="1"/>
+                    <field name="is_approved" invisible="1"/>
+                    <field name="cash_bill_count" invisible="1"/>
+                    <field name="receipt_condition_count" invisible="1"/>
+                    <field name="receipt_correction_count" invisible="1"/>
+                    <field name="ai_parsed_result" invisible="1"/>
+                    <field name="has_zero_amount_receipt" invisible="1"/>
+                </xpath>
+
+                <!-- Add ribbon when AI approved -->
+                <xpath expr="//sheet/group[1]" position="before">
+                    <widget name="web_ribbon" title="ตรวจสอบแล้ว" bg_color="text-bg-success"
+                            invisible="not is_approved"/>
+                </xpath>
+
+                <!-- Add Receipt Condition + AI Verify + Cash Bill buttons after Confirm -->
+                <xpath expr="//button[@name='submit']" position="after">
+                    <button name="action_open_receipt_condition_wizard"
+                            string="การตรวจสอบเงื่อนไข ใบเสร็จ"
+                            type="object"
+                            invisible="state != 'confirm'"
+                            icon="fa-check-square-o"/>
+                    <button name="action_ai_verify"
+                            string="ตรวจสอบด้วย AI"
+                            type="object"
+                            class="oe_highlight"
+                            invisible="state != 'confirm'"
+                            icon="fa-search"/>
+                    <button name="action_open_cash_bill_wizard"
+                            string="เพิ่มรายการบิลเงินสด"
+                            type="object"
+                            invisible="state != 'confirm'"
+                            icon="fa-plus-circle"/>
+                    <button name="action_open_receipt_correction_wizard"
+                            string="แก้ไขยอดใบเสร็จ"
+                            type="object"
+                            icon="fa-pencil"
+                            invisible="state != 'confirm' or not has_zero_amount_receipt"/>
+                </xpath>
+
+                <!-- Replace Post button: require ai_verified=True OR no attachments+no detail lines -->
+                <xpath expr="//button[@name='confirm']" position="replace">
+                    <field name="can_post_without_ai" invisible="1"/>
+                    <field name="allow_reset_draft_keep_ai_show" invisible="1"/>
+                    <field name="reset_keep_ai" invisible="1"/>
+                    <button name="confirm"
+                            string="Post"
+                            class="oe_highlight"
+                            type="object"
+                            groups="account.group_account_manager"
+                            invisible="(state != 'confirm' or (not ai_verified and not can_post_without_ai)) and (state != 'draft' or not reset_keep_ai)"/>
+                </xpath>
+
+                <!-- Add Reset To Draft (Keep AI) button — visible in confirm/post if user has permission -->
+                <xpath expr="//button[@name='set_draft']" position="after">
+                    <button name="action_reset_draft_keep_ai"
+                            string="Reset To Draft (Keep AI)"
+                            type="object"
+                            class="btn-warning"
+                            invisible="not allow_reset_draft_keep_ai_show or state not in ('confirm', 'post')"/>
+                </xpath>
+
+                <!-- Force Journal and Account to be always readonly -->
+                <xpath expr="//field[@name='journal_id']" position="attributes">
+                    <attribute name="readonly">1</attribute>
+                    <attribute name="force_save">1</attribute>
+                </xpath>
+                <xpath expr="//field[@name='account_id']" position="attributes">
+                    <attribute name="readonly">1</attribute>
+                    <attribute name="force_save">1</attribute>
+                </xpath>
+                <xpath expr="//field[@name='branch_id']" position="attributes">
+                    <attribute name="readonly">1</attribute>
+                    <attribute name="force_save">1</attribute>
+                </xpath>
+
+                <!-- Add Analytic Account (required) to Detail Lines -->
+                <xpath expr="//field[@name='clear_ids']//field[@name='analytic_distribution']" position="after">
+                    <field name="account_analytic_id" required="1"/>
+                </xpath>
+
+                <!-- Add new tab: รูปหลักฐานการซื้อ (appended inside notebook, after existing tabs) -->
+                <xpath expr="//notebook" position="inside">
+                    <page string="รูปหลักฐานการซื้อ">
+                        <field name="receipt_image_ids" widget="many2many_binary" string="แนบรูปภาพ"/>
+                        <separator string="ตัวอย่างรูปภาพ (คลิกเพื่อดูรูปใหญ่)"/>
+                        <field name="receipt_image_preview" nolabel="1" readonly="1"/>
+                    </page>
+                </xpath>
+
+                <!-- Add AI verification history section after note -->
+                <xpath expr="//field[@name='note']" position="after">
+                    <separator string="ผลการตรวจสอบ AI"/>
+                    <field name="ai_verify_date"/>
+                    <field name="ai_verify_uid"/>
+                    <field name="ai_verify_result" readonly="1" nolabel="1" colspan="2"/>
+                    <separator string="รายการบิลเงินสด"
+                               invisible="cash_bill_count == 0"/>
+                    <field name="cash_bill_ids" readonly="1" nolabel="1" colspan="2"
+                           invisible="cash_bill_count == 0">
+                        <list>
+                            <field name="description"/>
+                            <field name="amount" sum="ยอดรวม"/>
+                            <field name="vat_amount" string="VAT" sum="VAT รวม"/>
+                        </list>
+                    </field>
+                    <separator string="เงื่อนไขการตรวจสอบใบเสร็จ" invisible="1"/>
+                    <field name="receipt_condition_ids" readonly="1" nolabel="1" colspan="2"
+                           invisible="1">
+                        <list>
+                            <field name="filename"/>
+                            <field name="check_amount" string="ตรวจยอดเงิน"/>
+                            <field name="check_vat" string="ตรวจ VAT"/>
+                            <field name="check_company" string="ตรวจชื่อบริษัท"/>
+                            <field name="check_invoice_detail" string="ตรวจเลขที่/วันที่/ร้านค้า"/>
+                        </list>
+                    </field>
+                    <separator string="รายการแก้ไขยอดใบเสร็จ"
+                               invisible="receipt_correction_count == 0"/>
+                    <field name="receipt_correction_ids" readonly="1" nolabel="1" colspan="2"
+                           invisible="receipt_correction_count == 0">
+                        <list>
+                            <field name="filename"/>
+                            <field name="original_amount" string="ยอดเดิม (AI)"/>
+                            <field name="corrected_amount" string="ยอดที่แก้ไข"/>
+                        </list>
+                    </field>
+                </xpath>
+
+            </field>
+        </record>
+    </data>
+</odoo>

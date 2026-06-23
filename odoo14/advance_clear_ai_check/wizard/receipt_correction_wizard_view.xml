@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <!-- Receipt Amount Correction Wizard Form -->
+        <record id="receipt_correction_wizard_form_view" model="ir.ui.view">
+            <field name="name">receipt.correction.wizard.form</field>
+            <field name="model">receipt.correction.wizard</field>
+            <field name="arch" type="xml">
+                <form string="แก้ไขยอดใบเสร็จ">
+                    <field name="advance_clear_id" invisible="1"/>
+                    <group>
+                        <group>
+                            <div class="alert alert-warning" role="alert" colspan="2">
+                                <strong>AI อ่านยอดไม่ได้:</strong>
+                                ใบเสร็จด้านล่างมียอดเงิน 0.00 เนื่องจาก AI อ่านยอดจากภาพไม่ได้
+                                (เช่น ลายน้ำครุฑทับตัวเลข หรือภาพไม่ชัด)
+                                กรุณากรอกยอดที่ถูกต้องในช่อง "ยอดที่ถูกต้อง"
+                            </div>
+                        </group>
+                    </group>
+                    <field name="line_ids">
+                        <list editable="bottom">
+                            <field name="filename" readonly="1"/>
+                            <field name="original_amount" readonly="1"/>
+                            <field name="corrected_amount"/>
+                        </list>
+                    </field>
+                    <footer>
+                        <button string="บันทึกและตรวจสอบใหม่" type="object"
+                                name="action_save_and_recheck" class="btn-primary"/>
+                        <button string="ยกเลิก" class="btn-secondary"
+                                special="cancel"/>
+                    </footer>
+                </form>
+            </field>
+        </record>
+    </data>
+</odoo>

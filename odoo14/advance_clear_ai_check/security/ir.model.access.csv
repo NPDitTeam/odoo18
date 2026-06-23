@@ -1,0 +1,11 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_ai_verify_wizard,ai.verify.wizard,model_ai_verify_wizard,base.group_user,1,1,1,1
+access_advance_clear_cash_bill,advance.clear.cash.bill,model_advance_clear_cash_bill,base.group_user,1,1,1,1
+access_cash_bill_wizard,cash.bill.wizard,model_cash_bill_wizard,base.group_user,1,1,1,1
+access_cash_bill_wizard_line,cash.bill.wizard.line,model_cash_bill_wizard_line,base.group_user,1,1,1,1
+access_receipt_condition,advance.clear.receipt.condition,model_advance_clear_receipt_condition,base.group_user,1,1,1,1
+access_receipt_condition_wizard,receipt.condition.wizard,model_receipt_condition_wizard,base.group_user,1,1,1,1
+access_receipt_condition_wizard_line,receipt.condition.wizard.line,model_receipt_condition_wizard_line,base.group_user,1,1,1,1
+access_receipt_amount_correction,advance.clear.receipt.correction,model_advance_clear_receipt_correction,base.group_user,1,1,1,1
+access_receipt_correction_wizard,receipt.correction.wizard,model_receipt_correction_wizard,base.group_user,1,1,1,1
+access_receipt_correction_wizard_line,receipt.correction.wizard.line,model_receipt_correction_wizard_line,base.group_user,1,1,1,1

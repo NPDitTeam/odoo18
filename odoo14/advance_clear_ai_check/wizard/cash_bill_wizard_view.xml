@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <!-- Cash Bill Entry Wizard Form -->
+        <record id="cash_bill_wizard_form_view" model="ir.ui.view">
+            <field name="name">cash.bill.wizard.form</field>
+            <field name="model">cash.bill.wizard</field>
+            <field name="arch" type="xml">
+                <form string="เพิ่มรายการบิลเงินสด">
+                    <field name="advance_clear_id" invisible="1"/>
+                    <group>
+                        <group>
+                            <div class="alert alert-info" role="alert" colspan="2">
+                                <strong>คำแนะนำ:</strong> กรุณาเพิ่มรายการบิลเงินสด/บิลเขียนมือที่แนบมา
+                                โดยระบุรายการสินค้า และจำนวนเงินให้ครบถ้วน
+                            </div>
+                        </group>
+                    </group>
+                    <field name="line_ids">
+                        <list editable="bottom">
+                            <field name="sequence" widget="handle"/>
+                            <field name="description" placeholder="รายการสินค้า/บริการ"/>
+                            <field name="amount" sum="ยอดรวม"/>
+                            <field name="vat_amount" string="VAT" sum="VAT รวม"/>
+                        </list>
+                    </field>
+                    <group>
+                        <group>
+                            <field name="total_amount" string="ยอดรวมทั้งหมด"/>
+                            <field name="total_vat" string="VAT รวม"/>
+                            <field name="grand_total" string="ยอดรวมทั้งสิ้น (รวม VAT)"
+                                   widget="monetary" options="{'currency_id': False}"
+                                   invisible="total_vat == 0"/>
+                        </group>
+                    </group>
+                    <footer>
+                        <button string="บันทึก" type="object"
+                                name="action_save" class="btn-primary"/>
+                        <button string="ยกเลิก" class="btn-secondary"
+                                special="cancel"/>
+                    </footer>
+                </form>
+            </field>
+        </record>
+    </data>
+</odoo>

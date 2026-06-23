@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <!-- Receipt Condition Wizard Form -->
+        <record id="receipt_condition_wizard_form_view" model="ir.ui.view">
+            <field name="name">receipt.condition.wizard.form</field>
+            <field name="model">receipt.condition.wizard</field>
+            <field name="arch" type="xml">
+                <form string="การตรวจสอบเงื่อนไข ใบเสร็จ">
+                    <field name="advance_clear_id" invisible="1"/>
+                    <group>
+                        <group>
+                            <div class="alert alert-info" role="alert" colspan="2">
+                                <strong>คำแนะนำ:</strong> กรุณาเลือกเงื่อนไขการตรวจสอบสำหรับแต่ละใบเสร็จ
+                                โดยติ๊กเครื่องหมายถูกที่เงื่อนไขที่ต้องการตรวจสอบ
+                            </div>
+                        </group>
+                    </group>
+                    <field name="line_ids" nolabel="1">
+                        <list editable="bottom" create="false" delete="false">
+                            <field name="attachment_id" invisible="1"/>
+                            <field name="has_any_skip" invisible="1"/>
+                            <field name="image_preview" string=" " widget="html"/>
+                            <field name="filename" string="ชื่อไฟล์"/>
+                            <field name="check_amount" invisible="1"/>
+                            <field name="check_amount_combined" string="ยอดรวมบิล" widget="boolean_toggle"/>
+                            <field name="check_vat" string="ตรวจ VAT" widget="boolean_toggle"/>
+                            <field name="check_company" string="ตรวจชื่อบริษัท" widget="boolean_toggle"/>
+                            <field name="check_invoice_detail" string="ตรวจเลขที่/วันที่/ร้านค้า" widget="boolean_toggle"/>
+                            <field name="check_slip" string="ตรวจสลิป" widget="boolean_toggle"/>
+                            <field name="skip_note" string="หมายเหตุ (ถ้าข้ามการตรวจ)"
+                                   invisible="not has_any_skip"
+                                   required="has_any_skip"
+                                   placeholder="* กรุณาระบุเหตุผลที่ข้ามการตรวจสอบ"/>
+                        </list>
+                    </field>
+                    <footer>
+                        <button string="บันทึก" type="object"
+                                name="action_save" class="btn-primary"/>
+                        <button string="ยกเลิก" class="btn-secondary"
+                                special="cancel"/>
+                    </footer>
+                </form>
+            </field>
+        </record>
+    </data>
+</odoo>

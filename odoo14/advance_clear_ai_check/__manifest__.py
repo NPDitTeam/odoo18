@@ -1,0 +1,27 @@
+{
+    'name': 'Advance Clear AI Check',
+    'version': '18.0.1.0.0',
+    'category': 'Accounting',
+    'summary': 'AI-powered receipt verification for Advance Clear documents',
+    'description': 'AI-powered receipt verification for Advance Clear using Claude AI',
+    'author': 'NPD Dev',
+    'website': '',
+    'license': 'AGPL-3',
+    'depends': [
+        'base',
+        'account',
+        'account_advance',
+    ],
+    'data': [
+        'security/ir.model.access.csv',
+        'wizard/ai_verify_wizard_view.xml',
+        'wizard/cash_bill_wizard_view.xml',
+        'wizard/receipt_condition_wizard_view.xml',
+        'wizard/receipt_correction_wizard_view.xml',
+        'views/account_advance_clear_view.xml',
+        'views/res_users_views.xml',
+    ],
+    'installable': True,
+    'auto_install': False,
+    'application': False,
+}
