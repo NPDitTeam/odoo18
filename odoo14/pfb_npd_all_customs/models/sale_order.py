@@ -386,12 +386,23 @@ class SaleOrderLine(models.Model):
 
             current_db = self.env.cr.dbname
             if current_db != 'NPD_Intertrading_New_NonVat':
+                # The 7% taxes exist once per company, so the lookup MUST be
+                # scoped to the order's company. Without it search(limit=1) grabs
+                # the lowest-id match (another company's tax) and Odoo's
+                # _check_company rejects the line.
+                company = so_line.order_id.company_id or so_line.company_id or self.env.company
                 if so_line.order_id.pfb_so_type == 'sale' and so_line.product_id:
-                    tax = self.env['account.tax'].search([('name', '=', 'ภาษีขายไม่รวม Vat 7%')], limit=1)
+                    tax = self.env['account.tax'].search([
+                        ('name', '=', 'ภาษีขายไม่รวม Vat 7%'),
+                        ('company_id', '=', company.id),
+                    ], limit=1)
                     if tax:
                         so_line.tax_id = [(6, 0, [tax.id])]
                 if so_line.order_id.pfb_so_type == 'rent' and so_line.product_id:
-                    tax = self.env['account.tax'].search([('name', '=', 'ภาษีขายยังไม่ถึงกำหนด Vat 7%')], limit=1)
+                    tax = self.env['account.tax'].search([
+                        ('name', '=', 'ภาษีขายยังไม่ถึงกำหนด Vat 7%'),
+                        ('company_id', '=', company.id),
+                    ], limit=1)
                     if tax:
                         so_line.tax_id = [(6, 0, [tax.id])]
 
@@ -426,8 +437,12 @@ class SaleOrderLine(models.Model):
         if current_db == 'NPD_Intertrading_New_NonVat':
             return
         for line in self:
+            company = line.order_id.company_id or line.company_id or self.env.company
             if line.order_id.pfb_so_type == 'sale' and line.product_id:
-                expected_tax = self.env['account.tax'].search([('name', '=', 'ภาษีขายไม่รวม Vat 7%')], limit=1)
+                expected_tax = self.env['account.tax'].search([
+                    ('name', '=', 'ภาษีขายไม่รวม Vat 7%'),
+                    ('company_id', '=', company.id),
+                ], limit=1)
                 if expected_tax and set(line.tax_id.ids) != {expected_tax.id}:
                     line.tax_id = [(6, 0, [expected_tax.id])]
                     return {
@@ -438,7 +453,10 @@ class SaleOrderLine(models.Model):
                         }
                     }
             if line.order_id.pfb_so_type == 'rent' and line.product_id:
-                expected_tax = self.env['account.tax'].search([('name', '=', 'ภาษีขายยังไม่ถึงกำหนด Vat 7%')], limit=1)
+                expected_tax = self.env['account.tax'].search([
+                    ('name', '=', 'ภาษีขายยังไม่ถึงกำหนด Vat 7%'),
+                    ('company_id', '=', company.id),
+                ], limit=1)
                 if expected_tax and set(line.tax_id.ids) != {expected_tax.id}:
                     line.tax_id = [(6, 0, [expected_tax.id])]
                     return {

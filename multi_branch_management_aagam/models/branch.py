@@ -2,6 +2,7 @@
 
 from odoo import api, fields, models, _
 from odoo.exceptions import UserError
+from odoo.osv import expression
 
 
 class ResBranch(models.Model):
@@ -17,14 +18,20 @@ class ResBranch(models.Model):
         # Only show branches belonging to the active company/companies so that
         # Branch fields (advance, sale, purchase, invoice, payment, ...) cannot
         # select a branch from another company. Branches with no company
-        # (company_ids empty) are shared and always visible. Set the context
-        # key 'bypass_branch_company_filter' to disable this (e.g. cross-company
-        # reports or maintenance scripts).
+        # (company_ids empty) are shared and always visible. A user's OWN
+        # allowed branches (branch_ids) are always visible too: otherwise a user
+        # whose branch happens to live in another company could not even read
+        # their own branch, which raises AccessError on every page and blocks
+        # login. Set the context key 'bypass_branch_company_filter' to disable
+        # this entirely (e.g. cross-company reports or maintenance scripts).
         if not self.env.context.get('bypass_branch_company_filter'):
-            domain = ['&'] + list(domain) + [
-                '|', ('company_ids', '=', False),
-                     ('company_ids', 'in', self.env.companies.ids),
-            ]
+            own_branch_ids = self.env.user.sudo().branch_ids.ids
+            company_domain = expression.OR([
+                [('id', 'in', own_branch_ids)],
+                [('company_ids', '=', False)],
+                [('company_ids', 'in', self.env.companies.ids)],
+            ])
+            domain = expression.AND([domain or [], company_domain])
         return super()._search(domain, offset=offset, limit=limit, order=order)
     company_ids = fields.Many2many(
         'res.company', 'res_branch_res_company_rel', 'res_branch_id', 'res_company_id',
