@@ -25,6 +25,10 @@
                     <field name="license_plate_name"/>
                     <field name="gps_tracking_available" string="GPS" widget="boolean"/>
                     <field name="gps_vehicle_status" optional="show"/>
+                    <field name="delivery_date" optional="show"/>
+                    <field name="travel_expenses" sum="รวมค่าเที่ยว" optional="show"/>
+                    <field name="daily_allowance" sum="รวมเบี้ยเลี้ยง" optional="show"/>
+                    <field name="shipping_cost" sum="รวมค่าขนส่ง" optional="show"/>
                     <field name="state" widget="badge"/>
                 </list>
             </field>
@@ -200,6 +204,7 @@
 <!--                                <field name="planned_end_date" readonly="state != 'draft'"/>-->
                                 <field name="planned_start_date_t" readonly="state != 'draft'"/>
                                 <field name="planned_end_date_t" readonly="state != 'draft'"/>
+                                <field name="delivery_date" string="วันส่งจริง (วันที่)" readonly="1"/>
                             </group>
                         </group>
 

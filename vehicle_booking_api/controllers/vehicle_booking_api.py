@@ -92,6 +92,10 @@ class VehicleBookingAPI(http.Controller):
                     month_val = b.planned_start_date_t.month
                     year_val = b.planned_start_date_t.year
 
+                planned_end_str = False
+                if b.planned_end_date_t:
+                    planned_end_str = b.planned_end_date_t.strftime('%Y-%m-%d %H:%M:%S')
+
                 data.append({
                     'id': b.id,
                     'name': b.name or '',
@@ -101,6 +105,7 @@ class VehicleBookingAPI(http.Controller):
                     'driver_name': b.driver_id.name if b.driver_id else '',
                     'employee_code': b.driver_id.employee_code if b.driver_id else '',  # ✅ รหัสพนักงาน HR
                     'planned_start_date_t': planned_start_str,
+                    'planned_end_date_t': planned_end_str,  # ✅ วันเวลาส่งจริง (payroll ใช้ตัวนี้คิดรอบตัด)
                     'month': month_val,
                     'year': year_val,
                     'state': b.state or '',

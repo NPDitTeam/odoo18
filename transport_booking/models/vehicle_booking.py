@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from odoo import models, fields, api, _
 from odoo.exceptions import ValidationError
+from datetime import timedelta
 import logging
 import requests
 import json
@@ -187,6 +188,13 @@ class VehicleBooking(models.Model):
 
     planned_start_date_t = fields.Datetime('วันเวลาออกเดินทางจริง', tracking=True)
     planned_end_date_t = fields.Datetime('วันเวลาส่งจริง', tracking=True)
+
+    # วันส่งจริงแบบ "วันที่ล้วน" (เวลาไทย) — ใช้กรอง/จัดกลุ่มแบบ วัน/เดือน/ปี โดยไม่ติดเรื่องเวลา
+    delivery_date = fields.Date(
+        'วันส่งจริง (วันที่)',
+        compute='_compute_delivery_date', store=True, index=True,
+        help='วันที่ของ "วันเวลาส่งจริง" (planned_end_date_t) แปลงเป็นเวลาไทยแล้วตัดเวลาออก '
+             'ใช้กรองแบบวัน/เดือน/ปี ไม่ต้องกังวลเรื่องเวลาที่ขอบวัน')
 
     note = fields.Html('หมายเหตุ')
 
@@ -417,6 +425,28 @@ class VehicleBooking(models.Model):
                         f'กรุณาเลือกรถที่มีสถานะ "พร้อมใช้งาน" เท่านั้น'
                     )
 
+    @api.constrains('transport_order_id')
+    def _check_transport_order_unique(self):
+        """ตรวจสอบว่าคำสั่งขนส่ง (SO) ที่เลือกต้องไม่ซ้ำกับ booking อื่น
+        — 1 คำสั่งขนส่ง ใช้ได้กับ booking เดียวเท่านั้น (ไม่นับ booking ที่ยกเลิก)"""
+        for record in self:
+            if not record.transport_order_id:
+                continue
+            # ข้าม booking ที่ถูกยกเลิก ทั้งตัวเองและตัวที่ไปชน
+            if record.state == 'cancelled':
+                continue
+            duplicate = self.env['vehicle.booking'].search([
+                ('transport_order_id', '=', record.transport_order_id.id),
+                ('id', '!=', record.id),
+                ('state', '!=', 'cancelled'),
+            ], limit=1)
+            if duplicate:
+                raise ValidationError(
+                    f'❌ คำสั่งขนส่ง "{record.transport_order_id.name}" ถูกใช้ไปแล้ว!\n'
+                    f'อยู่ในรายการจอง: {duplicate.name} (สถานะ: {dict(self._fields["state"].selection).get(duplicate.state)})\n'
+                    f'กรุณาเลือกคำสั่งขนส่งอื่น — 1 คำสั่งขนส่ง เลือกได้ครั้งเดียว'
+                )
+
     @api.onchange('transport_order_id')
     def _onchange_update_transport_order_domain(self):
         """ปรับ domain ของ transport_order_id ตามสาขาของผู้ใช้"""
@@ -430,17 +460,17 @@ class VehicleBooking(models.Model):
         """Override search เพื่อกรองตาม branch ของ user"""
         user = self.env.user
 
-        _logger.debug(
-            f"🔍 VehicleBooking._search | User: {user.name} | "
-            f"Branch: {user.branch_id.name if user.branch_id else 'None'} | "
-            f"show_all: {user.show_all_transport_booking_branches}"
-        )
-
-        # ✅ ถ้า user ไม่เลือก "แสดงทุกสาขา" AND มี branch กำหนด → กรองเฉพาะ branch นั้น
-        if not user.show_all_transport_booking_branches and user.branch_id:
-            branch_domain = [('branch_id', '=', user.branch_id.id)]
-            domain = (domain or []) + branch_domain
-            _logger.info(f"✅ Filtering by branch: {user.branch_id.name}")
+        # ✅ กรองตาม "สาขาที่ user มีสิทธิ์" — ใช้ multi_branch_id (สาขาที่เลือกบน navbar)
+        #    ถ้าว่าง fallback ใช้ branch_ids (Allowed Branches)
+        #    ❗ ห้ามใช้ branch_id ตัวเดียว เพราะ navbar switcher เขียนทับ branch_id ตลอด
+        #       ทำให้ "อยู่ๆเข้าสาขาอื่นไม่ได้" ทั้งที่อยู่ใน Allowed Branches
+        if not user.show_all_transport_booking_branches:
+            allowed_branch_ids = user.multi_branch_id.ids or user.branch_ids.ids
+            if allowed_branch_ids:
+                branch_domain = ['|', ('branch_id', '=', False),
+                                 ('branch_id', 'in', allowed_branch_ids)]
+                domain = (domain or []) + branch_domain
+                _logger.info("✅ [vehicle.booking] Filtering by branches: %s", allowed_branch_ids)
         # else:
         #     _logger.info(
         #         f"🌍 Showing all branches - "
@@ -454,6 +484,13 @@ class VehicleBooking(models.Model):
     def _compute_total_expense(self):
         for rec in self:
             rec.total_expense = sum(rec.expense_ids.mapped('amount'))
+
+    @api.depends('planned_end_date_t')
+    def _compute_delivery_date(self):
+        """แปลง 'วันเวลาส่งจริง' (UTC) เป็นวันที่เวลาไทย (+7) ตัดเวลาออก
+        เพื่อใช้กรอง/จัดกลุ่มแบบวัน/เดือน/ปี (Asia/Bangkok ไม่มี DST จึง +7 คงที่)"""
+        for rec in self:
+            rec.delivery_date = (rec.planned_end_date_t + timedelta(hours=7)).date() if rec.planned_end_date_t else False
 
     def _compute_tracking_count(self):
         """คำนวณจำนวน tracking records"""
@@ -649,6 +686,26 @@ class VehicleBooking(models.Model):
     def _onchange_transport_order(self):
         """ดึงข้อมูลจาก Transport Order"""
         if self.transport_order_id:
+            # ✅ เช็คซ้ำก่อน: ถ้า SO นี้ถูก booking อื่นเลือกไปแล้ว → เตือนทันที + เคลียร์ค่า
+            if self.state != 'cancelled':
+                duplicate = self.env['vehicle.booking'].search([
+                    ('transport_order_id', '=', self.transport_order_id.id),
+                    ('id', '!=', self._origin.id),
+                    ('state', '!=', 'cancelled'),
+                ], limit=1)
+                if duplicate:
+                    so_name = self.transport_order_id.name
+                    state_label = dict(self._fields['state'].selection).get(duplicate.state)
+                    self.transport_order_id = False
+                    return {
+                        'warning': {
+                            'title': '⚠️ คำสั่งขนส่งซ้ำ',
+                            'message': f'คำสั่งขนส่ง "{so_name}" ถูกใช้ไปแล้วในรายการจอง '
+                                       f'{duplicate.name} (สถานะ: {state_label})\n'
+                                       f'กรุณาเลือกคำสั่งขนส่งอื่น — 1 คำสั่งขนส่ง เลือกได้ครั้งเดียว',
+                        }
+                    }
+
             _logger.info("=" * 50)
             _logger.info("🔄 Transport Order Changed: %s", self.transport_order_id.name)
             _logger.info("📍 Pickup Location: %s", self.transport_order_id.pickup_location)

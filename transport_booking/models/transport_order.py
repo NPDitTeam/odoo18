@@ -13,22 +13,15 @@ class TransportOrder(models.Model):
         """Override search เพื่อกรองตาม branch ของ user"""
         user = self.env.user
         
-        _logger.debug(
-            f"🔍 TransportOrder._search | User: {user.name} | "
-            f"Branch: {user.branch_id.name if user.branch_id else 'None'} | "
-            f"show_all: {user.show_all_transport_booking_branches}"
-        )
-
-        # ✅ ถ้า user ไม่เลือก "แสดงทุกสาขา" AND มี branch กำหนด → กรองเฉพาะ branch นั้น
-        if not user.show_all_transport_booking_branches and user.branch_id:
-            branch_domain = [('branch_id', '=', user.branch_id.id)]
-            domain = (domain or []) + branch_domain
-            _logger.info(f"✅ TransportOrder filtered by branch: {user.branch_id.name}")
-        else:
-            _logger.info(
-                f"🌍 TransportOrder showing all branches - "
-                f"show_all_transport_booking_branches={user.show_all_transport_booking_branches}, "
-                f"has_branch={bool(user.branch_id)}"
-            )
+        # ✅ กรองตาม "สาขาที่ user มีสิทธิ์" — ใช้ multi_branch_id (สาขาที่เลือกบน navbar)
+        #    ถ้าว่าง fallback ใช้ branch_ids (Allowed Branches)
+        #    ❗ ห้ามใช้ branch_id ตัวเดียว เพราะ navbar switcher เขียนทับ branch_id ตลอด
+        if not user.show_all_transport_booking_branches:
+            allowed_branch_ids = user.multi_branch_id.ids or user.branch_ids.ids
+            if allowed_branch_ids:
+                branch_domain = ['|', ('branch_id', '=', False),
+                                 ('branch_id', 'in', allowed_branch_ids)]
+                domain = (domain or []) + branch_domain
+                _logger.info("✅ [transport.order] Filtering by branches: %s", allowed_branch_ids)
 
         return super()._search(domain, offset=offset, limit=limit, order=order)
