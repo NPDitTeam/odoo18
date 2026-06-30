@@ -137,16 +137,17 @@ class VehicleBooking(models.Model):
                                  )
 
     # ✅ ความเป็นเจ้าของรถ (ดึงจาก fleet.vehicle)
-    vehicle_ownership = fields.Selection([
-        ('own', 'รถของบริษัท'),
-        ('partner', 'รถร่วม'),
-        ('rental', 'รถเช่า'),
-        ('executive', 'รถผู้บริหาร'),
-        ('special', 'รถพิเศษ'),
-    ], string='ความเป็นเจ้าของรถ',
+    # ใช้ตัวเลือกชุดเดียวกับ fleet.vehicle เพื่อรองรับตัวเลือกที่ผู้ใช้เพิ่มเองจากระบบ
+    vehicle_ownership = fields.Selection(
+        selection='_get_vehicle_ownership_selection',
+        string='ความเป็นเจ้าของรถ',
         related='vehicle_id.ownership',
         store=True,
         readonly=True)
+
+    @api.model
+    def _get_vehicle_ownership_selection(self):
+        return self.env['fleet.vehicle']._get_ownership_selection()
 
     driver_id = fields.Many2one('vehicle.driver',
                                 string='👤 คนขับ',

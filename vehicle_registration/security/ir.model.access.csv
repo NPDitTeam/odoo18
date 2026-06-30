@@ -33,3 +33,5 @@ access_vehicle_brake_fluid_type_user,vehicle.brake.fluid.type.user,model_vehicle
 access_vehicle_brake_fluid_type_manager,vehicle.brake.fluid.type.manager,model_vehicle_brake_fluid_type,base.group_system,1,1,1,1
 access_vehicle_coolant_type_user,vehicle.coolant.type.user,model_vehicle_coolant_type,base.group_user,1,1,1,0
 access_vehicle_coolant_type_manager,vehicle.coolant.type.manager,model_vehicle_coolant_type,base.group_system,1,1,1,1
+access_vehicle_ownership_type_user,vehicle.ownership.type.user,model_vehicle_ownership_type,base.group_user,1,1,1,0
+access_vehicle_ownership_type_manager,vehicle.ownership.type.manager,model_vehicle_ownership_type,base.group_system,1,1,1,1

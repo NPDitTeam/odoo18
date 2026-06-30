@@ -123,6 +123,33 @@ class VehicleCoolantType(models.Model):
     description = fields.Text('รายละเอียด')
 
 
+# ==================== ความเป็นเจ้าของรถ ====================
+class VehicleOwnershipType(models.Model):
+    _name = 'vehicle.ownership.type'
+    _description = 'ความเป็นเจ้าของรถ'
+    _order = 'sequence, name'
+
+    name = fields.Char('ชื่อ', required=True, help='เช่น รถของบริษัท, รถร่วม, รถเช่า')
+    code = fields.Char('รหัส', copy=False,
+                       help='รหัสอ้างอิงภายใน (เว้นว่างได้ ระบบจะสร้างให้อัตโนมัติ) '
+                            'ห้ามแก้ไขรหัสที่มีรถใช้งานอยู่')
+    sequence = fields.Integer('ลำดับ', default=10)
+    active = fields.Boolean('ใช้งาน', default=True)
+    description = fields.Text('รายละเอียด')
+
+    _sql_constraints = [
+        ('code_uniq', 'unique(code)', 'รหัสความเป็นเจ้าของต้องไม่ซ้ำกัน'),
+    ]
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        records = super().create(vals_list)
+        for rec in records:
+            if not rec.code:
+                rec.code = 'ownership_%s' % rec.id
+        return records
+
+
 # ==================== ขยาย Fleet Vehicle ====================
 class FleetVehicle(models.Model):
     _inherit = 'fleet.vehicle'
@@ -191,14 +218,20 @@ class FleetVehicle(models.Model):
     next_coolant_change_date = fields.Date('เปลี่ยนสารหล่อเย็นครั้งถัดไป', compute='_compute_next_fluid_change_dates', store=True)
     next_power_steering_change_date = fields.Date('เปลี่ยนน้ำมันพวงมาลัยครั้งถัดไป', compute='_compute_next_fluid_change_dates', store=True)
 
-    ownership = fields.Selection([
-        ('own', 'รถของบริษัท'),
-        ('partner', 'รถร่วม'),
-        ('rental', 'รถเช่า'),
-        ('executive', 'รถผู้บริหาร'),
-        ('special', 'รถพิเศษ'),
-        ('customer_credit', 'รถลูกค้าสินเชื่อ'),
-    ], string='ความเป็นเจ้าของ', default='own', tracking=True, required=True)
+    ownership = fields.Selection(
+        selection='_get_ownership_selection',
+        string='ความเป็นเจ้าของ', default='own', tracking=True, required=True)
+
+    @api.model
+    def _get_ownership_selection(self):
+        """ดึงรายการความเป็นเจ้าของจากโมเดล vehicle.ownership.type
+        เพื่อให้ผู้ใช้เพิ่ม/แก้ไขตัวเลือกได้เองจากระบบ
+        คืนค่าทุกประเภท (รวมที่ปิดใช้งาน) เพื่อให้ข้อมูลเดิมที่เคยเลือกไว้ไม่หาย"""
+        types = self.env['vehicle.ownership.type'].sudo().with_context(
+            active_test=False).search([], order='sequence, name')
+        selection = [(t.code, t.name) for t in types if t.code]
+        # สำรองค่าเริ่มต้น เผื่อกรณียังไม่มีข้อมูลในโมเดล (เช่น ก่อนโหลด data)
+        return selection or [('own', 'รถของบริษัท')]
 
     owner_name = fields.Char('ชื่อเจ้าของรถ', tracking=True)
     model_name_display = fields.Char('ชื่อโมเดลรถ', compute='_compute_model_name_display', store=True)

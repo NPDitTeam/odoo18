@@ -1302,4 +1302,48 @@ for record in records:
               action="action_coolant_type"
               sequence="50"/>
 
+    <!-- ===== ความเป็นเจ้าของรถ (เพิ่ม/แก้ไขตัวเลือกได้จากระบบ) ===== -->
+    <record id="view_ownership_type_tree" model="ir.ui.view">
+        <field name="name">vehicle.ownership.type.tree</field>
+        <field name="model">vehicle.ownership.type</field>
+        <field name="arch" type="xml">
+            <list string="ความเป็นเจ้าของรถ" editable="bottom">
+                <field name="sequence" widget="handle"/>
+                <field name="name"/>
+                <field name="code" readonly="1"/>
+                <field name="active" widget="boolean_toggle"/>
+                <field name="description"/>
+            </list>
+        </field>
+    </record>
+    <record id="view_ownership_type_form" model="ir.ui.view">
+        <field name="name">vehicle.ownership.type.form</field>
+        <field name="model">vehicle.ownership.type</field>
+        <field name="arch" type="xml">
+            <form string="ความเป็นเจ้าของรถ">
+                <sheet>
+                    <group>
+                        <field name="name"/>
+                        <field name="code" placeholder="เว้นว่างได้ ระบบจะสร้างให้อัตโนมัติ"/>
+                        <field name="sequence"/>
+                        <field name="active"/>
+                        <field name="description"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+    <record id="action_ownership_type" model="ir.actions.act_window">
+        <field name="name">ความเป็นเจ้าของรถ</field>
+        <field name="res_model">vehicle.ownership.type</field>
+        <field name="view_mode">list,form</field>
+        <field name="context">{'active_test': False}</field>
+    </record>
+
+    <menuitem id="menu_ownership_type"
+              name="ความเป็นเจ้าของรถ"
+              parent="fleet.menu_root"
+              action="action_ownership_type"
+              sequence="51"/>
+
 </odoo>

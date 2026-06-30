@@ -168,5 +168,25 @@
             <field name="name">HOAT - Hybrid OAT (สีเหลือง)</field><field name="sequence">4</field>
         </record>
 
+        <!-- ==================== ความเป็นเจ้าของรถ (ตัวเลือกเดิม) ==================== -->
+        <record id="ownership_type_own" model="vehicle.ownership.type">
+            <field name="name">รถของบริษัท</field><field name="code">own</field><field name="sequence">1</field>
+        </record>
+        <record id="ownership_type_partner" model="vehicle.ownership.type">
+            <field name="name">รถร่วม</field><field name="code">partner</field><field name="sequence">2</field>
+        </record>
+        <record id="ownership_type_rental" model="vehicle.ownership.type">
+            <field name="name">รถเช่า</field><field name="code">rental</field><field name="sequence">3</field>
+        </record>
+        <record id="ownership_type_executive" model="vehicle.ownership.type">
+            <field name="name">รถผู้บริหาร</field><field name="code">executive</field><field name="sequence">4</field>
+        </record>
+        <record id="ownership_type_special" model="vehicle.ownership.type">
+            <field name="name">รถพิเศษ</field><field name="code">special</field><field name="sequence">5</field>
+        </record>
+        <record id="ownership_type_customer_credit" model="vehicle.ownership.type">
+            <field name="name">รถลูกค้าสินเชื่อ</field><field name="code">customer_credit</field><field name="sequence">6</field>
+        </record>
+
     </data>
 </odoo>
