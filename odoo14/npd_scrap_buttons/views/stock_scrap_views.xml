@@ -1,0 +1,186 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_stock_scrap_form_inherit_buttons" model="ir.ui.view">
+        <field name="name">stock.scrap.form.inherit.buttons</field>
+        <field name="model">stock.scrap</field>
+        <field name="inherit_id" ref="stock.stock_scrap_form_view"/>
+        <field name="arch" type="xml">
+            <!-- Buttons before statusbar (Odoo 18: ใช้ invisible="<expr>" แทน attrs) -->
+            <xpath expr="//header/field[@name='state']" position="before">
+                <button name="action_reset_to_draft"
+                        string="รีเซ็ตเป็นแบบร่าง"
+                        type="object"
+                        class="btn-secondary"
+                        invisible="state == 'draft'"/>
+                <button name="action_cancel"
+                        string="ยกเลิก"
+                        type="object"
+                        class="btn-danger"
+                        invisible="state in ('cancel', 'repaired')"/>
+                <button name="action_open_repair_request_wizard"
+                        string="แจ้งซ่อม"
+                        type="object"
+                        class="btn-primary"
+                        invisible="state != 'pending_repair'"/>
+                <button name="action_open_repair_complete_wizard"
+                        string="ซ่อมสำเร็จ"
+                        type="object"
+                        class="btn-primary"
+                        invisible="state != 'under_repair'"/>
+            </xpath>
+
+            <!-- Statusbar เพิ่ม states ใหม่ -->
+            <xpath expr="//header/field[@name='state']" position="attributes">
+                <attribute name="statusbar_visible">draft,pending_repair,under_repair,repaired,done,cancel</attribute>
+            </xpath>
+
+            <!-- Ribbon "ซ่อมสำเร็จ" มุมขวาบนของ sheet -->
+            <xpath expr="//sheet/*[1]" position="before">
+                <widget name="web_ribbon"
+                        title="ซ่อมสำเร็จ"
+                        bg_color="text-bg-success"
+                        invisible="state != 'repaired'"/>
+            </xpath>
+
+            <!-- ระยะเวลาซ่อม แสดงต่อจาก reason code -->
+            <xpath expr="//field[@name='reason_code_id']" position="after">
+                <field name="repair_duration_display"
+                       invisible="not repair_duration_display"/>
+            </xpath>
+
+            <!-- Notebook สำหรับข้อมูลการซ่อม -->
+            <xpath expr="//sheet" position="inside">
+                <notebook invisible="state not in ('under_repair', 'repaired')">
+                    <page string="ข้อมูลการแจ้งซ่อม"
+                          invisible="state not in ('under_repair', 'repaired')">
+                        <group>
+                            <group>
+                                <field name="damage_type" readonly="1"/>
+                                <field name="repair_by" readonly="1"/>
+                                <field name="technician_name" readonly="1"/>
+                                <field name="repair_start_date" readonly="1"/>
+                            </group>
+                        </group>
+                        <separator string="รูปสินค้าที่ชำรุด (คลิกที่รูปเพื่อดูขนาดเต็ม)"/>
+                        <field name="damaged_attachment_ids" readonly="1" nolabel="1">
+                            <kanban>
+                                <field name="id"/>
+                                <field name="name"/>
+                                <field name="mimetype"/>
+                                <templates>
+                                    <t t-name="kanban-box">
+                                        <div class="oe_kanban_card" style="padding:8px;">
+                                            <img t-attf-src="/web/image/#{record.id.raw_value}"
+                                                 data-bs-toggle="modal"
+                                                 t-attf-data-bs-target="#image_modal_#{record.id.raw_value}"
+                                                 title="คลิกเพื่อดูรูปขนาดใหญ่"
+                                                 style="width: 200px; height: 200px; object-fit: contain; border: 1px solid #dee2e6; border-radius: 4px; cursor: zoom-in;"/>
+                                            <div class="text-center mt-2" style="font-size: 11px; color: #6c757d; word-break: break-all;">
+                                                <field name="name"/>
+                                            </div>
+                                            <div class="modal fade" t-attf-id="image_modal_#{record.id.raw_value}" role="dialog" tabindex="-1">
+                                                <div class="modal-dialog modal-xl modal-dialog-centered" role="document">
+                                                    <div class="modal-content">
+                                                        <div class="modal-header">
+                                                            <h5 class="modal-title"><field name="name"/></h5>
+                                                            <span class="close" data-bs-dismiss="modal" aria-label="Close" style="cursor:pointer;">×</span>
+                                                        </div>
+                                                        <div class="modal-body text-center" style="background:#000;">
+                                                            <img t-attf-src="/web/image/#{record.id.raw_value}"
+                                                                 style="max-width: 100%; max-height: 80vh; object-fit: contain;"/>
+                                                        </div>
+                                                        <div class="modal-footer">
+                                                            <a t-attf-href="/web/content/#{record.id.raw_value}?download=true" class="btn btn-secondary">ดาวน์โหลด</a>
+                                                            <a t-attf-href="/web/image/#{record.id.raw_value}" target="_blank" class="btn btn-secondary">เปิดในแท็บใหม่</a>
+                                                            <span class="btn btn-primary" data-bs-dismiss="modal" style="cursor:pointer;">ปิด</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </t>
+                                </templates>
+                            </kanban>
+                        </field>
+                    </page>
+                    <page string="ข้อมูลการซ่อมสำเร็จ"
+                          invisible="state != 'repaired'">
+                        <group>
+                            <group>
+                                <field name="spare_parts_used" readonly="1"/>
+                                <field name="parts_cost" readonly="1"/>
+                                <field name="labor_cost" readonly="1"/>
+                                <field name="repair_end_date" readonly="1"/>
+                            </group>
+                        </group>
+                        <separator string="รูปภาพสินค้าหลังซ่อม (คลิกที่รูปเพื่อดูขนาดเต็ม)"/>
+                        <field name="repaired_attachment_ids" readonly="1" nolabel="1">
+                            <kanban>
+                                <field name="id"/>
+                                <field name="name"/>
+                                <field name="mimetype"/>
+                                <templates>
+                                    <t t-name="kanban-box">
+                                        <div class="oe_kanban_card" style="padding:8px;">
+                                            <img t-attf-src="/web/image/#{record.id.raw_value}"
+                                                 data-bs-toggle="modal"
+                                                 t-attf-data-bs-target="#image_modal_#{record.id.raw_value}"
+                                                 title="คลิกเพื่อดูรูปขนาดใหญ่"
+                                                 style="width: 200px; height: 200px; object-fit: contain; border: 1px solid #dee2e6; border-radius: 4px; cursor: zoom-in;"/>
+                                            <div class="text-center mt-2" style="font-size: 11px; color: #6c757d; word-break: break-all;">
+                                                <field name="name"/>
+                                            </div>
+                                            <div class="modal fade" t-attf-id="image_modal_#{record.id.raw_value}" role="dialog" tabindex="-1">
+                                                <div class="modal-dialog modal-xl modal-dialog-centered" role="document">
+                                                    <div class="modal-content">
+                                                        <div class="modal-header">
+                                                            <h5 class="modal-title"><field name="name"/></h5>
+                                                            <span class="close" data-bs-dismiss="modal" aria-label="Close" style="cursor:pointer;">×</span>
+                                                        </div>
+                                                        <div class="modal-body text-center" style="background:#000;">
+                                                            <img t-attf-src="/web/image/#{record.id.raw_value}"
+                                                                 style="max-width: 100%; max-height: 80vh; object-fit: contain;"/>
+                                                        </div>
+                                                        <div class="modal-footer">
+                                                            <a t-attf-href="/web/content/#{record.id.raw_value}?download=true" class="btn btn-secondary">ดาวน์โหลด</a>
+                                                            <a t-attf-href="/web/image/#{record.id.raw_value}" target="_blank" class="btn btn-secondary">เปิดในแท็บใหม่</a>
+                                                            <span class="btn btn-primary" data-bs-dismiss="modal" style="cursor:pointer;">ปิด</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </t>
+                                </templates>
+                            </kanban>
+                        </field>
+                        <div class="alert alert-success" role="alert"
+                             invisible="not is_stock_returned">
+                            <strong>✓ คืนสินค้ากลับเข้าคลังเรียบร้อยแล้ว</strong>
+                        </div>
+                        <group string="การคืนสต็อก"
+                               invisible="not is_stock_returned">
+                            <field name="is_stock_returned"/>
+                            <field name="return_date"/>
+                            <field name="return_move_id"/>
+                        </group>
+                    </page>
+                </notebook>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- List view: ระบาย state สีตามสถานะ -->
+    <record id="view_stock_scrap_tree_inherit_cancel" model="ir.ui.view">
+        <field name="name">stock.scrap.list.inherit.cancel</field>
+        <field name="model">stock.scrap</field>
+        <field name="inherit_id" ref="stock.stock_scrap_tree_view"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='state']" position="attributes">
+                <attribute name="decoration-danger">state == 'cancel'</attribute>
+                <attribute name="decoration-warning">state in ('pending_repair','under_repair')</attribute>
+                <attribute name="decoration-success">state == 'repaired'</attribute>
+            </xpath>
+        </field>
+    </record>
+</odoo>

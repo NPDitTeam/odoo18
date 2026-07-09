@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- แจ้งซ่อม Wizard -->
+    <record id="view_scrap_repair_request_wizard_form" model="ir.ui.view">
+        <field name="name">npd.scrap.repair.request.wizard.form</field>
+        <field name="model">npd.scrap.repair.request.wizard</field>
+        <field name="arch" type="xml">
+            <form string="แจ้งซ่อม">
+                <sheet>
+                    <group>
+                        <field name="scrap_id" invisible="1"/>
+                        <field name="damage_type" placeholder="ระบุประเภทความเสียหาย เช่น แตก หัก เป็นรอย ฯลฯ"/>
+                        <field name="repair_by" widget="radio"/>
+                        <field name="technician_name" placeholder="ระบุชื่อช่างที่ดำเนินการซ่อม"/>
+                    </group>
+                    <separator string="แนบรูปสินค้าที่ชำรุด (เลือกได้หลายรูป)"/>
+                    <field name="damaged_attachment_ids" widget="many2many_binary"/>
+                </sheet>
+                <footer>
+                    <button name="action_save" string="บันทึก" type="object" class="btn-primary"/>
+                    <button string="ยกเลิก" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <!-- ซ่อมสำเร็จ Wizard -->
+    <record id="view_scrap_repair_complete_wizard_form" model="ir.ui.view">
+        <field name="name">npd.scrap.repair.complete.wizard.form</field>
+        <field name="model">npd.scrap.repair.complete.wizard</field>
+        <field name="arch" type="xml">
+            <form string="ซ่อมสำเร็จ">
+                <sheet>
+                    <group>
+                        <field name="scrap_id" invisible="1"/>
+                        <field name="spare_parts_used" placeholder="ระบุรายการอะไหล่ที่ใช้ในการซ่อม"/>
+                        <field name="parts_cost"/>
+                        <field name="labor_cost"/>
+                    </group>
+                    <separator string="แนบรูปภาพสินค้าหลังซ่อมเสร็จ (เลือกได้หลายรูป)"/>
+                    <field name="repaired_attachment_ids" widget="many2many_binary"/>
+                </sheet>
+                <footer>
+                    <button name="action_save" string="บันทึก" type="object" class="btn-primary"/>
+                    <button string="ยกเลิก" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+</odoo>

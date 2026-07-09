@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_scrap_reason_code_form_inherit_repair" model="ir.ui.view">
+        <field name="name">scrap.reason.code.form.inherit.repair</field>
+        <field name="model">scrap.reason.code</field>
+        <field name="inherit_id" ref="scrap_reason_code.view_scrap_reason_code_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='location_id']" position="after">
+                <field name="is_damage_repair"/>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_scrap_reason_code_list_inherit_repair" model="ir.ui.view">
+        <field name="name">scrap.reason.code.list.inherit.repair</field>
+        <field name="model">scrap.reason.code</field>
+        <field name="inherit_id" ref="scrap_reason_code.view_scrap_reason_code_list"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='location_id']" position="after">
+                <field name="is_damage_repair"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>
