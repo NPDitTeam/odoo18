@@ -5,18 +5,20 @@
         <field name="inherit_id" ref="sale.view_order_form"/>
         <field name="arch" type="xml">
             <xpath expr="//header" position="inside">
+                <field name="sc_has_cut" invisible="1"/>
+                <!-- ยังไม่ตัด (หรือคืนครบแล้ว) → แสดงปุ่มตัดสต๊อก -->
+                <!-- Odoo 18: ใช้ attribute invisible="<expr>" แทน attrs -->
                 <button name="action_auto_validate_delivery"
                         type="object"
                         class="btn-primary"
-                        string="ตัดสต๊อก Auto"
-                        invisible="state != 'sale'"/>
-            </xpath>
-            <xpath expr="//sheet/notebook" position="inside">
-                <page string="บ้านเขียว">
-                    <group>
-                        <field name="return_greenhome_state" readonly="1"/>
-                    </group>
-                </page>
+                        string="ตัดสต๊อก Auto 🚚"
+                        invisible="state != 'sale' or sc_has_cut"/>
+                <!-- มีการตัดที่ยังไม่ได้คืน → แสดงปุ่มคืนสต๊อก (คืนครบแล้วจะหายไป จนกว่าจะตัดใหม่) -->
+                <button name="action_auto_return_delivery"
+                        type="object"
+                        class="btn-warning"
+                        string="คืนสต๊อก Auto ↩️"
+                        invisible="not sc_has_cut"/>
             </xpath>
         </field>
     </record>
