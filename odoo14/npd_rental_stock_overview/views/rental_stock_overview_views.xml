@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <!-- ===================== List ===================== -->
+        <record id="view_list_rental_stock_overview" model="ir.ui.view">
+            <field name="name">dev.rental.stock.overview.list</field>
+            <field name="model">dev.rental.stock.overview</field>
+            <field name="arch" type="xml">
+                <list string="รายงานภาพรวมสต็อก เช่า" create="false" edit="false" delete="false">
+                    <field name="company_id"/>
+                    <field name="product_code"/>
+                    <field name="product_name"/>
+                    <field name="branch_id"/>
+                    <field name="qty_initial" sum="รวมจำนวนตั้งต้น"/>
+                    <field name="qty_on_hand" sum="รวมปริมาณที่มีอยู่"/>
+                    <field name="qty_rented" sum="รวมจำนวนที่ถูกเช่า"/>
+                    <field name="qty_lost" sum="รวมสินค้าหาย"/>
+                    <field name="qty_damaged" sum="รวมสินค้าชำรุด"/>
+                    <field name="qty_transferred" sum="รวมย้ายเข้า"/>
+                    <field name="qty_transferred_out" sum="รวมย้ายออก"/>
+                    <field name="uom_name"/>
+                </list>
+            </field>
+        </record>
+
+        <!-- ===================== Search ===================== -->
+        <record id="view_search_rental_stock_overview" model="ir.ui.view">
+            <field name="name">dev.rental.stock.overview.search</field>
+            <field name="model">dev.rental.stock.overview</field>
+            <field name="arch" type="xml">
+                <search string="ค้นหารายงานภาพรวมสต็อก เช่า">
+                    <field name="company_id"/>
+                    <field name="product_id"/>
+                    <field name="product_code"/>
+                    <field name="branch_id"/>
+                    <filter string="ถูกเช่าอยู่ (ยังไม่คืน)" name="rented"
+                            domain="[('qty_rented', '>', 0)]"/>
+                    <filter string="มีคงคลัง" name="has_stock"
+                            domain="[('qty_on_hand', '>', 0)]"/>
+                    <filter string="มีสินค้าหาย" name="has_lost"
+                            domain="[('qty_lost', '>', 0)]"/>
+                    <filter string="มีสินค้าชำรุด" name="has_damaged"
+                            domain="[('qty_damaged', '>', 0)]"/>
+                    <separator/>
+                    <group expand="0" string="จัดกลุ่มตาม">
+                        <filter string="บริษัท" name="group_by_company"
+                                context="{'group_by': 'company_id'}"/>
+                        <filter string="สาขา" name="group_by_branch"
+                                context="{'group_by': 'branch_id'}"/>
+                        <filter string="สินค้า" name="group_by_product"
+                                context="{'group_by': 'product_id'}"/>
+                    </group>
+                </search>
+            </field>
+        </record>
+
+        <!-- ===================== Pivot ===================== -->
+        <record id="view_pivot_rental_stock_overview" model="ir.ui.view">
+            <field name="name">dev.rental.stock.overview.pivot</field>
+            <field name="model">dev.rental.stock.overview</field>
+            <field name="arch" type="xml">
+                <pivot string="วิเคราะห์สต็อก เช่า">
+                    <field name="company_id" type="row"/>
+                    <field name="branch_id" type="row"/>
+                    <field name="product_id" type="row"/>
+                    <field name="qty_initial" type="measure"/>
+                    <field name="qty_on_hand" type="measure"/>
+                    <field name="qty_rented" type="measure"/>
+                    <field name="qty_lost" type="measure"/>
+                    <field name="qty_damaged" type="measure"/>
+                    <field name="qty_transferred" type="measure"/>
+                    <field name="qty_transferred_out" type="measure"/>
+                </pivot>
+            </field>
+        </record>
+
+        <!-- ===================== Window action ===================== -->
+        <record id="action_rental_stock_overview" model="ir.actions.act_window">
+            <field name="name">รายงานภาพรวมสต็อก เช่า</field>
+            <field name="res_model">dev.rental.stock.overview</field>
+            <field name="view_mode">list,pivot</field>
+            <field name="search_view_id" ref="view_search_rental_stock_overview"/>
+        </record>
+
+        <!-- ===================== Menu ===================== -->
+        <menuitem id="menu_rental_stock_overview"
+                  name="รายงานภาพรวมสต็อก เช่า"
+                  parent="stock.menu_stock_root"
+                  action="action_rental_stock_overview"
+                  sequence="90"/>
+    </data>
+</odoo>
