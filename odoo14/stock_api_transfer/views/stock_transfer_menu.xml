@@ -1,0 +1,7 @@
+<odoo>
+    <menuitem id="menu_stock_api_transfer_root" name="โยกสต๊อก"
+              parent="stock.menu_stock_root" sequence="20"/>
+    <menuitem id="menu_stock_api_transfer" name="โยกสต๊อกภายใน"
+              parent="menu_stock_api_transfer_root"
+              action="action_stock_api_transfer"/>
+</odoo>

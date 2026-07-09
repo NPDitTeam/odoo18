@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Wizard: ส่งขออนุมัติ -->
+    <record id="view_stock_transfer_approval_wizard_form" model="ir.ui.view">
+        <field name="name">stock.transfer.approval.wizard.form</field>
+        <field name="model">stock.transfer.approval.wizard</field>
+        <field name="arch" type="xml">
+            <form string="ส่งขออนุมัติการโยกสินค้า">
+                <group>
+                    <field name="transfer_id" invisible="1"/>
+                    <field name="approver_id"
+                           domain="[('id', 'in', context.get('approver_user_ids', []))]"
+                           options="{'no_create': True, 'no_open': True}"/>
+                    <field name="reason" placeholder="กรุณาระบุเหตุผลในการโยกสินค้า..."/>
+                    <field name="attachment_ids" widget="many2many_binary" string="แนบไฟล์"/>
+                </group>
+                <footer>
+                    <button name="action_submit_approval" type="object" string="ส่งขออนุมัติ" class="btn-primary"/>
+                    <button string="ยกเลิก" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <!-- Wizard: ตีกลับ -->
+    <record id="view_stock_transfer_reject_wizard_form" model="ir.ui.view">
+        <field name="name">stock.transfer.reject.wizard.form</field>
+        <field name="model">stock.transfer.reject.wizard</field>
+        <field name="arch" type="xml">
+            <form string="ตีกลับการโยกสินค้า">
+                <group>
+                    <field name="transfer_id" invisible="1"/>
+                    <field name="reject_note" placeholder="กรุณาระบุเหตุผลที่ตีกลับ..."/>
+                </group>
+                <footer>
+                    <button name="action_reject" type="object" string="ยืนยันตีกลับ" class="btn-danger"/>
+                    <button string="ยกเลิก" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+</odoo>

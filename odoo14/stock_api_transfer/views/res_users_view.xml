@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- แท็บสิทธิการอนุมัติการโยกสินค้า ในหน้าตั้งค่าผู้ใช้ -->
+    <record id="view_users_form_stock_transfer_approver" model="ir.ui.view">
+        <field name="name">res.users.form.stock.transfer.approver</field>
+        <field name="model">res.users</field>
+        <field name="inherit_id" ref="base.view_users_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//page[@name='access_rights']" position="after">
+                <page string="สิทธิการอนุมัติการโยกสินค้า" name="stock_transfer_approval">
+                    <group>
+                        <field name="is_stock_transfer_approver" widget="boolean_toggle"/>
+                    </group>
+                </page>
+            </xpath>
+        </field>
+    </record>
+</odoo>

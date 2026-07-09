@@ -1,0 +1,118 @@
+<odoo>
+    <record id="view_form_stock_api_transfer" model="ir.ui.view">
+        <field name="name">stock.api.transfer.form</field>
+        <field name="model">stock.api.transfer</field>
+        <field name="arch" type="xml">
+            <form string="โยกสต๊อกภายใน">
+                <header>
+                    <!-- ปุ่มส่งขออนุมัติ: เฉพาะสถานะร่าง -->
+                    <button name="action_send_approval" type="object" string="ส่งขออนุมัติ"
+                            invisible="state != 'draft'" class="btn-primary"/>
+                    <!-- อนุมัติ / ตีกลับ: เฉพาะรออนุมัติ และเฉพาะผู้อนุมัติ -->
+                    <button name="action_approve" type="object" string="อนุมัติ"
+                            invisible="state != 'waiting_approval'" class="btn-success"
+                            groups="stock_api_transfer.group_stock_transfer_approver"/>
+                    <button name="action_open_reject_wizard" type="object" string="ตีกลับ"
+                            invisible="state != 'waiting_approval'" class="btn-warning"
+                            groups="stock_api_transfer.group_stock_transfer_approver"/>
+                    <!-- ยืนยันการโอน: เฉพาะอนุมัติแล้ว -->
+                    <button name="action_confirm" type="object" string="ยืนยันการโอน"
+                            invisible="state != 'approved'" class="btn-primary"/>
+                    <!-- ยกเลิก: เฉพาะยืนยันแล้ว และเฉพาะผู้อนุมัติ -->
+                    <button name="action_cancel" type="object" string="ยกเลิก"
+                            invisible="state != 'confirmed'" class="btn-danger"
+                            groups="stock_api_transfer.group_stock_transfer_approver"/>
+                    <field name="state" widget="statusbar"
+                           statusbar_visible="draft,waiting_approval,approved,confirmed"/>
+                </header>
+                <sheet>
+                    <div class="alert alert-warning" role="alert" invisible="not approval_reject_note">
+                        <strong>หมายเหตุตีกลับ:</strong>
+                        <field name="approval_reject_note" nolabel="1"/>
+                    </div>
+
+                    <group>
+                        <field name="name" readonly="1"/>
+                    </group>
+
+                    <group string="ต้นทาง / ปลายทาง" col="4">
+                        <field name="source_company_id" required="1"
+                               readonly="state in ('waiting_approval','approved','confirmed')"/>
+                        <field name="source_location_id" required="1"
+                               invisible="not source_company_id"
+                               readonly="state in ('waiting_approval','approved','confirmed')"
+                               domain="[('usage','=','internal'),('company_id','in',[source_company_id, False])]"
+                               options="{'no_create': True}"/>
+
+                        <field name="dest_company_id" required="1"
+                               readonly="state in ('waiting_approval','approved','confirmed')"/>
+                        <field name="location_id" string="คลังปลายทาง" required="1"
+                               invisible="not dest_company_id"
+                               readonly="state in ('waiting_approval','approved','confirmed')"
+                               domain="[('usage','=','internal'),('company_id','in',[dest_company_id, False])]"
+                               options="{'no_create': True}"/>
+
+                        <field name="product_ids" widget="many2many_tags" required="1"
+                               invisible="not source_location_id"
+                               readonly="state in ('waiting_approval','approved','confirmed')"
+                               options="{'no_create': True}"/>
+                        <field name="transfer_date" required="1"
+                               readonly="state in ('waiting_approval','approved','confirmed')"/>
+                        <field name="note"
+                               readonly="state in ('waiting_approval','approved','confirmed')"/>
+                    </group>
+
+                    <notebook>
+                        <page string="รายการสินค้า">
+                            <field name="line_ids"
+                                   readonly="state in ('waiting_approval','approved','confirmed')">
+                                <list editable="bottom" create="false" delete="false">
+                                    <field name="product_id" readonly="1" force_save="1"/>
+                                    <field name="default_code" readonly="1" force_save="1"/>
+                                    <field name="source_location_id" readonly="1" force_save="1"/>
+                                    <field name="destination_location_id" string="คลังปลายทาง" readonly="1" force_save="1"/>
+                                    <field name="available_qty" readonly="1" force_save="1"/>
+                                    <field name="request_qty" required="1"/>
+                                    <field name="status" readonly="1" force_save="1"/>
+                                </list>
+                            </field>
+                        </page>
+
+                        <page string="ข้อมูลการอนุมัติ" invisible="not approval_id">
+                            <group col="4">
+                                <field name="approval_id" invisible="1"/>
+                                <field name="approver_id"/>
+                                <field name="approval_state"/>
+                                <field name="approval_reason"/>
+                                <field name="approval_attachment_ids" widget="many2many_binary"
+                                       string="ไฟล์แนบ" readonly="1"/>
+                            </group>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_list_stock_api_transfer" model="ir.ui.view">
+        <field name="name">stock.api.transfer.list</field>
+        <field name="model">stock.api.transfer</field>
+        <field name="arch" type="xml">
+            <list string="โยกสต๊อกภายใน">
+                <field name="name"/>
+                <field name="source_company_id"/>
+                <field name="source_location_id"/>
+                <field name="location_id" string="คลังปลายทาง"/>
+                <field name="transfer_date"/>
+                <field name="approver_id"/>
+                <field name="state"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="action_stock_api_transfer" model="ir.actions.act_window">
+        <field name="name">Stock Transfer</field>
+        <field name="res_model">stock.api.transfer</field>
+        <field name="view_mode">list,form</field>
+    </record>
+</odoo>
