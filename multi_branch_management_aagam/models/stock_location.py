@@ -24,8 +24,10 @@ class StockMoveLine(models.Model):
 class StockPickingType(models.Model):
     _inherit = "stock.picking.type"
 
+    # operation type = config กลาง: ไม่ตั้ง default สาขา เพื่อไม่ให้ผูกสาขาโดยไม่ตั้งใจ
+    # (record rule กรองสาขาของ stock.picking.type ถูกปิดใน security/branch_security.xml แล้ว)
     branch_id = fields.Many2one('res.branch', string='Branch', help='The default branch for this user.',
-                                context={'user_preference': True},  default=lambda self: self.env.user.branch_id.id)
+                                context={'user_preference': True})
 
 
 class AccountAccount(models.Model):

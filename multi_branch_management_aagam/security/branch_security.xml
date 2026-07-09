@@ -96,10 +96,15 @@
             <field name="domain_force">['|', ('branch_id','=',False),('branch_id', 'in', multi_branch_id)]</field>
         </record>
 
+        <!-- ปิด rule นี้: stock.picking.type (ประเภทการดำเนินการ) เป็น "config กลาง"
+             ที่ทุกสาขาต้องอ่านได้เพื่อสร้าง/ยืนยันใบส่งของ ถ้ากรองตามสาขาที่ active อยู่
+             จะทำให้ยืนยัน SO ไม่ได้ (แม้แต่ admin) เมื่อ operation type ผูกกับสาขาที่ไม่ได้เลือก
+             การปิด rule นี้ไม่กระทบ isolation ของเอกสารจริง (ใบส่งของ/move/SO ยังกรองตามสาขาอยู่) -->
         <record model="ir.rule" id="stock_picking_type_branch_rule_axis">
             <field name="name">Stock Operation Type multi-branch</field>
             <field name="model_id" search="[('model','=','stock.picking.type')]" model="ir.model"/>
-            <field name="domain_force">['|', ('branch_id','=',False),('branch_id', 'in', multi_branch_id)]</field>
+            <field name="domain_force">[(1, '=', 1)]</field>
+            <field name="active" eval="False"/>
         </record>
 
         <record model="ir.rule" id="stock_warehouse_branch_rule_axis">
