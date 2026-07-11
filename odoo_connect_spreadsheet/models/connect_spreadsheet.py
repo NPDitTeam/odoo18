@@ -148,7 +148,7 @@ class ConnectSpreadsheet(models.Model):
             Set the sheet and the range of cells to clear, for this purpose, clear all cells.
             """
             _helpers.clear_spreadsheet_data(self.spreadsheet_service(), self.spreadsheet_id,
-                                            self.sheet_name + '!' + self.clear_range if self.sheet_name else self.clear_range)
+                                            (self.sheet_name + '!' + self.clear_range) if (self.sheet_name and self.clear_range) else (self.clear_range or self.sheet_name or 'A1:ZZ'))
             self.clear_sheet = False
 
         values = []
@@ -306,7 +306,7 @@ class ConnectSpreadsheet(models.Model):
                 _logger.error("Google API connection failed during sync: %s", e)
                 raise UserError(_("Cannot sync with Google Sheets. Connection timed out. Please try again later.\n\nError: %s") % e)
             except Exception as e:
-                raise ValidationError(_(e))
+                raise ValidationError(str(e))
 
     def reset_to_draft(self):
         self.state = 'draft'
