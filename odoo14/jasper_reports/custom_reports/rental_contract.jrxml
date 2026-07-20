@@ -115,7 +115,7 @@
 		</band>
 	</pageHeader>
 	<detail>
-		<band height="400" splitType="Stretch">
+		<band height="450" splitType="Stretch">
 			<!-- ==================== หัวสัญญา ==================== -->
 			<staticText>
 				<reportElement style="ThaiTitle" positionType="Float" x="0" y="0" width="545" height="26" uuid="c1d2e3f4-0002-0000-0000-000000000001"/>
@@ -145,7 +145,7 @@
 			</textField>
 			<!-- ==================== หน้า 1 : บทนำ + ข้อ 1 ==================== -->
 			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
-				<reportElement style="Thai" positionType="Float" x="0" y="84" width="545" height="20" uuid="c1d2e3f4-0002-0000-0000-000000000005"/>
+				<reportElement style="Thai" positionType="Float" x="0" y="84" width="545" height="20" uuid="c1d2e3f4-0002-0000-0000-0000000000e1"/>
 				<textElement textAlignment="Left"><font fontName="Sarabun" size="13"/><paragraph lineSpacing="Proportional" lineSpacingSize="0.82"/></textElement>
 				<textFieldExpression><![CDATA["      สัญญาเช่าฉบับนี้ทำขึ้น ระหว่าง " + $F{Lessor_Name-jasper_rc_lessor_name} + " โดยพลตรี หรือ นายธีระพล รอดสาตร์ กรรมการผู้มีอำนาจ เลขประจำตัวผู้เสียภาษี " + $F{Lessor_Vat-jasper_rc_lessor_vat} + " ที่อยู่ " + $F{Lessor_Address-jasper_rc_lessor_address} + " ซึ่งต่อไปในสัญญานี้เรียกว่า \"ผู้ให้เช่า\" ฝ่ายหนึ่งกับ\n"
 + $F{Mark_Company-jasper_rc_mark_company} + " นิติบุคคล " + $F{Company_Name-jasper_rc_company_name} + " โดยนาย/นาง/นางสาว.....................................กรรมการผู้มีอำนาจ เลขประจำตัวผู้เสียภาษี " + $F{Company_Vat-jasper_rc_company_vat} + " ที่อยู่ " + $F{Company_Address-jasper_rc_company_address} + "\n"
@@ -154,7 +154,19 @@
 + "หมู่ที่............ถนน.................................ตำบล/แขวง......................อำเภอ/เขต........................ จังหวัด...........................เบอร์โทรศัพท์..............................ซึ่งต่อไปในสัญญานี้เรียกว่า \"ผู้เช่า\" อีกฝ่ายหนึ่ง\n"
 + "      คู่สัญญาทั้งสองฝ่ายตกลงทำสัญญากันมีข้อความดังต่อไปนี้\n"
 + "ข้อ 1. ผู้เช่าตกลงเช่า เครื่องมือ อุปกรณ์ก่อสร้างต่างๆ ซึ่งต่อไปในสัญญานี้เรียกว่า \"ทรัพย์สินที่เช่า\" จากผู้ให้เช่า มีรายละเอียดเกี่ยวกับทรัพย์สินที่เช่า อันปรากฏตามตารางทรัพย์สิน โดยผู้เช่าได้รับทรัพย์สินที่เช่าดังกล่าวจากผู้ให้เช่าแล้ว ในวันที่ " + $F{Date_Day-jasper_rc_date_day} + " เดือน " + $F{Date_Month-jasper_rc_date_month} + " พ.ศ. " + $F{Date_Year-jasper_rc_date_year} + " ในสภาพเรียบร้อยดีถูกต้องครบถ้วน มีการตรวจสอบเป็นที่พอใจแล้ว\n"
-+ "      อนึ่ง หากปรากฏในภายหลังจากทำสัญญาเช่าฉบับนี้ ผู้เช่าประสงค์เช่าทรัพย์สินอื่นๆ เพิ่มเติม หรือนอกเหนือจากตารางด้านล่างนี้ คู่สัญญาทั้งสองฝ่ายให้ยึดถือเอาใบกำกับการเช่า ใบแจ้งหนี้ หรือเอกสารเพิ่มเติมอื่นใดที่ผู้ให้เช่าออกให้ด้วยระบบอิเล็กทรอนิกส์ของผู้ให้เช่าในภายหลัง (ถ้ามี) เป็นส่วนหนึ่งของสัญญาเช่าฉบับนี้ด้วย" + "\n" + "รายละเอียดปรากฏตามใบกำกับการเช่า เลขที่ " + $F{Order_Name-jasper_rc_name} + " ลงวันที่ " + $F{Start_Short-jasper_rc_start_short} + " ยอดเงินสุทธิ " + $F{Amount_Total-jasper_rc_amount_total} + " บาท" + "\n" + "**หมายเหตุ : หากรายการทรัพย์สินที่เช่าไม่เพียงพอ ให้ใช้ใบต่อ หรือใช้ใบกำกับการเช่า หรือใบแจ้งหนี้เพิ่มเติม\n"
++ "      อนึ่ง หากปรากฏในภายหลังจากทำสัญญาเช่าฉบับนี้ ผู้เช่าประสงค์เช่าทรัพย์สินอื่นๆ เพิ่มเติม หรือนอกเหนือจากตารางด้านล่างนี้ คู่สัญญาทั้งสองฝ่ายให้ยึดถือเอาใบกำกับการเช่า ใบแจ้งหนี้ หรือเอกสารเพิ่มเติมอื่นใดที่ผู้ให้เช่าออกให้ด้วยระบบอิเล็กทรอนิกส์ของผู้ให้เช่าในภายหลัง (ถ้ามี) เป็นส่วนหนึ่งของสัญญาเช่าฉบับนี้ด้วย"]]></textFieldExpression>
+			</textField>
+			<!-- บรรทัดอ้างอิงใบกำกับการเช่า - ใส่กรอบ -->
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement style="Thai" positionType="Float" x="0" y="106" width="545" height="22" uuid="c1d2e3f4-0002-0000-0000-0000000000e2"/>
+				<box leftPadding="6" rightPadding="6" topPadding="3" bottomPadding="3"><pen lineWidth="0.75"/></box>
+				<textElement textAlignment="Left"><font fontName="Sarabun" size="13"/><paragraph lineSpacing="Proportional" lineSpacingSize="0.82"/></textElement>
+				<textFieldExpression><![CDATA["รายละเอียดปรากฏตามใบกำกับการเช่า เลขที่ " + $F{Order_Name-jasper_rc_name} + " ลงวันที่ " + $F{Start_Short-jasper_rc_start_short} + " ยอดเงินสุทธิ " + $F{Amount_Total-jasper_rc_amount_total} + " บาท"]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement style="Thai" positionType="Float" x="0" y="132" width="545" height="20" uuid="c1d2e3f4-0002-0000-0000-0000000000e3"/>
+				<textElement textAlignment="Left"><font fontName="Sarabun" size="13"/><paragraph lineSpacing="Proportional" lineSpacingSize="0.82"/></textElement>
+				<textFieldExpression><![CDATA["**หมายเหตุ : หากรายการทรัพย์สินที่เช่าไม่เพียงพอ ให้ใช้ใบต่อ หรือใช้ใบกำกับการเช่า หรือใบแจ้งหนี้เพิ่มเติม\n"
 + "      ระยะเวลาเช่ามีกำหนด " + $F{Duration-jasper_rc_duration} + " วัน/เดือน/ปี กำหนดส่งมอบคืน วันที่ " + $F{Return_Day-jasper_rc_return_day} + " เดือน " + $F{Return_Month-jasper_rc_return_month} + " พ.ศ. " + $F{Return_Year-jasper_rc_return_year} + "\n"
 + "ข้อ 2. ผู้เช่าได้ชำระเงินค่าเช่า เป็นจำนวนเงิน " + $F{Invoice_Amount-jasper_rc_invoice_amount} + " บาท (" + $F{Invoice_Amount_Text-jasper_rc_invoice_amount_text} + ") ซึ่งเป็นค่าเช่าของเดือน " + $F{Date_Month-jasper_rc_date_month} + " พ.ศ. " + $F{Date_Year-jasper_rc_date_year} + " ส่วนค่าเช่าของเดือนถัดไป หรือค่าเช่าส่วนที่เหลือ (ถ้ามี) ผู้เช่าตกลงว่าจะชำระให้แก่ผู้ให้เช่า ตามกำหนดใบแจ้งหนี้ และ/หรือในวันที่ผู้เช่าส่งมอบคืนทรัพย์สินที่เช่าทันที\n"
 + "ข้อ 3. ผู้เช่าตกลงวางหลักประกันไว้ให้แก่ผู้ให้เช่าในวันทำสัญญาฉบับนี้ โดยถือว่าเป็นประกันทรัพย์สินที่เช่าตามสัญญา รวมไปถึงใบกำกับการเช่า ใบแจ้งหนี้ หรือเอกสารเพิ่มเติมอื่นใดซึ่งถือเป็นการเช่าเพิ่มเติมนอกเหนือจากสัญญาฉบับนี้\n"
@@ -166,10 +178,10 @@
 			</textField>
 			<!-- ==================== ขึ้นหน้า 2 : เริ่มข้อ 4 ==================== -->
 			<break type="Page">
-				<reportElement positionType="Float" x="0" y="106" width="545" height="1" uuid="c1d2e3f4-0002-0000-0000-0000000000b1"/>
+				<reportElement positionType="Float" x="0" y="176" width="545" height="1" uuid="c1d2e3f4-0002-0000-0000-0000000000b1"/>
 			</break>
 			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
-				<reportElement style="Thai" positionType="Float" x="0" y="108" width="545" height="20" uuid="c1d2e3f4-0002-0000-0000-0000000000b2"/>
+				<reportElement style="Thai" positionType="Float" x="0" y="178" width="545" height="20" uuid="c1d2e3f4-0002-0000-0000-0000000000b2"/>
 				<textElement textAlignment="Left"><font fontName="Sarabun" size="13"/><paragraph lineSpacing="Proportional" lineSpacingSize="0.82"/></textElement>
 				<textFieldExpression><![CDATA["ข้อ 4. ผู้เช่าสัญญาว่าจะนำทรัพย์สินที่เช่าไปใช้ ณ " + $F{On_Site-jasper_rc_on_site} + " โดยจะไม่ยักย้าย ทำลาย แก้ไข ทำเครื่องหมายใดๆ กับทรัพย์สินที่เช่า โอนการครอบครอง หรือกระทำการใดๆ ที่เป็นอันส่งมอบให้แก่บุคคลภายนอกซึ่งไม่ผูกพันในสัญญาฉบับนี้ และจะดูแลรักษาอย่างวิญญูชนพึงสงวนทรัพย์สินของตนเองเป็นอย่างดีตลอดอายุสัญญาฉบับนี้ และผู้เช่ายินยอมให้ผู้ให้เช่าหรือตัวแทน เข้าตรวจดูแลทรัพย์สินที่เช่าได้ตามระยะเวลาอันสมควร\n"
 + "ข้อ 5. ผู้เช่าตกลงใช้งานทรัพย์สินที่เช่าด้วยความระมัดระวัง เหมาะสมตามวัตถุประสงค์ของการเช่าเท่านั้น และตกลงบำรุงรักษาทรัพย์สินที่เช่าให้อยู่ในสภาพที่ดีใช้งานได้ดีตลอดเวลาด้วยค่าใช้จ่ายของตนเอง ในกรณีผู้เช่าไม่บำรุงรักษา หรือซ่อมแซมทรัพย์สินที่เช่าให้อยู่ในสภาพที่ดี ผู้ให้เช่ามีสิทธิที่จะบำรุงรักษาและซ่อมแซมเอง โดยผู้เช่าจะต้องเป็นผู้รับผิดชอบออกค่าใช้จ่ายที่เกิดขึ้นทั้งสิ้น\n"
@@ -180,27 +192,20 @@
 + "      อันทรัพย์สินที่เช่าที่ถูกโจรกรรม อัคคีภัย วินาศภัย หรือบุบสลายด้วยภัยใดๆ ผู้ให้เช่ามีสิทธิบอกเลิกสัญญาได้ทันที และผู้ให้เช่ามีสิทธิเรียกค่าเสียหายได้\n"
 + "      หากทรัพย์สินที่เช่าก่อให้เกิดความเสียหายต่อบุคคลภายนอก หรือทรัพย์สินใดๆ ของบุคคลภายนอกในระหว่างการเช่า ผู้เช่าตกลงยอมรับผิดเพื่อการนั้น และชดใช้ความเสียหายให้บุคคลภายนอกแต่เพียงฝ่ายเดียว\n"
 + "ข้อ 8. ชั่วโมงการทำงานของทรัพย์สินที่เช่า เช่น เครื่องจักร หรือเครื่องมือต่างๆ เท่ากับ 8 (แปด) ชั่วโมงต่อวัน หากเกินกว่ากำหนดจะคิดเฉลี่ยเป็นรายชั่วโมง\n"
-+ "ข้อ 9. ในกรณีที่ผู้เช่าได้มอบหมายให้บุคคลหนึ่งบุคคลใดมีอำนาจลงนามในใบสั่งซื้อหรือทำนิติกรรมใดๆ แทนผู้เช่า ต้องแจ้งแก่ผู้ให้เช่าเป็นลายลักษณ์อักษร หรือแสดงหนังสือมอบอำนาจ มิฉะนั้นผู้ให้เช่าจะถือว่าค่าใช้จ่ายใดๆ อันเกิดจากบุคคลดังกล่าวตามที่ได้รับมอบหมายเดิมเป็นความรับผิดชอบของผู้เช่าทั้งสิ้น"]]></textFieldExpression>
-			</textField>
-			<!-- ==================== ขึ้นหน้า 3 : เริ่มข้อ 10 ==================== -->
-			<break type="Page">
-				<reportElement positionType="Float" x="0" y="118" width="545" height="1" uuid="c1d2e3f4-0002-0000-0000-0000000000b5"/>
-			</break>
-			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
-				<reportElement style="Thai" positionType="Float" x="0" y="120" width="545" height="20" uuid="c1d2e3f4-0002-0000-0000-0000000000b6"/>
-				<textElement textAlignment="Left"><font fontName="Sarabun" size="13"/><paragraph lineSpacing="Proportional" lineSpacingSize="0.82"/></textElement>
-				<textFieldExpression><![CDATA["ข้อ 10. เมื่อครบกำหนดระยะเวลาการเช่า หากผู้เช่าไม่ติดต่อชำระค่าเช่า หรือไม่ส่งคืนทรัพย์สินที่เช่า ผู้ให้เช่ามีสิทธิเข้าเก็บทรัพย์สินที่เช่าคืนทันทีโดยปราศจากข้อโต้แย้ง และสามารถคิดค่าปรับ หรือค่าขาดประโยชน์ค่าเสียหายใดๆ ตามเงื่อนไขของผู้ให้เช่า หรือ\n"
++ "ข้อ 9. ในกรณีที่ผู้เช่าได้มอบหมายให้บุคคลหนึ่งบุคคลใดมีอำนาจลงนามในใบสั่งซื้อหรือทำนิติกรรมใดๆ แทนผู้เช่า ต้องแจ้งแก่ผู้ให้เช่าเป็นลายลักษณ์อักษร หรือแสดงหนังสือมอบอำนาจ มิฉะนั้นผู้ให้เช่าจะถือว่าค่าใช้จ่ายใดๆ อันเกิดจากบุคคลดังกล่าวตามที่ได้รับมอบหมายเดิมเป็นความรับผิดชอบของผู้เช่าทั้งสิ้น"
++ "\n"
++ "ข้อ 10. เมื่อครบกำหนดระยะเวลาการเช่า หากผู้เช่าไม่ติดต่อชำระค่าเช่า หรือไม่ส่งคืนทรัพย์สินที่เช่า ผู้ให้เช่ามีสิทธิเข้าเก็บทรัพย์สินที่เช่าคืนทันทีโดยปราศจากข้อโต้แย้ง และสามารถคิดค่าปรับ หรือค่าขาดประโยชน์ค่าเสียหายใดๆ ตามเงื่อนไขของผู้ให้เช่า หรือ\n"
 + "      เมื่อครบกำหนดระยะเวลาตามสัญญาแล้ว ผู้เช่ายังมิได้ส่งมอบทรัพย์สินที่เช่าคืนให้แก่ผู้ให้เช่า และหากผู้ให้เช่ายังมิได้ทักท้วง ให้ถือว่าสัญญาเช่านั้นเป็นการเช่าแบบไม่มีกำหนดระยะเวลา โดยผู้ให้เช่ามิต้องแจ้งให้ผู้เช่าทราบล่วงหน้า และจะมีผลบังคับเป็นการคิดค่าเช่าที่เกินกำหนดได้ทันทีนับตั้งแต่วันถัดจากวันสิ้นสุดสัญญาเดิม ไปจนกว่าผู้เช่าจะคืนทรัพย์สินที่เช่าทั้งหมด หรือผู้ให้เช่าได้ใช้สิทธิบอกเลิกสัญญาเช่า\n"
 + "ข้อ 11. การส่งมอบทรัพย์สินที่เช่าคืนนั้น คู่สัญญาทั้งสองฝ่ายกำหนดให้ตรวจนับจำนวนของทรัพย์สินที่เช่า รวมถึงตรวจสอบความชำรุดบกพร่อง หรือความเสียหาย สูญหายของทรัพย์สินที่เช่าตามสัญญาหรือใบกำกับการเช่านั้นๆ หากพบกรณีดังกล่าวต้องระบุไว้ในใบตรวจรับสินค้าให้ชัดเจน หากผู้เช่าฝ่าฝืนไม่ร่วมตรวจนับ คู่สัญญาทั้งสองฝ่ายถือให้การตรวจนับนั้น ถูกต้อง และได้รับทราบกันทั้งสองฝ่ายโดยไม่ข้อโต้แย้งใดๆ\n" + "ข้อ 12. กรณีผู้เช่าเป็นผู้ดำเนินการขนส่งทรัพย์สินที่เช่าด้วยตนเองตามข้อ 6.1 เมื่อครบกำหนดระยะเวลาการเช่า หรือกรณีสัญญาเลิกกันไม่ว่าด้วยเหตุใด ผู้เช่าต้องขนย้ายทรัพย์สินที่เช่าส่งคืนผู้ให้เช่า ณ สถานที่ของผู้ให้เช่าในสภาพเรียบร้อยทันที หากผู้เช่าไม่ปฏิบัติตาม ผู้เช่ายินยอมชดใช้ค่าปรับให้แก่ผู้ให้เช่าเป็นรายได้ในอัตราที่ผู้ให้เช่ากำหนด รายละเอียดตามใบเสนอราคา นับตั้งแต่วันที่สัญญาสิ้นสุดลง ไปจนกว่าจะมีการส่งมอบทรัพย์สินคืนให้แก่ผู้ให้เช่า หรือผู้ให้เช่าได้กลับเข้าครอบครองทรัพย์สินที่เช่าด้วยตนเอง ในกรณีที่ผู้เช่าไม่ส่งมอบคืนซึ่งทรัพย์สินที่เช่าไม่ว่าด้วยเหตุใดๆ ผู้ให้เช่าชอบที่จะใช้สิทธิเรียกให้ผู้เช่าใช้ราคาของทรัพย์สินที่เช่าแทนการส่งมอบทรัพย์สินคืนได้\n"
 + "ข้อ 13. หากกรณีผู้เช่าไม่สามารถส่งมอบทรัพย์สินที่เช่าคืนแก่ผู้ให้เช่าได้ตรงตามกำหนดระยะเวลา ผู้เช่ามีหน้าที่เร่งแจ้งให้ผู้ให้เช่าทราบล่วงหน้าเป็นลายลักษณ์อักษร หากผู้เช่าไม่ปฏิบัติตามให้ถือว่าผู้เช่าผิดสัญญา และผู้ให้เช่าสงวนสิทธิบังคับตามข้อ 10. ทันที\n"
 + "ข้อ 14. ความรับผิดของผู้เช่าจะระงับลง หรือสิ้นสุดลงต่อเมื่อ ผู้เช่าได้ชำระค่าเช่าครบถ้วนแล้ว และผู้เช่าได้นำทรัพย์สินที่เช่าส่งคืนให้แก่ผู้ให้เช่า พร้อมมีการตรวจรับ ตรวจสอบสภาพของทรัพย์สินที่เช่า เว้นแต่ปรากฏว่าทรัพย์สินที่เช่าอยู่ในสภาพชำรุด เสียหาย ไม่สามารถใช้งานได้ตามปกติ ผู้เช่าจะต้องรับผิดชดใช้ค่าเสียหายเพื่อความชำรุดของทรัพย์สินที่เช่านั้นตามเงื่อนไขของผู้ให้เช่า\n" + "ข้อ 15. คู่สัญญาทั้งสองฝ่ายจะต้องปฏิบัติตามข้อตกลงโดยเคร่งครัด การเปลี่ยนแปลง แก้ไขใดๆ จะทำได้เฉพาะแต่ความยินยอมของทั้งสองฝ่าย และทำเป็นลายลักษณ์อักษร"]]></textFieldExpression>
 			</textField>
-			<!-- ==================== ขึ้นหน้า 4 : เริ่มข้อ 16 + ลงนาม ==================== -->
+			<!-- ==================== ขึ้นหน้า 3 : เริ่มข้อ 16 + ลงนาม ==================== -->
 			<break type="Page">
-				<reportElement positionType="Float" x="0" y="130" width="545" height="1" uuid="c1d2e3f4-0002-0000-0000-0000000000b3"/>
+				<reportElement positionType="Float" x="0" y="200" width="545" height="1" uuid="c1d2e3f4-0002-0000-0000-0000000000b3"/>
 			</break>
 			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
-				<reportElement style="Thai" positionType="Float" x="0" y="132" width="545" height="20" uuid="c1d2e3f4-0002-0000-0000-0000000000b4"/>
+				<reportElement style="Thai" positionType="Float" x="0" y="202" width="545" height="20" uuid="c1d2e3f4-0002-0000-0000-0000000000b4"/>
 				<textElement textAlignment="Left"><font fontName="Sarabun" size="13"/><paragraph lineSpacing="Proportional" lineSpacingSize="0.82"/></textElement>
 				<textFieldExpression><![CDATA["ข้อ 16. หากผู้เช่าผิดสัญญาข้อใดข้อหนึ่ง ให้ถือว่าสัญญาเป็นอันสิ้นสุดลงโดยมิต้องบอกกล่าวล่วงหน้า และผู้ให้เช่าย่อมทรงสิทธิในการกลับเข้าครอบครองทรัพย์สินที่เช่าได้โดยพลัน ทั้งนี้การสิ้นสุดสัญญาไม่ตัดสิทธิของผู้ให้เช่าในการเรียกค่าเช่าที่ค้างชำระ หรือค่าเสียหายต่อทรัพย์สินที่เช่า หรือค่าอุปกรณ์ใดๆ ที่ผู้เช่ามีภาระติดพันกับผู้ให้เช่าตามสัญญา\n"
 + "ข้อ 17. ผู้ให้เช่าย่อมใช้สิทธิบอกกล่าวให้ผู้เช่าปฏิบัติตามสัญญานี้ หรือบอกเลิกสัญญานี้ หรือเรียกค่าเสียหายกับผู้เช่าได้ทันที เมื่อปรากฏว่าผู้เช่าผิดสัญญานี้ข้อหนึ่งข้อใด หรือหลายข้อรวมกัน และ/หรือผู้ให้เช่าได้บอกกล่าวแล้วแต่ผู้เช่าเพิกเฉย\n"
@@ -211,13 +216,13 @@
 			
 <!-- หมายเหตุ + ระยะเวลา + ข้อ 2 + ข้อ 3 -->
 			
-			<!-- ==================== หน้า 2 : ข้อ 4 - ข้อ 15 ==================== -->
+			<!-- ==================== หน้า 2 : ข้อ 4 - ข้อ 15 (ต่อเนื่องใน element เดียว) ==================== -->
 			
 			<!-- ==================== หน้า 3 : ข้อ 16 - ข้อ 18 + ลงนาม ==================== -->
 			
 			<!-- ตราประทับ -->
 			<rectangle>
-				<reportElement positionType="Float" mode="Transparent" x="20" y="210" width="55" height="32" uuid="c1d2e3f4-0002-0000-0000-00000000000d">
+				<reportElement positionType="Float" mode="Transparent" x="20" y="280" width="55" height="32" uuid="c1d2e3f4-0002-0000-0000-00000000000d">
 					<printWhenExpression><![CDATA[$F{Show_Customer_Stamp-jasper_rc_show_customer_stamp} != null && $F{Show_Customer_Stamp-jasper_rc_show_customer_stamp}.equals("1")]]></printWhenExpression>
 				</reportElement>
 				<graphicElement>
@@ -225,7 +230,7 @@
 				</graphicElement>
 			</rectangle>
 			<textField isBlankWhenNull="true">
-				<reportElement style="ThaiSmall" positionType="Float" x="20" y="210" width="55" height="32" uuid="c1d2e3f4-0002-0000-0000-00000000000e">
+				<reportElement style="ThaiSmall" positionType="Float" x="20" y="280" width="55" height="32" uuid="c1d2e3f4-0002-0000-0000-00000000000e">
 					<printWhenExpression><![CDATA[$F{Show_Customer_Stamp-jasper_rc_show_customer_stamp} != null && $F{Show_Customer_Stamp-jasper_rc_show_customer_stamp}.equals("1")]]></printWhenExpression>
 				</reportElement>
 				<textElement textAlignment="Center" verticalAlignment="Middle">
@@ -233,13 +238,13 @@
 				<textFieldExpression><![CDATA["ตราประทับ\nผู้เช่า(ถ้ามี)"]]></textFieldExpression>
 			</textField>
 			<rectangle>
-				<reportElement positionType="Float" mode="Transparent" x="475" y="210" width="55" height="32" uuid="c1d2e3f4-0002-0000-0000-00000000000f"/>
+				<reportElement positionType="Float" mode="Transparent" x="475" y="280" width="55" height="32" uuid="c1d2e3f4-0002-0000-0000-00000000000f"/>
 				<graphicElement>
 					<pen lineWidth="0.5" lineColor="#999999"/>
 				</graphicElement>
 			</rectangle>
 			<staticText>
-				<reportElement style="ThaiSmall" positionType="Float" x="475" y="210" width="55" height="32" uuid="c1d2e3f4-0002-0000-0000-000000000010"/>
+				<reportElement style="ThaiSmall" positionType="Float" x="475" y="280" width="55" height="32" uuid="c1d2e3f4-0002-0000-0000-000000000010"/>
 				<textElement textAlignment="Center" verticalAlignment="Middle">
 					<font fontName="Sarabun" size="9"/><paragraph lineSpacing="Proportional" lineSpacingSize="0.93"/></textElement>
 				<text><![CDATA[ตราประทับ
@@ -247,63 +252,63 @@
 			</staticText>
 			<!-- ลายเซ็น -->
 			<staticText>
-				<reportElement style="Thai" positionType="Float" x="0" y="270" width="270" height="18" uuid="c1d2e3f4-0002-0000-0000-000000000011"/>
+				<reportElement style="Thai" positionType="Float" x="0" y="340" width="270" height="18" uuid="c1d2e3f4-0002-0000-0000-000000000011"/>
 				<textElement textAlignment="Center">
 					<font fontName="Sarabun" size="13"/><paragraph lineSpacing="Proportional" lineSpacingSize="0.93"/></textElement>
 				<text><![CDATA[ลงชื่อ ....................................................ผู้เช่า]]></text>
 			</staticText>
 			<staticText>
-				<reportElement style="Thai" positionType="Float" x="275" y="270" width="270" height="18" uuid="c1d2e3f4-0002-0000-0000-000000000012"/>
+				<reportElement style="Thai" positionType="Float" x="275" y="340" width="270" height="18" uuid="c1d2e3f4-0002-0000-0000-000000000012"/>
 				<textElement textAlignment="Center">
 					<font fontName="Sarabun" size="13"/><paragraph lineSpacing="Proportional" lineSpacingSize="0.93"/></textElement>
 				<text><![CDATA[ลงชื่อ ..................................................ผู้ให้เช่า]]></text>
 			</staticText>
 			<staticText>
-				<reportElement style="Thai" positionType="Float" x="0" y="288" width="270" height="18" uuid="c1d2e3f4-0002-0000-0000-000000000013"/>
+				<reportElement style="Thai" positionType="Float" x="0" y="358" width="270" height="18" uuid="c1d2e3f4-0002-0000-0000-000000000013"/>
 				<textElement textAlignment="Center">
 					<font fontName="Sarabun" size="13"/><paragraph lineSpacing="Proportional" lineSpacingSize="0.93"/></textElement>
 				<text><![CDATA[(....................................................)]]></text>
 			</staticText>
 			<staticText>
-				<reportElement style="Thai" positionType="Float" x="275" y="288" width="270" height="18" uuid="c1d2e3f4-0002-0000-0000-000000000014"/>
+				<reportElement style="Thai" positionType="Float" x="275" y="358" width="270" height="18" uuid="c1d2e3f4-0002-0000-0000-000000000014"/>
 				<textElement textAlignment="Center">
 					<font fontName="Sarabun" size="13"/><paragraph lineSpacing="Proportional" lineSpacingSize="0.93"/></textElement>
 				<text><![CDATA[( พลตรี หรือ นายธีระพล รอดสาตร์ )]]></text>
 			</staticText>
 			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
-				<reportElement style="ThaiBold" positionType="Float" x="0" y="306" width="270" height="18" uuid="c1d2e3f4-0002-0000-0000-000000000015"/>
+				<reportElement style="ThaiBold" positionType="Float" x="0" y="376" width="270" height="18" uuid="c1d2e3f4-0002-0000-0000-000000000015"/>
 				<textElement textAlignment="Center">
 					<font fontName="Sarabun" size="13" isBold="true"/>
 				</textElement>
 				<textFieldExpression><![CDATA[$F{Sign_Customer-jasper_rc_sign_customer}]]></textFieldExpression>
 			</textField>
 			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
-				<reportElement style="ThaiBold" positionType="Float" x="275" y="306" width="270" height="18" uuid="c1d2e3f4-0002-0000-0000-000000000016"/>
+				<reportElement style="ThaiBold" positionType="Float" x="275" y="376" width="270" height="18" uuid="c1d2e3f4-0002-0000-0000-000000000016"/>
 				<textElement textAlignment="Center">
 					<font fontName="Sarabun" size="13" isBold="true"/>
 				</textElement>
 				<textFieldExpression><![CDATA[$F{Lessor_Name-jasper_rc_lessor_name}]]></textFieldExpression>
 			</textField>
 			<staticText>
-				<reportElement style="Thai" positionType="Float" x="0" y="336" width="270" height="18" uuid="c1d2e3f4-0002-0000-0000-000000000017"/>
+				<reportElement style="Thai" positionType="Float" x="0" y="406" width="270" height="18" uuid="c1d2e3f4-0002-0000-0000-000000000017"/>
 				<textElement textAlignment="Center">
 					<font fontName="Sarabun" size="13"/><paragraph lineSpacing="Proportional" lineSpacingSize="0.93"/></textElement>
 				<text><![CDATA[ลงชื่อ...................................................พยาน]]></text>
 			</staticText>
 			<staticText>
-				<reportElement style="Thai" positionType="Float" x="275" y="336" width="270" height="18" uuid="c1d2e3f4-0002-0000-0000-000000000018"/>
+				<reportElement style="Thai" positionType="Float" x="275" y="406" width="270" height="18" uuid="c1d2e3f4-0002-0000-0000-000000000018"/>
 				<textElement textAlignment="Center">
 					<font fontName="Sarabun" size="13"/><paragraph lineSpacing="Proportional" lineSpacingSize="0.93"/></textElement>
 				<text><![CDATA[ลงชื่อ .................................................. พยาน]]></text>
 			</staticText>
 			<staticText>
-				<reportElement style="Thai" positionType="Float" x="0" y="354" width="270" height="18" uuid="c1d2e3f4-0002-0000-0000-000000000019"/>
+				<reportElement style="Thai" positionType="Float" x="0" y="424" width="270" height="18" uuid="c1d2e3f4-0002-0000-0000-000000000019"/>
 				<textElement textAlignment="Center">
 					<font fontName="Sarabun" size="13"/><paragraph lineSpacing="Proportional" lineSpacingSize="0.93"/></textElement>
 				<text><![CDATA[(...................................................)]]></text>
 			</staticText>
 			<staticText>
-				<reportElement style="Thai" positionType="Float" x="275" y="354" width="270" height="18" uuid="c1d2e3f4-0002-0000-0000-00000000001a"/>
+				<reportElement style="Thai" positionType="Float" x="275" y="424" width="270" height="18" uuid="c1d2e3f4-0002-0000-0000-00000000001a"/>
 				<textElement textAlignment="Center">
 					<font fontName="Sarabun" size="13"/><paragraph lineSpacing="Proportional" lineSpacingSize="0.93"/></textElement>
 				<text><![CDATA[(...................................................)]]></text>
