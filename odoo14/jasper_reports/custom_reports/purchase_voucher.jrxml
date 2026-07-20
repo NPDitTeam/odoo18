@@ -1,0 +1,288 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="purchase_voucher" pageWidth="595" pageHeight="842" columnWidth="565" leftMargin="15" rightMargin="15" topMargin="15" bottomMargin="15" isSummaryWithPageHeaderAndFooter="true" uuid="b2c3d4e5-f6a7-8901-bcde-f01234567890">
+	<property name="com.jaspersoft.studio.data.defaultdataadapter" value="Odoo Jasper"/>
+	<property name="ODOO_RELATIONS" value="['line_ids']"/>
+	<property name="com.jaspersoft.studio.unit." value="pixel"/>
+	<property name="net.sf.jasperreports.default.font.name" value="Sarabun"/>
+	<style name="Thai" isDefault="true" fontName="Sarabun" fontSize="13" pdfFontName="THSarabunNewBold.ttf" pdfEncoding="Identity-H" isPdfEmbedded="true"/>
+	<style name="ThaiBold" fontName="Sarabun" fontSize="13" isBold="true" pdfFontName="THSarabunNewBold.ttf" pdfEncoding="Identity-H" isPdfEmbedded="true"/>
+	<style name="ThaiSmall" fontName="Sarabun" fontSize="11" pdfFontName="THSarabunNewBold.ttf" pdfEncoding="Identity-H" isPdfEmbedded="true"/>
+	<style name="ThaiTitle" fontName="Sarabun" fontSize="18" isBold="true" pdfFontName="THSarabunNewBold.ttf" pdfEncoding="Identity-H" isPdfEmbedded="true"/>
+	<queryString language="xPath">
+		<![CDATA[/data/record]]>
+	</queryString>
+	<field name="CompanyName-jasper_jv_company_name" class="java.lang.String">
+		<fieldDescription><![CDATA[CompanyName-jasper_jv_company_name]]></fieldDescription>
+	</field>
+	<field name="CompanyAddress-jasper_jv_company_address" class="java.lang.String">
+		<fieldDescription><![CDATA[CompanyAddress-jasper_jv_company_address]]></fieldDescription>
+	</field>
+	<field name="CompanyVAT-company_id" class="java.lang.String">
+		<fieldDescription><![CDATA[Company-company_id/VAT-vat]]></fieldDescription>
+	</field>
+	<field name="CompanyPhone-company_id" class="java.lang.String">
+		<fieldDescription><![CDATA[Company-company_id/Phone-phone]]></fieldDescription>
+	</field>
+	<field name="CompanyLogo-company_id" class="java.lang.String">
+		<fieldDescription><![CDATA[Company-company_id/Logo-logo]]></fieldDescription>
+	</field>
+	<field name="PartnerName-jasper_jv_partner_name" class="java.lang.String">
+		<fieldDescription><![CDATA[PartnerName-jasper_jv_partner_name]]></fieldDescription>
+	</field>
+	<field name="MoveName-name" class="java.lang.String">
+		<fieldDescription><![CDATA[MoveName-name]]></fieldDescription>
+	</field>
+	<field name="MoveRef-ref" class="java.lang.String">
+		<fieldDescription><![CDATA[MoveRef-ref]]></fieldDescription>
+	</field>
+	<field name="DateThai-jasper_jv_date_thai" class="java.lang.String">
+		<fieldDescription><![CDATA[DateThai-jasper_jv_date_thai]]></fieldDescription>
+	</field>
+	<field name="Narration-jasper_jv_narration_clean" class="java.lang.String">
+		<fieldDescription><![CDATA[Narration-jasper_jv_narration_clean]]></fieldDescription>
+	</field>
+	<field name="SumDebit-jasper_jv_sum_debit" class="java.lang.String">
+		<fieldDescription><![CDATA[SumDebit-jasper_jv_sum_debit]]></fieldDescription>
+	</field>
+	<field name="SumCredit-jasper_jv_sum_credit" class="java.lang.String">
+		<fieldDescription><![CDATA[SumCredit-jasper_jv_sum_credit]]></fieldDescription>
+	</field>
+	<field name="LineAccountCode-jasper_jv_account_code" class="java.lang.String">
+		<fieldDescription><![CDATA[JournalItems-line_ids/AccountCode-jasper_jv_account_code]]></fieldDescription>
+	</field>
+	<field name="LineAccountName-jasper_jv_account_name" class="java.lang.String">
+		<fieldDescription><![CDATA[JournalItems-line_ids/AccountName-jasper_jv_account_name]]></fieldDescription>
+	</field>
+	<field name="LineAnalytic-jasper_jv_analytic" class="java.lang.String">
+		<fieldDescription><![CDATA[JournalItems-line_ids/Analytic-jasper_jv_analytic]]></fieldDescription>
+	</field>
+	<field name="LineDebit-debit" class="java.lang.String">
+		<fieldDescription><![CDATA[JournalItems-line_ids/Debit-debit]]></fieldDescription>
+	</field>
+	<field name="LineCredit-credit" class="java.lang.String">
+		<fieldDescription><![CDATA[JournalItems-line_ids/Credit-credit]]></fieldDescription>
+	</field>
+	<field name="TaxNames-jasper_pv_tax_names" class="java.lang.String">
+		<fieldDescription><![CDATA[TaxNames-jasper_pv_tax_names]]></fieldDescription>
+	</field>
+	<field name="TaxNumbers-jasper_pv_tax_numbers" class="java.lang.String">
+		<fieldDescription><![CDATA[TaxNumbers-jasper_pv_tax_numbers]]></fieldDescription>
+	</field>
+	<field name="TaxDates-jasper_pv_tax_dates" class="java.lang.String">
+		<fieldDescription><![CDATA[TaxDates-jasper_pv_tax_dates]]></fieldDescription>
+	</field>
+	<field name="TaxBases-jasper_pv_tax_bases" class="java.lang.String">
+		<fieldDescription><![CDATA[TaxBases-jasper_pv_tax_bases]]></fieldDescription>
+	</field>
+	<field name="TaxAmounts-jasper_pv_tax_amounts" class="java.lang.String">
+		<fieldDescription><![CDATA[TaxAmounts-jasper_pv_tax_amounts]]></fieldDescription>
+	</field>
+	<background>
+		<band splitType="Stretch"/>
+	</background>
+	<title>
+		<band height="200" splitType="Stretch">
+			<!-- Company header -->
+			<image onErrorType="Blank">
+				<reportElement x="0" y="2" width="75" height="70" uuid="b2c3d4e5-0001-0000-0000-000000000001"/>
+				<imageExpression><![CDATA[$F{CompanyLogo-company_id}]]></imageExpression>
+			</image>
+			<textField isBlankWhenNull="true">
+				<reportElement style="ThaiBold" x="85" y="4" width="480" height="22" uuid="b2c3d4e5-0001-0000-0000-000000000002"/>
+				<textElement verticalAlignment="Middle"><font fontName="Sarabun" size="15" isBold="true"/></textElement>
+				<textFieldExpression><![CDATA[$F{CompanyName-jasper_jv_company_name}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true" isStretchWithOverflow="true">
+				<reportElement style="Thai" x="85" y="26" width="480" height="30" uuid="b2c3d4e5-0001-0000-0000-000000000003"/>
+				<textElement verticalAlignment="Middle"><font fontName="Sarabun" size="12"/></textElement>
+				<textFieldExpression><![CDATA["ที่อยู่: " + ($F{CompanyAddress-jasper_jv_company_address} == null ? "" : $F{CompanyAddress-jasper_jv_company_address})]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement style="Thai" x="85" y="58" width="480" height="18" uuid="b2c3d4e5-0001-0000-0000-000000000004"/>
+				<textElement verticalAlignment="Middle"><font fontName="Sarabun" size="12"/></textElement>
+				<textFieldExpression><![CDATA["เลขประจำตัวผู้เสียภาษี: " + ($F{CompanyVAT-company_id} == null ? "" : $F{CompanyVAT-company_id}) + "          โทรศัพท์: " + ($F{CompanyPhone-company_id} == null ? "" : $F{CompanyPhone-company_id})]]></textFieldExpression>
+			</textField>
+			<!-- Title -->
+			<staticText>
+				<reportElement style="ThaiTitle" x="0" y="86" width="565" height="26" uuid="b2c3d4e5-0001-0000-0000-000000000006"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle"><font fontName="Sarabun" size="18" isBold="true"/></textElement>
+				<text><![CDATA[ใบสำคัญซื้อ]]></text>
+			</staticText>
+			<!-- Info block -->
+			<textField isBlankWhenNull="true">
+				<reportElement style="Thai" x="0" y="118" width="370" height="18" uuid="b2c3d4e5-0001-0000-0000-000000000010"/>
+				<textElement verticalAlignment="Middle"><font fontName="Sarabun" size="12"/></textElement>
+				<textFieldExpression><![CDATA["คู่ค้า :  " + ($F{PartnerName-jasper_jv_partner_name} == null ? "" : $F{PartnerName-jasper_jv_partner_name})]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement style="Thai" x="0" y="136" width="370" height="18" uuid="b2c3d4e5-0001-0000-0000-000000000011"/>
+				<textElement verticalAlignment="Middle"><font fontName="Sarabun" size="12"/></textElement>
+				<textFieldExpression><![CDATA["คำอธิบาย :  " + ($F{MoveRef-ref} == null ? "" : $F{MoveRef-ref})]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement style="Thai" x="375" y="118" width="190" height="16" uuid="b2c3d4e5-0001-0000-0000-000000000012"/>
+				<textElement verticalAlignment="Middle"><font fontName="Sarabun" size="12"/></textElement>
+				<textFieldExpression><![CDATA["เลขที่เอกสาร :  " + ($F{MoveName-name} == null ? "" : $F{MoveName-name})]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement style="Thai" x="375" y="134" width="190" height="16" uuid="b2c3d4e5-0001-0000-0000-000000000013"/>
+				<textElement verticalAlignment="Middle"><font fontName="Sarabun" size="12"/></textElement>
+				<textFieldExpression><![CDATA["วันที่ :  " + ($F{DateThai-jasper_jv_date_thai} == null ? "" : $F{DateThai-jasper_jv_date_thai})]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement style="Thai" x="375" y="150" width="190" height="16" uuid="b2c3d4e5-0001-0000-0000-000000000014"/>
+				<textElement verticalAlignment="Middle"><font fontName="Sarabun" size="12"/></textElement>
+				<textFieldExpression><![CDATA["เลขที่สมุดรายวัน :  " + ($F{MoveName-name} == null ? "" : $F{MoveName-name})]]></textFieldExpression>
+			</textField>
+			<!-- รายการบันทึกบัญชี -->
+			<staticText>
+				<reportElement style="ThaiBold" x="0" y="176" width="300" height="18" uuid="b2c3d4e5-0001-0000-0000-000000000050"/>
+				<textElement verticalAlignment="Middle"><font fontName="Sarabun" size="13" isBold="true"/></textElement>
+				<text><![CDATA[รายการบันทึกบัญชี]]></text>
+			</staticText>
+		</band>
+	</title>
+	<columnHeader>
+		<band height="20" splitType="Stretch">
+			<staticText>
+				<reportElement style="ThaiBold" x="0" y="0" width="70" height="18" uuid="b2c3d4e5-0002-0000-0000-000000000001"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle"><font fontName="Sarabun" size="12" isBold="true"/></textElement>
+				<text><![CDATA[รหัส]]></text>
+			</staticText>
+			<staticText>
+				<reportElement style="ThaiBold" x="70" y="0" width="255" height="18" uuid="b2c3d4e5-0002-0000-0000-000000000002"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle"><font fontName="Sarabun" size="12" isBold="true"/></textElement>
+				<text><![CDATA[ชื่อบัญชี]]></text>
+			</staticText>
+			<staticText>
+				<reportElement style="ThaiBold" x="325" y="0" width="90" height="18" uuid="b2c3d4e5-0002-0000-0000-000000000003"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle"><font fontName="Sarabun" size="12" isBold="true"/></textElement>
+				<text><![CDATA[งบโครงการ]]></text>
+			</staticText>
+			<staticText>
+				<reportElement style="ThaiBold" x="415" y="0" width="75" height="18" uuid="b2c3d4e5-0002-0000-0000-000000000004"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle"><font fontName="Sarabun" size="12" isBold="true"/></textElement>
+				<text><![CDATA[เดบิต]]></text>
+			</staticText>
+			<staticText>
+				<reportElement style="ThaiBold" x="490" y="0" width="75" height="18" uuid="b2c3d4e5-0002-0000-0000-000000000005"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle"><font fontName="Sarabun" size="12" isBold="true"/></textElement>
+				<text><![CDATA[เครดิต]]></text>
+			</staticText>
+			<line><reportElement x="0" y="19" width="565" height="1" uuid="b2c3d4e5-0002-0000-0000-000000000006"/><graphicElement><pen lineWidth="0.75"/></graphicElement></line>
+		</band>
+	</columnHeader>
+	<detail>
+		<band height="18" splitType="Stretch">
+			<printWhenExpression><![CDATA[$F{LineAccountCode-jasper_jv_account_code} != null && !$F{LineAccountCode-jasper_jv_account_code}.isEmpty()]]></printWhenExpression>
+			<textField isBlankWhenNull="true">
+				<reportElement style="Thai" x="0" y="0" width="70" height="18" uuid="b2c3d4e5-0003-0000-0000-000000000001"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle"><font fontName="Sarabun" size="12"/></textElement>
+				<textFieldExpression><![CDATA[$F{LineAccountCode-jasper_jv_account_code}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true" isStretchWithOverflow="true">
+				<reportElement style="Thai" x="70" y="0" width="255" height="18" uuid="b2c3d4e5-0003-0000-0000-000000000002"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle"><font fontName="Sarabun" size="12"/></textElement>
+				<textFieldExpression><![CDATA[$F{LineAccountName-jasper_jv_account_name}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement style="Thai" x="325" y="0" width="90" height="18" uuid="b2c3d4e5-0003-0000-0000-000000000003"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle"><font fontName="Sarabun" size="11"/></textElement>
+				<textFieldExpression><![CDATA[$F{LineAnalytic-jasper_jv_analytic}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement style="Thai" x="415" y="0" width="75" height="18" uuid="b2c3d4e5-0003-0000-0000-000000000004"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle"><font fontName="Sarabun" size="12"/></textElement>
+				<textFieldExpression><![CDATA[$F{LineDebit-debit} != null && !$F{LineDebit-debit}.isEmpty() ? String.format("%,.2f", Double.parseDouble($F{LineDebit-debit})) : "0.00"]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement style="Thai" x="490" y="0" width="75" height="18" uuid="b2c3d4e5-0003-0000-0000-000000000005"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle"><font fontName="Sarabun" size="12"/></textElement>
+				<textFieldExpression><![CDATA[$F{LineCredit-credit} != null && !$F{LineCredit-credit}.isEmpty() ? String.format("%,.2f", Double.parseDouble($F{LineCredit-credit})) : "0.00"]]></textFieldExpression>
+			</textField>
+		</band>
+	</detail>
+	<lastPageFooter>
+		<band height="78" splitType="Stretch">
+			<staticText>
+				<reportElement style="Thai" x="0" y="8" width="200" height="18" uuid="b2c3d4e5-0004-0000-0000-000000000001"/>
+				<textElement verticalAlignment="Middle"><font fontName="Sarabun" size="12"/></textElement>
+				<text><![CDATA[ผู้จัดทำ____________________________]]></text>
+			</staticText>
+			<staticText>
+				<reportElement style="Thai" x="205" y="8" width="180" height="18" uuid="b2c3d4e5-0004-0000-0000-000000000002"/>
+				<textElement verticalAlignment="Middle"><font fontName="Sarabun" size="12"/></textElement>
+				<text><![CDATA[ผู้ตรวจสอบ_____________________]]></text>
+			</staticText>
+			<staticText>
+				<reportElement style="Thai" x="395" y="8" width="170" height="18" uuid="b2c3d4e5-0004-0000-0000-000000000003"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle"><font fontName="Sarabun" size="12"/></textElement>
+				<text><![CDATA[วันที่......./........./...............]]></text>
+			</staticText>
+			<staticText>
+				<reportElement style="Thai" x="395" y="26" width="170" height="18" uuid="b2c3d4e5-0004-0000-0000-000000000004"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle"><font fontName="Sarabun" size="12"/></textElement>
+				<text><![CDATA[ผู้รับเงิน]]></text>
+			</staticText>
+			<staticText>
+				<reportElement style="Thai" x="0" y="48" width="200" height="18" uuid="b2c3d4e5-0004-0000-0000-000000000005"/>
+				<textElement verticalAlignment="Middle"><font fontName="Sarabun" size="12"/></textElement>
+				<text><![CDATA[ผู้รับรองถูกต้อง____________________]]></text>
+			</staticText>
+			<staticText>
+				<reportElement style="Thai" x="205" y="48" width="180" height="18" uuid="b2c3d4e5-0004-0000-0000-000000000006"/>
+				<textElement verticalAlignment="Middle"><font fontName="Sarabun" size="12"/></textElement>
+				<text><![CDATA[ผู้อนุมัติ_________________________]]></text>
+			</staticText>
+		</band>
+	</lastPageFooter>
+		<summary>
+		<band height="120" splitType="Stretch">
+			<!-- Totals row -->
+			<line><reportElement x="325" y="0" width="240" height="1" uuid="b2c3d4e5-0005-0000-0000-000000000001"/><graphicElement><pen lineWidth="0.75"/></graphicElement></line>
+			<textField isBlankWhenNull="true">
+				<reportElement style="ThaiBold" x="415" y="2" width="75" height="18" uuid="b2c3d4e5-0005-0000-0000-000000000002"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle"><font fontName="Sarabun" size="12" isBold="true"/></textElement>
+				<textFieldExpression><![CDATA[$F{SumDebit-jasper_jv_sum_debit} != null && !$F{SumDebit-jasper_jv_sum_debit}.isEmpty() ? String.format("%,.2f", Double.parseDouble($F{SumDebit-jasper_jv_sum_debit})) : "0.00"]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement style="ThaiBold" x="490" y="2" width="75" height="18" uuid="b2c3d4e5-0005-0000-0000-000000000003"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle"><font fontName="Sarabun" size="12" isBold="true"/></textElement>
+				<textFieldExpression><![CDATA[$F{SumCredit-jasper_jv_sum_credit} != null && !$F{SumCredit-jasper_jv_sum_credit}.isEmpty() ? String.format("%,.2f", Double.parseDouble($F{SumCredit-jasper_jv_sum_credit})) : "0.00"]]></textFieldExpression>
+			</textField>
+			<line><reportElement x="415" y="21" width="150" height="1" uuid="b2c3d4e5-0005-0000-0000-000000000004"/><graphicElement><pen lineWidth="0.75"/></graphicElement></line>
+			<line><reportElement x="415" y="23" width="150" height="1" uuid="b2c3d4e5-0005-0000-0000-000000000005"/><graphicElement><pen lineWidth="0.75"/></graphicElement></line>
+			<!-- รายละเอียดภาษี -->
+			<staticText>
+				<reportElement style="ThaiBold" x="0" y="40" width="300" height="18" uuid="b2c3d4e5-0005-0000-0000-000000000010"/>
+				<textElement verticalAlignment="Middle"><font fontName="Sarabun" size="13" isBold="true"/></textElement>
+				<text><![CDATA[รายละเอียดภาษี :]]></text>
+			</staticText>
+			<textField isBlankWhenNull="true" isStretchWithOverflow="true">
+				<reportElement style="Thai" x="0" y="60" width="200" height="18" uuid="b2c3d4e5-0005-0000-0000-000000000011"/>
+				<textElement textAlignment="Left" verticalAlignment="Top"><font fontName="Sarabun" size="12"/></textElement>
+				<textFieldExpression><![CDATA[$F{TaxNames-jasper_pv_tax_names}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true" isStretchWithOverflow="true">
+				<reportElement style="Thai" x="200" y="60" width="130" height="18" uuid="b2c3d4e5-0005-0000-0000-000000000012"/>
+				<textElement textAlignment="Left" verticalAlignment="Top"><font fontName="Sarabun" size="12"/></textElement>
+				<textFieldExpression><![CDATA[$F{TaxNumbers-jasper_pv_tax_numbers}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true" isStretchWithOverflow="true">
+				<reportElement style="Thai" x="330" y="60" width="90" height="18" uuid="b2c3d4e5-0005-0000-0000-000000000013"/>
+				<textElement textAlignment="Left" verticalAlignment="Top"><font fontName="Sarabun" size="12"/></textElement>
+				<textFieldExpression><![CDATA[$F{TaxDates-jasper_pv_tax_dates}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true" isStretchWithOverflow="true">
+				<reportElement style="Thai" x="420" y="60" width="70" height="18" uuid="b2c3d4e5-0005-0000-0000-000000000014"/>
+				<textElement textAlignment="Right" verticalAlignment="Top"><font fontName="Sarabun" size="12"/></textElement>
+				<textFieldExpression><![CDATA[$F{TaxBases-jasper_pv_tax_bases}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true" isStretchWithOverflow="true">
+				<reportElement style="Thai" x="490" y="60" width="75" height="18" uuid="b2c3d4e5-0005-0000-0000-000000000015"/>
+				<textElement textAlignment="Right" verticalAlignment="Top"><font fontName="Sarabun" size="12"/></textElement>
+				<textFieldExpression><![CDATA[$F{TaxAmounts-jasper_pv_tax_amounts}]]></textFieldExpression>
+			</textField>
+		</band>
+	</summary>
+</jasperReport>

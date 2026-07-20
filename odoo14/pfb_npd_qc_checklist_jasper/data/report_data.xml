@@ -1,0 +1,29 @@
+<?xml version="1.0"?>
+<odoo>
+    <!-- Jasper Report Action: ใบส่ง/รับ/ตรวจคุณภาพสินค้า (QC Checklist) -->
+    <record id="jasper_qc_checklist_report" model="ir.actions.report">
+        <field name="name">ใบส่ง/รับ/ตรวจคุณภาพสินค้า (QC Checklist)</field>
+        <field name="model">vehicle.booking</field>
+        <field name="report_type">jasper</field>
+        <field name="file">pfb_npd_qc_checklist_jasper/report/qc_checklist.jrxml</field>
+        <field name="attachment_use">False</field>
+        <!-- report_name ถูกใช้เป็นส่วนหนึ่งของ URL (/report/jasper/<report_name>/<docids>)
+             werkzeug ไม่ match "/" ใน path segment จึงห้ามมีสแลชหรืออักขระพิเศษ
+             ส่วนชื่อที่แสดงในเมนูพิมพ์ใช้ field "name" ด้านบนแทน -->
+        <field name="report_name">qc_checklist</field>
+        <field name="jasper_report">True</field>
+        <field name="jasper_output">pdf</field>
+        <field name="model_id" ref="transport_booking.model_vehicle_booking"/>
+        <field name="binding_model_id" ref="transport_booking.model_vehicle_booking"/>
+        <field name="binding_type">report</field>
+        <field name="print_report_name">'QC Checklist - %s' % (object.name)</field>
+    </record>
+
+    <!-- แนบไฟล์ JRXML เข้ากับ report action -->
+    <record id="jasper_qc_checklist_file" model="ir.actions.report.xml.file">
+        <field name="default">True</field>
+        <field name="filename">qc_checklist.jrxml</field>
+        <field name="report_id" ref="pfb_npd_qc_checklist_jasper.jasper_qc_checklist_report"/>
+        <field name="file" type="base64" file="pfb_npd_qc_checklist_jasper/report/qc_checklist.jrxml"/>
+    </record>
+</odoo>

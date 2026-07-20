@@ -388,6 +388,11 @@ class SaleOrder(models.Model):
         default['return_greenhome_state'] = 'none'
 
         if is_convert_to_order:
+            # Convert QT → SO: ดึงวันที่สิ้นสุดการเช่า (end_rent_date) และจำนวนวันเช่า
+            # (pfb_date_of_rent) จาก QT มาด้วย
+            # (ค่า default ด้านบนตั้ง False/0 ไว้สำหรับการซ้ำเอกสารปกติ จึง override เฉพาะตอน convert)
+            default['end_rent_date'] = self.end_rent_date
+            default['pfb_date_of_rent'] = self.pfb_date_of_rent
             # Convert QT → SO: ส่งค่าอนุมัติจาก QT มาด้วย
             default['state_sale'] = self.state_sale
             default['approver_id'] = self.approver_id.id

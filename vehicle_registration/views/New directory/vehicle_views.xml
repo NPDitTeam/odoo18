@@ -232,6 +232,7 @@
         <field name="arch" type="xml">
             <list string="ผู้ขับขี่">
                 <field name="code"/>
+                <field name="employee_code"/>
                 <field name="name"/>
                 <field name="pin" password="True" optional="hide"/>
                 <field name="phone"/>
@@ -258,6 +259,7 @@
                     </div>
                     <group>
                         <group string="ข้อมูลพื้นฐาน">
+                            <field name="employee_code" placeholder="รหัสพนักงานจากระบบ HR (เช่น 0817)"/>
                             <field name="pin" password="True" placeholder="กรอก PIN 6 หลัก"/>
                             <field name="citizen_id"/>
                             <field name="birth_date"/>

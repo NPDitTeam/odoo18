@@ -1,10 +1,23 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!-- ลงทะเบียนฟอนต์ family "Sarabun" ให้ JasperReports
+
+     path ต้องเป็น classpath resource ไม่ใช่ path ของ OS
+     THSarabunNewBold.ttf อยู่ใน jasper_reports/custom_reports/ ซึ่งถูกใส่ไว้ใน
+     CLASSPATH โดย jasper_server.py จึงอ้างด้วยชื่อไฟล์ล้วนได้ และใช้ได้ทั้ง
+     Windows และ Linux โดยไม่ต้องติดตั้งฟอนต์ในเครื่อง
+
+     ทุก face ชี้ไฟล์เดียวกันเพราะมี TH Sarabun New เฉพาะน้ำหนัก Bold
+     ตรงกับที่รายงานเดิมทุกตัวใช้ pdfFontName="THSarabunNewBold.ttf" มาตลอด
+
+     หมายเหตุ: font family extension จะถูกใช้แทน pdfFontName ของ element เสมอ
+     ดังนั้นไฟล์นี้คือจุดเดียวที่กำหนดฟอนต์ของรายงาน Jasper ทั้งระบบ
+     ถ้าเปลี่ยนตรงนี้ รายงานทุกตัวเปลี่ยนตาม -->
 <fontFamilies>
     <fontFamily name="Sarabun">
-        <normal>C:/Windows/Fonts/Sarabun-Regular.ttf</normal>
-        <bold>C:/Windows/Fonts/Sarabun-Bold.ttf</bold>
-        <italic>C:/Windows/Fonts/Sarabun-Italic.ttf</italic>
-        <boldItalic>C:/Windows/Fonts/Sarabun-BoldItalic.ttf</boldItalic>
+        <normal>THSarabunNewBold.ttf</normal>
+        <bold>THSarabunNewBold.ttf</bold>
+        <italic>THSarabunNewBold.ttf</italic>
+        <boldItalic>THSarabunNewBold.ttf</boldItalic>
         <pdfEncoding>Identity-H</pdfEncoding>
         <pdfEmbedded>true</pdfEmbedded>
     </fontFamily>

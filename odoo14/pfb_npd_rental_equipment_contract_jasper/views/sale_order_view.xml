@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- แสดงเลขที่สัญญาเช่าต่อจากฟิลด์ลูกค้า (partner_id) + ปุ่มเปลี่ยนตัวย่อบริษัท -->
+    <record id="view_order_form_rental_contract_no" model="ir.ui.view">
+        <field name="name">sale.order.form.rental.contract.no.jasper</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_order_form"/>
+        <field name="arch" type="xml">
+            <!-- ปุ่มบน header: เปลี่ยนตัวย่อบริษัทของเลขที่สัญญาเช่า -->
+            <xpath expr="//header" position="inside">
+                <button name="action_open_contract_prefix_wizard" type="object"
+                        string="เปลี่ยนตัวย่อบริษัท"/>
+            </xpath>
+            <!-- แสดงเลขที่สัญญาเช่าเต็ม ต่อจากฟิลด์ลูกค้า -->
+            <field name="partner_id" position="after">
+                <field name="rental_contract_full" readonly="1"/>
+            </field>
+        </field>
+    </record>
+</odoo>
