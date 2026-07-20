@@ -387,24 +387,21 @@ class SaleOrderLine(models.Model):
             current_db = self.env.cr.dbname
             if current_db != 'NPD_Intertrading_New_NonVat':
                 # The 7% taxes exist once per company, so the lookup MUST be
-                # scoped to the order's company. Without it search(limit=1) grabs
-                # the lowest-id match (another company's tax) and Odoo's
-                # _check_company rejects the line.
-                company = so_line.order_id.company_id or so_line.company_id or self.env.company
-                if so_line.order_id.pfb_so_type == 'sale' and so_line.product_id:
-                    tax = self.env['account.tax'].search([
-                        ('name', '=', 'ภาษีขายไม่รวม Vat 7%'),
+                # scoped to the LINE's company -- that is what _check_company
+                # compares against. Never fall back to self.env.company: on an
+                # unsaved order that is whatever company happens to be first in
+                # allowed_company_ids, which yields another company's tax and
+                # makes the record impossible to save.
+                company = so_line.company_id or so_line.order_id.company_id
+                tax_name = {
+                    'sale': 'ภาษีขายไม่รวม Vat 7%',
+                    'rent': 'ภาษีขายยังไม่ถึงกำหนด Vat 7%',
+                }.get(so_line.order_id.pfb_so_type)
+                if company and tax_name and so_line.product_id:
+                    so_line.tax_id = self.env['account.tax'].search([
+                        ('name', '=', tax_name),
                         ('company_id', '=', company.id),
                     ], limit=1)
-                    if tax:
-                        so_line.tax_id = [(6, 0, [tax.id])]
-                if so_line.order_id.pfb_so_type == 'rent' and so_line.product_id:
-                    tax = self.env['account.tax'].search([
-                        ('name', '=', 'ภาษีขายยังไม่ถึงกำหนด Vat 7%'),
-                        ('company_id', '=', company.id),
-                    ], limit=1)
-                    if tax:
-                        so_line.tax_id = [(6, 0, [tax.id])]
 
     @api.model_create_multi
     def create(self, vals_list):
@@ -437,7 +434,11 @@ class SaleOrderLine(models.Model):
         if current_db == 'NPD_Intertrading_New_NonVat':
             return
         for line in self:
-            company = line.order_id.company_id or line.company_id or self.env.company
+            # ดู comment เรื่อง company ใน _compute_insurance_price -- ห้าม fallback
+            # ไป self.env.company เพราะจะได้ภาษีของบริษัทอื่นบนเอกสารที่ยังไม่บันทึก
+            company = line.company_id or line.order_id.company_id
+            if not company:
+                continue
             if line.order_id.pfb_so_type == 'sale' and line.product_id:
                 expected_tax = self.env['account.tax'].search([
                     ('name', '=', 'ภาษีขายไม่รวม Vat 7%'),

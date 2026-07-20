@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- หนังสือมอบอำนาจ - Jasper port ของ npd_power_of_attorney_qweb (Odoo 14)
+     ขนาดฟอนต์: หัวเรื่อง 18 | ทำที่/วันที่ 14 | เนื้อหาตั้งแต่ "โดยหนังสือฉบับนี้"
+     ลงไปและบล็อกลงชื่อ 13 | หมายเหตุ 13 | ตราประทับ 12 (สีจาง)
+
+     ข้อควรระวังของ JRXML ชุดนี้ (เคยพลาดมาแล้วทั้งหมด):
+     - ความสูงกล่องข้อความต้อง >= 1.3 เท่าของขนาดฟอนต์ ไม่งั้น Jasper ทิ้งข้อความทั้งบรรทัด
+     - element ต้องไม่ล้นขอบล่างของ band ไม่งั้น JasperServer ปฏิเสธทั้งรายงาน
+     - element ที่คร่อมทับกันในแนวตั้ง+แนวนอน ทำให้ positionType="Float" คำนวณพลาด
+     - ถ้าขยับ y ของ element ใด ต้องขยับทุกตัวที่อยู่ถัดไปด้วยระยะเท่ากัน -->
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="power_of_attorney" pageWidth="595" pageHeight="842" columnWidth="545" leftMargin="25" rightMargin="25" topMargin="10" bottomMargin="15" uuid="d1e2f3a4-b5c6-7890-abcd-333333333333">
+	<property name="com.jaspersoft.studio.data.defaultdataadapter" value="Odoo Jasper"/>
+	<property name="com.jaspersoft.studio.unit." value="pixel"/>
+	<property name="net.sf.jasperreports.default.font.name" value="Sarabun"/>
+	<style name="Thai" isDefault="true" fontName="Sarabun" fontSize="14" pdfFontName="THSarabunNewBold.ttf" pdfEncoding="Identity-H" isPdfEmbedded="true"/>
+	<style name="ThaiBold" fontName="Sarabun" fontSize="14" isBold="true" pdfFontName="THSarabunNewBold.ttf" pdfEncoding="Identity-H" isPdfEmbedded="true"/>
+	<style name="ThaiTitle" fontName="Sarabun" fontSize="18" isBold="true" pdfFontName="THSarabunNewBold.ttf" pdfEncoding="Identity-H" isPdfEmbedded="true"/>
+	<queryString language="xPath">
+		<![CDATA[/data/record]]>
+	</queryString>
+
+	<!-- ===== ข้อมูลผู้มอบอำนาจ (โมดูลนี้) ===== -->
+	<field name="Place-jasper_poa_place" class="java.lang.String">
+		<fieldDescription><![CDATA[Place-jasper_poa_place]]></fieldDescription>
+	</field>
+	<field name="Cust_Name-jasper_poa_cust_name" class="java.lang.String">
+		<fieldDescription><![CDATA[Cust_Name-jasper_poa_cust_name]]></fieldDescription>
+	</field>
+	<field name="Cust_Vat-jasper_poa_cust_vat" class="java.lang.String">
+		<fieldDescription><![CDATA[Cust_Vat-jasper_poa_cust_vat]]></fieldDescription>
+	</field>
+	<field name="Cust_Address-jasper_poa_cust_address" class="java.lang.String">
+		<fieldDescription><![CDATA[Cust_Address-jasper_poa_cust_address]]></fieldDescription>
+	</field>
+
+	<!-- ===== ใช้ซ้ำจากโมดูลสัญญาเช่า (pfb_npd_rental_equipment_contract_jasper) ===== -->
+	<field name="Contract_Base-jasper_rc_contract_base" class="java.lang.String">
+		<fieldDescription><![CDATA[Contract_Base-jasper_rc_contract_base]]></fieldDescription>
+	</field>
+	<field name="Lessor_Name-jasper_rc_lessor_name" class="java.lang.String">
+		<fieldDescription><![CDATA[Lessor_Name-jasper_rc_lessor_name]]></fieldDescription>
+	</field>
+	<field name="Date_Day-jasper_rc_date_day" class="java.lang.String">
+		<fieldDescription><![CDATA[Date_Day-jasper_rc_date_day]]></fieldDescription>
+	</field>
+	<field name="Date_Month-jasper_rc_date_month" class="java.lang.String">
+		<fieldDescription><![CDATA[Date_Month-jasper_rc_date_month]]></fieldDescription>
+	</field>
+	<field name="Date_Year-jasper_rc_date_year" class="java.lang.String">
+		<fieldDescription><![CDATA[Date_Year-jasper_rc_date_year]]></fieldDescription>
+	</field>
+
+	<background>
+		<band splitType="Stretch"/>
+	</background>
+
+	<detail>
+		<band height="330" splitType="Stretch">
+
+			<!-- ==================== หัวเอกสาร ==================== -->
+			<staticText>
+				<reportElement style="ThaiTitle" positionType="Float" x="0" y="0" width="545" height="34" uuid="d1e2f3a4-0001-0000-0000-000000000001"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Sarabun" size="18" isBold="true"/>
+				</textElement>
+				<text><![CDATA[หนังสือมอบอำนาจ]]></text>
+			</staticText>
+
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement style="Thai" positionType="Float" x="0" y="38" width="545" height="22" uuid="d1e2f3a4-0001-0000-0000-000000000002"/>
+				<textElement textAlignment="Right"><font fontName="Sarabun" size="14"/><paragraph lineSpacing="Proportional" lineSpacingSize="0.9"/></textElement>
+				<textFieldExpression><![CDATA["ทำที่ " + $F{Place-jasper_poa_place}]]></textFieldExpression>
+			</textField>
+
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement style="Thai" positionType="Float" x="0" y="64" width="545" height="22" uuid="d1e2f3a4-0001-0000-0000-000000000003"/>
+				<textElement textAlignment="Right"><font fontName="Sarabun" size="14"/><paragraph lineSpacing="Proportional" lineSpacingSize="0.9"/></textElement>
+				<textFieldExpression><![CDATA["วันที่ " + $F{Date_Day-jasper_rc_date_day} + " เดือน " + $F{Date_Month-jasper_rc_date_month} + " พ.ศ. " + $F{Date_Year-jasper_rc_date_year}]]></textFieldExpression>
+			</textField>
+
+			<!-- ==================== เนื้อหา (ก้อนเดียว ไหลต่อกันเอง) ==================== -->
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement style="Thai" positionType="Float" x="0" y="98" width="545" height="24" uuid="d1e2f3a4-0001-0000-0000-000000000004"/>
+				<textElement textAlignment="Left"><font fontName="Sarabun" size="13"/><paragraph lineSpacing="Proportional" lineSpacingSize="0.78"/></textElement>
+				<textFieldExpression><![CDATA["      โดยหนังสือฉบับนี้ ข้าพเจ้า (ชื่อบริษัท/ชื่อบุคคล) " + $F{Cust_Name-jasper_poa_cust_name} + " เลขประจำตัวประชาชน/\n"
++ "เลขทะเบียนนิติบุคคล " + $F{Cust_Vat-jasper_poa_cust_vat} + " ที่อยู่ " + $F{Cust_Address-jasper_poa_cust_address} + " ซึ่งต่อไปในหนังสือนี้เรียกว่า \"ผู้มอบอำนาจ\" ขอมอบอำนาจให้\n"
++ "(ชื่อตัวแทนผู้รับมอบ) ........................................................ อายุ ............ ปี เลขประจำตัวประชาชน ............................................\n"
++ "อยู่บ้านเลขที่ ............ หมู่ที่ ............ ถนน ............................... ตำบล/แขวง ............................... อำเภอ/เขต ...............................\n"
++ "จังหวัด ............................... เบอร์โทรศัพท์ ............................ เป็นผู้มีอำนาจกระทำการแทนข้าพเจ้า ในการดำเนินการดังต่อไปนี้:\n"
++ "\n"
++ "    1. ลงนามในสัญญาเช่าอุปกรณ์ก่อสร้าง เลขที่ " + $F{Contract_Base-jasper_rc_contract_base} + " กับ " + $F{Lessor_Name-jasper_rc_lessor_name} + "\n"
++ "    2. ลงนามในเอกสารแนบท้ายสัญญา ใบกำกับการเช่า เอกสารการรับ-ส่งสินค้า ใบแจ้งหนี้ และเอกสารอื่นใดที่เกี่ยวข้องกับการเช่าและการส่งคืนทรัพย์สินทั้งหมด\n"
++ "    3. ดำเนินการรับเงิน จ่ายเงิน วางเงินมัดจำ ชำระค่าเช่าสินค้า หรือดำเนินการใดๆ ที่จำเป็นเพื่อให้การทำธุรกรรมการเช่านี้สำเร็จตามวัตถุประสงค์\n"
++ "\n"
++ "      ทั้งนี้ ให้บุคคลดังต่อไปนี้ มีอำนาจกระทำการแทนข้าพเจ้า ข้อ 1 - ข้อ 3 ข้างต้นด้วย\n"
++ "    1. (ชื่อ-นามสกุล) ........................................................ เลขประจำตัวประชาชน ............................................\n"
++ "    2. (ชื่อ-นามสกุล) ........................................................ เลขประจำตัวประชาชน ............................................\n"
++ "\n"
++ "      การใดที่ผู้รับมอบอำนาจได้กระทำไปภายในขอบเขตอำนาจนี้ ให้ถือเสมือนว่าข้าพเจ้าได้กระทำการด้วยตนเองทุกประการ และข้าพเจ้าขอรับผิดชอบต่อการกระทำดังกล่าวเสมือนหนึ่งข้าพเจ้าได้ลงนามด้วยตนเอง\n"
++ "\n"
++ "      เพื่อเป็นหลักฐาน ข้าพเจ้าได้ลงลายมือชื่อ และประทับตรา(ถ้ามี)ไว้เป็นสำคัญต่อหน้าพยาน"]]></textFieldExpression>
+			</textField>
+
+			<!-- ==================== กล่องตราประทับ (ซ้าย) ==================== -->
+			<rectangle>
+				<reportElement positionType="Float" x="140" y="180" width="130" height="56" forecolor="#BBBBBB" uuid="d1e2f3a4-0001-0000-0000-000000000005"/>
+				<graphicElement><pen lineWidth="0.5" lineColor="#BBBBBB"/></graphicElement>
+			</rectangle>
+			<staticText>
+				<reportElement style="Thai" positionType="Float" x="140" y="180" width="130" height="56" forecolor="#999999" uuid="d1e2f3a4-0001-0000-0000-000000000006"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Sarabun" size="12"/><paragraph lineSpacing="Proportional" lineSpacingSize="0.9"/>
+				</textElement>
+				<text><![CDATA[ประทับตราสำคัญบริษัท
+(ถ้ามี)]]></text>
+			</staticText>
+
+			<!-- ==================== บล็อกลงชื่อ (ขวา) ==================== -->
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement style="Thai" positionType="Float" x="290" y="180" width="255" height="24" uuid="d1e2f3a4-0001-0000-0000-000000000007"/>
+				<textElement textAlignment="Left"><font fontName="Sarabun" size="13"/><paragraph lineSpacing="Proportional" lineSpacingSize="1.1"/></textElement>
+				<textFieldExpression><![CDATA["ลงชื่อ ................................................ ผู้มอบอำนาจ\n        ( .................................... )\n\n\nลงชื่อ ................................................ ผู้รับมอบอำนาจ\n        ( .................................... )\n\nลงชื่อ ................................................ พยาน\n        ( .................................... )\n\nลงชื่อ ................................................ พยาน\n        ( .................................... )"]]></textFieldExpression>
+			</textField>
+
+			<!-- ==================== หมายเหตุ ==================== -->
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement style="ThaiBold" positionType="Float" x="0" y="240" width="545" height="24" uuid="d1e2f3a4-0001-0000-0000-000000000008"/>
+				<textElement textAlignment="Left"><font fontName="Sarabun" size="13" isBold="true"/><paragraph lineSpacing="Proportional" lineSpacingSize="0.9"/></textElement>
+				<textFieldExpression><![CDATA["หมายเหตุ\nแนบเอกสารประกอบพร้อมลงนามรับรองสำเนาถูกต้อง ดังนี้"]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement style="Thai" positionType="Float" x="0" y="270" width="545" height="24" uuid="d1e2f3a4-0001-0000-0000-000000000009"/>
+				<textElement textAlignment="Left"><font fontName="Sarabun" size="13"/><paragraph lineSpacing="Proportional" lineSpacingSize="0.9"/></textElement>
+				<textFieldExpression><![CDATA["     1. หนังสือรับรองบริษัท และประทับตราสำคัญของบริษัท (ถ้ามี)\n     2. สำเนาบัตรประชาชนของผู้มอบอำนาจ (หรือผู้มีอำนาจลงนามแทนนิติบุคคล)\n     3. สำเนาบัตรประชาชนของผู้รับมอบอำนาจ (ทุกคน)"]]></textFieldExpression>
+			</textField>
+		</band>
+	</detail>
+</jasperReport>

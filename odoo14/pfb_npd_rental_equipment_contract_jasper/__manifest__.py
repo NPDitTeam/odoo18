@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 {
-    "name": u"สัญญาเช่าอุปกรณ์ก่อสร้าง (Jasper)",
+    "name": "สัญญาเช่าอุปกรณ์ก่อสร้าง (Jasper)",
     "summary": u"พิมพ์สัญญาเช่าอุปกรณ์ก่อสร้างจากใบขายด้วย JasperReports "
                u"เลขที่สัญญา prefix ตาม company + ir.sequence",
     "description": """
