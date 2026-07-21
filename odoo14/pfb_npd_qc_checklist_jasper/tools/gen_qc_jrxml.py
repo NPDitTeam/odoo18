@@ -190,30 +190,43 @@ pf.field(505, 3, 60, 16, '"" + $V{PAGE_NUMBER}', size=10, eval_time="Report")
 PAGE_FOOTER = pf.render('pageFooter', 22, split=False)
 
 # ============================================================ lastPageFooter
-ADVICE = ('ให้นำใบส่ง/รับสินค้านี้ กลับมามอบ ผจก.สาขา - ความศักดิ์สิทธิ์ของลายเซ็น '
-          'พร้อมชื่อผู้บรรจงชัดเจน ย้ำทีมงานว่าลายเซ็นที่อยู่ในใบนี้คือ "ความรับผิดชอบ" '
+ADVICE = ('ให้นำใบส่ง/รับสินค้านี้ กลับมามอบ ผจก.สาขา '
+          'ย้ำทีมงานว่าลายเซ็นที่อยู่ในใบนี้คือ "ความรับผิดชอบ" '
           'ถ้าส่งของเสียไปถึงหน้างาน แล้วในใบนี้ไม่มีลายเซ็น หรือเซ็นแบบผ่านๆ '
           'คนที่ต้องรับผิดชอบ ให้ Coaching ตาม SOP อีกครั้งทันที\n'
           'หมายเหตุ: หากเป็นงานใหญ่ แนะนำให้แนบ "รูปถ่ายของที่โหลดขึ้นรถ" '
-          'ส่ง Line ลูกค้า / ผจก.สาขา จะเป็นหลักฐานมัดตัวที่ดีที่สุดครับ')
+          'ส่ง Line ลูกค้า / ผจก.สาขา')
 
 lf = Band('0006')
 lf.line(2)
-# เส้นประลายเซ็นทั้งสองเส้น ใช้ x/ความกว้างเดียวกัน และชิดขอบขวาของหน้า
-SIG_W = 200
-SIG_X = W - SIG_W
-lf.text(0, 10, SIG_X, TH, 'ลงชื่อผู้ปฏิบัติงาน (ผู้ตรวจ QC):')
-lf.text(SIG_X, 10, SIG_W, TH, '', box=DOT)
-lf.text(0, 38, SIG_X, TH, 'ลงชื่อผู้จัดการสาขา/หัวหน้าคลัง (อนุมัติปล่อยรถ):')
-lf.text(SIG_X, 38, SIG_W, TH, '', box=DOT)
-lf.text(0, 66, 120, TH, 'คำแนะนำ :', bold=True)
-lf.text(0, 88, W, 124, ADVICE, valign="Top")   # 6 บรรทัด x 17.6 = 106 px
-lf.field(0, 216, 300, 16,
+# ไม่มีเส้นประแล้ว: ลายเซ็น = วงเล็บจุดยาวให้เขียนชื่อ + กำกับว่าให้เขียนตัวบรรจง
+SIG_LABEL_W = 280           # ป้ายซ้าย (กว้างพอสำหรับข้อความยาวสุด)
+SIG_FX = 285                # ตำแหน่งเริ่มของวงเล็บ (ต้อง > SIG_LABEL_W กันซ้อนกับป้าย)
+SIG_FW = 260                # SIG_FX + SIG_FW = 545 = ขอบขวาพอดี
+SIG_FILL = '(' + '.' * 55 + ')'
+SIG_HINT = 'ชื่อ-นามสกุล ตัวบรรจง'
+
+# เว้นช่องว่างเหนือวงเล็บแต่ละช่อง ~26px ไว้เขียนลายเซ็น (เส้นบนอยู่ y=2)
+# --- ลายเซ็นผู้ตรวจ QC ---
+lf.text(0, 28, SIG_LABEL_W, TH, 'ลงชื่อผู้ปฏิบัติงาน (ผู้ตรวจ QC):')
+lf.text(SIG_FX, 28, SIG_FW, TH, SIG_FILL, align="Center")
+lf.text(SIG_FX, 48, SIG_FW, TH, SIG_HINT, align="Center", size=12)
+
+# --- ลายเซ็นผู้จัดการสาขา/หัวหน้าคลัง ---
+lf.text(0, 90, SIG_LABEL_W, TH, 'ลงชื่อผู้จัดการสาขา/หัวหน้าคลัง (อนุมัติปล่อยรถ):')
+lf.text(SIG_FX, 90, SIG_FW, TH, SIG_FILL, align="Center")
+lf.text(SIG_FX, 110, SIG_FW, TH, SIG_HINT, align="Center", size=12)
+
+lf.text(0, 136, 120, TH, 'คำแนะนำ :', bold=True)
+# ADVICE ใช้จริง 3 บรรทัด (~53px) กล่องพอดีที่ 76px แล้วไม่เหลือช่องว่างค้าง
+lf.text(0, 158, W, 76, ADVICE, valign="Top")
+lf.field(0, 238, 300, 16,
          '$F{Print_DateTime-jasper_qc_print_datetime} != null'
          ' ? "พิมพ์เมื่อ " + $F{Print_DateTime-jasper_qc_print_datetime} : ""', size=10)
-lf.field(405, 216, 100, 16, '"หน้า " + $V{PAGE_NUMBER} + " / "', size=10, align="Right")
-lf.field(505, 216, 60, 16, '"" + $V{PAGE_NUMBER}', size=10, eval_time="Report")
-LAST_PAGE_FOOTER = lf.render('lastPageFooter', 236, split=False)
+lf.field(405, 238, 100, 16, '"หน้า " + $V{PAGE_NUMBER} + " / "', size=10, align="Right")
+lf.field(505, 238, 60, 16, '"" + $V{PAGE_NUMBER}', size=10, eval_time="Report")
+# lastPageFooter ตรึงขอบล่างของหน้า: band เตี้ยลง = เส้นขอบบน (y=2) เลื่อนลง
+LAST_PAGE_FOOTER = lf.render('lastPageFooter', 258, split=False)
 
 # ============================================================ summary
 sm = Band('0005')
@@ -317,4 +330,4 @@ open(OUT, "w", encoding="utf-8").write(doc)
 print("เขียน qc_checklist.jrxml แล้ว")
 print("  pageHeader 98 | columnHeader %d | detail %d | pageFooter 22"
       % (22 + HDR_H, ROW_H))
-print("  lastPageFooter 236 | summary %d | ตารางเพิ่มเติม %d แถว" % (y, SLOTS))
+print("  lastPageFooter 258 | summary %d | ตารางเพิ่มเติม %d แถว" % (y, SLOTS))

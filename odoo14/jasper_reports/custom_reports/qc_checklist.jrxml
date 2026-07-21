@@ -271,72 +271,84 @@
 		</band>
 	</pageFooter>
 	<lastPageFooter>
-		<band height="236">
+		<band height="258">
 			<line>
 				<reportElement x="0" y="2" width="565" height="1" uuid="c1a2b3c4-0006-0000-0000-00000000001c"/>
 				<graphicElement><pen lineWidth="1.0"/></graphicElement>
 			</line>
 			<staticText>
-				<reportElement style="Thai" x="0" y="10" width="365" height="20" uuid="c1a2b3c4-0006-0000-0000-00000000001d"/>
+				<reportElement style="Thai" x="0" y="28" width="280" height="20" uuid="c1a2b3c4-0006-0000-0000-00000000001d"/>
 				<textElement textAlignment="Left" verticalAlignment="Middle">
 					<font fontName="Sarabun" size="13"/>
 				</textElement>
 				<text><![CDATA[ลงชื่อผู้ปฏิบัติงาน (ผู้ตรวจ QC):]]></text>
 			</staticText>
 			<staticText>
-				<reportElement style="Thai" x="365" y="10" width="200" height="20" uuid="c1a2b3c4-0006-0000-0000-00000000001e"/>
-				<box><bottomPen lineWidth="1.0" lineStyle="Dotted"/></box>
-				<textElement textAlignment="Left" verticalAlignment="Middle">
+				<reportElement style="Thai" x="285" y="28" width="260" height="20" uuid="c1a2b3c4-0006-0000-0000-00000000001e"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
 					<font fontName="Sarabun" size="13"/>
 				</textElement>
-				<text><![CDATA[]]></text>
+				<text><![CDATA[(.......................................................)]]></text>
 			</staticText>
 			<staticText>
-				<reportElement style="Thai" x="0" y="38" width="365" height="20" uuid="c1a2b3c4-0006-0000-0000-00000000001f"/>
+				<reportElement style="Thai" x="285" y="48" width="260" height="20" uuid="c1a2b3c4-0006-0000-0000-00000000001f"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Sarabun" size="12"/>
+				</textElement>
+				<text><![CDATA[ชื่อ-นามสกุล ตัวบรรจง]]></text>
+			</staticText>
+			<staticText>
+				<reportElement style="Thai" x="0" y="90" width="280" height="20" uuid="c1a2b3c4-0006-0000-0000-000000000020"/>
 				<textElement textAlignment="Left" verticalAlignment="Middle">
 					<font fontName="Sarabun" size="13"/>
 				</textElement>
 				<text><![CDATA[ลงชื่อผู้จัดการสาขา/หัวหน้าคลัง (อนุมัติปล่อยรถ):]]></text>
 			</staticText>
 			<staticText>
-				<reportElement style="Thai" x="365" y="38" width="200" height="20" uuid="c1a2b3c4-0006-0000-0000-000000000020"/>
-				<box><bottomPen lineWidth="1.0" lineStyle="Dotted"/></box>
-				<textElement textAlignment="Left" verticalAlignment="Middle">
+				<reportElement style="Thai" x="285" y="90" width="260" height="20" uuid="c1a2b3c4-0006-0000-0000-000000000021"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
 					<font fontName="Sarabun" size="13"/>
 				</textElement>
-				<text><![CDATA[]]></text>
+				<text><![CDATA[(.......................................................)]]></text>
 			</staticText>
 			<staticText>
-				<reportElement style="ThaiBold" x="0" y="66" width="120" height="20" uuid="c1a2b3c4-0006-0000-0000-000000000021"/>
+				<reportElement style="Thai" x="285" y="110" width="260" height="20" uuid="c1a2b3c4-0006-0000-0000-000000000022"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Sarabun" size="12"/>
+				</textElement>
+				<text><![CDATA[ชื่อ-นามสกุล ตัวบรรจง]]></text>
+			</staticText>
+			<staticText>
+				<reportElement style="ThaiBold" x="0" y="136" width="120" height="20" uuid="c1a2b3c4-0006-0000-0000-000000000023"/>
 				<textElement textAlignment="Left" verticalAlignment="Middle">
 					<font fontName="Sarabun" size="13" isBold="true"/>
 				</textElement>
 				<text><![CDATA[คำแนะนำ :]]></text>
 			</staticText>
 			<staticText>
-				<reportElement style="Thai" x="0" y="88" width="565" height="124" uuid="c1a2b3c4-0006-0000-0000-000000000022"/>
+				<reportElement style="Thai" x="0" y="158" width="565" height="76" uuid="c1a2b3c4-0006-0000-0000-000000000024"/>
 				<textElement textAlignment="Left" verticalAlignment="Top">
 					<font fontName="Sarabun" size="13"/>
 				</textElement>
-				<text><![CDATA[ให้นำใบส่ง/รับสินค้านี้ กลับมามอบ ผจก.สาขา - ความศักดิ์สิทธิ์ของลายเซ็น พร้อมชื่อผู้บรรจงชัดเจน ย้ำทีมงานว่าลายเซ็นที่อยู่ในใบนี้คือ "ความรับผิดชอบ" ถ้าส่งของเสียไปถึงหน้างาน แล้วในใบนี้ไม่มีลายเซ็น หรือเซ็นแบบผ่านๆ คนที่ต้องรับผิดชอบ ให้ Coaching ตาม SOP อีกครั้งทันที
-หมายเหตุ: หากเป็นงานใหญ่ แนะนำให้แนบ "รูปถ่ายของที่โหลดขึ้นรถ" ส่ง Line ลูกค้า / ผจก.สาขา จะเป็นหลักฐานมัดตัวที่ดีที่สุดครับ]]></text>
+				<text><![CDATA[ให้นำใบส่ง/รับสินค้านี้ กลับมามอบ ผจก.สาขา ย้ำทีมงานว่าลายเซ็นที่อยู่ในใบนี้คือ "ความรับผิดชอบ" ถ้าส่งของเสียไปถึงหน้างาน แล้วในใบนี้ไม่มีลายเซ็น หรือเซ็นแบบผ่านๆ คนที่ต้องรับผิดชอบ ให้ Coaching ตาม SOP อีกครั้งทันที
+หมายเหตุ: หากเป็นงานใหญ่ แนะนำให้แนบ "รูปถ่ายของที่โหลดขึ้นรถ" ส่ง Line ลูกค้า / ผจก.สาขา]]></text>
 			</staticText>
 			<textField isBlankWhenNull="true">
-				<reportElement style="Thai" x="0" y="216" width="300" height="16" uuid="c1a2b3c4-0006-0000-0000-000000000023"/>
+				<reportElement style="Thai" x="0" y="238" width="300" height="16" uuid="c1a2b3c4-0006-0000-0000-000000000025"/>
 				<textElement textAlignment="Left" verticalAlignment="Middle">
 					<font fontName="Sarabun" size="10"/>
 				</textElement>
 				<textFieldExpression><![CDATA[$F{Print_DateTime-jasper_qc_print_datetime} != null ? "พิมพ์เมื่อ " + $F{Print_DateTime-jasper_qc_print_datetime} : ""]]></textFieldExpression>
 			</textField>
 			<textField isBlankWhenNull="true">
-				<reportElement style="Thai" x="405" y="216" width="100" height="16" uuid="c1a2b3c4-0006-0000-0000-000000000024"/>
+				<reportElement style="Thai" x="405" y="238" width="100" height="16" uuid="c1a2b3c4-0006-0000-0000-000000000026"/>
 				<textElement textAlignment="Right" verticalAlignment="Middle">
 					<font fontName="Sarabun" size="10"/>
 				</textElement>
 				<textFieldExpression><![CDATA["หน้า " + $V{PAGE_NUMBER} + " / "]]></textFieldExpression>
 			</textField>
 			<textField isBlankWhenNull="true" evaluationTime="Report">
-				<reportElement style="Thai" x="505" y="216" width="60" height="16" uuid="c1a2b3c4-0006-0000-0000-000000000025"/>
+				<reportElement style="Thai" x="505" y="238" width="60" height="16" uuid="c1a2b3c4-0006-0000-0000-000000000027"/>
 				<textElement textAlignment="Left" verticalAlignment="Middle">
 					<font fontName="Sarabun" size="10"/>
 				</textElement>
@@ -347,14 +359,14 @@
 	<summary>
 		<band height="404" splitType="Stretch">
 			<staticText>
-				<reportElement style="ThaiBold" positionType="Float" x="0" y="6" width="300" height="20" uuid="c1a2b3c4-0005-0000-0000-000000000026"/>
+				<reportElement style="ThaiBold" positionType="Float" x="0" y="6" width="300" height="20" uuid="c1a2b3c4-0005-0000-0000-000000000028"/>
 				<textElement textAlignment="Left" verticalAlignment="Middle">
 					<font fontName="Sarabun" size="13" isBold="true"/>
 				</textElement>
 				<text><![CDATA[รายการสินค้าที่ลูกค้าต้องการเพิ่ม]]></text>
 			</staticText>
 			<staticText>
-				<reportElement style="ThaiBold" positionType="Float" x="0" y="28" width="395" height="20" uuid="c1a2b3c4-0005-0000-0000-000000000027"/>
+				<reportElement style="ThaiBold" positionType="Float" x="0" y="28" width="395" height="20" uuid="c1a2b3c4-0005-0000-0000-000000000029"/>
 				<box leftPadding="4" rightPadding="3"><pen lineWidth="0.75"/></box>
 				<textElement textAlignment="Left" verticalAlignment="Middle">
 					<font fontName="Sarabun" size="13" isBold="true"/>
@@ -362,7 +374,7 @@
 				<text><![CDATA[รายการสินค้า]]></text>
 			</staticText>
 			<staticText>
-				<reportElement style="ThaiBold" positionType="Float" x="395" y="28" width="170" height="20" uuid="c1a2b3c4-0005-0000-0000-000000000028"/>
+				<reportElement style="ThaiBold" positionType="Float" x="395" y="28" width="170" height="20" uuid="c1a2b3c4-0005-0000-0000-00000000002a"/>
 				<box leftPadding="2" rightPadding="2"><pen lineWidth="0.75"/></box>
 				<textElement textAlignment="Center" verticalAlignment="Middle">
 					<font fontName="Sarabun" size="13" isBold="true"/>
@@ -370,7 +382,7 @@
 				<text><![CDATA[จำนวน]]></text>
 			</staticText>
 			<textField isBlankWhenNull="true">
-				<reportElement style="Thai" positionType="Float" isRemoveLineWhenBlank="true" x="0" y="48" width="395" height="20" uuid="c1a2b3c4-0005-0000-0000-000000000029"/>
+				<reportElement style="Thai" positionType="Float" isRemoveLineWhenBlank="true" x="0" y="48" width="395" height="20" uuid="c1a2b3c4-0005-0000-0000-00000000002b"/>
 				<box leftPadding="4" rightPadding="3"><pen lineWidth="0.75"/></box>
 				<textElement textAlignment="Left" verticalAlignment="Middle">
 					<font fontName="Sarabun" size="13"/>
@@ -378,7 +390,7 @@
 				<textFieldExpression><![CDATA[$F{Extra_Items-jasper_qc_extra_items} != null && $F{Extra_Items-jasper_qc_extra_items}.split("\\|\\|", -1).length > 0 ? $F{Extra_Items-jasper_qc_extra_items}.split("\\|\\|", -1)[0] : ""]]></textFieldExpression>
 			</textField>
 			<staticText>
-				<reportElement style="Thai" positionType="Float" x="395" y="48" width="170" height="20" uuid="c1a2b3c4-0005-0000-0000-00000000002a">
+				<reportElement style="Thai" positionType="Float" x="395" y="48" width="170" height="20" uuid="c1a2b3c4-0005-0000-0000-00000000002c">
 					<printWhenExpression><![CDATA[$F{Extra_Items-jasper_qc_extra_items} != null && $F{Extra_Items-jasper_qc_extra_items}.split("\\|\\|", -1).length > 0 && !$F{Extra_Items-jasper_qc_extra_items}.split("\\|\\|", -1)[0].isEmpty()]]></printWhenExpression>
 				</reportElement>
 				<box leftPadding="2" rightPadding="2"><pen lineWidth="0.75"/></box>
@@ -388,7 +400,7 @@
 				<text><![CDATA[]]></text>
 			</staticText>
 			<textField isBlankWhenNull="true">
-				<reportElement style="Thai" positionType="Float" isRemoveLineWhenBlank="true" x="0" y="68" width="395" height="20" uuid="c1a2b3c4-0005-0000-0000-00000000002b"/>
+				<reportElement style="Thai" positionType="Float" isRemoveLineWhenBlank="true" x="0" y="68" width="395" height="20" uuid="c1a2b3c4-0005-0000-0000-00000000002d"/>
 				<box leftPadding="4" rightPadding="3"><pen lineWidth="0.75"/></box>
 				<textElement textAlignment="Left" verticalAlignment="Middle">
 					<font fontName="Sarabun" size="13"/>
@@ -396,7 +408,7 @@
 				<textFieldExpression><![CDATA[$F{Extra_Items-jasper_qc_extra_items} != null && $F{Extra_Items-jasper_qc_extra_items}.split("\\|\\|", -1).length > 1 ? $F{Extra_Items-jasper_qc_extra_items}.split("\\|\\|", -1)[1] : ""]]></textFieldExpression>
 			</textField>
 			<staticText>
-				<reportElement style="Thai" positionType="Float" x="395" y="68" width="170" height="20" uuid="c1a2b3c4-0005-0000-0000-00000000002c">
+				<reportElement style="Thai" positionType="Float" x="395" y="68" width="170" height="20" uuid="c1a2b3c4-0005-0000-0000-00000000002e">
 					<printWhenExpression><![CDATA[$F{Extra_Items-jasper_qc_extra_items} != null && $F{Extra_Items-jasper_qc_extra_items}.split("\\|\\|", -1).length > 1 && !$F{Extra_Items-jasper_qc_extra_items}.split("\\|\\|", -1)[1].isEmpty()]]></printWhenExpression>
 				</reportElement>
 				<box leftPadding="2" rightPadding="2"><pen lineWidth="0.75"/></box>
@@ -406,7 +418,7 @@
 				<text><![CDATA[]]></text>
 			</staticText>
 			<textField isBlankWhenNull="true">
-				<reportElement style="Thai" positionType="Float" isRemoveLineWhenBlank="true" x="0" y="88" width="395" height="20" uuid="c1a2b3c4-0005-0000-0000-00000000002d"/>
+				<reportElement style="Thai" positionType="Float" isRemoveLineWhenBlank="true" x="0" y="88" width="395" height="20" uuid="c1a2b3c4-0005-0000-0000-00000000002f"/>
 				<box leftPadding="4" rightPadding="3"><pen lineWidth="0.75"/></box>
 				<textElement textAlignment="Left" verticalAlignment="Middle">
 					<font fontName="Sarabun" size="13"/>
@@ -414,7 +426,7 @@
 				<textFieldExpression><![CDATA[$F{Extra_Items-jasper_qc_extra_items} != null && $F{Extra_Items-jasper_qc_extra_items}.split("\\|\\|", -1).length > 2 ? $F{Extra_Items-jasper_qc_extra_items}.split("\\|\\|", -1)[2] : ""]]></textFieldExpression>
 			</textField>
 			<staticText>
-				<reportElement style="Thai" positionType="Float" x="395" y="88" width="170" height="20" uuid="c1a2b3c4-0005-0000-0000-00000000002e">
+				<reportElement style="Thai" positionType="Float" x="395" y="88" width="170" height="20" uuid="c1a2b3c4-0005-0000-0000-000000000030">
 					<printWhenExpression><![CDATA[$F{Extra_Items-jasper_qc_extra_items} != null && $F{Extra_Items-jasper_qc_extra_items}.split("\\|\\|", -1).length > 2 && !$F{Extra_Items-jasper_qc_extra_items}.split("\\|\\|", -1)[2].isEmpty()]]></printWhenExpression>
 				</reportElement>
 				<box leftPadding="2" rightPadding="2"><pen lineWidth="0.75"/></box>
@@ -424,7 +436,7 @@
 				<text><![CDATA[]]></text>
 			</staticText>
 			<textField isBlankWhenNull="true">
-				<reportElement style="Thai" positionType="Float" isRemoveLineWhenBlank="true" x="0" y="108" width="395" height="20" uuid="c1a2b3c4-0005-0000-0000-00000000002f"/>
+				<reportElement style="Thai" positionType="Float" isRemoveLineWhenBlank="true" x="0" y="108" width="395" height="20" uuid="c1a2b3c4-0005-0000-0000-000000000031"/>
 				<box leftPadding="4" rightPadding="3"><pen lineWidth="0.75"/></box>
 				<textElement textAlignment="Left" verticalAlignment="Middle">
 					<font fontName="Sarabun" size="13"/>
@@ -432,7 +444,7 @@
 				<textFieldExpression><![CDATA[$F{Extra_Items-jasper_qc_extra_items} != null && $F{Extra_Items-jasper_qc_extra_items}.split("\\|\\|", -1).length > 3 ? $F{Extra_Items-jasper_qc_extra_items}.split("\\|\\|", -1)[3] : ""]]></textFieldExpression>
 			</textField>
 			<staticText>
-				<reportElement style="Thai" positionType="Float" x="395" y="108" width="170" height="20" uuid="c1a2b3c4-0005-0000-0000-000000000030">
+				<reportElement style="Thai" positionType="Float" x="395" y="108" width="170" height="20" uuid="c1a2b3c4-0005-0000-0000-000000000032">
 					<printWhenExpression><![CDATA[$F{Extra_Items-jasper_qc_extra_items} != null && $F{Extra_Items-jasper_qc_extra_items}.split("\\|\\|", -1).length > 3 && !$F{Extra_Items-jasper_qc_extra_items}.split("\\|\\|", -1)[3].isEmpty()]]></printWhenExpression>
 				</reportElement>
 				<box leftPadding="2" rightPadding="2"><pen lineWidth="0.75"/></box>
@@ -442,7 +454,7 @@
 				<text><![CDATA[]]></text>
 			</staticText>
 			<textField isBlankWhenNull="true">
-				<reportElement style="Thai" positionType="Float" isRemoveLineWhenBlank="true" x="0" y="128" width="395" height="20" uuid="c1a2b3c4-0005-0000-0000-000000000031"/>
+				<reportElement style="Thai" positionType="Float" isRemoveLineWhenBlank="true" x="0" y="128" width="395" height="20" uuid="c1a2b3c4-0005-0000-0000-000000000033"/>
 				<box leftPadding="4" rightPadding="3"><pen lineWidth="0.75"/></box>
 				<textElement textAlignment="Left" verticalAlignment="Middle">
 					<font fontName="Sarabun" size="13"/>
@@ -450,7 +462,7 @@
 				<textFieldExpression><![CDATA[$F{Extra_Items-jasper_qc_extra_items} != null && $F{Extra_Items-jasper_qc_extra_items}.split("\\|\\|", -1).length > 4 ? $F{Extra_Items-jasper_qc_extra_items}.split("\\|\\|", -1)[4] : ""]]></textFieldExpression>
 			</textField>
 			<staticText>
-				<reportElement style="Thai" positionType="Float" x="395" y="128" width="170" height="20" uuid="c1a2b3c4-0005-0000-0000-000000000032">
+				<reportElement style="Thai" positionType="Float" x="395" y="128" width="170" height="20" uuid="c1a2b3c4-0005-0000-0000-000000000034">
 					<printWhenExpression><![CDATA[$F{Extra_Items-jasper_qc_extra_items} != null && $F{Extra_Items-jasper_qc_extra_items}.split("\\|\\|", -1).length > 4 && !$F{Extra_Items-jasper_qc_extra_items}.split("\\|\\|", -1)[4].isEmpty()]]></printWhenExpression>
 				</reportElement>
 				<box leftPadding="2" rightPadding="2"><pen lineWidth="0.75"/></box>
@@ -460,7 +472,7 @@
 				<text><![CDATA[]]></text>
 			</staticText>
 			<textField isBlankWhenNull="true">
-				<reportElement style="Thai" positionType="Float" isRemoveLineWhenBlank="true" x="0" y="148" width="395" height="20" uuid="c1a2b3c4-0005-0000-0000-000000000033"/>
+				<reportElement style="Thai" positionType="Float" isRemoveLineWhenBlank="true" x="0" y="148" width="395" height="20" uuid="c1a2b3c4-0005-0000-0000-000000000035"/>
 				<box leftPadding="4" rightPadding="3"><pen lineWidth="0.75"/></box>
 				<textElement textAlignment="Left" verticalAlignment="Middle">
 					<font fontName="Sarabun" size="13"/>
@@ -468,7 +480,7 @@
 				<textFieldExpression><![CDATA[$F{Extra_Items-jasper_qc_extra_items} != null && $F{Extra_Items-jasper_qc_extra_items}.split("\\|\\|", -1).length > 5 ? $F{Extra_Items-jasper_qc_extra_items}.split("\\|\\|", -1)[5] : ""]]></textFieldExpression>
 			</textField>
 			<staticText>
-				<reportElement style="Thai" positionType="Float" x="395" y="148" width="170" height="20" uuid="c1a2b3c4-0005-0000-0000-000000000034">
+				<reportElement style="Thai" positionType="Float" x="395" y="148" width="170" height="20" uuid="c1a2b3c4-0005-0000-0000-000000000036">
 					<printWhenExpression><![CDATA[$F{Extra_Items-jasper_qc_extra_items} != null && $F{Extra_Items-jasper_qc_extra_items}.split("\\|\\|", -1).length > 5 && !$F{Extra_Items-jasper_qc_extra_items}.split("\\|\\|", -1)[5].isEmpty()]]></printWhenExpression>
 				</reportElement>
 				<box leftPadding="2" rightPadding="2"><pen lineWidth="0.75"/></box>
@@ -478,7 +490,7 @@
 				<text><![CDATA[]]></text>
 			</staticText>
 			<textField isBlankWhenNull="true">
-				<reportElement style="Thai" positionType="Float" isRemoveLineWhenBlank="true" x="0" y="168" width="395" height="20" uuid="c1a2b3c4-0005-0000-0000-000000000035"/>
+				<reportElement style="Thai" positionType="Float" isRemoveLineWhenBlank="true" x="0" y="168" width="395" height="20" uuid="c1a2b3c4-0005-0000-0000-000000000037"/>
 				<box leftPadding="4" rightPadding="3"><pen lineWidth="0.75"/></box>
 				<textElement textAlignment="Left" verticalAlignment="Middle">
 					<font fontName="Sarabun" size="13"/>
@@ -486,7 +498,7 @@
 				<textFieldExpression><![CDATA[$F{Extra_Items-jasper_qc_extra_items} != null && $F{Extra_Items-jasper_qc_extra_items}.split("\\|\\|", -1).length > 6 ? $F{Extra_Items-jasper_qc_extra_items}.split("\\|\\|", -1)[6] : ""]]></textFieldExpression>
 			</textField>
 			<staticText>
-				<reportElement style="Thai" positionType="Float" x="395" y="168" width="170" height="20" uuid="c1a2b3c4-0005-0000-0000-000000000036">
+				<reportElement style="Thai" positionType="Float" x="395" y="168" width="170" height="20" uuid="c1a2b3c4-0005-0000-0000-000000000038">
 					<printWhenExpression><![CDATA[$F{Extra_Items-jasper_qc_extra_items} != null && $F{Extra_Items-jasper_qc_extra_items}.split("\\|\\|", -1).length > 6 && !$F{Extra_Items-jasper_qc_extra_items}.split("\\|\\|", -1)[6].isEmpty()]]></printWhenExpression>
 				</reportElement>
 				<box leftPadding="2" rightPadding="2"><pen lineWidth="0.75"/></box>
@@ -496,7 +508,7 @@
 				<text><![CDATA[]]></text>
 			</staticText>
 			<textField isBlankWhenNull="true">
-				<reportElement style="Thai" positionType="Float" isRemoveLineWhenBlank="true" x="0" y="188" width="395" height="20" uuid="c1a2b3c4-0005-0000-0000-000000000037"/>
+				<reportElement style="Thai" positionType="Float" isRemoveLineWhenBlank="true" x="0" y="188" width="395" height="20" uuid="c1a2b3c4-0005-0000-0000-000000000039"/>
 				<box leftPadding="4" rightPadding="3"><pen lineWidth="0.75"/></box>
 				<textElement textAlignment="Left" verticalAlignment="Middle">
 					<font fontName="Sarabun" size="13"/>
@@ -504,7 +516,7 @@
 				<textFieldExpression><![CDATA[$F{Extra_Items-jasper_qc_extra_items} != null && $F{Extra_Items-jasper_qc_extra_items}.split("\\|\\|", -1).length > 7 ? $F{Extra_Items-jasper_qc_extra_items}.split("\\|\\|", -1)[7] : ""]]></textFieldExpression>
 			</textField>
 			<staticText>
-				<reportElement style="Thai" positionType="Float" x="395" y="188" width="170" height="20" uuid="c1a2b3c4-0005-0000-0000-000000000038">
+				<reportElement style="Thai" positionType="Float" x="395" y="188" width="170" height="20" uuid="c1a2b3c4-0005-0000-0000-00000000003a">
 					<printWhenExpression><![CDATA[$F{Extra_Items-jasper_qc_extra_items} != null && $F{Extra_Items-jasper_qc_extra_items}.split("\\|\\|", -1).length > 7 && !$F{Extra_Items-jasper_qc_extra_items}.split("\\|\\|", -1)[7].isEmpty()]]></printWhenExpression>
 				</reportElement>
 				<box leftPadding="2" rightPadding="2"><pen lineWidth="0.75"/></box>
@@ -514,7 +526,7 @@
 				<text><![CDATA[]]></text>
 			</staticText>
 			<textField isBlankWhenNull="true">
-				<reportElement style="Thai" positionType="Float" isRemoveLineWhenBlank="true" x="0" y="208" width="395" height="20" uuid="c1a2b3c4-0005-0000-0000-000000000039"/>
+				<reportElement style="Thai" positionType="Float" isRemoveLineWhenBlank="true" x="0" y="208" width="395" height="20" uuid="c1a2b3c4-0005-0000-0000-00000000003b"/>
 				<box leftPadding="4" rightPadding="3"><pen lineWidth="0.75"/></box>
 				<textElement textAlignment="Left" verticalAlignment="Middle">
 					<font fontName="Sarabun" size="13"/>
@@ -522,7 +534,7 @@
 				<textFieldExpression><![CDATA[$F{Extra_Items-jasper_qc_extra_items} != null && $F{Extra_Items-jasper_qc_extra_items}.split("\\|\\|", -1).length > 8 ? $F{Extra_Items-jasper_qc_extra_items}.split("\\|\\|", -1)[8] : ""]]></textFieldExpression>
 			</textField>
 			<staticText>
-				<reportElement style="Thai" positionType="Float" x="395" y="208" width="170" height="20" uuid="c1a2b3c4-0005-0000-0000-00000000003a">
+				<reportElement style="Thai" positionType="Float" x="395" y="208" width="170" height="20" uuid="c1a2b3c4-0005-0000-0000-00000000003c">
 					<printWhenExpression><![CDATA[$F{Extra_Items-jasper_qc_extra_items} != null && $F{Extra_Items-jasper_qc_extra_items}.split("\\|\\|", -1).length > 8 && !$F{Extra_Items-jasper_qc_extra_items}.split("\\|\\|", -1)[8].isEmpty()]]></printWhenExpression>
 				</reportElement>
 				<box leftPadding="2" rightPadding="2"><pen lineWidth="0.75"/></box>
@@ -532,7 +544,7 @@
 				<text><![CDATA[]]></text>
 			</staticText>
 			<textField isBlankWhenNull="true">
-				<reportElement style="Thai" positionType="Float" isRemoveLineWhenBlank="true" x="0" y="228" width="395" height="20" uuid="c1a2b3c4-0005-0000-0000-00000000003b"/>
+				<reportElement style="Thai" positionType="Float" isRemoveLineWhenBlank="true" x="0" y="228" width="395" height="20" uuid="c1a2b3c4-0005-0000-0000-00000000003d"/>
 				<box leftPadding="4" rightPadding="3"><pen lineWidth="0.75"/></box>
 				<textElement textAlignment="Left" verticalAlignment="Middle">
 					<font fontName="Sarabun" size="13"/>
@@ -540,7 +552,7 @@
 				<textFieldExpression><![CDATA[$F{Extra_Items-jasper_qc_extra_items} != null && $F{Extra_Items-jasper_qc_extra_items}.split("\\|\\|", -1).length > 9 ? $F{Extra_Items-jasper_qc_extra_items}.split("\\|\\|", -1)[9] : ""]]></textFieldExpression>
 			</textField>
 			<staticText>
-				<reportElement style="Thai" positionType="Float" x="395" y="228" width="170" height="20" uuid="c1a2b3c4-0005-0000-0000-00000000003c">
+				<reportElement style="Thai" positionType="Float" x="395" y="228" width="170" height="20" uuid="c1a2b3c4-0005-0000-0000-00000000003e">
 					<printWhenExpression><![CDATA[$F{Extra_Items-jasper_qc_extra_items} != null && $F{Extra_Items-jasper_qc_extra_items}.split("\\|\\|", -1).length > 9 && !$F{Extra_Items-jasper_qc_extra_items}.split("\\|\\|", -1)[9].isEmpty()]]></printWhenExpression>
 				</reportElement>
 				<box leftPadding="2" rightPadding="2"><pen lineWidth="0.75"/></box>
@@ -550,61 +562,61 @@
 				<text><![CDATA[]]></text>
 			</staticText>
 			<textField isBlankWhenNull="true">
-				<reportElement style="Thai" positionType="Float" isRemoveLineWhenBlank="true" x="0" y="252" width="565" height="20" uuid="c1a2b3c4-0005-0000-0000-00000000003d"/>
+				<reportElement style="Thai" positionType="Float" isRemoveLineWhenBlank="true" x="0" y="252" width="565" height="20" uuid="c1a2b3c4-0005-0000-0000-00000000003f"/>
 				<textElement textAlignment="Left" verticalAlignment="Middle">
 					<font fontName="Sarabun" size="13"/>
 				</textElement>
 				<textFieldExpression><![CDATA[$F{Extra_More-jasper_qc_extra_more}]]></textFieldExpression>
 			</textField>
 			<staticText>
-				<reportElement style="ThaiBold" positionType="Float" x="0" y="276" width="300" height="20" uuid="c1a2b3c4-0005-0000-0000-00000000003e"/>
+				<reportElement style="ThaiBold" positionType="Float" x="0" y="276" width="300" height="20" uuid="c1a2b3c4-0005-0000-0000-000000000040"/>
 				<textElement textAlignment="Left" verticalAlignment="Middle">
 					<font fontName="Sarabun" size="13" isBold="true"/>
 				</textElement>
 				<text><![CDATA[สรุปการตรวจสอบ (Audit Summary)]]></text>
 			</staticText>
 			<rectangle>
-				<reportElement positionType="Float" x="2" y="304" width="13" height="13" uuid="c1a2b3c4-0005-0000-0000-00000000003f"/>
+				<reportElement positionType="Float" x="2" y="304" width="13" height="13" uuid="c1a2b3c4-0005-0000-0000-000000000041"/>
 				<graphicElement><pen lineWidth="0.75"/></graphicElement>
 			</rectangle>
 			<staticText>
-				<reportElement style="Thai" positionType="Float" x="22" y="300" width="543" height="20" uuid="c1a2b3c4-0005-0000-0000-000000000040"/>
+				<reportElement style="Thai" positionType="Float" x="22" y="300" width="543" height="20" uuid="c1a2b3c4-0005-0000-0000-000000000042"/>
 				<textElement textAlignment="Left" verticalAlignment="Middle">
 					<font fontName="Sarabun" size="13"/>
 				</textElement>
 				<text><![CDATA[จำนวนถูกต้องตรงตาม BOM (ใบส่งของ)]]></text>
 			</staticText>
 			<rectangle>
-				<reportElement positionType="Float" x="2" y="326" width="13" height="13" uuid="c1a2b3c4-0005-0000-0000-000000000041"/>
+				<reportElement positionType="Float" x="2" y="326" width="13" height="13" uuid="c1a2b3c4-0005-0000-0000-000000000043"/>
 				<graphicElement><pen lineWidth="0.75"/></graphicElement>
 			</rectangle>
 			<staticText>
-				<reportElement style="Thai" positionType="Float" x="22" y="322" width="543" height="20" uuid="c1a2b3c4-0005-0000-0000-000000000042"/>
+				<reportElement style="Thai" positionType="Float" x="22" y="322" width="543" height="20" uuid="c1a2b3c4-0005-0000-0000-000000000044"/>
 				<textElement textAlignment="Left" verticalAlignment="Middle">
 					<font fontName="Sarabun" size="13"/>
 				</textElement>
 				<text><![CDATA[สภาพพร้อมใช้งาน 100% (สะอาด, ไม่ชำรุด, อุปกรณ์ไม่หลวม)]]></text>
 			</staticText>
 			<rectangle>
-				<reportElement positionType="Float" x="2" y="348" width="13" height="13" uuid="c1a2b3c4-0005-0000-0000-000000000043"/>
+				<reportElement positionType="Float" x="2" y="348" width="13" height="13" uuid="c1a2b3c4-0005-0000-0000-000000000045"/>
 				<graphicElement><pen lineWidth="0.75"/></graphicElement>
 			</rectangle>
 			<staticText>
-				<reportElement style="Thai" positionType="Float" x="22" y="344" width="543" height="20" uuid="c1a2b3c4-0005-0000-0000-000000000044"/>
+				<reportElement style="Thai" positionType="Float" x="22" y="344" width="543" height="20" uuid="c1a2b3c4-0005-0000-0000-000000000046"/>
 				<textElement textAlignment="Left" verticalAlignment="Middle">
 					<font fontName="Sarabun" size="13"/>
 				</textElement>
 				<text><![CDATA[เอกสาร (ใบส่งของ/แผนที่/เบอร์ติดต่อ) พร้อมส่ง]]></text>
 			</staticText>
 			<staticText>
-				<reportElement style="ThaiBold" positionType="Float" x="0" y="372" width="565" height="20" uuid="c1a2b3c4-0005-0000-0000-000000000045"/>
+				<reportElement style="ThaiBold" positionType="Float" x="0" y="372" width="565" height="20" uuid="c1a2b3c4-0005-0000-0000-000000000047"/>
 				<textElement textAlignment="Left" verticalAlignment="Middle">
 					<font fontName="Sarabun" size="13" isBold="true"/>
 				</textElement>
 				<text><![CDATA[**บันทึกเพิ่มเติม (กรณีพบปัญหาหรือเปลี่ยนอุปกรณ์):]]></text>
 			</staticText>
 			<line>
-				<reportElement positionType="Float" x="0" y="396" width="565" height="1" uuid="c1a2b3c4-0005-0000-0000-000000000046"/>
+				<reportElement positionType="Float" x="0" y="396" width="565" height="1" uuid="c1a2b3c4-0005-0000-0000-000000000048"/>
 				<graphicElement><pen lineWidth="1.0" lineStyle="Dotted"/></graphicElement>
 			</line>
 		</band>
