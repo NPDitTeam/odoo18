@@ -1,6 +1,58 @@
 from odoo import models, fields, api
 
 
+# --- แปลงจำนวนเงินเป็นตัวอักษรภาษาไทย (pure-Python ไม่พึ่ง lib bahttext) ---
+# server ไม่มี bahttext ทำให้เดิม fallback ไปแสดงตัวเลข -> เขียนเองให้ทำงานทุกเครื่อง
+_THAI_DIGITS = ['ศูนย์', 'หนึ่ง', 'สอง', 'สาม', 'สี่', 'ห้า', 'หก', 'เจ็ด', 'แปด', 'เก้า']
+_THAI_UNITS = ['', 'สิบ', 'ร้อย', 'พัน', 'หมื่น', 'แสน']
+
+
+def _read6_thai(chunk):
+    res = ''
+    length = len(chunk)
+    for i, ch in enumerate(chunk):
+        d = int(ch)
+        pos = length - i - 1
+        if d == 0:
+            continue
+        if pos == 0 and d == 1 and length > 1:
+            res += 'เอ็ด'
+        elif pos == 1 and d == 2:
+            res += 'ยี่สิบ'
+        elif pos == 1 and d == 1:
+            res += 'สิบ'
+        else:
+            res += _THAI_DIGITS[d] + _THAI_UNITS[pos]
+    return res
+
+
+def _num_to_thai(number):
+    number = int(number)
+    if number == 0:
+        return 'ศูนย์'
+    s = str(number)
+    groups = []
+    while s:
+        groups.insert(0, s[-6:])
+        s = s[:-6]
+    n = len(groups)
+    text = ''
+    for idx, g in enumerate(groups):
+        part = _read6_thai(g)
+        if part:
+            text += part + ('ล้าน' * (n - idx - 1))
+    return text
+
+
+def _baht_text(amount):
+    amount = round(float(amount or 0.0), 2)
+    baht = int(amount)
+    satang = int(round((amount - baht) * 100))
+    if satang == 0:
+        return _num_to_thai(baht) + 'บาทถ้วน'
+    return _num_to_thai(baht) + 'บาท' + _num_to_thai(satang) + 'สตางค์'
+
+
 class SaleOrder(models.Model):
     _inherit = 'sale.order'
 
@@ -23,16 +75,9 @@ class SaleOrder(models.Model):
 
     @api.depends('amount_total', 'pfb_amount')
     def _compute_jasper_baht_text_rental(self):
-        try:
-            from bahttext import bahttext
-        except ImportError:
-            bahttext = None
         for rec in self:
             total_amount = (rec.amount_total or 0.0) + (rec.pfb_amount or 0.0)
-            if bahttext:
-                rec.jasper_baht_text_rental = bahttext(total_amount)
-            else:
-                rec.jasper_baht_text_rental = str(total_amount)
+            rec.jasper_baht_text_rental = _baht_text(total_amount)
 
     @api.depends('order_line.second_uom_qty', 'order_line.pfb_quantity')
     def _compute_jasper_total_weight(self):

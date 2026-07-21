@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- แสดงเลขที่ใบส่งมอบสินค้า ต่อจากเลขที่สัญญาเช่า (rental_contract_full) บนฟอร์มใบขาย
+         inherit view ของโมดูลสัญญาเช่า (O18) ที่วาง rental_contract_full ไว้หลัง partner_id -->
+    <record id="view_order_form_delivery_note_no" model="ir.ui.view">
+        <field name="name">sale.order.form.delivery.note.no.jasper</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id"
+               ref="pfb_npd_rental_equipment_contract_jasper.view_order_form_rental_contract_no"/>
+        <field name="arch" type="xml">
+            <field name="rental_contract_full" position="after">
+                <field name="delivery_note_no" readonly="1"/>
+            </field>
+        </field>
+    </record>
+</odoo>

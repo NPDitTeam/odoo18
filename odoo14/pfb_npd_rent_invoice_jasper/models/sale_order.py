@@ -16,6 +16,58 @@ def _format_thai_date(dt):
     return '{} {} {}'.format(day, month, year)
 
 
+# --- แปลงจำนวนเงินเป็นตัวอักษรภาษาไทย (pure-Python ไม่พึ่ง lib bahttext) ---
+# server ไม่มี bahttext ทำให้เดิม fallback ไปแสดงตัวเลข ("10.7") -> เขียนเองให้ทำงานทุกเครื่อง
+_THAI_DIGITS = ['ศูนย์', 'หนึ่ง', 'สอง', 'สาม', 'สี่', 'ห้า', 'หก', 'เจ็ด', 'แปด', 'เก้า']
+_THAI_UNITS = ['', 'สิบ', 'ร้อย', 'พัน', 'หมื่น', 'แสน']
+
+
+def _read6_thai(chunk):
+    res = ''
+    length = len(chunk)
+    for i, ch in enumerate(chunk):
+        d = int(ch)
+        pos = length - i - 1
+        if d == 0:
+            continue
+        if pos == 0 and d == 1 and length > 1:
+            res += 'เอ็ด'
+        elif pos == 1 and d == 2:
+            res += 'ยี่สิบ'
+        elif pos == 1 and d == 1:
+            res += 'สิบ'
+        else:
+            res += _THAI_DIGITS[d] + _THAI_UNITS[pos]
+    return res
+
+
+def _num_to_thai(number):
+    number = int(number)
+    if number == 0:
+        return 'ศูนย์'
+    s = str(number)
+    groups = []
+    while s:
+        groups.insert(0, s[-6:])
+        s = s[:-6]
+    n = len(groups)
+    text = ''
+    for idx, g in enumerate(groups):
+        part = _read6_thai(g)
+        if part:
+            text += part + ('ล้าน' * (n - idx - 1))
+    return text
+
+
+def _baht_text(amount):
+    amount = round(float(amount or 0.0), 2)
+    baht = int(amount)
+    satang = int(round((amount - baht) * 100))
+    if satang == 0:
+        return _num_to_thai(baht) + 'บาทถ้วน'
+    return _num_to_thai(baht) + 'บาท' + _num_to_thai(satang) + 'สตางค์'
+
+
 class SaleOrder(models.Model):
     _inherit = 'sale.order'
 
@@ -42,14 +94,21 @@ class SaleOrder(models.Model):
 
     @api.depends('date_order')
     def _compute_jasper_date_order_thai(self):
+        # รูปแบบไทยแบบยาว "08 กรกฎาคม 2568" ให้ตรงกับ O14 (หัวเอกสาร บรรทัด "วันที่")
         for rec in self:
-            if rec.date_order:
-                dt = rec.date_order
-                rec.jasper_date_order_thai = '{}/{}/{}'.format(
-                    dt.strftime('%d'), dt.strftime('%m'), dt.year + 543
-                )
-            else:
-                rec.jasper_date_order_thai = ''
+            rec.jasper_date_order_thai = _format_thai_date(rec.date_order)
+
+    # --- เลขที่สัญญาเช่าเต็ม (อ่านจากโมดูล rental contract ถ้ามี) ---
+    jasper_contract_full = fields.Char(
+        string='Rental Contract Full',
+        compute='_compute_jasper_contract_full',
+    )
+
+    def _compute_jasper_contract_full(self):
+        # rental_contract_full เป็นฟิลด์ที่โมดูล pfb_npd_rental_equipment_contract_jasper
+        # เพิ่มบน sale.order — อ่านแบบปลอดภัยเผื่อโมดูลนั้นไม่ได้ติดตั้ง
+        for rec in self:
+            rec.jasper_contract_full = getattr(rec, 'rental_contract_full', '') or ''
 
     # --- Sales contact ---
     jasper_sales_contact_name = fields.Char(
@@ -153,16 +212,9 @@ class SaleOrder(models.Model):
 
     @api.depends('amount_total', 'pfb_amount')
     def _compute_jasper_baht_text_rental(self):
-        try:
-            from bahttext import bahttext
-        except ImportError:
-            bahttext = None
         for rec in self:
             total_amount = (rec.amount_total or 0.0) + (rec.pfb_amount or 0.0)
-            if bahttext:
-                rec.jasper_baht_text_rental = bahttext(total_amount)
-            else:
-                rec.jasper_baht_text_rental = str(total_amount)
+            rec.jasper_baht_text_rental = _baht_text(total_amount)
 
     # --- Total weight ---
     jasper_total_weight = fields.Float(
@@ -220,6 +272,72 @@ class SaleOrder(models.Model):
         formatted = now.strftime('%d-%m-%Y %H:%M:%S')
         for rec in self:
             rec.jasper_print_datetime = formatted
+
+    # --- เบอร์โทรผู้เซ็นฝั่งผู้เช่า (เทียบ user.partner_id.phone ฝั่ง O14) ---
+    jasper_user_phone = fields.Char(
+        string='Signer Phone',
+        compute='_compute_jasper_user_phone',
+    )
+
+    def _compute_jasper_user_phone(self):
+        user = self.env.user
+        partner = user.partner_id
+        phone = (partner.phone or partner.mobile or '') if partner else ''
+        for rec in self:
+            rec.jasper_user_phone = phone
+
+    # --- เงื่อนไขข้อ 5-7 (เลขบัญชี) ต่อบริษัท ---
+    # O14 เลือกด้วย request.db (แยก DB ต่อบริษัท) -> O18 single-DB เลือกด้วย
+    # บริษัทที่กำลังใช้งาน (env.company) โดย match จาก token ในชื่อบริษัท
+    # ข้อ 7 (ค่าขนส่ง) ใช้บัญชี เอ็นพีดี โลจิสติกส์ เหมือนกันทุกบริษัท
+    # บริษัทโลจิสติกส์เองไม่มีข้อ 6 (ค่าเช่า) -> ค่าขนส่งเลื่อนเป็นข้อ 6
+    jasper_rent_conditions = fields.Char(
+        string='Rent Conditions 5-7',
+        compute='_compute_jasper_rent_conditions',
+    )
+
+    def _compute_jasper_rent_conditions(self):
+        transport = (u'ค่าขนส่ง.สินค้า โอนเงินเข้าบัญชี : บช.บริษัท เอ็นพีดี โลจิสติกส์ จำกัด '
+                     u'ธนาคารไทยพาณิชย์ เลขที่บัญชี 439-044811-6')
+        # token ในชื่อบริษัท -> (ข้อ5 ค่าประกัน, ข้อ6 ค่าเช่า | None ถ้าไม่มี)
+        table = [
+            (u'อินเตอร์เทรดดิ้ง',
+             u'ค่าประกันสินค้า โอนเงินเข้าบัญชี บช.บริษัท นภดล อินเตอร์เทรดดิ้ง จำกัด กสิกรไทย เลขที่บัญชี 033-885651-2',
+             u'ค่าเช่าสินค้า โอนเงินเข้าบัญชี : บช.บริษัท นภดล อินเตอร์เทรดดิ้ง จำกัด ธนาคารไทยพาณิชย์ เลขที่บัญชี 408-546107-1'),
+            (u'กรุงเทพ',
+             u'ค่าประกันสินค้า โอนเงินเข้าบัญชี บช.บริษัท นภดล กรุงเทพ จำกัด กสิกรไทย เลขที่บัญชี 025-290298-8',
+             u'ค่าเช่าสินค้า โอนเงินเข้าบัญชี : บช.บริษัท นภดล กรุงเทพ จำกัด ธนาคารไทยพาณิชย์ เลขที่บัญชี 186-224773-9'),
+            (u'กรุ๊ป',
+             u'ค่าประกันสินค้า โอนเงินเข้าบัญชี บช.บริษัท นภดล เอส กรุ๊ป จำกัด กสิกรไทย เลขที่บัญชี 020-893777-4',
+             u'ค่าเช่าสินค้า โอนเงินเข้าบัญชี : บช.บริษัท นภดล เอส กรุ๊ป จำกัด ธนาคารไทยพาณิชย์ เลขที่บัญชี 186-222160-2'),
+            (u'สตีลเทค',
+             u'ค่าประกันสินค้า โอนเงินเข้าบัญชี บช.บริษัท เอ็นพีดี สตีลเทค จำกัด กสิกรไทย เลขที่บัญชี 035-1-39757-8',
+             u'ค่าเช่าสินค้า โอนเงินเข้าบัญชี : บช.บริษัท เอ็นพีดี สตีลเทค จำกัด ธนาคารไทยพาณิชย์ เลขที่บัญชี 408-582058-4'),
+            (u'โลจิสติกส์',
+             u'ค่าประกันสินค้า โอนเงินเข้าบัญชี บช.บริษัท เอ็นพีดี โลจิสติกส์ จำกัด กสิกรไทย เลขที่บัญชี 117-1-78329-8',
+             None),
+        ]
+        company_name = self.env.company.name or ''
+        insurance = rent = None
+        for token, ins, rnt in table:
+            if token in company_name:
+                insurance, rent = ins, rnt
+                break
+
+        if insurance is None:
+            text = ''
+        else:
+            num = 5
+            lines = [u'%d.  %s' % (num, insurance)]
+            num += 1
+            if rent:
+                lines.append(u'%d.  %s' % (num, rent))
+                num += 1
+            lines.append(u'%d.  %s' % (num, transport))
+            text = u'\n'.join(lines)
+
+        for rec in self:
+            rec.jasper_rent_conditions = text
 
 
 class SaleOrderLine(models.Model):
