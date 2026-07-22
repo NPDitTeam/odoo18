@@ -157,27 +157,27 @@
 		</band>
 	</title>
 	<pageHeader>
-		<band height="122" splitType="Stretch">
+		<band height="140" splitType="Stretch">
 			<rectangle>
-				<reportElement mode="Transparent" x="0" y="0" width="565" height="96" uuid="a1b2c3d4-0002-0001-0001-000000000010"/>
+				<reportElement mode="Transparent" x="0" y="0" width="565" height="114" uuid="a1b2c3d4-0002-0001-0001-000000000010"/>
 				<graphicElement>
 					<pen lineWidth="0.75"/>
 				</graphicElement>
 			</rectangle>
 			<line>
-				<reportElement x="50" y="0" width="1" height="96" uuid="a1b2c3d4-0002-0001-0001-000000000011"/>
+				<reportElement x="50" y="0" width="1" height="114" uuid="a1b2c3d4-0002-0001-0001-000000000011"/>
 				<graphicElement>
 					<pen lineWidth="0.75"/>
 				</graphicElement>
 			</line>
 			<line>
-				<reportElement x="415" y="0" width="1" height="96" uuid="a1b2c3d4-0002-0001-0001-000000000012"/>
+				<reportElement x="415" y="0" width="1" height="114" uuid="a1b2c3d4-0002-0001-0001-000000000012"/>
 				<graphicElement>
 					<pen lineWidth="0.75"/>
 				</graphicElement>
 			</line>
 			<line>
-				<reportElement x="459" y="0" width="1" height="96" uuid="a1b2c3d4-0002-0001-0001-000000000013"/>
+				<reportElement x="459" y="0" width="1" height="114" uuid="a1b2c3d4-0002-0001-0001-000000000013"/>
 				<graphicElement>
 					<pen lineWidth="0.75"/>
 				</graphicElement>
@@ -252,7 +252,7 @@
 				<textFieldExpression><![CDATA[$F{InvoiceDate-jasper_rd_invoice_date_str}]]></textFieldExpression>
 			</textField>
 			<staticText>
-				<reportElement style="ThaiSmall" x="2" y="58" width="48" height="38" uuid="a1b2c3d4-0002-0001-0001-000000000029"/>
+				<reportElement style="ThaiSmall" x="2" y="58" width="48" height="56" uuid="a1b2c3d4-0002-0001-0001-000000000029"/>
 				<textElement verticalAlignment="Middle">
 					<font fontName="Sarabun" size="11"/>
 				</textElement>
@@ -260,28 +260,28 @@
 ส่งสินค้า]]></text>
 			</staticText>
 			<textField isBlankWhenNull="true" isStretchWithOverflow="true">
-					<reportElement style="Thai" x="54" y="58" width="359" height="38" uuid="a1b2c3d4-0002-0001-0001-00000000002a"/>
+					<reportElement style="Thai" x="54" y="58" width="359" height="56" uuid="a1b2c3d4-0002-0001-0001-00000000002a"/>
 					<textElement verticalAlignment="Top">
 						<font fontName="Sarabun" size="12"/>
 					</textElement>
 					<textFieldExpression><![CDATA[($F{ShippingName-jasper_rd_shipping_name} == null ? "" : $F{ShippingName-jasper_rd_shipping_name}) + "\n" + ($F{ShippingAddress-jasper_rd_shipping_address} == null ? "" : $F{ShippingAddress-jasper_rd_shipping_address})]]></textFieldExpression>
 				</textField>
 			<staticText>
-				<reportElement style="ThaiSmall" x="413" y="58" width="44" height="38" uuid="a1b2c3d4-0002-0001-0001-00000000002c"/>
+				<reportElement style="ThaiSmall" x="413" y="58" width="44" height="56" uuid="a1b2c3d4-0002-0001-0001-00000000002c"/>
 				<textElement textAlignment="Center" verticalAlignment="Middle">
 					<font fontName="Sarabun" size="11"/>
 				</textElement>
 				<text><![CDATA[รหัสลูกค้า]]></text>
 			</staticText>
 			<textField isBlankWhenNull="true">
-				<reportElement style="Thai" x="461" y="58" width="102" height="38" uuid="a1b2c3d4-0002-0001-0001-00000000002d"/>
+				<reportElement style="Thai" x="461" y="58" width="102" height="56" uuid="a1b2c3d4-0002-0001-0001-00000000002d"/>
 				<textElement textAlignment="Center" verticalAlignment="Middle">
 					<font fontName="Sarabun" size="12"/>
 				</textElement>
 				<textFieldExpression><![CDATA[$F{PartnerRef-ref}]]></textFieldExpression>
 			</textField>
 			<staticText>
-				<reportElement style="ThaiBold" mode="Opaque" x="0" y="100" width="30" height="22" backcolor="#F2F2F2" uuid="a1b2c3d4-0002-0001-0001-000000000030"/>
+				<reportElement style="ThaiBold" mode="Opaque" x="0" y="118" width="30" height="22" backcolor="#F2F2F2" uuid="a1b2c3d4-0002-0001-0001-000000000030"/>
 				<box>
 					<pen lineWidth="0.75"/>
 				</box>
@@ -291,7 +291,7 @@
 				<text><![CDATA[ลำดับ]]></text>
 			</staticText>
 			<staticText>
-				<reportElement style="ThaiBold" mode="Opaque" x="30" y="100" width="260" height="22" backcolor="#F2F2F2" uuid="a1b2c3d4-0002-0001-0001-000000000032"/>
+				<reportElement style="ThaiBold" mode="Opaque" x="30" y="118" width="260" height="22" backcolor="#F2F2F2" uuid="a1b2c3d4-0002-0001-0001-000000000032"/>
 				<box>
 					<pen lineWidth="0.75"/>
 				</box>
@@ -301,7 +301,7 @@
 				<text><![CDATA[รายการ]]></text>
 			</staticText>
 			<staticText>
-				<reportElement style="ThaiBold" mode="Opaque" x="290" y="100" width="50" height="22" backcolor="#F2F2F2" uuid="a1b2c3d4-0002-0001-0001-000000000033"/>
+				<reportElement style="ThaiBold" mode="Opaque" x="290" y="118" width="50" height="22" backcolor="#F2F2F2" uuid="a1b2c3d4-0002-0001-0001-000000000033"/>
 				<box>
 					<pen lineWidth="0.75"/>
 				</box>
@@ -311,7 +311,7 @@
 				<text><![CDATA[จำนวน]]></text>
 			</staticText>
 			<staticText>
-				<reportElement style="ThaiBold" mode="Opaque" x="340" y="100" width="45" height="22" backcolor="#F2F2F2" uuid="a1b2c3d4-0002-0001-0001-000000000034"/>
+				<reportElement style="ThaiBold" mode="Opaque" x="340" y="118" width="45" height="22" backcolor="#F2F2F2" uuid="a1b2c3d4-0002-0001-0001-000000000034"/>
 				<box>
 					<pen lineWidth="0.75"/>
 				</box>
@@ -321,7 +321,7 @@
 				<text><![CDATA[หน่วย]]></text>
 			</staticText>
 			<staticText>
-				<reportElement style="ThaiBold" mode="Opaque" x="385" y="100" width="75" height="22" backcolor="#F2F2F2" uuid="a1b2c3d4-0002-0001-0001-000000000035"/>
+				<reportElement style="ThaiBold" mode="Opaque" x="385" y="118" width="75" height="22" backcolor="#F2F2F2" uuid="a1b2c3d4-0002-0001-0001-000000000035"/>
 				<box>
 					<pen lineWidth="0.75"/>
 				</box>
@@ -331,7 +331,7 @@
 				<text><![CDATA[ราคาต่อหน่วย]]></text>
 			</staticText>
 			<staticText>
-				<reportElement style="ThaiBold" mode="Opaque" x="445" y="100" width="50" height="22" backcolor="#F2F2F2" uuid="a1b2c3d4-0002-0001-0001-000000000036"/>
+				<reportElement style="ThaiBold" mode="Opaque" x="445" y="118" width="50" height="22" backcolor="#F2F2F2" uuid="a1b2c3d4-0002-0001-0001-000000000036"/>
 				<box>
 					<pen lineWidth="0.75"/>
 				</box>
@@ -341,7 +341,7 @@
 				<text><![CDATA[ส่วนลด(%)]]></text>
 			</staticText>
 			<staticText>
-				<reportElement style="ThaiBold" mode="Opaque" x="495" y="100" width="70" height="22" backcolor="#F2F2F2" uuid="a1b2c3d4-0002-0001-0001-000000000037"/>
+				<reportElement style="ThaiBold" mode="Opaque" x="495" y="118" width="70" height="22" backcolor="#F2F2F2" uuid="a1b2c3d4-0002-0001-0001-000000000037"/>
 				<box>
 					<pen lineWidth="0.75"/>
 				</box>

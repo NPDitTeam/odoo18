@@ -32,6 +32,9 @@
 	<field name="Sale_Name-sale_id" class="java.lang.String">
 		<fieldDescription><![CDATA[Sale_Order-sale_id/Name-name]]></fieldDescription>
 	</field>
+	<field name="Contract-jasper_contract_full" class="java.lang.String">
+		<fieldDescription><![CDATA[Contract-jasper_contract_full]]></fieldDescription>
+	</field>
 	<field name="Partner_Name-partner_id" class="java.lang.String">
 		<fieldDescription><![CDATA[Customer-partner_id/Name-name]]></fieldDescription>
 	</field>
@@ -177,32 +180,39 @@
 				<textFieldExpression><![CDATA[$F{Company_Address-jasper_company_address} != null && !$F{Company_Address-jasper_company_address}.isEmpty() ? $F{Company_Address-jasper_company_address} : ($F{Branch_Address-jasper_branch_address} != null ? $F{Branch_Address-jasper_branch_address} : "")]]></textFieldExpression>
 			</textField>
 			<staticText>
-				<reportElement style="ThaiMedium" x="400" y="0" width="175" height="24" uuid="4f80c7b3-749d-4e6b-a465-f448c4db46b4"/>
+				<reportElement style="ThaiMedium" x="400" y="0" width="175" height="22" uuid="4f80c7b3-749d-4e6b-a465-f448c4db46b4"/>
 				<textElement textAlignment="Center" verticalAlignment="Middle">
 					<font fontName="Sarabun" size="16" isBold="true"/>
 				</textElement>
 				<text><![CDATA[เลขที่ใบคืน]]></text>
 			</staticText>
 			<textField isBlankWhenNull="true">
-				<reportElement style="ThaiBold" x="400" y="24" width="175" height="22" uuid="447e35e1-f344-4116-8648-900380f650be"/>
+				<reportElement style="ThaiBold" x="400" y="22" width="175" height="19" uuid="447e35e1-f344-4116-8648-900380f650be"/>
 				<textElement textAlignment="Center" verticalAlignment="Middle">
 					<font fontName="Sarabun" size="14" isBold="true"/>
 				</textElement>
 				<textFieldExpression><![CDATA[$F{Picking_Name-name}]]></textFieldExpression>
 			</textField>
 			<staticText>
-				<reportElement style="Thai" x="400" y="48" width="175" height="22" uuid="6135630c-0d7c-4a75-9b4a-32746b70cebe"/>
+				<reportElement style="Thai" x="400" y="41" width="175" height="19" uuid="6135630c-0d7c-4a75-9b4a-32746b70cebe"/>
 				<textElement textAlignment="Center" verticalAlignment="Middle">
 					<font fontName="Sarabun" size="14"/>
 				</textElement>
 				<text><![CDATA[ใบกำกับการเช่า]]></text>
 			</staticText>
 			<textField isBlankWhenNull="true">
-				<reportElement style="Thai" x="400" y="70" width="175" height="22" uuid="09762b3b-b3ff-4425-afc6-8bf95470a24c"/>
+				<reportElement style="Thai" x="400" y="60" width="175" height="19" uuid="09762b3b-b3ff-4425-afc6-8bf95470a24c"/>
 				<textElement textAlignment="Center" verticalAlignment="Middle">
 					<font fontName="Sarabun" size="14"/>
 				</textElement>
-				<textFieldExpression><![CDATA[$F{Sale_Name-sale_id}]]></textFieldExpression>
+				<textFieldExpression><![CDATA["เลขที่ " + ($F{Sale_Name-sale_id} == null ? "" : $F{Sale_Name-sale_id})]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement style="ThaiBold" x="400" y="79" width="175" height="19" uuid="09762b3b-b3ff-4425-afc6-8bf95470a24d"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Sarabun" size="14" isBold="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA["สัญญา " + ($F{Contract-jasper_contract_full} == null ? "" : $F{Contract-jasper_contract_full})]]></textFieldExpression>
 			</textField>
 			<rectangle radius="8">
 				<reportElement mode="Transparent" x="0" y="100" width="575" height="28" uuid="88a719f1-14cb-43ec-9f20-9e54d162b734"/>

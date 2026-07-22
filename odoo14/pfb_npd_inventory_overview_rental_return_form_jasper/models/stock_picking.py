@@ -137,6 +137,17 @@ class StockPicking(models.Model):
         string='Create Date',
         compute='_compute_jasper_create_info',
     )
+    # เลขที่สัญญาเช่า (เต็ม) จากใบขายเช่า — ตรงกับ odoo14 (doc.sale_id.rental_contract_full)
+    jasper_contract_full = fields.Char(
+        string='Contract No (Full)',
+        compute='_compute_jasper_contract',
+    )
+
+    @api.depends('sale_id')
+    def _compute_jasper_contract(self):
+        for rec in self:
+            so = rec.sale_id
+            rec.jasper_contract_full = (getattr(so, 'rental_contract_full', '') or '') if so else ''
 
     @api.depends('start_x_date', 'end_x_date', 'return_date', 'create_date')
     def _compute_jasper_dates(self):
@@ -205,19 +216,29 @@ class StockPicking(models.Model):
             pfb_amount = so.pfb_amount if so and hasattr(so, 'pfb_amount') else 0.0
             total_rental_discount = getattr(so, 'total_rental_discount', 0.0) if so else 0.0
 
-            rent_days = rec.jasper_rent_days or 1
+            # billed_days = จำนวนวันเช่าเริ่มต้น, days_used = จำนวนวันที่ใช้จริง (ตาม odoo14)
+            billed_days = rec.jasper_rent_days or 1
             days_used = rec.jasper_days_used or 0
 
-            rental_per_day = amount_total / rent_days if rent_days else 0.0
+            # ค่าเช่าต่อวัน = (ค่าเช่าเริ่มต้น = amount_total + total_rental_discount) / วันเช่า
+            # ปัดทศนิยม 2 ตำแหน่ง ให้ตรงกับ odoo14 (เดิม O18 หาร amount_total เฉย ๆ ไม่บวกส่วนลด/ไม่ปัด)
+            rental_per_day = round((amount_total + total_rental_discount) / billed_days, 2) if billed_days else 0.0
             total_rent = rental_per_day * days_used
             rental_start = amount_total + total_rental_discount
+
+            # value_16 = ค่าเก็บค่าเช่าส่วนต่าง (ฐาน) ตามสูตร odoo14
+            value_16 = rental_per_day * (days_used - billed_days)
+            # เคสพิเศษ: ถ้าวันส่วนต่าง (days_used - billed_days) เท่ากับวันเช่าเริ่มต้นพอดี
+            # ใช้ค่าเช่าเริ่มต้นตรง ๆ เพื่อเลี่ยงเศษที่ถูกปัดจาก rental_per_day
+            if billed_days > 0 and (days_used - billed_days) == billed_days:
+                value_16 = amount_total + total_rental_discount
 
             rec.jasper_rental_start = rental_start
             rec.jasper_insurance_amount = pfb_amount
             rec.jasper_rental_per_day = rental_per_day
             rec.jasper_total_rent = total_rent
 
-            rent_diff = rec._calculate_rent_diff(total_rent, amount_total)
+            rent_diff = rec._calculate_rent_diff(value_16)
             rec.jasper_rent_diff = rent_diff
 
             approval_state = getattr(rec, 'approval_state', '')
@@ -225,26 +246,31 @@ class StockPicking(models.Model):
             rec.jasper_rent_discount = rent_discount
             rec.jasper_rent_diff_net = rent_diff - rent_discount
 
-    def _calculate_rent_diff(self, total_rent, amount_total):
+    def _calculate_rent_diff(self, value_16):
         self.ensure_one()
         so = self.sale_id
         if not so:
             return 0.0
 
-        base_diff = total_rent - amount_total
+        # ฐานค่าเก็บค่าเช่าส่วนต่าง = value_16 ที่คำนวณตาม odoo14
+        base_diff = value_16
 
-        deposit_ref = so.deposit_ref or '' if hasattr(so, 'deposit_ref') else ''
-        deposit_count = len([x for x in deposit_ref.split(',') if x.strip()]) if deposit_ref else 0
+        deposit_ref = (so.deposit_ref or '') if hasattr(so, 'deposit_ref') else ''
+        # ตรงกับ odoo14: นับตาม split(',') โดยไม่กรองช่องว่าง
+        deposit_count = len(deposit_ref.split(',')) if deposit_ref else 0
 
         campaign_name = so.campaign_id.name if hasattr(so, 'campaign_id') and so.campaign_id else ''
         pricelist_name = so.pricelist_id.name if so.pricelist_id else ''
         return_d = self.return_date.date() if self.return_date else False
+        # odoo14 ใช้ "วันที่วันนี้" (เวลาไทย) ในเงื่อนไข campaign ส่งฟรี
+        today = (datetime.now() + timedelta(hours=7)).date()
 
         free_campaigns = ['โปร 2026 ส่งฟรีไม่เกิน 25 Km.', 'โปร 2026 ส่งฟรีไม่เกิน 35 Km.']
 
         if deposit_count == 0:
             if campaign_name in free_campaigns:
-                if return_d and self.end_x_date and return_d > self.end_x_date:
+                # odoo14 เทียบ "วันนี้ > วันสิ้นสุด" (ไม่ใช่วันคืน)
+                if self.end_x_date and today > self.end_x_date:
                     return base_diff
                 return 0.0
 

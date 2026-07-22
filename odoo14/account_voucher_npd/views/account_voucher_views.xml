@@ -343,7 +343,7 @@
 
     <!-- Sales Voucher -->
     <record id="action_sale_receipt" model="ir.actions.act_window">
-        <field name="name">Sale Receipts</field>
+        <field name="name">การรับ</field>
         <field name="view_mode">list,kanban,form,pivot,graph</field>
         <field name="res_model">account.voucher</field>
         <field name="domain">[('journal_id.type','=','receivable'), ('voucher_type','=','sale')]</field>
@@ -372,7 +372,7 @@
         <field name="act_window_id" ref="action_sale_receipt"/>
     </record>
 
-    <menuitem id="menu_action_sale_receipt" name="Sale Receipt" action="action_sale_receipt" parent="account.menu_finance_receivables" sequence="80"/>
+    <menuitem id="menu_action_sale_receipt" name="การรับ" action="action_sale_receipt" parent="account.menu_finance_receivables" sequence="80"/>
 
     <!--  Purchase Vouchers (คืนเงินประกันค่าเช่า) -->
     <record id="view_purchase_receipt_form" model="ir.ui.view">
