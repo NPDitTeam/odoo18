@@ -117,6 +117,14 @@
               parent="pfb_npd_all_customs.sale_order"
               sequence="2" groups="sales_team.group_sale_salesman"/>
 
+    <!-- คลิกแอป "การขาย" -> เปิด "Sales Orders Rent" เป็นค่าเริ่มต้น
+         เดิม root menu ไม่มี action คลิกแอปจึงเด้งไปเมนูลูกตัวแรก (ใบเสนอราคา)
+         ตั้ง action ให้ root menu โดยแตะเฉพาะฟิลด์ action ไม่กระทบชื่อ/ไอคอน -->
+    <record id="sale.sale_menu_root" model="ir.ui.menu">
+        <field name="action"
+               eval="'ir.actions.act_window,' + str(ref('pfb_npd_all_customs.action_orders_rent'))"/>
+    </record>
+
     <menuitem
             id="sale_order_line_menu.sale_order_line_menu"
             name="Order Lines"

@@ -4,6 +4,15 @@ from odoo.exceptions import UserError
 
 _logger = logging.getLogger(__name__)
 
+# ตัวย่อบริษัทหน้าเลขที่สัญญาเช่า (map ตาม company_registry) จากโมดูลสัญญาเช่า
+# import แบบปลอดภัย เผื่อโมดูลนั้นไม่ได้ติดตั้ง
+try:
+    from odoo.addons.pfb_npd_rental_equipment_contract_jasper.models.sale_order import (
+        REGISTRY_CONTRACT_PREFIX,
+    )
+except Exception:  # pragma: no cover
+    REGISTRY_CONTRACT_PREFIX = {}
+
 # เลขทะเบียนบริษัท (company_registry / "ID บริษัท") — ใช้ระบุบริษัทแทน database id
 # เพราะ id อาจต่างกันในแต่ละฐานข้อมูล แต่เลขทะเบียนคงที่
 NPD_LOGISTICS_REGISTRY = "5"   # บริษัท เอ็นพีดี โลจิสติกส์ จำกัด (ใช้ฟีเจอร์นี้ได้)
@@ -112,6 +121,27 @@ class SaleOrder(models.Model):
             "profit_per_trip": source_order.profit_per_trip,
             "use_special_delivery_zero": source_order.use_special_delivery_zero,
         })
+
+        # คัดลอก "เลขที่สัญญาเช่า" จากต้นทางมาด้วย (เฉพาะบริษัท เอ็นพีดี โลจิสติกส์)
+        # โลจิสติกส์รับงานขนส่งแทนบริษัทอื่น จึงต้องใช้เลขสัญญาของต้นทาง
+        # ไม่ใช่รันเลขใหม่ของตัวเอง -> คัดลอกเลขรัน + ตัวย่อบริษัทที่ใช้จริงของต้นทาง
+        # (rental_contract_full = prefix + no + /N เป็น compute จึงตั้งค่าผ่านฟิลด์ต้นทาง)
+        if (
+            self.company_id.company_registry == NPD_LOGISTICS_REGISTRY
+            and "rental_contract_no" in self._fields
+            and source_order.rental_contract_no
+        ):
+            src_prefix = source_order.rental_contract_prefix or REGISTRY_CONTRACT_PREFIX.get(
+                source_company.company_registry, ""
+            )
+            self.write({
+                "rental_contract_no": source_order.rental_contract_no,
+                "rental_contract_prefix": src_prefix,
+            })
+            _logger.info(
+                "📄 คัดลอกเลขที่สัญญาเช่าจากต้นทาง: %s%s",
+                src_prefix, source_order.rental_contract_no,
+            )
 
         # ลบรายการสินค้าเดิมก่อนคัดลอกใหม่
         if self.order_line:
