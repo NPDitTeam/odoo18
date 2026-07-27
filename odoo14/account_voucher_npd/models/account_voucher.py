@@ -16,13 +16,26 @@ class AccountVoucher(models.Model):
     _order = "date desc, id desc"
 
     def _default_journal(self):
-        voucher_type = self._context.get('voucher_type') == 'sale' and 'receivable' or 'payable'
+        is_sale = self._context.get('voucher_type') == 'sale'
+        journal_type = 'receivable' if is_sale else 'payable'
         company_id = self._context.get('company_id', self.env.company.id)
-        domain = [
-            ('type', '=', voucher_type),
+        company = self.env['res.company'].browse(company_id)
+
+        # ตั้งค่าได้ที่ การขาย > การกำหนดค่า > สมุดรายวันออกใบแจ้งหนี้
+        # กรณี "ใบสำคัญรับ" / "ใบสำคัญจ่าย"
+        journal = self.env['npd.invoice.journal.config']._get_journal(
+            company, 'voucher_sale' if is_sale else 'voucher_purchase',
+        )
+        if journal:
+            return journal
+
+        # ไม่ได้ตั้งค่าไว้: เอาเล่มแรกตามเดิม
+        # (ระวัง เล่ม 'Payable'/'Receivable' ที่ Odoo สร้างให้ตอนติดตั้งมี id ต่ำกว่า
+        #  จึงชนะเล่มที่ใช้งานจริงเสมอ เป็นเหตุผลที่ควรตั้งค่าในเมนู)
+        return self.env['account.journal'].search([
+            ('type', '=', journal_type),
             ('company_id', '=', company_id),
-        ]
-        return self.env['account.journal'].search(domain, limit=1)
+        ], limit=1)
 
     def _default_payment_journal(self):
         company_id = self._context.get('company_id', self.env.company.id)
@@ -407,41 +420,46 @@ class AccountVoucher(models.Model):
             raise UserError(_("วิธีการชำระ 'หักเงินประกันค่าเช่า' ยังไม่ได้ตั้งค่าบัญชี"))
 
         def get_journal_for_invoice(invoice):
-            invoice_name = invoice.name or ""
-            journal_mapping = {
-                'INV': 'สมุดรายวันรับชำระ',
-                'ILS': 'สมุดรายวันรับชำระค่าปรับหาย',
-                'IBK': 'สมุดรายวันรับชำระค่าปรับชำรุด',
-            }
+            """สมุดรายวันที่จะใช้สร้าง account.payment ตัดหนี้ใบแจ้งหนี้ใบนี้
 
-            for prefix, journal_name in journal_mapping.items():
-                if invoice_name.startswith(prefix):
-                    journal = self.env['account.journal'].search([
-                        ('name', '=', journal_name),
-                        ('company_id', '=', self.company_id.id)
-                    ], limit=1)
+            เดิมเดาจากคำนำหน้าเลขที่เอกสาร (INV/ILS/IBK) ซึ่งผูกกับรูปแบบเลขที่
+            ตอนนี้อิงสมุดรายวันของใบแจ้งหนี้ตรง ๆ ตั้งค่าได้ที่คอลัมน์
+            "สมุดรายวันรับเงิน (Payment)" ในเมนูสมุดรายวันออกใบแจ้งหนี้
 
-                    if journal:
-                        return journal
-                    else:
-                        raise UserError(
-                            _("ไม่พบ '%s' สำหรับใบแจ้งหนี้ %s\nกรุณาสร้าง Journal ในระบบ")
-                            % (journal_name, invoice_name)
-                        )
+            ต้องเป็นประเภท ธนาคาร/เงินสด/เครดิต เท่านั้น เพราะ Odoo 18 บังคับว่า
+            account.payment ใช้ได้แค่สามประเภทนี้ ถ้าใส่ receivable/payable เข้าไป
+            จะโพสต์ไม่ผ่านเพราะหา payment_method_line_id ไม่เจอ
+            """
+            journal = self.env['npd.invoice.journal.config']._get_payment_journal(
+                self.company_id, invoice.journal_id,
+            )
+            # เล่มที่ตั้งไว้ต้องรองรับ account.payment จริง ๆ ไม่งั้นโพสต์ไม่ผ่าน
+            # (Odoo 18 ให้เฉพาะ bank/cash/credit และต้องมี payment_method_line)
+            if journal and journal.inbound_payment_method_line_ids:
+                return journal
+            if journal:
+                _logger.warning(
+                    "สมุดรายวัน '%s' ที่ตั้งไว้สำหรับใบแจ้งหนี้ %s ใช้กับ account.payment ไม่ได้ "
+                    "(ประเภท '%s' ไม่มี payment method) จะใช้สมุดรายวันธนาคาร/เงินสดแทน",
+                    journal.display_name, invoice.name or '', journal.type,
+                )
 
+            # ไม่ได้ตั้งค่าไว้ หรือเล่มที่ตั้งไว้ใช้ไม่ได้: เอาเล่มแรกที่ใช้ได้จริง
             default_journal = self.env['account.journal'].search([
-                ('name', '=', 'สมุดรายวันรับชำระ'),
-                ('company_id', '=', self.company_id.id)
+                ('type', 'in', ('bank', 'cash', 'credit')),
+                ('company_id', '=', self.company_id.id),
+                ('inbound_payment_method_line_ids', '!=', False),
             ], limit=1)
 
             if not default_journal:
-                default_journal = self.env['account.journal'].search([
-                    ('type', '=', 'receivable'),
-                    ('company_id', '=', self.company_id.id)
-                ], limit=1)
-
-            if not default_journal:
-                raise UserError(_("ไม่พบสมุดรายวันสำหรับรับชำระเงิน"))
+                raise UserError(_(
+                    "ไม่พบสมุดรายวันสำหรับรับชำระเงินของบริษัท %(company)s\n"
+                    "กรุณาตั้งค่าคอลัมน์ \"สมุดรายวันรับเงิน (Payment)\" "
+                    "ของสมุดรายวัน %(journal)s ที่เมนู\n"
+                    "การขาย > การกำหนดค่า > สมุดรายวันออกใบแจ้งหนี้",
+                    company=self.company_id.display_name,
+                    journal=invoice.journal_id.display_name,
+                ))
 
             return default_journal
 
@@ -611,6 +629,19 @@ class AccountVoucher(models.Model):
 
         self._compute_total_outstanding()
         self._onchange_rental_return_select_id()
+
+        # สมุดรายวันของใบสำคัญ อิงสมุดรายวันของใบแจ้งหนี้ที่เลือก
+        # ตั้งค่าได้ที่คอลัมน์ "สมุดรายวันรับชำระ (ใบสำคัญ)" ในเมนู
+        # การขาย > การกำหนดค่า > สมุดรายวันออกใบแจ้งหนี้
+        if self.invoice_ids:
+            voucher_journal = self.env['npd.invoice.journal.config']._get_voucher_journal(
+                self.company_id, self.invoice_ids.journal_id,
+            )
+            # ตั้งเฉพาะเล่มที่ตรงประเภทกับใบสำคัญใบนี้ (รับ=receivable, จ่าย=payable)
+            # ไม่งั้นจะสลับประเภทเอกสารโดยไม่ตั้งใจ
+            wanted_type = 'receivable' if self.voucher_type == 'sale' else 'payable'
+            if voucher_journal and voucher_journal.type == wanted_type:
+                self.journal_id = voucher_journal
 
     @api.onchange('rental_return_select_id', 'rental_return_id', 'no_deduction', 'invoice_ids')
     def _onchange_rental_return_select_id(self):

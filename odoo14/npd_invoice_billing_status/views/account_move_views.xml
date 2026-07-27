@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Odoo 14 แทรกฟิลด์ต่อจาก debt_payment_type ในวิวของ npd_print_select_account
+         Odoo 18 ยังไม่ได้พอร์ตโมดูลนั้นมา และ debt_payment_type ก็ไม่ได้ถูกแสดง
+         บนฟอร์มใบแจ้งหนี้ จึงแทรกต่อจากกลุ่มฟิลด์ NPD ที่ pfb_npd_all_customs
+         เพิ่มไว้แทน (pfb_so_type / วัตถุประสงค์ / การติดต่อ / Sales ที่ติดต่อ) -->
+    <record id="view_move_form_billing_status" model="ir.ui.view">
+        <field name="name">account.move.form.billing.status</field>
+        <field name="model">account.move</field>
+        <field name="inherit_id" ref="pfb_npd_all_customs.view_move_form_inherit"/>
+        <field name="arch" type="xml">
+            <field name="sales_contact" position="after">
+                <!-- สถานะวางบิล -->
+                <field name="billing_status"/>
+                <!-- วางบิลให้ลูกค้าผ่านช่องทาง (แสดง+บังคับกรอก เมื่อวางบิลแล้ว) -->
+                <field name="billing_channel"
+                       invisible="billing_status != 'billed'"
+                       required="billing_status == 'billed'"/>
+                <!-- แนบหลักฐานการวางบิล (แสดง+บังคับกรอก เมื่อวางบิลแล้ว) -->
+                <field name="billing_evidence_filename" invisible="1"/>
+                <field name="billing_evidence"
+                       filename="billing_evidence_filename"
+                       invisible="billing_status != 'billed'"
+                       required="billing_status == 'billed'"/>
+            </field>
+        </field>
+    </record>
+
+</odoo>

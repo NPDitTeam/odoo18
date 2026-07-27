@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_account_journal_form_seq" model="ir.ui.view">
+        <field name="name">account.journal.form.seq</field>
+        <field name="model">account.journal</field>
+        <field name="inherit_id" ref="account.view_account_journal_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//notebook" position="inside">
+                <page name="journal_sequence" string="Sequence">
+                    <group>
+                        <group string="Sequence">
+                            <field name="sequence_id"
+                                   domain="[('company_id', 'in', [company_id, False])]"
+                                   options="{'no_quick_create': True}"/>
+                            <field name="sequence_number_next" invisible="not sequence_id"/>
+                        </group>
+                        <!-- 'refund_sequence' is already loaded by the base form
+                             (Advanced Settings), so it can be used in modifiers here. -->
+                        <group string="Refund Sequence">
+                            <field name="refund_sequence_id"
+                                   domain="[('company_id', 'in', [company_id, False])]"
+                                   options="{'no_quick_create': True}"
+                                   invisible="not refund_sequence"/>
+                            <field name="refund_sequence_number_next"
+                                   invisible="not refund_sequence or not refund_sequence_id"/>
+                        </group>
+                    </group>
+                    <div class="text-muted mt-3" invisible="sequence_id or refund_sequence_id">
+                        เว้นว่างไว้ = ใช้การออกเลขที่มาตรฐานของ Odoo 18
+                        (เดาเลขถัดไปจากเอกสารล่าสุดของสมุดรายวันเล่มนี้)
+                    </div>
+                    <div class="text-muted mt-3" invisible="not sequence_id and not refund_sequence_id">
+                        สมุดรายวันเล่มนี้ออกเลขที่จาก ir.sequence ที่ตั้งไว้ด้านบน
+                        เลขที่จะถูกกำหนดตอนโพสต์เอกสาร และแก้ไขด้วยมือไม่ได้
+                    </div>
+                </page>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>

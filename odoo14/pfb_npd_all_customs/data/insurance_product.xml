@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- noupdate: อัปเกรดโมดูลครั้งต่อไปจะไม่เขียนทับค่าที่ผู้ใช้แก้เอง -->
+    <data noupdate="1">
+
+        <!-- สินค้าเริ่มต้นสำหรับบรรทัดในใบแจ้งหนี้รับเงินประกัน
+
+             ตั้งเป็นสินค้ากลาง (ไม่ผูกบริษัท) เพราะบัญชีรายได้ของสินค้า
+             (property_account_income_id) เป็น company-dependent อยู่แล้ว
+             แต่ละบริษัทจึงตั้งบัญชีของตัวเองได้บนสินค้าตัวเดียวกัน
+
+             ไม่ผูกภาษีขายไว้ เพราะเงินประกันโดยทั่วไปไม่ใช่รายการที่เสีย VAT
+             ถ้าธุรกิจต้องคิดภาษี ให้ไปเพิ่มภาษีที่สินค้าเอง
+
+             บัญชีที่ลง: เงินประกันเป็นหนี้สิน ไม่ใช่รายได้ จึงต้องผูก
+             property_account_income_id เข้ากับบัญชี 2133-01 เงินประกันการเช่า/สินค้า
+             (ตั้งให้อัตโนมัติใน migration เพราะเป็น company-dependent
+              และรหัสบัญชีของแต่ละบริษัทเป็นคนละ record) -->
+        <record id="product_product_insurance_deposit" model="product.product">
+            <field name="name">เงินประกันค่าเช่า</field>
+            <field name="default_code">DEPOSIT</field>
+            <field name="type">service</field>
+            <field name="sale_ok" eval="True"/>
+            <field name="purchase_ok" eval="False"/>
+            <field name="invoice_policy">order</field>
+            <field name="list_price">0.0</field>
+            <field name="uom_id" ref="uom.product_uom_unit"/>
+            <field name="uom_po_id" ref="uom.product_uom_unit"/>
+            <field name="company_id" eval="[]"/>
+            <field name="taxes_id" eval="[]"/>
+            <field name="supplier_taxes_id" eval="[]"/>
+        </record>
+
+    </data>
+</odoo>

@@ -43,12 +43,21 @@ class SaleAdvanceRentInv(models.TransientModel):
     def create_invoices(self):
         sale_orders = self.env['sale.order'].browse(self._context.get('active_ids', []))
         amount = 0
-        name = _('Insurance Payment')
+        name = _('รับเงินประกัน')
 
-        product_id = self.env['ir.config_parameter'].sudo().get_param('sale.deposit_default_npd_id')
-        product = self.env['product.product'].search(
-            [('id', '=', int(product_id)), ('active', '=', True)], limit=1
-        )
+        company = sale_orders.company_id[:1] or self.env.company
+
+        # สินค้าเงินประกัน ตั้งค่าได้ที่
+        # การขาย > การกำหนดค่า > สมุดรายวันออกใบแจ้งหนี้ (กรณี "ใบแจ้งหนี้รับเงินประกัน")
+        Config = self.env['npd.invoice.journal.config']
+        product = Config._get_insurance_product(company)
+        if not product:
+            raise UserError(_(
+                "ยังไม่ได้ตั้งสินค้าเงินประกันของบริษัท %(company)s\n\n"
+                "กรุณาตั้งค่าที่เมนู การขาย > การกำหนดค่า > สมุดรายวันออกใบแจ้งหนี้\n"
+                "เลือกแถวกรณี \"ใบแจ้งหนี้รับเงินประกัน\" แล้วระบุช่อง \"สินค้าเงินประกัน\"",
+                company=company.display_name,
+            ))
 
         tax = False
         if self.advance_payment_method == 'percentage':
@@ -56,30 +65,33 @@ class SaleAdvanceRentInv(models.TransientModel):
                 tax = [(6, 0, product.taxes_id.ids)]
                 if product.taxes_id.price_include:
                     amount = sale_orders.amount_total * self.amount / 100
-                    name = _("Insurance Payment %s%%") % self.amount
+                    name = _("รับเงินประกัน %s%%") % self.amount
                 else:
                     amount = sale_orders.amount_untaxed * self.amount / 100
-                    name = _("Insurance Payment %s%%") % self.amount
+                    name = _("รับเงินประกัน %s%%") % self.amount
             else:
                 amount = sale_orders.amount_total * self.amount / 100
-                name = _("Insurance Payment %s%%") % self.amount
+                name = _("รับเงินประกัน %s%%") % self.amount
         else:
             amount = self.amount
             if product.taxes_id:
                 tax = [(6, 0, product.taxes_id.ids)]
 
-        if not product:
-            raise UserError("Product not found with the given ID from configuration parameter")
-
-        insurance_journal = self.env['account.journal'].search([
-            ('name', '=', 'สมุดรายวันค่าประกัน')
-        ], limit=1)
+        # สมุดรายวันของใบรับเงินประกัน ตั้งค่าที่เมนูเดียวกับสินค้าเงินประกัน
+        insurance_journal = Config._get_journal(company, 'insurance')
         if not insurance_journal:
-            raise UserError("Journal 'สมุดรายวันค่าประกัน' not found. Please check accounting settings.")
+            raise UserError(_(
+                "ยังไม่ได้ตั้งสมุดรายวันสำหรับใบแจ้งหนี้รับเงินประกันของบริษัท %(company)s\n"
+                "กรุณาตั้งค่าที่เมนู การขาย > การกำหนดค่า > สมุดรายวันออกใบแจ้งหนี้",
+                company=company.display_name,
+            ))
 
         invoice_vals = {
             'ref': sale_orders.client_order_ref,
             'move_type': 'out_invoice',
+            # ต้องระบุบริษัทของใบสั่งขาย ไม่ใช่ปล่อยให้ default เป็นบริษัทที่ active อยู่
+            # ไม่งั้นสมุดรายวันที่ล็อกตามบริษัทข้างบนจะไม่ตรงกับใบแจ้งหนี้ แล้วตายที่ _check_company
+            'company_id': company.id,
             'invoice_origin': sale_orders.name,
             'invoice_user_id': sale_orders.user_id.id,
             'narration': sale_orders.note,
@@ -103,7 +115,7 @@ class SaleAdvanceRentInv(models.TransientModel):
                 'price_unit': amount,
                 'quantity': 1.0,
                 'product_id': product.id,
-                'product_uom_id': product.uom_po_id.id,
+                'product_uom_id': product.uom_id.id,
                 'tax_ids': tax,
             })],
         }

@@ -620,34 +620,24 @@ class AccountPayment(models.Model):
         if total_due > 0:
             self.amount = total_due
 
-        # Auto-set journal based on invoice journal names
+        # Auto-set journal from the invoice journal
+        # จับคู่ได้ที่เมนู การขาย > การกำหนดค่า > สมุดรายวันรับชำระ
         if self.custom_invoice_ids:
-            journal_names = []
+            invoice_journals = self.env['account.journal']
             names = []
             for inv_line in self.custom_invoice_ids:
                 if inv_line.move_id:
                     names.append(inv_line.move_id.name)
-                    if inv_line.move_id.journal_id:
-                        journal_names.append(inv_line.move_id.journal_id.name)
+                    invoice_journals |= inv_line.move_id.journal_id
             self.search_invoice_name = (
                 ', '.join(names) if names else self.search_invoice_name
             )
 
-            journal_map = {
-                'สมุดรายวันค่าประกัน': 'สมุดรายวันรับชำระค่าประกัน',
-                'สมุดรายวันค่าปรับชำรุด': 'สมุดรายวันรับชำระค่าปรับชำรุด',
-                'สมุดรายวันค่าปรับหาย': 'สมุดรายวันรับชำระค่าปรับหาย',
-                'สมุดรายวันขาย': 'สมุดรายวันรับชำระ',
-                'สมุดรายวันเช่า(สาขา)': 'สมุดรายวันรับชำระ',
-            }
-            for src_name, dest_name in journal_map.items():
-                if src_name in journal_names:
-                    journal = self.env['account.journal'].search(
-                        [('name', '=', dest_name)], limit=1,
-                    )
-                    if journal:
-                        self.journal_id = journal.id
-                    break
+            payment_journal = self.env['npd.invoice.journal.config']._get_payment_journal(
+                self.company_id, invoice_journals,
+            )
+            if payment_journal:
+                self.journal_id = payment_journal.id
 
     @api.onchange('date')
     def _onchange_date_check_allowed(self):
@@ -688,32 +678,22 @@ class AccountPayment(models.Model):
     def _onchange_custom_invoice_ids_sync(self):
         """Sync amount and search_invoice_name when invoice lines change"""
         if self.custom_invoice_ids:
-            journal_names = []
+            invoice_journals = self.env['account.journal']
             names = []
             for inv_line in self.custom_invoice_ids:
                 if inv_line.move_id and inv_line.select:
                     names.append(inv_line.move_id.name)
-                    if inv_line.move_id.journal_id:
-                        journal_names.append(inv_line.move_id.journal_id.name)
+                    invoice_journals |= inv_line.move_id.journal_id
             if names:
                 self.search_invoice_name = ', '.join(names)
 
             # Auto journal selection
-            journal_map = {
-                'สมุดรายวันค่าประกัน': 'สมุดรายวันรับชำระค่าประกัน',
-                'สมุดรายวันค่าปรับชำรุด': 'สมุดรายวันรับชำระค่าปรับชำรุด',
-                'สมุดรายวันค่าปรับหาย': 'สมุดรายวันรับชำระค่าปรับหาย',
-                'สมุดรายวันขาย': 'สมุดรายวันรับชำระ',
-                'สมุดรายวันเช่า(สาขา)': 'สมุดรายวันรับชำระ',
-            }
-            for src_name, dest_name in journal_map.items():
-                if src_name in journal_names:
-                    journal = self.env['account.journal'].search(
-                        [('name', '=', dest_name)], limit=1,
-                    )
-                    if journal:
-                        self.journal_id = journal.id
-                    break
+            # จับคู่ได้ที่เมนู การขาย > การกำหนดค่า > สมุดรายวันรับชำระ
+            payment_journal = self.env['npd.invoice.journal.config']._get_payment_journal(
+                self.company_id, invoice_journals,
+            )
+            if payment_journal:
+                self.journal_id = payment_journal.id
 
     # ================================================================
     # Action methods

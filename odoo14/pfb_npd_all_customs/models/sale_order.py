@@ -6,6 +6,20 @@ from odoo.exceptions import UserError, ValidationError
 
 _logger = logging.getLogger(__name__)
 
+# แปลง "ประเภทใบเสนอราคา" (pfb_so_type) เป็นกรณีการออกใบแจ้งหนี้
+# ที่ตั้งสมุดรายวันได้ในเมนู npd.invoice.journal.config
+SO_TYPE_JOURNAL_USAGE = {
+    'sale': 'so_sale',
+    'rent': 'so_rent',
+}
+
+# ใบค่าปรับมีสมุดรายวันของตัวเอง จึงต้องชนะ pfb_so_type
+# ('rental' ไม่อยู่ในนี้ เพราะค่าเช่าใช้สมุดรายวันตามประเภทใบเสนอราคาตามปกติ)
+DEBT_TYPE_JOURNAL_USAGE = {
+    'lost': 'penalty_lost',
+    'damaged': 'penalty_damaged',
+}
+
 
 class SaleOrder(models.Model):
     _inherit = 'sale.order'
@@ -234,16 +248,29 @@ class SaleOrder(models.Model):
         invoice_vals['pfb_dis_amount_insurance'] = self.pfb_dis_amount_insurance
         invoice_vals['pfb_amount'] = self.pfb_amount
 
-        if self.pfb_so_type == 'sale':
-            journal = self.env['account.journal'].search([('name', '=', 'สมุดรายวันขาย')], limit=1)
-            if journal:
-                invoice_vals['journal_id'] = journal.id
-        elif self.pfb_so_type == 'rent':
-            journal = self.env['account.journal'].search([('name', '=', 'สมุดรายวันเช่า(สาขา)')], limit=1)
+        # สมุดรายวันเริ่มต้นตามประเภทใบเสนอราคา (Sales / Rent)
+        # ถ้าผู้ใช้ระบุสมุดรายวันมาที่ใบสั่งขายเองแล้ว ให้เคารพค่านั้น ไม่ทับ
+        if not self.journal_id:
+            journal = self._get_invoice_journal_by_so_type()
             if journal:
                 invoice_vals['journal_id'] = journal.id
 
         return invoice_vals
+
+    def _get_invoice_journal_by_so_type(self):
+        """คืนสมุดรายวันขายเริ่มต้นของใบสั่งขายนี้ ตามค่า ``pfb_so_type``
+
+        ตั้งค่าได้ที่เมนู การขาย > การกำหนดค่า > สมุดรายวันออกใบแจ้งหนี้
+
+        :return: ``account.journal`` recordset ว่างถ้าหาไม่เจอ
+                 (ปล่อยให้ Odoo เลือกสมุดรายวันเริ่มต้นของมันเอง)
+        """
+        self.ensure_one()
+        # ค่าปรับหาย/ค่าปรับชำรุดมีสมุดรายวันเฉพาะ ต้องเช็คก่อนประเภทใบเสนอราคา
+        debt_type = getattr(self, 'debt_payment_type', False)
+        usage = DEBT_TYPE_JOURNAL_USAGE.get(debt_type or '') \
+            or SO_TYPE_JOURNAL_USAGE.get(self.pfb_so_type or '')
+        return self.env['npd.invoice.journal.config']._get_journal(self.company_id, usage)
 
     # deposit_return_status comes from npd_deposit_return_status module (Odoo 14)
     deposit_return_status = fields.Selection([
@@ -319,6 +346,21 @@ class SaleOrderLine(models.Model):
         vals["pfb_so_rent_ok"] = self.pfb_so_rent_ok
         vals["pfb_objective_id"] = self.pfb_objective_id.id
         vals["discount_type_selection"] = self.discount_type_selection
+
+        # บัญชีรายได้ตามประเภทใบเสนอราคา / ประเภทการรับชำระหนี้
+        # ตั้งค่าได้ที่ การขาย > การกำหนดค่า > สมุดรายวันออกใบแจ้งหนี้
+        #
+        # ต้องกำหนดตรงนี้ ไม่พึ่ง default_account_id ของสมุดรายวันแบบ Odoo 14
+        # เพราะ Odoo 18 ให้บัญชีของสินค้า/ประเภทสินค้าชนะบัญชีสมุดรายวันเสมอ
+        # (account_move_line._compute_account_id ใช้สมุดรายวันเป็น fallback สุดท้าย)
+        order = self.order_id
+        usage = DEBT_TYPE_JOURNAL_USAGE.get(getattr(order, 'debt_payment_type', False) or '') \
+            or SO_TYPE_JOURNAL_USAGE.get(order.pfb_so_type or '')
+        account = self.env['npd.invoice.journal.config']._get_income_account(
+            order.company_id, usage,
+        )
+        if account:
+            vals["account_id"] = account.id
         return vals
 
     @api.onchange('product_id')

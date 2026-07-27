@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_npd_invoice_journal_config_list" model="ir.ui.view">
+        <field name="name">npd.invoice.journal.config.list</field>
+        <field name="model">npd.invoice.journal.config</field>
+        <field name="arch" type="xml">
+            <list string="สมุดรายวันออกใบแจ้งหนี้" editable="bottom" multi_edit="1">
+                <field name="company_id" options="{'no_create': True}"/>
+                <field name="usage"/>
+                <field name="allowed_journal_ids" column_invisible="True"/>
+                <field name="allowed_payment_journal_ids" column_invisible="True"/>
+                <field name="allowed_payment_bank_journal_ids" column_invisible="True"/>
+                <field name="allowed_income_account_ids" column_invisible="True"/>
+                <field name="journal_id" options="{'no_create': True}"/>
+                <field name="income_account_id" options="{'no_create': True}"
+                       placeholder="Odoo เลือกเอง"/>
+                <field name="payment_journal_id" options="{'no_create': True}"
+                       placeholder="ใบสำคัญ"/>
+                <field name="payment_bank_journal_id" options="{'no_create': True}"
+                       placeholder="ใช้ค่าเริ่มต้นของ Odoo"/>
+                <field name="product_id" options="{'no_create': True}"
+                       readonly="usage != 'insurance'"
+                       placeholder="เฉพาะกรณีรับเงินประกัน"/>
+                <field name="note" optional="show"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_npd_invoice_journal_config_form" model="ir.ui.view">
+        <field name="name">npd.invoice.journal.config.form</field>
+        <field name="model">npd.invoice.journal.config</field>
+        <field name="arch" type="xml">
+            <form string="สมุดรายวันออกใบแจ้งหนี้">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="company_id" options="{'no_create': True}"/>
+                            <field name="usage"/>
+                        </group>
+                        <group string="หน้าออกเอกสาร">
+                            <field name="allowed_journal_ids" invisible="1"/>
+                            <field name="allowed_payment_journal_ids" invisible="1"/>
+                            <field name="allowed_income_account_ids" invisible="1"/>
+                            <field name="journal_id" options="{'no_create': True}"/>
+                            <field name="income_account_id" options="{'no_create': True}"
+                                   placeholder="เว้นว่าง = Odoo เลือกเอง"/>
+                            <field name="product_id" options="{'no_create': True}"
+                                   invisible="usage != 'insurance'"/>
+                            <field name="note"/>
+                        </group>
+                        <group string="หน้ารับชำระ" colspan="2">
+                            <field name="allowed_payment_bank_journal_ids" invisible="1"/>
+                            <field name="payment_journal_id" options="{'no_create': True}"
+                                   placeholder="เอกสารใบสำคัญ (account.voucher)"/>
+                            <field name="payment_bank_journal_id" options="{'no_create': True}"
+                                   placeholder="เว้นว่าง = ใช้ค่าเริ่มต้นของ Odoo"/>
+                            <div colspan="2" class="text-muted">
+                                Odoo 18 บังคับให้หน้ารับชำระเงิน (account.payment)
+                                ใช้ได้เฉพาะสมุดรายวัน ธนาคาร/เงินสด/เครดิต เท่านั้น
+                                สมุดรายวัน รับชำระ/จ่ายชำระ ใช้ได้กับเอกสารใบสำคัญเท่านั้น
+                            </div>
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_npd_invoice_journal_config_search" model="ir.ui.view">
+        <field name="name">npd.invoice.journal.config.search</field>
+        <field name="model">npd.invoice.journal.config</field>
+        <field name="arch" type="xml">
+            <search string="สมุดรายวันออกใบแจ้งหนี้">
+                <field name="company_id"/>
+                <field name="journal_id"/>
+                <filter name="group_company" string="บริษัท" context="{'group_by': 'company_id'}"/>
+                <filter name="group_usage" string="กรณีการออกใบแจ้งหนี้" context="{'group_by': 'usage'}"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_npd_invoice_journal_config" model="ir.actions.act_window">
+        <field name="name">สมุดรายวันออกใบแจ้งหนี้</field>
+        <field name="res_model">npd.invoice.journal.config</field>
+        <field name="view_mode">list,form</field>
+        <field name="context">{'search_default_group_company': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">ตั้งสมุดรายวันเริ่มต้นของการออกใบแจ้งหนี้</p>
+            <p>
+                กำหนดได้ว่าใบแจ้งหนี้แต่ละกรณีจะลงสมุดรายวันเล่มไหน แยกตามบริษัท<br/>
+                กรณีที่ยังไม่ได้ตั้งค่า ระบบจะเดาจากชื่อสมุดรายวันให้อัตโนมัติ
+            </p>
+        </field>
+    </record>
+
+    <menuitem id="menu_npd_invoice_journal_config"
+              name="สมุดรายวันออกใบแจ้งหนี้"
+              parent="sale.menu_sale_config"
+              action="action_npd_invoice_journal_config"
+              sequence="35"/>
+
+</odoo>

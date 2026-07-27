@@ -8,6 +8,33 @@ _logger = logging.getLogger(__name__)
 class AccountPayment(models.Model):
     _inherit = 'account.payment'
 
+    # ต้องประกาศ depends เดิมซ้ำ เพราะ override ไปแทนที่ method ใน MRO
+    @api.depends('payment_type')
+    def _compute_available_journal_ids(self):
+        """เปิดให้เลือกสมุดรายวัน รับชำระ/จ่ายชำระ ได้เหมือน Odoo 14
+
+        Odoo 18 ฮาร์ดโค้ด type in ('bank','cash','credit') ไว้ ทำให้เลือก
+        สมุดรายวันรับชำระไม่ได้ ส่วน Odoo 14 โมดูลนี้ override domain ของ
+        journal_id เป็น [('type','in',('receivable','payable'))] ไว้
+
+        ยังต้องมี payment_method_line อยู่จริง ไม่งั้นช่องวิธีการชำระเงิน
+        (required) จะว่างและบันทึกไม่ได้ — ดู account_journal.py ในโมดูลนี้
+        """
+        super()._compute_available_journal_ids()
+
+        extra_journals = self.env['account.journal'].search([
+            '|',
+            ('company_id', 'parent_of', self.env.company.id),
+            ('company_id', 'child_of', self.env.company.id),
+            ('type', 'in', ('receivable', 'payable')),
+        ])
+        for pay in self:
+            if pay.payment_type == 'inbound':
+                extra = extra_journals.filtered('inbound_payment_method_line_ids')
+            else:
+                extra = extra_journals.filtered('outbound_payment_method_line_ids')
+            pay.available_journal_ids = pay.available_journal_ids | extra
+
     def get_seq_payment(self):
         if self.payment_type == 'inbound':
             return self.env['ir.sequence'].next_by_code('customer.payment') or '/'

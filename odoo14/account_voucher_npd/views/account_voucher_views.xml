@@ -260,7 +260,7 @@
                             <field name="company_id" options="{'no_create': True}" groups="base.group_multi_company"/>
                         </group>
                         <group>
-                            <field name="journal_id" domain="[('type','=','receivable')]" widget="selection" groups="account.group_account_user"/>
+                            <field name="journal_id" domain="[('type','=','receivable')]" widget="selection"/>
                             <field name="date"/>
                             <field name="name"/>
                             <field name="paid" invisible="1"/>
@@ -437,7 +437,7 @@
                             <field name="check_type_show_selection" invisible="1"/>
                         </group>
                         <group>
-                            <field name="journal_id" domain="[('type','=','payable')]" widget="selection" groups="account.group_account_user"/>
+                            <field name="journal_id" domain="[('type','=','payable')]" widget="selection"/>
                             <field name="date" string="Bill Date"/>
                             <field name="name" colspan="2"/>
                             <field name="paid" invisible="1"/>

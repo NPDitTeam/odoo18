@@ -1,3 +1,5 @@
+from . import invoice_journal_config
+from . import account_move_reversal
 from . import product_template
 from . import sale_order
 from . import pricelist

@@ -3,7 +3,7 @@
 
 {
     'name': 'Sale & Purchase Vouchers NPD',
-    'version': '18.0.1.0',
+    'version': '18.0.1.1.0',
     'summary': 'Manage your debts and credits thanks to simple sale/purchase receipts',
     'description': """
     Module Sale & Purchase Voucher for create sale receipt and purchase receipt derect from customer and supplier
@@ -22,6 +22,8 @@ This module manages:
         'l10n_th_tax_invoice',
         'account_journal_sequences',
         'withholding_tax_cert_amount',
+        # ใช้เมนูตั้งค่าสมุดรายวัน (npd.invoice.journal.config)
+        'pfb_npd_all_customs',
     ],
     'demo': [],
     'data': [

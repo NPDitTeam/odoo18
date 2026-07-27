@@ -1,6 +1,6 @@
 {
     'name': 'PFB NPD : all Customs',
-    'version': '18.0.1.0.0',
+    'version': '18.0.1.10.0',
     'author': 'PP',
     'license': 'AGPL-3',
     'website': '',
@@ -9,6 +9,9 @@
                 'npd_npd_all_customs', 'sale_invoice_plan', 'sale_order_line_menu'],
     'data': [
         'security/ir.model.access.csv',
+        'security/invoice_journal_config_rules.xml',
+        'data/insurance_product.xml',
+        'views/invoice_journal_config.xml',
         'wizard/sale_make_invoice_rent_views.xml',
         'wizard/sale_order_approval_wizard_views.xml',
         'wizard/sale_order_approval_wizard_con_views.xml',
