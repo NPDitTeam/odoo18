@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- เพิ่มฟิลด์ "สถานะต่ออายุบิล" ต่อจาก "เลขอ้างอิงเงินประกัน" -->
+    <record id="view_order_form_renewal_bill_status" model="ir.ui.view">
+        <field name="name">sale.order.form.renewal.bill.status</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="pfb_npd_add_date_quatation_order.view_quatation_order_form_add_rent_date"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='deposit_ref']" position="after">
+                <field name="renewal_bill_status"
+                       string="สถานะต่ออายุบิล"
+                       readonly="1"
+                       widget="badge"
+                       decoration-info="renewal_bill_status == 'renew'"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>
