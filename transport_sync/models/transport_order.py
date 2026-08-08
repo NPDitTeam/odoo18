@@ -580,14 +580,8 @@ class TransportOrder(models.Model):
             return False
 
         # ✅ ค้นหาสาขาจากชื่อ
-        branch_id = False
         branch_name_o14 = order_data.get('branch_id')
-        if branch_name_o14:
-            branch = self.env['res.branch'].search([('name', '=', branch_name_o14)], limit=1)
-            if branch:
-                branch_id = branch.id
-            else:
-                _logger.warning(f"⚠️ ไม่พบสาขา: {branch_name_o14} ใน Odoo 18")
+        branch_id = self._find_branch(branch_name_o14)
 
         # ค้นหา/สร้าง partner
         partner_id = False
@@ -720,13 +714,9 @@ class TransportOrder(models.Model):
     def _update_existing_order(self, existing_order, order_data):
         """อัพเดทข้อมูล order ที่มีอยู่แล้วจาก Odoo 14 (ไม่สร้างซ้ำ)"""
 
-        # ✅ ค้นหาสาขาจากชื่อ
-        branch_id = existing_order.branch_id.id
+        # ✅ ค้นหาสาขาจากชื่อ (ถ้าหาไม่เจอ ให้คงค่าเดิมไว้)
         branch_name_o14 = order_data.get('branch_id')
-        if branch_name_o14:
-            branch = self.env['res.branch'].search([('name', '=', branch_name_o14)], limit=1)
-            if branch:
-                branch_id = branch.id
+        branch_id = self._find_branch(branch_name_o14, fallback=existing_order.branch_id.id)
 
         # ค้นหา/สร้าง partner
         partner_id = existing_order.partner_id.id
@@ -898,6 +888,36 @@ class TransportOrder(models.Model):
             _logger.info(f'✅ สร้างลูกค้าใหม่: {partner_name}')
 
         return partner.id
+
+    def _find_branch(self, branch_name, fallback=False):
+        """ค้นหาสาขา (res.branch) จากชื่อที่ได้จาก Odoo 14
+
+        ⚠️ ต้องค้นหาแบบ sudo + bypass_branch_company_filter เพราะ res.branch
+        ถูกจำกัดด้วย ir.rule ของ multi_branch_management_aagam ให้ user เห็น
+        เฉพาะสาขาของตัวเอง (user.branch_ids) ถ้าค้นด้วยสิทธิ์ user ที่กดซิงค์
+        order ของสาขาอื่นจะหาไม่เจอ → branch_id ว่าง ทั้งที่ชื่อสาขามีอยู่จริง
+        (ฟิลด์ branch_name_o14 เป็น Char จึงยังแสดงค่าตามปกติ)
+        """
+        if not branch_name:
+            return fallback
+
+        if isinstance(branch_name, (list, tuple)):
+            # เผื่อ API ส่งมาเป็น [id, name] แบบ many2one ของ Odoo
+            branch_name = branch_name[1] if len(branch_name) > 1 else False
+        if not branch_name:
+            return fallback
+
+        branch_name = branch_name.strip()
+        Branch = self.env['res.branch'].sudo().with_context(bypass_branch_company_filter=True)
+        branch = Branch.search([('name', '=', branch_name)], limit=1)
+        if not branch:
+            branch = Branch.search([('name', 'ilike', branch_name)], limit=1)
+
+        if not branch:
+            _logger.warning(f"⚠️ ไม่พบสาขา: {branch_name} ใน Odoo 18")
+            return fallback
+
+        return branch.id
 
     def _find_company(self, company_name):
         """ค้นหาบริษัทจากชื่อ"""
