@@ -1,0 +1,160 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_hr_work_schedule_list" model="ir.ui.view">
+        <field name="name">hr.work.schedule.list</field>
+        <field name="model">hr.work.schedule</field>
+        <field name="arch" type="xml">
+            <list string="ตารางงาน">
+                <field name="employee_code"/>
+                <field name="employee_id"/>
+                <field name="branch_id"/>
+                <field name="department_id"/>
+                <field name="position_id"/>
+                <field name="category" widget="badge"
+                       decoration-success="category == 'checkin'"
+                       decoration-muted="category == 'no_checkin'"/>
+                <field name="work_mon" string="จ."/>
+                <field name="work_tue" string="อ."/>
+                <field name="work_wed" string="พ."/>
+                <field name="work_thu" string="พฤ."/>
+                <field name="work_fri" string="ศ."/>
+                <field name="work_sat" string="ส."/>
+                <field name="work_sun" string="อา."/>
+                <field name="company_id" groups="base.group_multi_company" optional="hide"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_hr_work_schedule_form" model="ir.ui.view">
+        <field name="name">hr.work.schedule.form</field>
+        <field name="model">hr.work.schedule</field>
+        <field name="arch" type="xml">
+            <form string="ตารางงาน">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="employee_id"
+                                   options="{'no_create': True}"/>
+                            <field name="employee_code"/>
+                            <field name="category"/>
+                        </group>
+                        <group>
+                            <field name="branch_id"/>
+                            <field name="department_id"/>
+                            <field name="position_id"/>
+                            <field name="company_id" groups="base.group_multi_company"/>
+                        </group>
+                    </group>
+                    <group string="วันทำงานและเวลาเข้า-ออก"
+                           invisible="category == 'no_checkin'">
+                        <group>
+                            <label for="work_mon"/>
+                            <div class="o_row">
+                                <field name="work_mon"/>
+                                <field name="mon_shift_start" widget="float_time"
+                                       invisible="not work_mon"/>
+                                <span invisible="not work_mon"> ถึง </span>
+                                <field name="mon_shift_end" widget="float_time"
+                                       invisible="not work_mon"/>
+                            </div>
+                            <label for="work_tue"/>
+                            <div class="o_row">
+                                <field name="work_tue"/>
+                                <field name="tue_shift_start" widget="float_time"
+                                       invisible="not work_tue"/>
+                                <span invisible="not work_tue"> ถึง </span>
+                                <field name="tue_shift_end" widget="float_time"
+                                       invisible="not work_tue"/>
+                            </div>
+                            <label for="work_wed"/>
+                            <div class="o_row">
+                                <field name="work_wed"/>
+                                <field name="wed_shift_start" widget="float_time"
+                                       invisible="not work_wed"/>
+                                <span invisible="not work_wed"> ถึง </span>
+                                <field name="wed_shift_end" widget="float_time"
+                                       invisible="not work_wed"/>
+                            </div>
+                            <label for="work_thu"/>
+                            <div class="o_row">
+                                <field name="work_thu"/>
+                                <field name="thu_shift_start" widget="float_time"
+                                       invisible="not work_thu"/>
+                                <span invisible="not work_thu"> ถึง </span>
+                                <field name="thu_shift_end" widget="float_time"
+                                       invisible="not work_thu"/>
+                            </div>
+                        </group>
+                        <group>
+                            <label for="work_fri"/>
+                            <div class="o_row">
+                                <field name="work_fri"/>
+                                <field name="fri_shift_start" widget="float_time"
+                                       invisible="not work_fri"/>
+                                <span invisible="not work_fri"> ถึง </span>
+                                <field name="fri_shift_end" widget="float_time"
+                                       invisible="not work_fri"/>
+                            </div>
+                            <label for="work_sat"/>
+                            <div class="o_row">
+                                <field name="work_sat"/>
+                                <field name="sat_shift_start" widget="float_time"
+                                       invisible="not work_sat"/>
+                                <span invisible="not work_sat"> ถึง </span>
+                                <field name="sat_shift_end" widget="float_time"
+                                       invisible="not work_sat"/>
+                            </div>
+                            <label for="work_sun"/>
+                            <div class="o_row">
+                                <field name="work_sun"/>
+                                <field name="sun_shift_start" widget="float_time"
+                                       invisible="not work_sun"/>
+                                <span invisible="not work_sun"> ถึง </span>
+                                <field name="sun_shift_end" widget="float_time"
+                                       invisible="not work_sun"/>
+                            </div>
+                        </group>
+                    </group>
+                    <div class="alert alert-info" role="alert"
+                         invisible="category != 'no_checkin'">
+                        พนักงานคนนี้ไม่ต้องเช็คอิน — ระบบจะไม่คิดสาย/ขาดงานจากการลงเวลา
+                    </div>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_hr_work_schedule_search" model="ir.ui.view">
+        <field name="name">hr.work.schedule.search</field>
+        <field name="model">hr.work.schedule</field>
+        <field name="arch" type="xml">
+            <search string="ค้นหาตารางงาน">
+                <field name="employee_id"/>
+                <field name="employee_code"/>
+                <field name="branch_id"/>
+                <filter name="filter_checkin" string="ต้องเช็คอิน"
+                        domain="[('category', '=', 'checkin')]"/>
+                <filter name="filter_no_checkin" string="ไม่ต้องเช็คอิน"
+                        domain="[('category', '=', 'no_checkin')]"/>
+                <group expand="0" string="จัดกลุ่มตาม">
+                    <filter name="group_branch" string="สาขา" context="{'group_by': 'branch_id'}"/>
+                    <filter name="group_department" string="แผนก" context="{'group_by': 'department_id'}"/>
+                    <filter name="group_category" string="หมวดหมู่" context="{'group_by': 'category'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_hr_work_schedule" model="ir.actions.act_window">
+        <field name="name">ประเภทการทำงาน/กะการทำงาน</field>
+        <field name="res_model">hr.work.schedule</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_hr_work_schedule_search"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">ยังไม่มีตารางงาน</p>
+            <p>กำหนดวันทำงานและเวลาเข้า-ออกของพนักงานแต่ละคน เพื่อให้ระบบคิดสาย/ขาดงานได้</p>
+        </field>
+    </record>
+
+</odoo>

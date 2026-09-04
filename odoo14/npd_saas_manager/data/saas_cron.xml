@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+
+        <!-- ตรวจสัญญาทุกวันตอนตี 1
+             เลื่อนสถานะตามวันหมดอายุ + ช่วงผ่อนผัน แล้วเขียนลงฐานข้อมูลลูกค้า
+             ทำฝั่งศูนย์ควบคุมที่เดียว ระบบลูกค้าจึงไม่ต้องวิ่งมาถามและไม่ล่มตามกัน -->
+        <record id="cron_saas_check_subscriptions" model="ir.cron">
+            <field name="name">ตรวจสัญญาเช่าระบบรายวัน</field>
+            <field name="model_id" ref="npd_hrms_api.model_hrms_tenant"/>
+            <field name="state">code</field>
+            <field name="code">model._cron_check_subscriptions()</field>
+            <field name="interval_number">1</field>
+            <field name="interval_type">days</field>
+            <field name="active" eval="True"/>
+        </record>
+
+        <!-- โดเมนหลักที่ใช้ประกอบที่อยู่ของลูกค้า -->
+        <record id="param_saas_root_domain" model="ir.config_parameter">
+            <field name="key">npd_saas.root_domain</field>
+            <field name="value">npd-solution.com</field>
+        </record>
+
+    </data>
+</odoo>

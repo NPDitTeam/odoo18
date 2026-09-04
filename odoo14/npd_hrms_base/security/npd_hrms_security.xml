@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="0">
+
+        <record id="module_category_npd_hrms" model="ir.module.category">
+            <field name="name">ระบบบุคคล (HRMS)</field>
+            <field name="description">สิทธิ์การใช้งานระบบบุคคล NPD</field>
+            <field name="sequence">20</field>
+        </record>
+
+        <!-- พนักงานทั่วไป: เห็นข้อมูลหลักแบบอ่านอย่างเดียว -->
+        <record id="group_hrms_user" model="res.groups">
+            <field name="name">พนักงาน</field>
+            <field name="category_id" ref="module_category_npd_hrms"/>
+            <field name="comment">เห็นข้อมูลหลักของระบบบุคคลแบบอ่านอย่างเดียว</field>
+        </record>
+
+        <!-- เจ้าหน้าที่บุคคล: จัดการข้อมูลพนักงาน/ลงเวลา/ลา แต่ไม่เห็นค่าจ้าง -->
+        <record id="group_hrms_officer" model="res.groups">
+            <field name="name">เจ้าหน้าที่บุคคล</field>
+            <field name="category_id" ref="module_category_npd_hrms"/>
+            <field name="implied_ids" eval="[(4, ref('group_hrms_user'))]"/>
+            <field name="comment">จัดการข้อมูลพนักงาน ลงเวลา การลา และเบี้ยเลี้ยง</field>
+        </record>
+
+        <!-- ผู้ทำเงินเดือน: เห็นค่าจ้าง ภาษี ประกันสังคม -->
+        <record id="group_hrms_payroll" model="res.groups">
+            <field name="name">ผู้ทำเงินเดือน</field>
+            <field name="category_id" ref="module_category_npd_hrms"/>
+            <field name="implied_ids" eval="[(4, ref('group_hrms_officer'))]"/>
+            <field name="comment">เห็นและแก้ไขค่าจ้าง ภาษี ประกันสังคม และรอบทำเงินเดือน</field>
+        </record>
+
+        <!-- ผู้จัดการฝ่ายบุคคล: สิทธิ์เต็ม รวมการตั้งค่าระบบ -->
+        <record id="group_hrms_manager" model="res.groups">
+            <field name="name">ผู้จัดการฝ่ายบุคคล</field>
+            <field name="category_id" ref="module_category_npd_hrms"/>
+            <field name="implied_ids" eval="[(4, ref('group_hrms_payroll'))]"/>
+            <field name="users" eval="[(4, ref('base.user_root')), (4, ref('base.user_admin'))]"/>
+            <field name="comment">สิทธิ์เต็มของระบบบุคคล รวมการตั้งค่านโยบายบริษัท</field>
+        </record>
+
+    </data>
+
+    <data noupdate="1">
+        <!-- แยกข้อมูลตามบริษัท: ระบบนี้ปล่อยเช่าให้หลายบริษัทใช้ DB เดียวกันได้
+             กฎด้านล่างกันไม่ให้บริษัทหนึ่งเห็นข้อมูลของอีกบริษัท -->
+
+        <!-- แผนกและตำแหน่งไม่มีกฎแยกบริษัท — เป็นข้อมูลหลักที่ใช้ร่วมกันทั้งองค์กร
+             ("ฝ่ายบัญชี" หรือ "หัวหน้าสาขา" หมายถึงสิ่งเดียวกันทุกบริษัท)
+             การแยกข้อมูลจริงอยู่ที่ระดับพนักงานและสาขา -->
+
+        <record id="rule_payroll_holiday_company" model="ir.rule">
+            <field name="name">วันหยุดประจำปี: เห็นเฉพาะบริษัทที่ได้รับอนุญาต</field>
+            <field name="model_id" ref="model_payroll_holiday"/>
+            <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+            <field name="global" eval="True"/>
+        </record>
+
+        <record id="rule_saturday_leave_config_company" model="ir.rule">
+            <field name="name">สิทธิหยุดวันเสาร์: เห็นเฉพาะบริษัทที่ได้รับอนุญาต</field>
+            <field name="model_id" ref="model_saturday_leave_config"/>
+            <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+            <field name="global" eval="True"/>
+        </record>
+
+        <record id="rule_allowance_management_company" model="ir.rule">
+            <field name="name">ค่าเบี้ยเลี้ยง: เห็นเฉพาะบริษัทที่ได้รับอนุญาต</field>
+            <field name="model_id" ref="model_allowance_management"/>
+            <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+            <field name="global" eval="True"/>
+        </record>
+    </data>
+</odoo>

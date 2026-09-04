@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- แท็บนโยบาย HR บนฟอร์มบริษัท — ตั้งค่าแยกรายบริษัทได้โดยไม่ต้องสลับบริษัทก่อน
+         สำคัญกับการปล่อยเช่าระบบ: ผู้ดูแลระบบตั้งค่าให้ผู้เช่าแต่ละรายได้จากที่เดียว -->
+    <record id="view_company_form_hrms" model="ir.ui.view">
+        <field name="name">res.company.form.inherit.npd.hrms</field>
+        <field name="model">res.company</field>
+        <field name="inherit_id" ref="base.view_company_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//notebook" position="inside">
+                <page string="นโยบายระบบบุคคล" name="hrms_policy"
+                      groups="npd_hrms_base.group_hrms_manager">
+                    <group>
+                        <group string="รหัสพนักงาน">
+                            <field name="hrms_employee_code_prefix"/>
+                            <field name="hrms_employee_code_start"/>
+                            <field name="hrms_employee_code_padding"/>
+                        </group>
+                        <group string="รอบตัดเงินเดือน">
+                            <field name="hrms_cutoff_start_day"/>
+                        </group>
+                    </group>
+                    <group>
+                        <group string="ประกันสังคม">
+                            <field name="hrms_sso_enabled"/>
+                            <field name="hrms_sso_rate" invisible="not hrms_sso_enabled"/>
+                            <field name="hrms_sso_min_wage" invisible="not hrms_sso_enabled"/>
+                            <field name="hrms_sso_max_wage" invisible="not hrms_sso_enabled"/>
+                        </group>
+                        <group string="การลงเวลา">
+                            <field name="hrms_checkin_default_radius"/>
+                            <field name="hrms_checkin_require_gps"/>
+                            <field name="hrms_allow_multi_login"/>
+                        </group>
+                    </group>
+                    <group>
+                        <group string="สิทธิ์วันลาตั้งต้น (วัน/ปี)">
+                            <field name="hrms_leave_personal_paid_days"/>
+                            <field name="hrms_leave_personal_paid_after_months"/>
+                            <field name="hrms_leave_personal_unpaid_days"/>
+                            <field name="hrms_leave_sick_days"/>
+                            <field name="hrms_leave_emergency_days"/>
+                        </group>
+                        <group string="ลาคลอด / พักร้อน / เสาร์">
+                            <field name="hrms_leave_maternity_paid_days"/>
+                            <field name="hrms_leave_maternity_unpaid_days"/>
+                            <field name="hrms_leave_vacation_days"/>
+                            <field name="hrms_leave_vacation_after_years"/>
+                            <field name="hrms_leave_saturday_days"/>
+                            <field name="hrms_saturday_days_hq"/>
+                            <field name="hrms_saturday_days_branch"/>
+                        </group>
+                    </group>
+                </page>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>

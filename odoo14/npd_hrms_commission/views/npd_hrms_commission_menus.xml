@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <menuitem id="menu_hrms_commission_root"
+              name="ค่าคอมมิชชั่น"
+              parent="npd_hrms_base.menu_npd_hrms_root"
+              sequence="40"
+              groups="npd_hrms_base.group_hrms_payroll"/>
+
+    <menuitem id="menu_hrms_commission_branch_config"
+              name="สัดส่วนค่าคอมสาขา"
+              parent="menu_hrms_commission_root"
+              action="action_commission_branch_config"
+              sequence="10"/>
+
+    <menuitem id="menu_hrms_commission_headoffice"
+              name="Sales สำนักงานใหญ่"
+              parent="menu_hrms_commission_root"
+              action="action_commission_sale_headoffice"
+              sequence="20"/>
+
+    <menuitem id="menu_hrms_commission_rate_config"
+              name="อัตราคอมมิชชั่น Sales"
+              parent="npd_hrms_base.menu_hrms_configuration"
+              action="action_commission_rate_config"
+              sequence="80"
+              groups="npd_hrms_base.group_hrms_manager"/>
+
+    <menuitem id="menu_hrms_commission_rate_branch_sales"
+              name="อัตราค่าคอมสาขา / Sales"
+              parent="npd_hrms_base.menu_hrms_configuration"
+              action="action_commission_rate_branch_sales"
+              sequence="85"
+              groups="npd_hrms_base.group_hrms_manager"/>
+
+</odoo>

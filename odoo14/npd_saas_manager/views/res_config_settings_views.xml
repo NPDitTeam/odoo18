@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_saas_config_settings" model="ir.ui.view">
+        <field name="name">res.config.settings.saas</field>
+        <field name="model">res.config.settings</field>
+        <field name="priority">90</field>
+        <field name="inherit_id" ref="base.res_config_settings_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//form" position="inside">
+                <app data-string="ปล่อยเช่าระบบ" string="ปล่อยเช่าระบบ"
+                     name="npd_saas_manager" logo="">
+
+                    <block title="ฐานข้อมูลต้นแบบ"
+                           help="ลูกค้าใหม่ทุกรายถูกสร้างด้วยการโคลนฐานข้อมูลนี้">
+                        <setting id="saas_template" string="ฐานข้อมูลต้นแบบ"
+                                 help="ต้องเป็นฐานข้อมูลสะอาด ไม่มีพนักงาน เงินเดือน หรือลูกค้าจริง — ถ้าโคลนจากฐานข้อมูลที่ใช้งานอยู่ ข้อมูลทั้งหมดจะไปอยู่กับผู้เช่า">
+                            <field name="saas_template_db" placeholder="เช่น NPD_TEMPLATE"/>
+                            <div class="mt8">
+                                <field name="saas_template_ok" invisible="1"/>
+                                <span class="badge text-bg-success"
+                                      invisible="not saas_template_ok">
+                                    <field name="saas_template_note"/>
+                                </span>
+                                <span class="badge text-bg-danger"
+                                      invisible="saas_template_ok">
+                                    <field name="saas_template_note"/>
+                                </span>
+                            </div>
+                        </setting>
+                    </block>
+
+                    <block title="ที่อยู่ของลูกค้า"
+                           help="ลูกค้าแต่ละรายได้โดเมนย่อยของตัวเอง">
+                        <setting id="saas_domain" string="โดเมนหลัก"
+                                 help="ต้องตั้ง DNS แบบ *.โดเมนหลัก และใบรับรอง SSL แบบ wildcard ไว้ก่อน">
+                            <field name="saas_root_domain" placeholder="เช่น npd-solution.com"/>
+                        </setting>
+                    </block>
+
+                    <block title="สถานะปัจจุบัน">
+                        <setting id="saas_tenants" string="ลูกค้าที่ใช้งานอยู่"
+                                 help="นับเฉพาะสถานะใช้งานและผ่อนผัน">
+                            <field name="saas_tenant_count" readonly="1"/>
+                            <div class="mt8">
+                                <button name="action_open_tenants" type="object"
+                                        string="เปิดทะเบียนลูกค้า"
+                                        class="btn-link" icon="fa-arrow-right"/>
+                            </div>
+                        </setting>
+                    </block>
+
+                    <block title="เวอร์ชันแอป HR"
+                           help="แอปมีตัวเดียวใช้ร่วมกันทุกองค์กร เวอร์ชันจึงประกาศจากที่นี่ที่เดียว">
+                        <setting id="saas_app_release" string="เวอร์ชันที่ประกาศอยู่"
+                                 help="ส่งลงฐานข้อมูลลูกค้าทุกรายพร้อมสัญญาโดย cron รายวัน กดปุ่มนี้เมื่อต้องการส่งทันที">
+                            <field name="saas_app_version" readonly="1"/>
+                            <div class="mt8">
+                                <button name="action_open_app_release" type="object"
+                                        string="จัดการเวอร์ชัน"
+                                        class="btn-link" icon="fa-arrow-right"/>
+                                <button name="action_push_app_release" type="object"
+                                        string="ส่งให้ลูกค้าทุกรายเดี๋ยวนี้"
+                                        class="btn-link" icon="fa-paper-plane"/>
+                            </div>
+                        </setting>
+                    </block>
+
+                    <block title="ต้องตั้งค่านอก Odoo ด้วย"
+                           help="สองอย่างนี้อยู่ในไฟล์ odoo.conf ไม่สามารถแก้จากหน้านี้ได้">
+                        <setting id="saas_conf" string="ค่าที่ต้องมีใน odoo.conf">
+                            <div class="text-muted">
+                                <div><code>dbfilter = ^%d$</code>
+                                     — ให้โดเมนย่อยชี้ไปฐานข้อมูลชื่อเดียวกัน</div>
+                                <div><code>list_db = False</code>
+                                     — ปิดหน้าจัดการฐานข้อมูลสาธารณะ (ปุ่มในโมดูลนี้ยังทำงานปกติ)</div>
+                            </div>
+                        </setting>
+                    </block>
+
+                </app>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="action_saas_config_settings" model="ir.actions.act_window">
+        <field name="name">ตั้งค่าการปล่อยเช่า</field>
+        <field name="res_model">res.config.settings</field>
+        <field name="view_mode">form</field>
+        <field name="target">inline</field>
+        <field name="context">{'module': 'npd_saas_manager'}</field>
+    </record>
+
+    <menuitem id="menu_saas_config"
+              name="ตั้งค่า"
+              parent="menu_saas_root"
+              action="action_saas_config_settings"
+              sequence="90"
+              groups="base.group_system"/>
+
+</odoo>

@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_employee_warning_auto_config_form" model="ir.ui.view">
+        <field name="name">employee.warning.auto.config.form</field>
+        <field name="model">employee.warning.auto.config</field>
+        <field name="arch" type="xml">
+            <form string="ตั้งค่าออกใบเตือนอัตโนมัติ">
+                <div class="alert alert-info" role="alert">
+                    ระบบจะตรวจประวัติการลงเวลา <b>ปีละ 12 ครั้ง รอบละครั้ง</b>
+                    (สั่งงานจากเมนู <b>การกระทำที่กำหนดไว้</b>)
+                    ใครลงเวลาไม่ครบเกินจำนวนที่ตั้งไว้ในรอบ
+                    จะออกใบเตือนพร้อมไฟล์ PDF ให้อัตโนมัติ และส่งเข้าแอปพนักงานทันที
+                    <br/>
+                    ตรวจ <b>เต็มรอบครบทุกวัน</b> โดยรันเช้าวันถัดจากวันตัดรอบ
+                    (ต้องรอให้วันสุดท้ายของรอบจบก่อน ถึงจะรู้ว่าวันนั้นลงเวลาครบไหม)
+                    <br/>
+                    กรอก <b>รอบเริ่มวันที่</b> หรือ <b>ถึงวันที่</b> ช่องไหนก็ได้
+                    อีกช่องขยับตามเอง ส่วน "ให้ระบบรันวันที่" ระบบคำนวณให้ แก้ไม่ได้
+                    <br/>
+                    ออกได้ <b>1 ใบต่อ 1 รอบ</b> ต่อคน ไม่ออกซ้ำ
+                </div>
+                <group>
+                    <group string="เกณฑ์">
+                        <field name="company_id" groups="base.group_multi_company"/>
+                        <field name="auto_enabled"/>
+                        <field name="cycle_start_day"/>
+                        <field name="cycle_end_day"/>
+                        <field name="cycle_rule_display" readonly="1"/>
+                        <field name="run_day" readonly="1"/>
+                        <field name="threshold"/>
+                        <field name="respect_saturday_quota"/>
+                        <field name="ignore_pending_addtime"/>
+                    </group>
+                    <group string="ข้อความบนใบเตือน">
+                        <field name="warning_type"/>
+                        <field name="subject"/>
+                        <field name="issuer_name"/>
+                        <field name="branch_manager_name"/>
+                        <field name="hr_manager_name"/>
+                    </group>
+                </group>
+                <separator string="ออกใบเตือนเองตอนนี้ (เลือกรอบได้ ไม่ต้องรอ cron)"/>
+                <div class="text-muted">
+                    เลือกเดือน/ปี แล้วระบบเติมช่วงวันที่ให้ตามวันตัดรอบ
+                    หรือจะ <b>พิมพ์วันที่เองก็ได้</b> ถ้าอยากตรวจเฉพาะบางช่วง
+                    (ตรวจได้ครั้งละไม่เกิน 100 วัน)
+                </div>
+                <group>
+                    <group>
+                        <field name="target_month"/>
+                        <field name="target_year"/>
+                    </group>
+                    <group>
+                        <field name="target_cycle_start"/>
+                        <field name="target_cycle_end"/>
+                    </group>
+                </group>
+
+                <separator string="ข้อบังคับที่อ้างถึงในใบเตือน"/>
+                <div class="text-muted">
+                    ระบบไม่เดาเลขข้อระเบียบให้ เพราะเป็นเอกสารทางวินัย
+                    กรุณาใส่ให้ตรงกับระเบียบข้อบังคับการทำงานจริงของบริษัท
+                </div>
+                <field name="rule_clauses" nolabel="1"
+                       placeholder="เช่น หมวดที่ 9 วินัยและโทษทางวินัย&#10;3.x.x ..."/>
+                <footer>
+                    <!-- ต้องมีปุ่มบันทึกเอง เพราะหน้าต่าง popup ที่มี footer
+                         จะไม่มีปุ่ม บันทึก/ยกเลิก มาตรฐานของ Odoo ให้ -->
+                    <button name="action_close" type="object"
+                            string="บันทึก" class="btn-primary"/>
+                    <button name="action_preview_cycle" type="object"
+                            string="ดูผลก่อน (ยังไม่ออกใบเตือน)" class="btn-secondary"/>
+                    <button name="action_issue_now" type="object"
+                            string="บันทึก + ออกใบเตือนเดี๋ยวนี้" class="btn-secondary"
+                            confirm="ระบบจะบันทึกค่าที่ตั้งไว้ แล้วออกใบเตือนให้พนักงานที่เกินเกณฑ์ในรอบที่เลือกทันที พร้อมแนบไฟล์ PDF ส่งเข้าแอป ยืนยันหรือไม่?"/>
+                    <button string="ยกเลิก (ไม่บันทึก)" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_employee_warning_auto_config" model="ir.actions.server">
+        <field name="name">ตั้งค่าออกใบเตือนอัตโนมัติ</field>
+        <field name="model_id" ref="model_employee_warning_auto_config"/>
+        <field name="state">code</field>
+        <field name="code">action = model.action_open_config()</field>
+    </record>
+
+    <menuitem id="menu_employee_warning_auto_config"
+              name="ตั้งค่าออกใบเตือนอัตโนมัติ"
+              parent="npd_hrms_base.menu_hrms_configuration"
+              action="action_employee_warning_auto_config"
+              sequence="80"
+              groups="npd_hrms_base.group_hrms_manager"/>
+
+    <!-- เพิ่มข้อมูลรอบ/จำนวนครั้ง + ปุ่มสร้างไฟล์ ในบรรทัดใบเตือน -->
+    <record id="view_employee_warning_form_auto" model="ir.ui.view">
+        <field name="name">employee.warning.form.auto</field>
+        <field name="model">employee.warning</field>
+        <field name="inherit_id" ref="npd_hrms_base.view_employee_warning_form"/>
+        <field name="arch" type="xml">
+            <!-- คอลัมน์เดิมที่กินที่เยอะ -> ทำให้ซ่อนได้ (กด ⋮ มุมขวาของตาราง)
+                 ไม่ได้เอาออก แค่ให้ผู้ใช้เลือกซ่อนเองได้เวลาตารางแน่น -->
+            <xpath expr="//field[@name='warning_line_ids']/list/field[@name='description']"
+                   position="attributes">
+                <attribute name="optional">show</attribute>
+            </xpath>
+
+            <xpath expr="//field[@name='warning_line_ids']/list" position="inside">
+                <field name="source" string="ที่มา" optional="show"/>
+                <field name="cycle_display" string="รอบใบเตือน" optional="show"/>
+                <field name="missed_count" string="ไม่ครบ (ครั้ง)" optional="show"/>
+                <!-- เกณฑ์ ณ ตอนออกใบ — เก็บไว้ตรวจย้อนหลัง ไม่ต้องเห็นตลอดเวลา -->
+                <field name="threshold_applied" string="เกณฑ์" optional="hide"/>
+                <field name="cycle_start" string="รอบตั้งแต่" optional="hide"/>
+                <field name="cycle_end" string="ถึง" optional="hide"/>
+                <field name="missed_detail" column_invisible="1"/>
+                <button name="action_generate_pdf" type="object"
+                        icon="fa-file-pdf-o" title="สร้างไฟล์ใบเตือนใหม่แล้วแนบทับ"/>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>

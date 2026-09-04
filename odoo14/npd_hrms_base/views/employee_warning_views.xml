@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_employee_warning_list" model="ir.ui.view">
+        <field name="name">employee.warning.list</field>
+        <field name="model">employee.warning</field>
+        <field name="arch" type="xml">
+            <list string="ใบเตือนพนักงาน"
+                  decoration-danger="warning_count &gt;= 3"
+                  decoration-warning="warning_count == 2">
+                <field name="employee_code"/>
+                <field name="firstname"/>
+                <field name="lastname"/>
+                <field name="branch_id"/>
+                <field name="department_id"/>
+                <field name="position_id"/>
+                <field name="warning_count" sum="รวม"/>
+                <field name="last_warning_date"/>
+                <field name="company_id" groups="base.group_multi_company" optional="hide"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_employee_warning_form" model="ir.ui.view">
+        <field name="name">employee.warning.form</field>
+        <field name="model">employee.warning</field>
+        <field name="arch" type="xml">
+            <form string="ใบเตือนพนักงาน">
+                <sheet>
+                    <div class="oe_title">
+                        <label for="employee_id"/>
+                        <h1><field name="employee_id" options="{'no_create': True}"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="employee_code"/>
+                            <field name="branch_id"/>
+                            <field name="department_id"/>
+                            <field name="position_id"/>
+                        </group>
+                        <group>
+                            <field name="warning_count"/>
+                            <field name="last_warning_date"/>
+                            <field name="company_id" groups="base.group_multi_company"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="รายการใบเตือน" name="lines">
+                            <field name="warning_line_ids">
+                                <list editable="bottom">
+                                    <field name="warning_number_display" string="ครั้งที่"/>
+                                    <field name="warning_date"/>
+                                    <field name="subject"/>
+                                    <field name="warning_type"/>
+                                    <field name="description"/>
+                                    <field name="attachment" widget="binary"
+                                           filename="attachment_filename"/>
+                                    <field name="attachment_filename" column_invisible="1"/>
+                                    <field name="warning_number" column_invisible="1"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="หมายเหตุ" name="note">
+                            <field name="note" nolabel="1"/>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_employee_warning_search" model="ir.ui.view">
+        <field name="name">employee.warning.search</field>
+        <field name="model">employee.warning</field>
+        <field name="arch" type="xml">
+            <search string="ค้นหาใบเตือน">
+                <field name="employee_id"/>
+                <field name="employee_code"/>
+                <field name="branch_id"/>
+                <filter name="filter_has_warning" string="มีใบเตือน"
+                        domain="[('warning_count', '&gt;', 0)]"/>
+                <filter name="filter_critical" string="ตั้งแต่ 3 ครั้งขึ้นไป"
+                        domain="[('warning_count', '&gt;=', 3)]"/>
+                <group expand="0" string="จัดกลุ่มตาม">
+                    <filter name="group_branch" string="สาขา"
+                            context="{'group_by': 'branch_id'}"/>
+                    <filter name="group_department" string="แผนก"
+                            context="{'group_by': 'department_id'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_employee_warning" model="ir.actions.act_window">
+        <field name="name">ใบเตือนพนักงาน</field>
+        <field name="res_model">employee.warning</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_employee_warning_search"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">ยังไม่มีใบเตือน</p>
+            <p>พนักงานจะเห็นใบเตือนของตัวเองในแอป HR</p>
+        </field>
+    </record>
+
+</odoo>

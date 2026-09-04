@@ -1,0 +1,165 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- noupdate="1": เป็นแค่ชุดตั้งต้น ผู้ใช้แก้จำนวนวัน/เพิ่มประเภทเองได้
+         แล้วการอัปเกรดโมดูลจะไม่เขียนทับค่าที่แก้ไว้ -->
+    <data noupdate="1">
+
+        <!-- ================= ประเภทการลา =================
+             code ตรงกับคีย์ที่แอปเวอร์ชันปัจจุบันใช้อยู่ ห้ามเปลี่ยน -->
+
+        <record id="leave_type_personal_paid" model="hrms.leave.type">
+            <field name="name">ลากิจได้รับค่าจ้าง</field>
+            <field name="code">leave_personal_paid</field>
+            <field name="sequence">10</field>
+            <field name="days_default">3</field>
+            <field name="is_paid" eval="True"/>
+            <field name="eligible_after_months">3</field>
+        </record>
+
+        <record id="leave_type_personal_unpaid" model="hrms.leave.type">
+            <field name="name">ลากิจไม่ได้รับค่าจ้าง</field>
+            <field name="code">leave_personal_unpaid</field>
+            <field name="sequence">20</field>
+            <field name="days_default">30</field>
+            <field name="is_paid" eval="False"/>
+        </record>
+
+        <record id="leave_type_sick" model="hrms.leave.type">
+            <field name="name">ลาป่วยมีใบรับรองแพทย์</field>
+            <field name="code">leave_sick</field>
+            <field name="sequence">30</field>
+            <field name="days_default">30</field>
+            <field name="is_paid" eval="True"/>
+            <field name="requires_attachment" eval="True"/>
+        </record>
+
+        <record id="leave_type_maternity_paid" model="hrms.leave.type">
+            <field name="name">ลาคลอดได้รับค่าจ้าง</field>
+            <field name="code">leave_maternity_paid</field>
+            <field name="sequence">40</field>
+            <field name="days_default">45</field>
+            <field name="is_paid" eval="True"/>
+        </record>
+
+        <record id="leave_type_maternity_unpaid" model="hrms.leave.type">
+            <field name="name">ลาคลอดไม่ได้รับค่าจ้าง</field>
+            <field name="code">leave_maternity_unpaid</field>
+            <field name="sequence">50</field>
+            <field name="days_default">45</field>
+            <field name="is_paid" eval="False"/>
+        </record>
+
+        <record id="leave_type_vacation" model="hrms.leave.type">
+            <field name="name">ลาพักร้อน</field>
+            <field name="code">leave_vacation</field>
+            <field name="sequence">60</field>
+            <field name="days_default">7</field>
+            <field name="is_paid" eval="True"/>
+            <field name="eligible_after_years">1</field>
+            <field name="prorate_first_year" eval="True"/>
+        </record>
+
+        <record id="leave_type_saturday" model="hrms.leave.type">
+            <field name="name">สิทธิหยุดวันเสาร์</field>
+            <field name="code">leave_saturday</field>
+            <field name="sequence">70</field>
+            <field name="days_default">24</field>
+            <field name="is_paid" eval="True"/>
+        </record>
+
+        <record id="leave_type_emergency" model="hrms.leave.type">
+            <field name="name">ฉุกเฉิน</field>
+            <field name="code">leave_emergency</field>
+            <field name="sequence">80</field>
+            <field name="days_default">3</field>
+            <field name="is_paid" eval="True"/>
+        </record>
+
+        <!-- ================= ประเภทการเพิ่มเวลา ================= -->
+
+        <!-- counts_as_attendance = 3 ประเภทที่ calculate_lateness.php เดิมใช้แทนการลงเวลา
+             (ลืมลงเวลา / ทำงานนอกสถานที่ / ระบบมีปัญหา) — ของเดิม hardcode ชื่อไว้ใน SQL -->
+        <record id="manual_reason_offsite_work" model="hrms.manual.time.reason">
+            <field name="name">ทำงานนอกสถานที่</field>
+            <field name="code">offsite_work</field>
+            <field name="sequence">10</field>
+            <field name="counts_as_attendance" eval="True"/>
+        </record>
+
+        <record id="manual_reason_holiday_work" model="hrms.manual.time.reason">
+            <field name="name">ทำงานวันหยุด</field>
+            <field name="code">holiday_work</field>
+            <field name="sequence">20</field>
+            <field name="is_overtime" eval="True"/>
+            <field name="ot_kind">holiday</field>
+        </record>
+
+        <record id="manual_reason_system_issue" model="hrms.manual.time.reason">
+            <field name="name">ระบบมีปัญหา</field>
+            <field name="code">system_issue</field>
+            <field name="sequence">30</field>
+            <field name="counts_as_attendance" eval="True"/>
+        </record>
+
+        <record id="manual_reason_forgot_checkin" model="hrms.manual.time.reason">
+            <field name="name">ลืมลงเวลา</field>
+            <field name="code">forgot_checkin</field>
+            <field name="sequence">40</field>
+            <field name="counts_as_attendance" eval="True"/>
+        </record>
+
+        <record id="manual_reason_overtime" model="hrms.manual.time.reason">
+            <field name="name">ขอโอที</field>
+            <field name="code">overtime</field>
+            <field name="sequence">50</field>
+            <field name="is_overtime" eval="True"/>
+            <field name="ot_kind">request</field>
+        </record>
+
+        <!-- requires_amount ที่ฝั่ง PHP ตั้งใจจะบังคับแต่สะกดชื่อไม่ตรงจนไม่เคยทำงาน -->
+        <record id="manual_reason_offsite_allowance" model="hrms.manual.time.reason">
+            <field name="name">ค่าเบี้ยเลี้ยงออกนอกสถานที่</field>
+            <field name="code">offsite_allowance</field>
+            <field name="sequence">60</field>
+            <field name="requires_amount" eval="True"/>
+            <field name="requires_allowance_type" eval="True"/>
+            <field name="payroll_income_field">income_allowance</field>
+            <field name="payroll_line_label">เบี้ยเลี้ยง นอกสถานที่</field>
+        </record>
+
+        <record id="manual_reason_medical" model="hrms.manual.time.reason">
+            <field name="name">ค่ารักษาพยาบาล</field>
+            <field name="code">medical_expense</field>
+            <field name="sequence">70</field>
+            <field name="requires_amount" eval="True"/>
+            <field name="requires_attachment" eval="True"/>
+            <field name="payroll_income_field">income_other</field>
+            <field name="payroll_line_label">ค่ารักษาพยาบาล</field>
+        </record>
+
+        <record id="manual_reason_food" model="hrms.manual.time.reason">
+            <field name="name">ค่าอาหาร</field>
+            <field name="code">food_allowance</field>
+            <field name="sequence">80</field>
+            <field name="requires_amount" eval="True"/>
+            <field name="payroll_income_field">income_food</field>
+            <field name="payroll_line_label">ค่าอาหาร</field>
+        </record>
+
+        <record id="manual_reason_actor_content" model="hrms.manual.time.reason">
+            <field name="name">ค่าตัวนักแสดง ถ่าย content</field>
+            <field name="code">actor_content</field>
+            <field name="sequence">90</field>
+            <field name="requires_amount" eval="True"/>
+            <field name="payroll_income_field">income_other</field>
+            <field name="payroll_line_label">ค่าตัวนักแสดง ถ่าย content</field>
+        </record>
+
+        <record id="manual_reason_unspecified" model="hrms.manual.time.reason">
+            <field name="name">ไม่ระบุ</field>
+            <field name="code">unspecified</field>
+            <field name="sequence">100</field>
+        </record>
+
+    </data>
+</odoo>

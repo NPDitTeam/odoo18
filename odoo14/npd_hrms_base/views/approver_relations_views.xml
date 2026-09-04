@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_approver_relations_list" model="ir.ui.view">
+        <field name="name">approver.relations.list</field>
+        <field name="model">approver.relations</field>
+        <field name="arch" type="xml">
+            <list string="สายอนุมัติ" editable="bottom">
+                <field name="sequence" widget="handle"/>
+                <field name="employee_code" readonly="1"/>
+                <field name="user_id"/>
+                <field name="branch_id" readonly="1"/>
+                <field name="department_id" readonly="1"/>
+                <field name="position_id"/>
+                <field name="approver_user_id"/>
+                <field name="approver_employee_code" readonly="1"/>
+                <field name="company_id" groups="base.group_multi_company" optional="hide"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_approver_relations_form" model="ir.ui.view">
+        <field name="name">approver.relations.form</field>
+        <field name="model">approver.relations</field>
+        <field name="arch" type="xml">
+            <form string="สายอนุมัติ">
+                <sheet>
+                    <group>
+                        <group string="พนักงาน">
+                            <field name="user_id" options="{'no_create': True}"/>
+                            <field name="employee_code"/>
+                            <field name="branch_id"/>
+                            <field name="department_id"/>
+                        </group>
+                        <group string="ผู้อนุมัติ">
+                            <field name="position_id"/>
+                            <field name="approver_user_id" options="{'no_create': True}"/>
+                            <field name="approver_employee_code"/>
+                            <field name="sequence"/>
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_approver_relations_search" model="ir.ui.view">
+        <field name="name">approver.relations.search</field>
+        <field name="model">approver.relations</field>
+        <field name="arch" type="xml">
+            <search string="ค้นหาสายอนุมัติ">
+                <field name="user_id"/>
+                <field name="approver_user_id"/>
+                <field name="employee_code"/>
+                <field name="branch_id"/>
+                <group expand="0" string="จัดกลุ่มตาม">
+                    <filter name="group_approver" string="ผู้อนุมัติ"
+                            context="{'group_by': 'approver_user_id'}"/>
+                    <filter name="group_branch" string="สาขา"
+                            context="{'group_by': 'branch_id'}"/>
+                    <filter name="group_department" string="แผนก"
+                            context="{'group_by': 'department_id'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_approver_relations" model="ir.actions.act_window">
+        <field name="name">สายอนุมัติ</field>
+        <field name="res_model">approver.relations</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_approver_relations_search"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">กำหนดสายอนุมัติชุดแรก</p>
+            <p>ระบบใช้ตารางนี้ตัดสินว่าใครเห็นเมนูอนุมัติในแอป และอนุมัติของใครได้บ้าง</p>
+        </field>
+    </record>
+
+</odoo>

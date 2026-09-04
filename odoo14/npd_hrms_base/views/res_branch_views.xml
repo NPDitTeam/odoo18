@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- เพิ่มข้อมูลฝั่ง HR ลงบนฟอร์มสาขาเดิมของ multi_branch_management_aagam -->
+    <record id="view_branch_form_hrms" model="ir.ui.view">
+        <field name="name">res.branch.form.inherit.npd.hrms</field>
+        <field name="model">res.branch</field>
+        <field name="inherit_id" ref="multi_branch_management_aagam.res_branch_form_view"/>
+        <field name="arch" type="xml">
+            <xpath expr="//sheet" position="inside">
+                <group string="ระบบบุคคล" name="hrms_branch"
+                       groups="npd_hrms_base.group_hrms_officer">
+                    <group string="ประเภทสาขา">
+                        <field name="hr_use_in_hrms"/>
+                        <field name="hr_is_head_office"/>
+                        <field name="hr_is_rental_branch"/>
+                    </group>
+                    <group string="พิกัดเช็คอิน">
+                        <field name="hr_checkin_latitude" placeholder="13.7563"/>
+                        <field name="hr_checkin_longitude" placeholder="100.5018"/>
+                        <field name="hr_checkin_radius"
+                               help="0 = ใช้ค่าเริ่มต้นของบริษัท"/>
+                        <field name="hr_allow_offsite_checkin"/>
+                        <!-- ต้องกดได้แม้ยังไม่มีพิกัด — เดิมซ่อนปุ่มเมื่อยังไม่ตั้งพิกัด
+                             ทำให้เปิดแผนที่ไปคลิกตั้งพิกัดครั้งแรกไม่ได้เลย -->
+                        <button name="action_open_checkin_map" type="object"
+                                string="ตั้งพิกัดบนแผนที่" icon="fa-map-marker"
+                                class="btn-link"/>
+                        <field name="hr_map_link" invisible="1"/>
+                    </group>
+                </group>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- มุมมองเฉพาะฝ่ายบุคคล: ตั้งรัศมีเช็คอินทุกสาขาในหน้าเดียว
+         (แทนโมเดล hr.checkin.distance ของ Odoo 14 ที่ต้อง sync กับ PHP) -->
+    <record id="view_branch_list_hrms_checkin" model="ir.ui.view">
+        <field name="name">res.branch.list.hrms.checkin</field>
+        <field name="model">res.branch</field>
+        <field name="priority">32</field>
+        <field name="arch" type="xml">
+            <list string="ตั้งค่าระยะเช็คอินรายสาขา" editable="bottom">
+                <field name="name" readonly="1"/>
+                <field name="hr_is_head_office"/>
+                <field name="hr_is_rental_branch"/>
+                <field name="hr_checkin_latitude"/>
+                <field name="hr_checkin_longitude"/>
+                <field name="hr_checkin_radius" sum="รวม"/>
+                <field name="hr_allow_offsite_checkin"/>
+                <button name="action_open_checkin_map" type="object"
+                        string="แผนที่" icon="fa-map-marker" class="btn-link"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="action_hrms_checkin_distance" model="ir.actions.act_window">
+        <field name="name">ตั้งค่าระยะเช็คอิน</field>
+        <field name="res_model">res.branch</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('hr_use_in_hrms', '=', True)]</field>
+        <field name="context">{'bypass_branch_company_filter': True}</field>
+        <field name="view_id" ref="view_branch_list_hrms_checkin"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">ยังไม่มีสาขาที่เปิดใช้ในระบบบุคคล</p>
+            <p>ตั้งพิกัดและรัศมีที่อนุญาตให้พนักงานลงเวลาของแต่ละสาขาที่นี่</p>
+        </field>
+    </record>
+
+</odoo>

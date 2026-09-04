@@ -1,0 +1,25 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_payroll_policy_payroll,payroll.policy payroll,model_payroll_policy,npd_hrms_base.group_hrms_payroll,1,0,0,0
+access_payroll_policy_manager,payroll.policy manager,model_payroll_policy,npd_hrms_base.group_hrms_manager,1,1,1,1
+access_payroll_policy_tax_bracket_payroll,payroll.policy.tax.bracket payroll,model_payroll_policy_tax_bracket,npd_hrms_base.group_hrms_payroll,1,0,0,0
+access_payroll_policy_tax_bracket_manager,payroll.policy.tax.bracket manager,model_payroll_policy_tax_bracket,npd_hrms_base.group_hrms_manager,1,1,1,1
+access_payroll_period_payroll,payroll.period payroll,model_payroll_period,npd_hrms_base.group_hrms_payroll,1,1,1,0
+access_payroll_period_manager,payroll.period manager,model_payroll_period,npd_hrms_base.group_hrms_manager,1,1,1,1
+access_payroll_salary_payroll,payroll.salary payroll,model_payroll_salary,npd_hrms_base.group_hrms_payroll,1,1,1,0
+access_payroll_salary_manager,payroll.salary manager,model_payroll_salary,npd_hrms_base.group_hrms_manager,1,1,1,1
+access_payroll_salary_line_payroll,payroll.salary.line payroll,model_payroll_salary_line,npd_hrms_base.group_hrms_payroll,1,1,1,1
+access_payroll_ot_line_payroll,payroll.ot.line payroll,model_payroll_ot_line,npd_hrms_base.group_hrms_payroll,1,1,1,1
+access_payroll_deduction_line_payroll,payroll.deduction.line payroll,model_payroll_deduction_line,npd_hrms_base.group_hrms_payroll,1,1,1,1
+access_payroll_tax_bracket_payroll,payroll.tax.bracket payroll,model_payroll_tax_bracket,npd_hrms_base.group_hrms_payroll,1,1,1,1
+access_other_income_officer,other.income officer,model_other_income,npd_hrms_base.group_hrms_officer,1,1,1,0
+access_other_income_payroll,other.income payroll,model_other_income,npd_hrms_base.group_hrms_payroll,1,1,1,1
+access_other_income_line_officer,other.income.line officer,model_other_income_line,npd_hrms_base.group_hrms_officer,1,1,1,1
+access_work_security_deposit_payroll,work.security.deposit payroll,model_work_security_deposit,npd_hrms_base.group_hrms_payroll,1,1,1,1
+access_work_security_deposit_line_payroll,work.security.deposit.line payroll,model_work_security_deposit_line,npd_hrms_base.group_hrms_payroll,1,1,1,1
+access_work_security_deposit_payment_payroll,work.security.deposit.line.payment payroll,model_work_security_deposit_line_payment,npd_hrms_base.group_hrms_payroll,1,1,1,1
+access_payroll_lateness_rule_officer,payroll.lateness.rule officer,model_payroll_lateness_rule,npd_hrms_base.group_hrms_officer,1,0,0,0
+access_payroll_lateness_rule_manager,payroll.lateness.rule manager,model_payroll_lateness_rule,npd_hrms_base.group_hrms_manager,1,1,1,1
+access_pnd1_line_officer,pnd1.line officer,model_pnd1_line,npd_hrms_base.group_hrms_officer,1,0,0,0
+access_pnd1_line_payroll,pnd1.line payroll,model_pnd1_line,npd_hrms_base.group_hrms_payroll,1,1,1,1
+access_employee_warning_auto_config_user,employee.warning.auto.config user,model_employee_warning_auto_config,npd_hrms_base.group_hrms_user,1,0,0,0
+access_employee_warning_auto_config_manager,employee.warning.auto.config manager,model_employee_warning_auto_config,npd_hrms_base.group_hrms_manager,1,1,1,1

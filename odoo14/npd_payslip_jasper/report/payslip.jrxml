@@ -1,0 +1,619 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="payslip" pageWidth="595" pageHeight="842" columnWidth="555" leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20" uuid="9f1c7a10-5b44-4c21-9d33-0npdpayslip1">
+	<property name="net.sf.jasperreports.default.font.name" value="Sarabun"/>
+	<style name="Thai" isDefault="true" fontName="Sarabun" fontSize="12" isBold="false" pdfFontName="THSarabunNewBold.ttf" pdfEncoding="Identity-H" isPdfEmbedded="true"/>
+	<style name="ThaiBold" fontName="Sarabun" fontSize="12" isBold="true" pdfFontName="THSarabunNewBold.ttf" pdfEncoding="Identity-H" isPdfEmbedded="true"/>
+	<style name="ThaiSmall" fontName="Sarabun" fontSize="10" isBold="false" pdfFontName="THSarabunNewBold.ttf" pdfEncoding="Identity-H" isPdfEmbedded="true"/>
+	<style name="ThaiSmallBold" fontName="Sarabun" fontSize="10" isBold="true" pdfFontName="THSarabunNewBold.ttf" pdfEncoding="Identity-H" isPdfEmbedded="true"/>
+	<style name="ThaiSubTitle" fontName="Sarabun" fontSize="13" isBold="true" pdfFontName="THSarabunNewBold.ttf" pdfEncoding="Identity-H" isPdfEmbedded="true"/>
+	<queryString language="xPath">
+		<![CDATA[/data/record]]>
+	</queryString>
+	<field name="CompanyLogo-jasper_company_logo" class="java.io.InputStream">
+		<fieldDescription><![CDATA[CompanyLogo-jasper_company_logo]]></fieldDescription>
+	</field>
+	<field name="CompanyName-jasper_company_name" class="java.lang.String">
+		<fieldDescription><![CDATA[CompanyName-jasper_company_name]]></fieldDescription>
+	</field>
+	<field name="CompanyAddress-jasper_company_address" class="java.lang.String">
+		<fieldDescription><![CDATA[CompanyAddress-jasper_company_address]]></fieldDescription>
+	</field>
+	<field name="EmployeeCode-jasper_employee_code" class="java.lang.String">
+		<fieldDescription><![CDATA[EmployeeCode-jasper_employee_code]]></fieldDescription>
+	</field>
+	<field name="EmployeeName-jasper_employee_name" class="java.lang.String">
+		<fieldDescription><![CDATA[EmployeeName-jasper_employee_name]]></fieldDescription>
+	</field>
+	<field name="Department-jasper_department" class="java.lang.String">
+		<fieldDescription><![CDATA[Department-jasper_department]]></fieldDescription>
+	</field>
+	<field name="Position-jasper_position" class="java.lang.String">
+		<fieldDescription><![CDATA[Position-jasper_position]]></fieldDescription>
+	</field>
+	<field name="Branch-jasper_branch" class="java.lang.String">
+		<fieldDescription><![CDATA[Branch-jasper_branch]]></fieldDescription>
+	</field>
+	<field name="PeriodThai-jasper_period_thai" class="java.lang.String">
+		<fieldDescription><![CDATA[PeriodThai-jasper_period_thai]]></fieldDescription>
+	</field>
+	<field name="PaymentDate-jasper_payment_date" class="java.lang.String">
+		<fieldDescription><![CDATA[PaymentDate-jasper_payment_date]]></fieldDescription>
+	</field>
+	<field name="BankAccount-jasper_bank_account" class="java.lang.String">
+		<fieldDescription><![CDATA[BankAccount-jasper_bank_account]]></fieldDescription>
+	</field>
+	<field name="PrintedBy-jasper_printed_by" class="java.lang.String">
+		<fieldDescription><![CDATA[PrintedBy-jasper_printed_by]]></fieldDescription>
+	</field>
+	<field name="IncomeSalary-jasper_income_salary" class="java.lang.String">
+		<fieldDescription><![CDATA[IncomeSalary-jasper_income_salary]]></fieldDescription>
+	</field>
+	<field name="IncomePosition-jasper_income_position" class="java.lang.String">
+		<fieldDescription><![CDATA[IncomePosition-jasper_income_position]]></fieldDescription>
+	</field>
+	<field name="IncomeExperience-jasper_income_experience" class="java.lang.String">
+		<fieldDescription><![CDATA[IncomeExperience-jasper_income_experience]]></fieldDescription>
+	</field>
+	<field name="IncomeProfessional-jasper_income_professional" class="java.lang.String">
+		<fieldDescription><![CDATA[IncomeProfessional-jasper_income_professional]]></fieldDescription>
+	</field>
+	<field name="IncomeCostLiving-jasper_income_cost_living" class="java.lang.String">
+		<fieldDescription><![CDATA[IncomeCostLiving-jasper_income_cost_living]]></fieldDescription>
+	</field>
+	<field name="IncomeOtWeekday-jasper_income_ot_weekday" class="java.lang.String">
+		<fieldDescription><![CDATA[IncomeOtWeekday-jasper_income_ot_weekday]]></fieldDescription>
+	</field>
+	<field name="IncomeOtHoliday-jasper_income_ot_holiday" class="java.lang.String">
+		<fieldDescription><![CDATA[IncomeOtHoliday-jasper_income_ot_holiday]]></fieldDescription>
+	</field>
+	<field name="IncomeOtSunday-jasper_income_ot_sunday" class="java.lang.String">
+		<fieldDescription><![CDATA[IncomeOtSunday-jasper_income_ot_sunday]]></fieldDescription>
+	</field>
+	<field name="IncomeAllowance-jasper_income_allowance" class="java.lang.String">
+		<fieldDescription><![CDATA[IncomeAllowance-jasper_income_allowance]]></fieldDescription>
+	</field>
+	<field name="IncomeFood-jasper_income_food" class="java.lang.String">
+		<fieldDescription><![CDATA[IncomeFood-jasper_income_food]]></fieldDescription>
+	</field>
+	<field name="IncomeTransport-jasper_income_transport" class="java.lang.String">
+		<fieldDescription><![CDATA[IncomeTransport-jasper_income_transport]]></fieldDescription>
+	</field>
+	<field name="IncomeTrip-jasper_income_trip" class="java.lang.String">
+		<fieldDescription><![CDATA[IncomeTrip-jasper_income_trip]]></fieldDescription>
+	</field>
+	<field name="IncomeCommission-jasper_income_commission" class="java.lang.String">
+		<fieldDescription><![CDATA[IncomeCommission-jasper_income_commission]]></fieldDescription>
+	</field>
+	<field name="IncomeOther-jasper_income_other" class="java.lang.String">
+		<fieldDescription><![CDATA[IncomeOther-jasper_income_other]]></fieldDescription>
+	</field>
+	<field name="TotalIncome-jasper_total_income" class="java.lang.String">
+		<fieldDescription><![CDATA[TotalIncome-jasper_total_income]]></fieldDescription>
+	</field>
+	<field name="DedLate-jasper_ded_late" class="java.lang.String">
+		<fieldDescription><![CDATA[DedLate-jasper_ded_late]]></fieldDescription>
+	</field>
+	<field name="DedLeave-jasper_ded_leave" class="java.lang.String">
+		<fieldDescription><![CDATA[DedLeave-jasper_ded_leave]]></fieldDescription>
+	</field>
+	<field name="DedAbsent-jasper_ded_absent" class="java.lang.String">
+		<fieldDescription><![CDATA[DedAbsent-jasper_ded_absent]]></fieldDescription>
+	</field>
+	<field name="DedTax-jasper_ded_tax" class="java.lang.String">
+		<fieldDescription><![CDATA[DedTax-jasper_ded_tax]]></fieldDescription>
+	</field>
+	<field name="DedSso-jasper_ded_sso" class="java.lang.String">
+		<fieldDescription><![CDATA[DedSso-jasper_ded_sso]]></fieldDescription>
+	</field>
+	<field name="DedProvident-jasper_ded_provident" class="java.lang.String">
+		<fieldDescription><![CDATA[DedProvident-jasper_ded_provident]]></fieldDescription>
+	</field>
+	<field name="DedKsl-jasper_ded_ksl" class="java.lang.String">
+		<fieldDescription><![CDATA[DedKsl-jasper_ded_ksl]]></fieldDescription>
+	</field>
+	<field name="DedAdvance-jasper_ded_advance" class="java.lang.String">
+		<fieldDescription><![CDATA[DedAdvance-jasper_ded_advance]]></fieldDescription>
+	</field>
+	<field name="DedLoan-jasper_ded_loan" class="java.lang.String">
+		<fieldDescription><![CDATA[DedLoan-jasper_ded_loan]]></fieldDescription>
+	</field>
+	<field name="DedOther-jasper_ded_other" class="java.lang.String">
+		<fieldDescription><![CDATA[DedOther-jasper_ded_other]]></fieldDescription>
+	</field>
+	<field name="TotalDeduction-jasper_total_deduction" class="java.lang.String">
+		<fieldDescription><![CDATA[TotalDeduction-jasper_total_deduction]]></fieldDescription>
+	</field>
+	<field name="AccumIncome-jasper_accum_income" class="java.lang.String">
+		<fieldDescription><![CDATA[AccumIncome-jasper_accum_income]]></fieldDescription>
+	</field>
+	<field name="AccumTax-jasper_accum_tax" class="java.lang.String">
+		<fieldDescription><![CDATA[AccumTax-jasper_accum_tax]]></fieldDescription>
+	</field>
+	<field name="AccumSso-jasper_accum_sso" class="java.lang.String">
+		<fieldDescription><![CDATA[AccumSso-jasper_accum_sso]]></fieldDescription>
+	</field>
+	<field name="NetSalary-jasper_net_salary" class="java.lang.String">
+		<fieldDescription><![CDATA[NetSalary-jasper_net_salary]]></fieldDescription>
+	</field>
+	<title>
+		<band height="102">
+			<image scaleImage="RetainShape" hAlign="Left">
+				<reportElement x="0" y="0" width="70" height="48"/>
+				<imageExpression><![CDATA[$F{CompanyLogo-jasper_company_logo}]]></imageExpression>
+			</image>
+			<textField isBlankWhenNull="true">
+				<reportElement style="ThaiBold" x="78" y="0" width="300" height="18"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[$F{CompanyName-jasper_company_name}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement style="ThaiSmall" x="78" y="18" width="320" height="28"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[$F{CompanyAddress-jasper_company_address}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement style="ThaiSubTitle" x="400" y="0" width="155" height="22"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle"/>
+				<text><![CDATA[ใบแจ้งเงินเดือน / PAY SLIP]]></text>
+			</staticText>
+			<staticText>
+				<reportElement style="ThaiSmall" x="400" y="24" width="155" height="14"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle"/>
+				<text><![CDATA[ประจำเดือน]]></text>
+			</staticText>
+			<textField isBlankWhenNull="true">
+				<reportElement style="ThaiSmallBold" x="400" y="38" width="155" height="16"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[$F{PeriodThai-jasper_period_thai}]]></textFieldExpression>
+			</textField>
+			<line>
+				<reportElement x="0" y="58" width="555" height="1"/>
+				<graphicElement><pen lineWidth="0.5" lineColor="#666666"/></graphicElement>
+			</line>
+			<staticText>
+				<reportElement style="ThaiSmall" x="0" y="62" width="64" height="15"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle"/>
+				<text><![CDATA[รหัสพนักงาน]]></text>
+			</staticText>
+			<textField isBlankWhenNull="true">
+				<reportElement style="ThaiSmallBold" x="66" y="62" width="119" height="15"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[$F{EmployeeCode-jasper_employee_code}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement style="ThaiSmall" x="185" y="62" width="64" height="15"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle"/>
+				<text><![CDATA[ชื่อ-สกุล]]></text>
+			</staticText>
+			<textField isBlankWhenNull="true">
+				<reportElement style="ThaiSmallBold" x="251" y="62" width="119" height="15"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[$F{EmployeeName-jasper_employee_name}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement style="ThaiSmall" x="370" y="62" width="64" height="15"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle"/>
+				<text><![CDATA[ตำแหน่ง]]></text>
+			</staticText>
+			<textField isBlankWhenNull="true">
+				<reportElement style="ThaiSmallBold" x="436" y="62" width="119" height="15"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[$F{Position-jasper_position}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement style="ThaiSmall" x="0" y="78" width="64" height="15"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle"/>
+				<text><![CDATA[แผนก]]></text>
+			</staticText>
+			<textField isBlankWhenNull="true">
+				<reportElement style="ThaiSmallBold" x="66" y="78" width="119" height="15"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[$F{Department-jasper_department}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement style="ThaiSmall" x="185" y="78" width="64" height="15"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle"/>
+				<text><![CDATA[สาขา]]></text>
+			</staticText>
+			<textField isBlankWhenNull="true">
+				<reportElement style="ThaiSmallBold" x="251" y="78" width="119" height="15"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[$F{Branch-jasper_branch}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement style="ThaiSmall" x="370" y="78" width="64" height="15"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle"/>
+				<text><![CDATA[วันที่จ่ายเงิน]]></text>
+			</staticText>
+			<textField isBlankWhenNull="true">
+				<reportElement style="ThaiSmallBold" x="436" y="78" width="119" height="15"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[$F{PaymentDate-jasper_payment_date}]]></textFieldExpression>
+			</textField>
+			<line>
+				<reportElement x="0" y="96" width="555" height="1"/>
+				<graphicElement><pen lineWidth="0.5" lineColor="#666666"/></graphicElement>
+			</line>
+		</band>
+	</title>
+	<detail>
+		<band height="354">
+			<rectangle>
+				<reportElement mode="Opaque" backcolor="#EDEDED" x="0" y="4" width="272" height="18"/>
+				<graphicElement><pen lineWidth="0.5" lineColor="#999999"/></graphicElement>
+			</rectangle>
+			<rectangle>
+				<reportElement mode="Opaque" backcolor="#EDEDED" x="283" y="4" width="272" height="18"/>
+				<graphicElement><pen lineWidth="0.5" lineColor="#999999"/></graphicElement>
+			</rectangle>
+			<staticText>
+				<reportElement style="ThaiSmallBold" x="6" y="4" width="200" height="18"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle"/>
+				<text><![CDATA[รายได้ / Income]]></text>
+			</staticText>
+			<staticText>
+				<reportElement style="ThaiSmallBold" x="289" y="4" width="200" height="18"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle"/>
+				<text><![CDATA[รายการหัก / Deduction]]></text>
+			</staticText>
+			<staticText>
+				<reportElement style="ThaiSmall" x="6" y="22" width="170" height="15"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle"/>
+				<text><![CDATA[เงินเดือน]]></text>
+			</staticText>
+			<textField isBlankWhenNull="true">
+				<reportElement style="ThaiSmall" x="176" y="22" width="90" height="15"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[$F{IncomeSalary-jasper_income_salary}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement style="ThaiSmall" x="289" y="22" width="170" height="15"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle"/>
+				<text><![CDATA[มาสาย]]></text>
+			</staticText>
+			<textField isBlankWhenNull="true">
+				<reportElement style="ThaiSmall" x="459" y="22" width="90" height="15"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[$F{DedLate-jasper_ded_late}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement style="ThaiSmall" x="6" y="37" width="170" height="15"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle"/>
+				<text><![CDATA[เงินประจำตำแหน่ง]]></text>
+			</staticText>
+			<textField isBlankWhenNull="true">
+				<reportElement style="ThaiSmall" x="176" y="37" width="90" height="15"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[$F{IncomePosition-jasper_income_position}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement style="ThaiSmall" x="289" y="37" width="170" height="15"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle"/>
+				<text><![CDATA[ลาเกินสิทธิ์]]></text>
+			</staticText>
+			<textField isBlankWhenNull="true">
+				<reportElement style="ThaiSmall" x="459" y="37" width="90" height="15"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[$F{DedLeave-jasper_ded_leave}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement style="ThaiSmall" x="6" y="52" width="170" height="15"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle"/>
+				<text><![CDATA[ค่าประสบการณ์]]></text>
+			</staticText>
+			<textField isBlankWhenNull="true">
+				<reportElement style="ThaiSmall" x="176" y="52" width="90" height="15"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[$F{IncomeExperience-jasper_income_experience}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement style="ThaiSmall" x="289" y="52" width="170" height="15"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle"/>
+				<text><![CDATA[ขาดงาน]]></text>
+			</staticText>
+			<textField isBlankWhenNull="true">
+				<reportElement style="ThaiSmall" x="459" y="52" width="90" height="15"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[$F{DedAbsent-jasper_ded_absent}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement style="ThaiSmall" x="6" y="67" width="170" height="15"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle"/>
+				<text><![CDATA[ค่าวิชาชีพ]]></text>
+			</staticText>
+			<textField isBlankWhenNull="true">
+				<reportElement style="ThaiSmall" x="176" y="67" width="90" height="15"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[$F{IncomeProfessional-jasper_income_professional}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement style="ThaiSmall" x="289" y="67" width="170" height="15"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle"/>
+				<text><![CDATA[ภาษีหัก ณ ที่จ่าย]]></text>
+			</staticText>
+			<textField isBlankWhenNull="true">
+				<reportElement style="ThaiSmall" x="459" y="67" width="90" height="15"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[$F{DedTax-jasper_ded_tax}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement style="ThaiSmall" x="6" y="82" width="170" height="15"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle"/>
+				<text><![CDATA[ค่าครองชีพ]]></text>
+			</staticText>
+			<textField isBlankWhenNull="true">
+				<reportElement style="ThaiSmall" x="176" y="82" width="90" height="15"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[$F{IncomeCostLiving-jasper_income_cost_living}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement style="ThaiSmall" x="289" y="82" width="170" height="15"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle"/>
+				<text><![CDATA[ประกันสังคม]]></text>
+			</staticText>
+			<textField isBlankWhenNull="true">
+				<reportElement style="ThaiSmall" x="459" y="82" width="90" height="15"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[$F{DedSso-jasper_ded_sso}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement style="ThaiSmall" x="6" y="97" width="170" height="15"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle"/>
+				<text><![CDATA[ค่าล่วงเวลา (วันทำงาน)]]></text>
+			</staticText>
+			<textField isBlankWhenNull="true">
+				<reportElement style="ThaiSmall" x="176" y="97" width="90" height="15"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[$F{IncomeOtWeekday-jasper_income_ot_weekday}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement style="ThaiSmall" x="289" y="97" width="170" height="15"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle"/>
+				<text><![CDATA[กองทุนสำรองเลี้ยงชีพ]]></text>
+			</staticText>
+			<textField isBlankWhenNull="true">
+				<reportElement style="ThaiSmall" x="459" y="97" width="90" height="15"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[$F{DedProvident-jasper_ded_provident}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement style="ThaiSmall" x="6" y="112" width="170" height="15"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle"/>
+				<text><![CDATA[ค่าล่วงเวลา (วันหยุด)]]></text>
+			</staticText>
+			<textField isBlankWhenNull="true">
+				<reportElement style="ThaiSmall" x="176" y="112" width="90" height="15"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[$F{IncomeOtHoliday-jasper_income_ot_holiday}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement style="ThaiSmall" x="289" y="112" width="170" height="15"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle"/>
+				<text><![CDATA[กยศ.]]></text>
+			</staticText>
+			<textField isBlankWhenNull="true">
+				<reportElement style="ThaiSmall" x="459" y="112" width="90" height="15"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[$F{DedKsl-jasper_ded_ksl}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement style="ThaiSmall" x="6" y="127" width="170" height="15"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle"/>
+				<text><![CDATA[ค่าล่วงเวลา (วันอาทิตย์)]]></text>
+			</staticText>
+			<textField isBlankWhenNull="true">
+				<reportElement style="ThaiSmall" x="176" y="127" width="90" height="15"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[$F{IncomeOtSunday-jasper_income_ot_sunday}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement style="ThaiSmall" x="289" y="127" width="170" height="15"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle"/>
+				<text><![CDATA[เบิกเงินล่วงหน้า]]></text>
+			</staticText>
+			<textField isBlankWhenNull="true">
+				<reportElement style="ThaiSmall" x="459" y="127" width="90" height="15"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[$F{DedAdvance-jasper_ded_advance}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement style="ThaiSmall" x="6" y="142" width="170" height="15"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle"/>
+				<text><![CDATA[เบี้ยเลี้ยง]]></text>
+			</staticText>
+			<textField isBlankWhenNull="true">
+				<reportElement style="ThaiSmall" x="176" y="142" width="90" height="15"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[$F{IncomeAllowance-jasper_income_allowance}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement style="ThaiSmall" x="289" y="142" width="170" height="15"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle"/>
+				<text><![CDATA[เงินกู้]]></text>
+			</staticText>
+			<textField isBlankWhenNull="true">
+				<reportElement style="ThaiSmall" x="459" y="142" width="90" height="15"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[$F{DedLoan-jasper_ded_loan}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement style="ThaiSmall" x="6" y="157" width="170" height="15"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle"/>
+				<text><![CDATA[ค่าอาหาร]]></text>
+			</staticText>
+			<textField isBlankWhenNull="true">
+				<reportElement style="ThaiSmall" x="176" y="157" width="90" height="15"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[$F{IncomeFood-jasper_income_food}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement style="ThaiSmall" x="289" y="157" width="170" height="15"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle"/>
+				<text><![CDATA[หักอื่นๆ]]></text>
+			</staticText>
+			<textField isBlankWhenNull="true">
+				<reportElement style="ThaiSmall" x="459" y="157" width="90" height="15"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[$F{DedOther-jasper_ded_other}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement style="ThaiSmall" x="6" y="172" width="170" height="15"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle"/>
+				<text><![CDATA[ค่าเดินทาง]]></text>
+			</staticText>
+			<textField isBlankWhenNull="true">
+				<reportElement style="ThaiSmall" x="176" y="172" width="90" height="15"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[$F{IncomeTransport-jasper_income_transport}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement style="ThaiSmall" x="6" y="187" width="170" height="15"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle"/>
+				<text><![CDATA[ค่าเที่ยว]]></text>
+			</staticText>
+			<textField isBlankWhenNull="true">
+				<reportElement style="ThaiSmall" x="176" y="187" width="90" height="15"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[$F{IncomeTrip-jasper_income_trip}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement style="ThaiSmall" x="6" y="202" width="170" height="15"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle"/>
+				<text><![CDATA[คอมมิชชั่น]]></text>
+			</staticText>
+			<textField isBlankWhenNull="true">
+				<reportElement style="ThaiSmall" x="176" y="202" width="90" height="15"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[$F{IncomeCommission-jasper_income_commission}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement style="ThaiSmall" x="6" y="217" width="170" height="15"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle"/>
+				<text><![CDATA[รายได้อื่นๆ]]></text>
+			</staticText>
+			<textField isBlankWhenNull="true">
+				<reportElement style="ThaiSmall" x="176" y="217" width="90" height="15"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[$F{IncomeOther-jasper_income_other}]]></textFieldExpression>
+			</textField>
+			<line>
+				<reportElement x="0" y="232" width="272" height="1"/>
+				<graphicElement><pen lineWidth="0.5" lineColor="#666666"/></graphicElement>
+			</line>
+			<line>
+				<reportElement x="283" y="232" width="272" height="1"/>
+				<graphicElement><pen lineWidth="0.5" lineColor="#666666"/></graphicElement>
+			</line>
+			<staticText>
+				<reportElement style="ThaiSmallBold" x="6" y="234" width="170" height="18"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle"/>
+				<text><![CDATA[รวมรายได้]]></text>
+			</staticText>
+			<textField isBlankWhenNull="true">
+				<reportElement style="ThaiSmallBold" x="176" y="234" width="90" height="18"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[$F{TotalIncome-jasper_total_income}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement style="ThaiSmallBold" x="289" y="234" width="170" height="18"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle"/>
+				<text><![CDATA[รวมรายการหัก]]></text>
+			</staticText>
+			<textField isBlankWhenNull="true">
+				<reportElement style="ThaiSmallBold" x="459" y="234" width="90" height="18"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[$F{TotalDeduction-jasper_total_deduction}]]></textFieldExpression>
+			</textField>
+			<rectangle>
+				<reportElement mode="Opaque" backcolor="#F7F7F7" x="0" y="258" width="555" height="34"/>
+				<graphicElement><pen lineWidth="0.5" lineColor="#999999"/></graphicElement>
+			</rectangle>
+			<staticText>
+				<reportElement style="ThaiSmall" x="3" y="260" width="105" height="14"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<text><![CDATA[รายรับสะสม]]></text>
+			</staticText>
+			<textField isBlankWhenNull="true">
+				<reportElement style="ThaiSmallBold" x="3" y="274" width="105" height="16"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[$F{AccumIncome-jasper_accum_income}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement style="ThaiSmall" x="114" y="260" width="105" height="14"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<text><![CDATA[ภาษีสะสม]]></text>
+			</staticText>
+			<textField isBlankWhenNull="true">
+				<reportElement style="ThaiSmallBold" x="114" y="274" width="105" height="16"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[$F{AccumTax-jasper_accum_tax}]]></textFieldExpression>
+			</textField>
+			<line>
+				<reportElement x="111" y="258" width="1" height="34"/>
+				<graphicElement><pen lineWidth="0.5" lineColor="#BBBBBB"/></graphicElement>
+			</line>
+			<staticText>
+				<reportElement style="ThaiSmall" x="225" y="260" width="105" height="14"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<text><![CDATA[ประกันสังคมสะสม]]></text>
+			</staticText>
+			<textField isBlankWhenNull="true">
+				<reportElement style="ThaiSmallBold" x="225" y="274" width="105" height="16"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[$F{AccumSso-jasper_accum_sso}]]></textFieldExpression>
+			</textField>
+			<line>
+				<reportElement x="222" y="258" width="1" height="34"/>
+				<graphicElement><pen lineWidth="0.5" lineColor="#BBBBBB"/></graphicElement>
+			</line>
+			<staticText>
+				<reportElement style="ThaiSmall" x="336" y="260" width="105" height="14"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<text><![CDATA[เงินได้สุทธิ]]></text>
+			</staticText>
+			<textField isBlankWhenNull="true">
+				<reportElement style="ThaiBold" x="336" y="274" width="105" height="16"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[$F{NetSalary-jasper_net_salary}]]></textFieldExpression>
+			</textField>
+			<line>
+				<reportElement x="333" y="258" width="1" height="34"/>
+				<graphicElement><pen lineWidth="0.5" lineColor="#BBBBBB"/></graphicElement>
+			</line>
+			<staticText>
+				<reportElement style="ThaiSmall" x="447" y="260" width="105" height="14"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<text><![CDATA[เลขที่บัญชี]]></text>
+			</staticText>
+			<textField isBlankWhenNull="true">
+				<reportElement style="ThaiSmallBold" x="447" y="274" width="105" height="16"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[$F{BankAccount-jasper_bank_account}]]></textFieldExpression>
+			</textField>
+			<line>
+				<reportElement x="444" y="258" width="1" height="34"/>
+				<graphicElement><pen lineWidth="0.5" lineColor="#BBBBBB"/></graphicElement>
+			</line>
+			<staticText>
+				<reportElement style="ThaiSmall" x="0" y="300" width="380" height="30"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle"/>
+				<text><![CDATA[หมายเหตุ: สลิปเงินเดือนถือเป็นความลับเฉพาะบุคคล เพื่อการใช้ประโยชน์ของพนักงานท่านนั้น]]></text>
+			</staticText>
+			<staticText>
+				<reportElement style="ThaiSmall" x="390" y="312" width="165" height="14"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle"/>
+				<text><![CDATA[ลงชื่อผู้รับเงิน ...........................]]></text>
+			</staticText>
+			<staticText>
+				<reportElement style="ThaiSmall" x="0" y="334" width="50" height="14"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle"/>
+				<text><![CDATA[พิมพ์โดย]]></text>
+			</staticText>
+			<textField isBlankWhenNull="true">
+				<reportElement style="ThaiSmall" x="52" y="334" width="200" height="14"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[$F{PrintedBy-jasper_printed_by}]]></textFieldExpression>
+			</textField>
+		</band>
+	</detail>
+</jasperReport>

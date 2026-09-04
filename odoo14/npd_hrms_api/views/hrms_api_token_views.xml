@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_hrms_api_token_list" model="ir.ui.view">
+        <field name="name">hrms.api.token.list</field>
+        <field name="model">hrms.api.token</field>
+        <field name="arch" type="xml">
+            <list string="Token แอป HR"
+                  decoration-muted="revoked"
+                  decoration-success="is_valid">
+                <field name="employee_code"/>
+                <field name="employee_id"/>
+                <field name="device_id"/>
+                <field name="user_agent" optional="hide"/>
+                <field name="ip_address" optional="show"/>
+                <field name="create_date" string="ล็อกอินเมื่อ"/>
+                <field name="last_used_at"/>
+                <field name="expires_at"/>
+                <field name="is_valid"/>
+                <field name="revoked"/>
+                <button name="action_revoke" type="object" string="เพิกถอน"
+                        icon="fa-ban" class="btn-link" invisible="revoked"/>
+                <field name="company_id" groups="base.group_multi_company" optional="hide"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_hrms_api_token_search" model="ir.ui.view">
+        <field name="name">hrms.api.token.search</field>
+        <field name="model">hrms.api.token</field>
+        <field name="arch" type="xml">
+            <search string="ค้นหา Token">
+                <field name="employee_id"/>
+                <field name="employee_code"/>
+                <field name="device_id"/>
+                <filter name="filter_active" string="ยังใช้งานได้"
+                        domain="[('revoked', '=', False)]"/>
+                <filter name="filter_revoked" string="ถูกเพิกถอนแล้ว"
+                        domain="[('revoked', '=', True)]"/>
+                <group expand="0" string="จัดกลุ่มตาม">
+                    <filter name="group_employee" string="พนักงาน"
+                            context="{'group_by': 'employee_id'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_hrms_api_token" model="ir.actions.act_window">
+        <field name="name">Token แอป HR</field>
+        <field name="res_model">hrms.api.token</field>
+        <field name="view_mode">list</field>
+        <field name="search_view_id" ref="view_hrms_api_token_search"/>
+        <field name="context">{'search_default_filter_active': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">ยังไม่มีการล็อกอินจากแอป</p>
+            <p>รายการนี้แสดงว่าใครล็อกอินจากเครื่องไหน — เพิกถอนได้ทันทีเมื่อเครื่องหาย</p>
+        </field>
+    </record>
+
+    <menuitem id="menu_hrms_api_token"
+              name="Token แอป HR"
+              parent="npd_hrms_base.menu_hrms_configuration"
+              action="action_hrms_api_token"
+              sequence="60"
+              groups="npd_hrms_base.group_hrms_manager"/>
+
+</odoo>

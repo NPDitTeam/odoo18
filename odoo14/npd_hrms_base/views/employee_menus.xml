@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <menuitem id="menu_hrms_employee_root"
+              name="พนักงาน"
+              parent="npd_hrms_base.menu_npd_hrms_root"
+              sequence="10"
+              groups="npd_hrms_base.group_hrms_user"/>
+
+    <menuitem id="menu_hrms_employee_list"
+              name="ข้อมูลพนักงาน"
+              parent="menu_hrms_employee_root"
+              action="action_employee_salary"
+              sequence="10"/>
+
+    <menuitem id="menu_hrms_employee_warning"
+              name="ใบเตือนพนักงาน"
+              parent="menu_hrms_employee_root"
+              action="action_employee_warning"
+              sequence="20"
+              groups="npd_hrms_base.group_hrms_officer"/>
+
+</odoo>

@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_payroll_period_list" model="ir.ui.view">
+        <field name="name">payroll.period.list</field>
+        <field name="model">payroll.period</field>
+        <field name="arch" type="xml">
+            <list string="รอบทำเงินเดือน"
+                  decoration-success="state == 'paid'"
+                  decoration-info="state == 'approved'"
+                  decoration-muted="state == 'cancelled'">
+                <field name="display_name" string="รอบ"/>
+                <field name="date_from"/>
+                <field name="date_to"/>
+                <field name="payment_date"/>
+                <field name="employee_count"/>
+                <field name="total_gross" sum="รวมรายได้"/>
+                <field name="total_deduction" sum="รวมหัก"/>
+                <field name="total_net" sum="รวมสุทธิ"/>
+                <field name="state" widget="badge"/>
+                <field name="company_id" groups="base.group_multi_company" optional="hide"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_payroll_period_form" model="ir.ui.view">
+        <field name="name">payroll.period.form</field>
+        <field name="model">payroll.period</field>
+        <field name="arch" type="xml">
+            <form string="รอบทำเงินเดือน">
+                <header>
+                    <button name="action_generate" type="object"
+                            string="สร้างรายการเงินเดือน" class="btn-primary"
+                            invisible="state not in ('draft', 'computed')"/>
+                    <button name="action_recompute" type="object"
+                            string="คำนวณใหม่ทั้งรอบ"
+                            invisible="state != 'computed'"
+                            confirm="ระบบจะคำนวณสลิปทุกใบในรอบนี้ใหม่จากข้อมูลลงเวลา/ใบลาล่าสุด ยืนยันหรือไม่?"/>
+                    <button name="action_approve" type="object" string="อนุมัติรอบ"
+                            class="btn-primary" invisible="state != 'computed'"/>
+                    <button name="action_mark_paid" type="object" string="บันทึกว่าจ่ายแล้ว"
+                            class="btn-primary" invisible="state != 'approved'"/>
+                    <button name="action_reset_draft" type="object" string="กลับเป็นร่าง"
+                            invisible="state in ('draft', 'paid')"/>
+                    <button name="action_cancel" type="object" string="ยกเลิก"
+                            invisible="state in ('cancelled', 'paid')"/>
+                    <field name="state" widget="statusbar"
+                           statusbar_visible="draft,computed,approved,paid"/>
+                </header>
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_view_salaries" type="object"
+                                class="oe_stat_button" icon="fa-money">
+                            <field name="employee_count" widget="statinfo"
+                                   string="พนักงาน"/>
+                        </button>
+                    </div>
+                    <div class="oe_title">
+                        <h1><field name="display_name" readonly="1"/></h1>
+                    </div>
+                    <group>
+                        <group string="รอบ">
+                            <field name="month"/>
+                            <field name="year"/>
+                            <field name="cutoff_start_day"/>
+                            <field name="cutoff_end_day"/>
+                            <field name="company_id" groups="base.group_multi_company"/>
+                        </group>
+                        <group string="ช่วงวันและการจ่าย">
+                            <field name="date_from"/>
+                            <field name="date_to"/>
+                            <field name="payment_date"/>
+                        </group>
+                    </group>
+                    <group string="ยอดรวม">
+                        <group>
+                            <field name="total_gross"/>
+                            <field name="total_deduction"/>
+                        </group>
+                        <group>
+                            <field name="total_net"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="รายการเงินเดือน" name="salaries">
+                            <field name="salary_ids" readonly="1">
+                                <list>
+                                    <field name="employee_code"/>
+                                    <field name="firstname"/>
+                                    <field name="lastname"/>
+                                    <field name="branch_id"/>
+                                    <field name="base_salary"/>
+                                    <field name="ot_total"/>
+                                    <field name="lateness_deduction"/>
+                                    <field name="sso_total"/>
+                                    <field name="tax_monthly"/>
+                                    <field name="total_gross" sum="รวม"/>
+                                    <field name="total_deduction" sum="รวม"/>
+                                    <field name="net_salary" sum="รวม"/>
+                                    <field name="state" widget="badge"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_payroll_period" model="ir.actions.act_window">
+        <field name="name">รอบทำเงินเดือน</field>
+        <field name="res_model">payroll.period</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">สร้างรอบทำเงินเดือนรอบแรก</p>
+            <p>กด "สร้างรายการเงินเดือน" แล้วระบบจะดึงพนักงานทุกคนมาคำนวณให้อัตโนมัติ</p>
+        </field>
+    </record>
+
+</odoo>

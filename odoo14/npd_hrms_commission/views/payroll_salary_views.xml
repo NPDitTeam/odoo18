@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_payroll_salary_form_commission" model="ir.ui.view">
+        <field name="name">payroll.salary.form.inherit.commission</field>
+        <field name="model">payroll.salary</field>
+        <field name="inherit_id" ref="npd_hrms_payroll.view_payroll_salary_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//page[@name='income']" position="after">
+                <page string="ที่มาของค่าคอมมิชชั่น" name="commission">
+                    <group>
+                        <field name="manual_override_commission"/>
+                        <field name="commission_source_ready" readonly="1"/>
+                    </group>
+                    <div class="alert alert-warning" role="alert"
+                         invisible="commission_source_ready">
+                        ยังไม่ได้ติดตั้งโมดูลรายงานค่าคอมฝั่ง ERP
+                        (<code>npd_commission_report</code>) — ระบบจึงคิดค่าคอมเป็น 0
+                        กรอกเองได้โดยติ๊ก "กรอกค่าคอมเอง" แล้วใส่ยอดในแท็บรายได้
+                    </div>
+                    <group>
+                        <group string="ค่าคอมสาขา">
+                            <field name="commission_branch_base"/>
+                            <field name="commission_branch_rate"/>
+                            <field name="commission_branch_ratio"/>
+                            <field name="commission_branch_total_ratio"/>
+                            <field name="income_commission" readonly="1"/>
+                        </group>
+                        <group string="ค่าคอม Sales">
+                            <field name="commission_sale_type"/>
+                            <field name="commission_sale_base"/>
+                            <field name="commission_sale_rate"/>
+                            <field name="income_commission_sale" readonly="1"/>
+                        </group>
+                    </group>
+                </page>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>

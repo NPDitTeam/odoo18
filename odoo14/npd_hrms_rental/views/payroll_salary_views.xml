@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_payroll_salary_form_rental" model="ir.ui.view">
+        <field name="name">payroll.salary.form.inherit.rental</field>
+        <field name="model">payroll.salary</field>
+        <field name="inherit_id" ref="npd_hrms_payroll.view_payroll_salary_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//page[@name='income']" position="after">
+                <page string="ที่มาของค่าเที่ยว" name="rental"
+                      invisible="not driver_id">
+                    <group>
+                        <group>
+                            <field name="driver_id" readonly="1"/>
+                            <field name="booking_count" readonly="1"/>
+                        </group>
+                        <group>
+                            <field name="income_transport_trip" readonly="1"/>
+                            <field name="income_transport_allowance" readonly="1"/>
+                            <field name="income_transport" readonly="1"
+                                   class="oe_subtotal_footer_separator"/>
+                        </group>
+                    </group>
+                    <div class="alert alert-info" role="alert">
+                        นับเฉพาะงานที่สถานะ "เสร็จสิ้น" และวันส่งจริงอยู่ในรอบตัดเงินเดือนนี้
+                        — ไม่กรองสาขา (คนขับวิ่งข้ามสาขาได้)
+                    </div>
+                    <field name="booking_ids" readonly="1">
+                        <list>
+                            <field name="name"/>
+                            <field name="delivery_date"/>
+                            <field name="branch_id"/>
+                            <field name="destination"/>
+                            <field name="travel_expenses" sum="รวมค่าเที่ยว"/>
+                            <field name="daily_allowance" sum="รวมเบี้ยเลี้ยง"/>
+                            <field name="state"/>
+                        </list>
+                    </field>
+                </page>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>

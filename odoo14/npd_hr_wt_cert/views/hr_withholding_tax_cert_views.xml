@@ -1,0 +1,207 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_hr_wt_cert_list" model="ir.ui.view">
+        <field name="name">hr.withholding.tax.cert.list</field>
+        <field name="model">hr.withholding.tax.cert</field>
+        <field name="arch" type="xml">
+            <list string="หนังสือรับรองหักภาษี ณ ที่จ่าย"
+                  decoration-muted="state == 'cancel'"
+                  decoration-success="state == 'done'">
+                <field name="name"/>
+                <field name="date"/>
+                <field name="report_year"/>
+                <field name="employee_id"/>
+                <field name="employee_taxid" optional="show"/>
+                <field name="branch_id" optional="hide"/>
+                <field name="total_net_salary" sum="รวมเงินได้"/>
+                <field name="total_tax" sum="รวมภาษี"/>
+                <field name="sso_amount" optional="hide" sum="รวมประกันสังคม"/>
+                <field name="provident_fund_amount" optional="hide"/>
+                <field name="state" widget="badge"
+                       decoration-success="state == 'done'"
+                       decoration-warning="state == 'draft'"
+                       decoration-danger="state == 'cancel'"/>
+                <field name="company_id" groups="base.group_multi_company"
+                       optional="hide"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_hr_wt_cert_form" model="ir.ui.view">
+        <field name="name">hr.withholding.tax.cert.form</field>
+        <field name="model">hr.withholding.tax.cert</field>
+        <field name="arch" type="xml">
+            <form string="หนังสือรับรองหักภาษี ณ ที่จ่าย">
+                <header>
+                    <button name="action_done" type="object" string="ยืนยัน"
+                            class="btn-primary" invisible="state != 'draft'"/>
+                    <button name="action_draft" type="object" string="กลับเป็นร่าง"
+                            invisible="state == 'draft'"/>
+                    <button name="action_cancel" type="object" string="ยกเลิก"
+                            invisible="state == 'cancel'"/>
+                    <field name="state" widget="statusbar"
+                           statusbar_visible="draft,done"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <label for="name"/>
+                        <h1><field name="name" readonly="1"/></h1>
+                    </div>
+                    <group>
+                        <group string="ผู้มีเงินได้">
+                            <field name="employee_id"
+                                   readonly="state != 'draft'"/>
+                            <field name="pnd1_full_name"/>
+                            <field name="employee_taxid"/>
+                            <field name="employee_address"/>
+                            <field name="branch_id"
+                                   readonly="state != 'draft'"/>
+                            <field name="employee_resign_date"/>
+                        </group>
+                        <group string="ผู้จ่ายเงินได้">
+                            <field name="company_id"
+                                   readonly="state != 'draft'"/>
+                            <field name="company_name"
+                                   readonly="state != 'draft'"/>
+                            <field name="company_taxid"
+                                   readonly="state != 'draft'"/>
+                            <field name="company_address"
+                                   readonly="state != 'draft'"/>
+                        </group>
+                    </group>
+                    <group>
+                        <group string="เอกสาร">
+                            <field name="date" readonly="state != 'draft'"/>
+                            <field name="report_year"
+                                   readonly="state != 'draft'"/>
+                            <field name="income_tax_form"
+                                   readonly="state != 'draft'"/>
+                            <field name="tax_payer"
+                                   readonly="state != 'draft'"/>
+                        </group>
+                        <group string="ยอดรวมทั้งปี">
+                            <field name="total_net_salary"/>
+                            <field name="total_tax"/>
+                            <field name="sso_amount"
+                                   readonly="state != 'draft'"/>
+                            <field name="provident_fund_amount"
+                                   readonly="state != 'draft'"/>
+                            <field name="currency_id" invisible="1"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="รายการเงินได้" name="wt_line">
+                            <field name="wt_line" readonly="state != 'draft'">
+                                <list editable="bottom">
+                                    <field name="wt_cert_income_type"/>
+                                    <field name="wt_cert_income_desc"/>
+                                    <field name="base" sum="รวมเงินได้"/>
+                                    <field name="wt_percent"/>
+                                    <field name="amount" sum="รวมภาษี"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                    <div class="alert alert-info" role="alert">
+                        ยอดเงินได้และภาษีดึงจากรายงาน <strong>ภ.ง.ด.1</strong>
+                        โดยจับคู่จากเลขบัตรประชาชน
+                        ถ้าปีนั้นยังไม่มีข้อมูลใน ภ.ง.ด.1 ระบบจะใช้ยอดจากสลิปเงินเดือน
+                        แล้วประมาณภาษีที่ 3% เพื่อให้ออกเอกสารต่อได้
+                        — ตรวจยอดก่อนยืนยันทุกครั้ง
+                    </div>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_hr_wt_cert_search" model="ir.ui.view">
+        <field name="name">hr.withholding.tax.cert.search</field>
+        <field name="model">hr.withholding.tax.cert</field>
+        <field name="arch" type="xml">
+            <search string="ค้นหาหนังสือรับรอง">
+                <field name="name"/>
+                <field name="employee_id"/>
+                <field name="employee_taxid"/>
+                <field name="report_year"/>
+                <filter name="f_draft" string="ร่าง"
+                        domain="[('state', '=', 'draft')]"/>
+                <filter name="f_done" string="ยืนยันแล้ว"
+                        domain="[('state', '=', 'done')]"/>
+                <separator/>
+                <filter name="f_this_year" string="ปีนี้"
+                        domain="[('report_year', '=', context_today().strftime('%Y'))]"/>
+                <group expand="0" string="จัดกลุ่มตาม">
+                    <filter name="g_year" string="ปีภาษี"
+                            context="{'group_by': 'report_year'}"/>
+                    <filter name="g_branch" string="สาขา"
+                            context="{'group_by': 'branch_id'}"/>
+                    <filter name="g_state" string="สถานะ"
+                            context="{'group_by': 'state'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_hr_withholding_tax_cert" model="ir.actions.act_window">
+        <field name="name">หนังสือรับรองหักภาษี ณ ที่จ่าย (50 ทวิ)</field>
+        <field name="res_model">hr.withholding.tax.cert</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_hr_wt_cert_search"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">ยังไม่มีหนังสือรับรอง</p>
+            <p>ใช้ปุ่ม "ออกทั้งปีให้ทุกคน" เพื่อสร้างให้พนักงานที่มีสลิปในปีนั้นทีเดียว</p>
+        </field>
+    </record>
+
+    <!-- ================= วิซาร์ดออกทั้งปี ================= -->
+    <record id="view_generate_hr_wt_cert_form" model="ir.ui.view">
+        <field name="name">generate.hr.wt.cert.form</field>
+        <field name="model">generate.hr.wt.cert</field>
+        <field name="arch" type="xml">
+            <form string="ออกหนังสือรับรองทั้งปี">
+                <group>
+                    <field name="year"/>
+                    <field name="company_id"
+                           groups="base.group_multi_company"/>
+                </group>
+                <div class="alert alert-warning" role="alert">
+                    ระบบจะไล่จากสลิปเงินเดือนของปีนั้นว่ามีพนักงานคนไหนบ้าง
+                    แล้วสร้างให้ครบ
+                    <br/>
+                    ใบที่มีอยู่แล้วจะถูก<strong>คำนวณใหม่</strong>ทับของเดิม
+                    (รวมถึงใบที่ยืนยันไปแล้ว) กดซ้ำได้เมื่อยอด ภ.ง.ด.1 เปลี่ยน
+                </div>
+                <footer>
+                    <button name="action_generate_all" type="object"
+                            string="ออกเอกสาร" class="btn-primary"/>
+                    <button string="ยกเลิก" class="btn-secondary"
+                            special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_generate_hr_wt_cert" model="ir.actions.act_window">
+        <field name="name">ออกทั้งปีให้ทุกคน</field>
+        <field name="res_model">generate.hr.wt.cert</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+
+    <!-- ================= เมนู ================= -->
+    <menuitem id="menu_hr_wt_cert"
+              name="หนังสือรับรองหักภาษี (50 ทวิ)"
+              parent="npd_hrms_payroll.menu_hrms_payroll_root"
+              action="action_hr_withholding_tax_cert"
+              sequence="60"/>
+
+    <menuitem id="menu_generate_hr_wt_cert"
+              name="ออกทั้งปีให้ทุกคน"
+              parent="npd_hrms_payroll.menu_hrms_payroll_root"
+              action="action_generate_hr_wt_cert"
+              sequence="61"
+              groups="npd_hrms_base.group_hrms_payroll"/>
+
+</odoo>

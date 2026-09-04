@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        <!-- cron ตั้งเป็นรายวัน แต่ตัวโค้ดจะทำงานจริงเฉพาะ "วันที่ให้ระบบรัน"
+             (ค่าเริ่มต้น = 25 คือวันถัดจากวันตัดรอบ) วันอื่นจะ return ทันที
+             ทำแบบนี้เพราะ ir.cron ตั้งเป็น "วันที่ N ของเดือน" ตรง ๆ ไม่ได้
+             เปิด/ปิดได้ที่เมนู "ตั้งค่าออกใบเตือนอัตโนมัติ" (ช่อง auto_enabled)
+             ตัว cron เองเปิดทิ้งไว้ได้ เพราะถ้าไม่ติ๊กจะไม่ทำอะไร -->
+        <record id="ir_cron_employee_warning_missed_checkin" model="ir.cron">
+            <field name="name">ออกใบเตือนอัตโนมัติ - ลงเวลาไม่ครบ</field>
+            <field name="model_id" ref="npd_hrms_base.model_employee_warning"/>
+            <field name="state">code</field>
+            <field name="code">model.cron_issue_missed_checkin_warnings()</field>
+            <!-- รันเที่ยงคืนตามเวลาเซิร์ฟเวอร์ (เซิร์ฟเวอร์ตั้งเป็น UTC)
+                 ir.cron.nextcall เก็บเป็น UTC อยู่แล้ว จึงตั้ง 00:00:00 ตรง ๆ -->
+            <field name="nextcall"
+                   eval="(DateTime.now().replace(hour=0, minute=0, second=0, microsecond=0) + timedelta(days=1)).strftime('%Y-%m-%d %H:%M:%S')"/>
+            <field name="interval_number">1</field>
+            <field name="interval_type">days</field>
+            <field name="active" eval="True"/>
+        </record>
+    </data>
+</odoo>

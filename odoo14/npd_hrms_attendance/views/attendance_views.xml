@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_hr_attendance_branch_list" model="ir.ui.view">
+        <field name="name">hr.attendance.branch.list</field>
+        <field name="model">hr.attendance.branch</field>
+        <field name="arch" type="xml">
+            <list string="ลงเวลาเข้า-ออกงาน" decoration-warning="is_offsite">
+                <field name="work_date"/>
+                <field name="checked_at"/>
+                <field name="employee_code"/>
+                <field name="username"/>
+                <field name="branch_id"/>
+                <field name="department_id" optional="hide"/>
+                <field name="position_id" optional="hide"/>
+                <field name="check_type" widget="badge"
+                       decoration-success="check_type == 'in'"
+                       decoration-info="check_type == 'out'"/>
+                <field name="address" optional="show"/>
+                <field name="distance_from_branch" optional="show"/>
+                <field name="is_offsite" optional="show"/>
+                <field name="accuracy" optional="hide"/>
+                <field name="source" optional="hide"/>
+                <field name="company_id" groups="base.group_multi_company" optional="hide"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_hr_attendance_branch_form" model="ir.ui.view">
+        <field name="name">hr.attendance.branch.form</field>
+        <field name="model">hr.attendance.branch</field>
+        <field name="arch" type="xml">
+            <form string="ลงเวลาเข้า-ออกงาน">
+                <sheet>
+                    <group>
+                        <group string="พนักงาน">
+                            <field name="employee_id" options="{'no_create': True}"/>
+                            <field name="employee_code"/>
+                            <field name="branch_id"/>
+                            <field name="department_id"/>
+                            <field name="position_id"/>
+                        </group>
+                        <group string="การลงเวลา">
+                            <field name="check_type"/>
+                            <field name="checked_at"/>
+                            <field name="work_date"/>
+                            <field name="source"/>
+                            <field name="company_id" groups="base.group_multi_company"/>
+                        </group>
+                    </group>
+                    <group string="ตำแหน่งที่ลงเวลา">
+                        <group>
+                            <field name="latitude"/>
+                            <field name="longitude"/>
+                            <field name="accuracy"/>
+                        </group>
+                        <group>
+                            <field name="address"/>
+                            <field name="distance_from_branch"/>
+                            <field name="is_offsite"/>
+                        </group>
+                    </group>
+                    <group>
+                        <field name="note"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_hr_attendance_branch_search" model="ir.ui.view">
+        <field name="name">hr.attendance.branch.search</field>
+        <field name="model">hr.attendance.branch</field>
+        <field name="arch" type="xml">
+            <search string="ค้นหาการลงเวลา">
+                <field name="employee_id"/>
+                <field name="employee_code"/>
+                <field name="branch_id"/>
+                <field name="work_date"/>
+                <filter name="filter_today" string="วันนี้"
+                        domain="[('work_date', '=', context_today().strftime('%Y-%m-%d'))]"/>
+                <!-- ใช้ relativedelta(day=1) ไม่ใช่ .replace(day=1) —
+                     โดเมนของ search filter ถูก evaluate ฝั่ง JavaScript
+                     ซึ่งไม่รองรับ date.replace() แบบ keyword argument -->
+                <filter name="filter_this_month" string="เดือนนี้"
+                        domain="[('work_date', '&gt;=', (context_today() + relativedelta(day=1)).strftime('%Y-%m-%d'))]"/>
+                <separator/>
+                <filter name="filter_in" string="ลงเวลาเข้า"
+                        domain="[('check_type', '=', 'in')]"/>
+                <filter name="filter_out" string="ลงเวลาออก"
+                        domain="[('check_type', '=', 'out')]"/>
+                <separator/>
+                <filter name="filter_offsite" string="ลงเวลานอกรัศมี"
+                        domain="[('is_offsite', '=', True)]"/>
+                <group expand="0" string="จัดกลุ่มตาม">
+                    <filter name="group_employee" string="พนักงาน"
+                            context="{'group_by': 'employee_id'}"/>
+                    <filter name="group_branch" string="สาขา"
+                            context="{'group_by': 'branch_id'}"/>
+                    <filter name="group_date" string="วันที่"
+                            context="{'group_by': 'work_date'}"/>
+                    <filter name="group_type" string="ประเภท"
+                            context="{'group_by': 'check_type'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_hr_attendance_branch" model="ir.actions.act_window">
+        <field name="name">ลงเวลาเข้า-ออกงาน</field>
+        <field name="res_model">hr.attendance.branch</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_hr_attendance_branch_search"/>
+        <field name="context">{'search_default_filter_this_month': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">ยังไม่มีการลงเวลา</p>
+            <p>รายการจะเข้ามาอัตโนมัติเมื่อพนักงานลงเวลาผ่านแอป HR</p>
+        </field>
+    </record>
+
+</odoo>

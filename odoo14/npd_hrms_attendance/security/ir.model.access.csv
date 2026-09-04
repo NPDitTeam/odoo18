@@ -1,0 +1,17 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_hrms_leave_type_user,hrms.leave.type user,model_hrms_leave_type,npd_hrms_base.group_hrms_user,1,0,0,0
+access_hrms_leave_type_manager,hrms.leave.type manager,model_hrms_leave_type,npd_hrms_base.group_hrms_manager,1,1,1,1
+access_hrms_leave_balance_user,hrms.leave.balance user,model_hrms_leave_balance,npd_hrms_base.group_hrms_user,1,0,0,0
+access_hrms_leave_balance_officer,hrms.leave.balance officer,model_hrms_leave_balance,npd_hrms_base.group_hrms_officer,1,1,1,0
+access_hrms_leave_balance_manager,hrms.leave.balance manager,model_hrms_leave_balance,npd_hrms_base.group_hrms_manager,1,1,1,1
+access_hr_attendance_branch_user,hr.attendance.branch user,model_hr_attendance_branch,npd_hrms_base.group_hrms_user,1,0,0,0
+access_hr_attendance_branch_officer,hr.attendance.branch officer,model_hr_attendance_branch,npd_hrms_base.group_hrms_officer,1,1,1,0
+access_hr_attendance_branch_manager,hr.attendance.branch manager,model_hr_attendance_branch,npd_hrms_base.group_hrms_manager,1,1,1,1
+access_hr_attendance_branch_leave_user,hr.attendance.branch.leave user,model_hr_attendance_branch_leave,npd_hrms_base.group_hrms_user,1,0,0,0
+access_hr_attendance_branch_leave_officer,hr.attendance.branch.leave officer,model_hr_attendance_branch_leave,npd_hrms_base.group_hrms_officer,1,1,1,0
+access_hr_attendance_branch_leave_manager,hr.attendance.branch.leave manager,model_hr_attendance_branch_leave,npd_hrms_base.group_hrms_manager,1,1,1,1
+access_hrms_manual_time_reason_user,hrms.manual.time.reason user,model_hrms_manual_time_reason,npd_hrms_base.group_hrms_user,1,0,0,0
+access_hrms_manual_time_reason_manager,hrms.manual.time.reason manager,model_hrms_manual_time_reason,npd_hrms_base.group_hrms_manager,1,1,1,1
+access_hr_manual_time_log_user,hr.manual.time.log user,model_hr_manual_time_log,npd_hrms_base.group_hrms_user,1,0,0,0
+access_hr_manual_time_log_officer,hr.manual.time.log officer,model_hr_manual_time_log,npd_hrms_base.group_hrms_officer,1,1,1,0
+access_hr_manual_time_log_manager,hr.manual.time.log manager,model_hr_manual_time_log,npd_hrms_base.group_hrms_manager,1,1,1,1

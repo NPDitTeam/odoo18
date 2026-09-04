@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- เมนูรากของระบบบุคคล — โมดูลอื่น (employee / attendance / payroll / rental)
+         แขวนเมนูของตัวเองต่อจากเมนูนี้ -->
+    <menuitem id="menu_npd_hrms_root"
+              name="ระบบบุคคล"
+              web_icon="npd_hrms_base,static/description/icon.png"
+              sequence="55"
+              groups="npd_hrms_base.group_hrms_user"/>
+
+    <!-- ลำดับเมนูระดับบน (โมดูลอื่นใช้ sequence ในช่วงที่เว้นไว้)
+         10 = พนักงาน (โมดูลนี้)
+         20 = ลงเวลา/การลา (npd_hrms_attendance)
+         30 = เงินเดือน (npd_hrms_payroll)
+         40 = ค่าคอมมิชชั่น (npd_hrms_commission)
+         50 = งานเช่า (npd_hrms_rental)
+         80 = ข้อมูลหลัก (โมดูลนี้)
+         90 = ตั้งค่า (โมดูลนี้) -->
+
+    <menuitem id="menu_hrms_master_data"
+              name="ข้อมูลหลัก"
+              parent="menu_npd_hrms_root"
+              sequence="80"
+              groups="npd_hrms_base.group_hrms_officer"/>
+
+    <!-- ชี้ไป action สาขาตัวเดียวกับที่ระบบใช้อยู่ (multi_branch_management_aagam)
+         ไม่ได้สร้าง action ใหม่ — Odoo 14 แยกโมเดลสาขาของตัวเอง (hr.branch.custom)
+         แต่ Odoo 18 ใช้ res.branch ร่วมกับฝั่งขาย/บัญชี/สต๊อก จึงเป็นสาขาชุดเดียวกัน
+         แก้ที่นี่แล้วเห็นตรงกันทุกระบบ -->
+    <menuitem id="menu_hrms_branch"
+              name="สาขา"
+              parent="menu_hrms_master_data"
+              action="multi_branch_management_aagam.branch_action_view"
+              sequence="10"/>
+
+    <menuitem id="menu_hrms_department"
+              name="แผนก"
+              parent="menu_hrms_master_data"
+              action="action_hr_department_custom"
+              sequence="20"/>
+
+    <menuitem id="menu_hrms_position"
+              name="ตำแหน่ง"
+              parent="menu_hrms_master_data"
+              action="action_hr_position_custom"
+              sequence="30"/>
+
+    <menuitem id="menu_hrms_work_schedule"
+              name="ประเภทการทำงาน/กะการทำงาน"
+              parent="menu_hrms_master_data"
+              action="action_hr_work_schedule"
+              sequence="40"/>
+
+    <menuitem id="menu_hrms_payroll_holiday"
+              name="วันหยุดประจำปี"
+              parent="menu_hrms_master_data"
+              action="action_payroll_holiday"
+              sequence="50"/>
+
+    <menuitem id="menu_hrms_approver_relations"
+              name="สายอนุมัติ"
+              parent="menu_hrms_master_data"
+              action="action_approver_relations"
+              sequence="60"/>
+
+    <menuitem id="menu_hrms_allowance_management"
+              name="จัดการค่าเบี้ยเลี้ยง"
+              parent="menu_hrms_master_data"
+              action="action_allowance_management"
+              sequence="70"/>
+
+    <!-- ================= ตั้งค่า ================= -->
+    <menuitem id="menu_hrms_configuration"
+              name="ตั้งค่า"
+              parent="menu_npd_hrms_root"
+              sequence="90"
+              groups="npd_hrms_base.group_hrms_manager"/>
+
+    <menuitem id="menu_hrms_checkin_distance"
+              name="ระยะเช็คอินรายสาขา"
+              parent="menu_hrms_configuration"
+              action="action_hrms_checkin_distance"
+              sequence="10"/>
+
+    <menuitem id="menu_hrms_saturday_leave_config"
+              name="กำหนดสิทธิหยุดวันเสาร์"
+              parent="menu_hrms_configuration"
+              action="action_sync_and_open_saturday_leave_config"
+              sequence="20"/>
+
+    <!-- เมนู "เวอร์ชันแอป HR" ย้ายไปอยู่ที่ npd_saas_manager (ศูนย์ควบคุม)
+         เพราะแอปมีตัวเดียวใช้ร่วมกันทุกองค์กร เวอร์ชันจึงต้องมีชุดเดียว
+         ถ้าปล่อยให้แต่ละองค์กรตั้งเอง จะเกิดกรณีบอกให้พนักงานอัปเดตไปเวอร์ชัน
+         ที่ไม่มีอยู่จริงบนสโตร์ — ตัวโมเดลยังอยู่ที่นี่เพราะ endpoint /version
+         ต้องตอบจากเซิร์ฟเวอร์ขององค์กรนั้น ๆ -->
+
+</odoo>

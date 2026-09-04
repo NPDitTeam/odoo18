@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_hrms_app_release_list" model="ir.ui.view">
+        <field name="name">hrms.app.release.list</field>
+        <field name="model">hrms.app.release</field>
+        <field name="arch" type="xml">
+            <list string="เวอร์ชันแอป HR" decoration-success="is_current">
+                <field name="release_date"/>
+                <field name="version"/>
+                <field name="build_number" optional="hide"/>
+                <field name="is_current"/>
+                <field name="is_mandatory"/>
+                <field name="android_url" widget="url" optional="hide"/>
+                <field name="ios_url" widget="url" optional="hide"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_hrms_app_release_form" model="ir.ui.view">
+        <field name="name">hrms.app.release.form</field>
+        <field name="model">hrms.app.release</field>
+        <field name="arch" type="xml">
+            <form string="เวอร์ชันแอป HR">
+                <sheet>
+                    <widget name="web_ribbon" title="เวอร์ชันปัจจุบัน" bg_color="text-bg-success"
+                            invisible="not is_current"/>
+                    <div class="oe_title">
+                        <label for="version"/>
+                        <h1><field name="version" placeholder="1.3.8"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="release_date"/>
+                            <field name="build_number"/>
+                            <field name="is_current"/>
+                            <field name="is_mandatory"/>
+                            <field name="active"/>
+                        </group>
+                        <group>
+                            <field name="android_url" widget="url"/>
+                            <field name="ios_url" widget="url"/>
+                        </group>
+                    </group>
+                    <group string="รายละเอียดการอัปเดต (บรรทัดละ 1 หัวข้อ)">
+                        <field name="release_note" nolabel="1"
+                               placeholder="เมนูอนุมัติเพิ่มเวลา เปิดดูไฟล์แนบได้แล้ว&#10;สลิปเงินเดือน แก้ปุ่มแชร์บน iPhone ให้ใช้งานได้"/>
+                    </group>
+                    <div class="alert alert-info" role="alert">
+                        ข้อความนี้ต้องเก็บฝั่งเซิร์ฟเวอร์เท่านั้น — ห้ามไป hardcode ในแอป
+                        เพราะแอปที่ผู้ใช้ติดตั้งอยู่คือเวอร์ชันเก่า ถ้าเก็บในแอป popup
+                        จะอธิบายช้าไป 1 เวอร์ชันเสมอ
+                    </div>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_hrms_app_release" model="ir.actions.act_window">
+        <field name="name">เวอร์ชันแอป HR</field>
+        <field name="res_model">hrms.app.release</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">ประกาศเวอร์ชันแอปแรก</p>
+            <p>แอปจะเรียกดูรายการนี้ตอนเปิดโปรแกรม เพื่อแจ้งเตือนให้ผู้ใช้อัปเดต</p>
+        </field>
+    </record>
+
+</odoo>

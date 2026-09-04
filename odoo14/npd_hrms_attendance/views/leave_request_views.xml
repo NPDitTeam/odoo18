@@ -1,0 +1,158 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_leave_request_list" model="ir.ui.view">
+        <field name="name">hr.attendance.branch.leave.list</field>
+        <field name="model">hr.attendance.branch.leave</field>
+        <field name="arch" type="xml">
+            <list string="การลา"
+                  decoration-warning="state == 'รออนุมัติ'"
+                  decoration-success="state == 'อนุมัติ'"
+                  decoration-danger="state == 'ไม่อนุมัติ'"
+                  decoration-muted="state == 'ยกเลิก'">
+                <field name="employee_code"/>
+                <field name="username"/>
+                <field name="branch_id"/>
+                <field name="department_id" optional="hide"/>
+                <field name="leave_type_id"/>
+                <field name="leave_start_date"/>
+                <field name="start_time" optional="hide"/>
+                <field name="leave_end_date"/>
+                <field name="end_time" optional="hide"/>
+                <field name="leave_days" sum="รวมวันลา"/>
+                <field name="note" optional="hide"/>
+                <field name="state" widget="badge"/>
+                <field name="approved_by" optional="hide"/>
+                <field name="approved_at" optional="hide"/>
+                <field name="create_date" string="วันที่ยื่น"/>
+                <field name="company_id" groups="base.group_multi_company" optional="hide"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_leave_request_form" model="ir.ui.view">
+        <field name="name">hr.attendance.branch.leave.form</field>
+        <field name="model">hr.attendance.branch.leave</field>
+        <field name="arch" type="xml">
+            <form string="การลา">
+                <header>
+                    <button name="action_approve" type="object" string="อนุมัติ"
+                            class="btn-primary" invisible="state != 'รออนุมัติ'"/>
+                    <button name="action_disapprove" type="object" string="ไม่อนุมัติ"
+                            class="btn-secondary" invisible="state != 'รออนุมัติ'"
+                            confirm="ระบบจะคืนสิทธิ์วันลาให้พนักงานอัตโนมัติ ยืนยันหรือไม่?"/>
+                    <button name="action_cancel" type="object" string="ยกเลิก"
+                            invisible="state not in ('รออนุมัติ', 'อนุมัติ')"
+                            confirm="ระบบจะคืนสิทธิ์วันลาให้พนักงานอัตโนมัติ ยืนยันหรือไม่?"/>
+                    <button name="action_reset_to_pending" type="object"
+                            string="กลับเป็นรออนุมัติ"
+                            invisible="state == 'รออนุมัติ'"
+                            confirm="ระบบจะหักสิทธิ์วันลาใหม่อีกครั้ง ยืนยันหรือไม่?"/>
+                    <field name="state" widget="statusbar"
+                           statusbar_visible="รออนุมัติ,อนุมัติ"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="display_summary" readonly="1"/></h1>
+                    </div>
+                    <group>
+                        <group string="พนักงาน">
+                            <field name="employee_id" options="{'no_create': True}"
+                                   readonly="state != 'รออนุมัติ'"/>
+                            <field name="employee_code"/>
+                            <field name="branch_id"/>
+                            <field name="department_id"/>
+                            <field name="position_id"/>
+                            <field name="company_id" groups="base.group_multi_company"/>
+                        </group>
+                        <group string="ช่วงเวลาที่ลา">
+                            <field name="leave_type_id" options="{'no_create': True}"
+                                   readonly="state != 'รออนุมัติ'"/>
+                            <label for="leave_start_date" string="เริ่ม"/>
+                            <div class="o_row">
+                                <field name="leave_start_date"
+                                       readonly="state != 'รออนุมัติ'"/>
+                                <field name="start_time" placeholder="08:00"
+                                       readonly="state != 'รออนุมัติ'"/>
+                            </div>
+                            <label for="leave_end_date" string="สิ้นสุด"/>
+                            <div class="o_row">
+                                <field name="leave_end_date"
+                                       readonly="state != 'รออนุมัติ'"/>
+                                <field name="end_time" placeholder="17:00"
+                                       readonly="state != 'รออนุมัติ'"/>
+                            </div>
+                            <field name="leave_days"/>
+                        </group>
+                    </group>
+                    <group>
+                        <group string="รายละเอียด">
+                            <field name="note"/>
+                            <field name="attachment" widget="binary" filename="filename"/>
+                            <field name="filename" invisible="1"/>
+                        </group>
+                        <group string="การอนุมัติ">
+                            <field name="approved_by"/>
+                            <field name="approved_at"/>
+                            <field name="reason"/>
+                            <field name="deducted_days"/>
+                            <field name="deducted_type_id"/>
+                        </group>
+                    </group>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_leave_request_search" model="ir.ui.view">
+        <field name="name">hr.attendance.branch.leave.search</field>
+        <field name="model">hr.attendance.branch.leave</field>
+        <field name="arch" type="xml">
+            <search string="ค้นหาการลา">
+                <field name="employee_id"/>
+                <field name="employee_code"/>
+                <field name="branch_id"/>
+                <field name="leave_type_id"/>
+                <filter name="filter_pending" string="รออนุมัติ"
+                        domain="[('state', '=', 'รออนุมัติ')]"/>
+                <filter name="filter_approved" string="อนุมัติแล้ว"
+                        domain="[('state', '=', 'อนุมัติ')]"/>
+                <separator/>
+                <filter name="filter_this_month" string="เริ่มลาเดือนนี้"
+                        domain="[('leave_start_date', '&gt;=', (context_today() + relativedelta(day=1)).strftime('%Y-%m-%d'))]"/>
+                <group expand="0" string="จัดกลุ่มตาม">
+                    <filter name="group_employee" string="พนักงาน"
+                            context="{'group_by': 'employee_id'}"/>
+                    <filter name="group_branch" string="สาขา"
+                            context="{'group_by': 'branch_id'}"/>
+                    <filter name="group_type" string="ประเภทการลา"
+                            context="{'group_by': 'leave_type_id'}"/>
+                    <filter name="group_state" string="สถานะ"
+                            context="{'group_by': 'state'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_leave_request" model="ir.actions.act_window">
+        <field name="name">การลา</field>
+        <field name="res_model">hr.attendance.branch.leave</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_leave_request_search"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">ยังไม่มีใบลา</p>
+            <p>ใบลาจะเข้ามาอัตโนมัติเมื่อพนักงานยื่นผ่านแอป HR
+               และระบบจะหักสิทธิ์วันลาให้ตั้งแต่ตอนยื่น</p>
+        </field>
+    </record>
+
+    <record id="action_leave_request_pending" model="ir.actions.act_window">
+        <field name="name">ใบลารออนุมัติ</field>
+        <field name="res_model">hr.attendance.branch.leave</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('state', '=', 'รออนุมัติ')]</field>
+        <field name="search_view_id" ref="view_leave_request_search"/>
+    </record>
+
+</odoo>

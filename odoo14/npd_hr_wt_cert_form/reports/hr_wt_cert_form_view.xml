@@ -1,0 +1,268 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<odoo>
+    <template id="hr_withholding_layout_report">
+        <div
+            class="article o_report_withholding_tax_cert"
+            t-attf-style="background-image:url(/npd_hr_wt_cert_form/static/src/img/WithholdingCert.jpg); background-size:300mm 424mm; width:300mm; height:424mm;"
+        >
+            <t t-if="o.state == 'cancel'">
+                <div class="state_cancel">
+                    <span class="opacity">ยกเลิก</span>
+                </div>
+            </t>
+            <h4 class="number_payment">
+                <span t-esc="o.name" />
+            </h4>
+            <div class="company_vat">
+                <t t-if="o.company_taxid">
+                    <div class="row">
+                        <p class="box-vat">
+                            <t t-esc="o.company_taxid[:1]" />
+                        </p>
+                        <p class="box-vat vat_tab">
+                            <t t-esc="o.company_taxid[1:2]" />
+                        </p>
+                        <p class="box-vat">
+                            <t t-esc="o.company_taxid[2:3]" />
+                        </p>
+                        <p class="box-vat">
+                            <t t-esc="o.company_taxid[3:4]" />
+                        </p>
+                        <p class="box-vat">
+                            <t t-esc="o.company_taxid[4:5]" />
+                        </p>
+                        <p class="box-vat vat_tab">
+                            <t t-esc="o.company_taxid[5:6]" />
+                        </p>
+                        <p class="box-vat">
+                            <t t-esc="o.company_taxid[6:7]" />
+                        </p>
+                        <p class="box-vat">
+                            <t t-esc="o.company_taxid[7:8]" />
+                        </p>
+                        <p class="box-vat">
+                            <t t-esc="o.company_taxid[8:9]" />
+                        </p>
+                        <p class="box-vat">
+                            <t t-esc="o.company_taxid[9:10]" />
+                        </p>
+                        <p class="box-vat vat_tab">
+                            <t t-esc="o.company_taxid[10:11]" />
+                        </p>
+                        <p class="box-vat">
+                            <t t-esc="o.company_taxid[11:12]" />
+                        </p>
+                        <p class="box-vat vat_tab">
+                            <t t-esc="o.company_taxid[12:13]" />
+                        </p>
+                    </div>
+                </t>
+            </div>
+            <div class="company_name">
+                <p>
+                    <span t-esc="o.company_name" />
+                </p>
+            </div>
+            <div class="company_address">
+                <t t-if="o.company_address">
+                    <span t-esc="o.company_address"/>
+                </t>
+            </div>
+            <div class="supplier_vat">
+                <t t-if="o.employee_taxid">
+                    <div class="row">
+                        <p class="box-vat">
+                            <t t-esc="o.employee_taxid[:1]" />
+                        </p>
+                        <p class="box-vat vat_tab">
+                            <t t-esc="o.employee_taxid[1:2]" />
+                        </p>
+                        <p class="box-vat">
+                            <t t-esc="o.employee_taxid[2:3]" />
+                        </p>
+                        <p class="box-vat">
+                            <t t-esc="o.employee_taxid[3:4]" />
+                        </p>
+                        <p class="box-vat">
+                            <t t-esc="o.employee_taxid[4:5]" />
+                        </p>
+                        <p class="box-vat vat_tab">
+                            <t t-esc="o.employee_taxid[5:6]" />
+                        </p>
+                        <p class="box-vat">
+                            <t t-esc="o.employee_taxid[6:7]" />
+                        </p>
+                        <p class="box-vat">
+                            <t t-esc="o.employee_taxid[7:8]" />
+                        </p>
+                        <p class="box-vat">
+                            <t t-esc="o.employee_taxid[8:9]" />
+                        </p>
+                        <p class="box-vat">
+                            <t t-esc="o.employee_taxid[9:10]" />
+                        </p>
+                        <p class="box-vat vat_tab">
+                            <t t-esc="o.employee_taxid[10:11]" />
+                        </p>
+                        <p class="box-vat">
+                            <t t-esc="o.employee_taxid[11:12]" />
+                        </p>
+                        <p class="box-vat vat_tab">
+                            <t t-esc="o.employee_taxid[12:13]" />
+                        </p>
+                    </div>
+                </t>
+            </div>
+            <div class="supplier_name">
+                <p>
+                    <span t-esc="o.pnd1_full_name or ((o.employee_firstname or '') + ' ' + (o.employee_lastname or ''))" />
+                </p>
+            </div>
+            <div class="supplier_address">
+                <t t-if="o.employee_address">
+                    <span t-esc="o.employee_address" />
+                </t>
+            </div>
+            <t t-if="o.income_tax_form == 'pnd1'">
+                <p class="choice_pnd1a">X</p>
+            </t>
+            <t t-if="o.income_tax_form == 'pnd3'">
+                <p class="choice_pnd3">X</p>
+            </t>
+            <t t-if="o.income_tax_form == 'pnd3a'">
+                <p class="choice_pnd3a">X</p>
+            </t>
+            <t t-if="o.income_tax_form == 'pnd53'">
+                <p class="choice_pnd53">X</p>
+            </t>
+            <!-- change A.D. to B.E. year-->
+            <t t-set="year" t-value="(int((o.date).strftime('%Y')))+543" />
+            <t t-set="date" t-value="'%s/%s' %((o.date).strftime('%d/%m'),year)" />
+            <t t-set="group_line_ids" t-value="o._group_wt_line(o.wt_line)" />
+            <t t-foreach="group_line_ids" t-as="line_dict">
+                <t t-if="line_dict['wt_cert_income_type'] == '1'">
+                    <p class="type_1_date">
+                        <t t-esc="date" />
+                    </p>
+                    <p class="type_1_base">
+                        <t t-esc="'{0:,.2f}'.format(line_dict['base'])" />
+                    </p>
+                    <p class="type_1_tax">
+                        <t t-esc="'{0:,.2f}'.format(line_dict['amount'])" />
+                    </p>
+                </t>
+                <t t-if="line_dict['wt_cert_income_type'] == '2'">
+                    <p class="type_2_date">
+                        <t t-esc="date" />
+                    </p>
+                    <p class="type_2_base">
+                        <t t-esc="'{0:,.2f}'.format(line_dict['base'])" />
+                    </p>
+                    <p class="type_2_tax">
+                        <t t-esc="'{0:,.2f}'.format(line_dict['amount'])" />
+                    </p>
+                </t>
+                <t t-if="line_dict['wt_cert_income_type'] == '3'">
+                    <p class="type_3_date">
+                        <t t-esc="date" />
+                    </p>
+                    <p class="type_3_base">
+                        <t t-esc="'{0:,.2f}'.format(line_dict['base'])" />
+                    </p>
+                    <p class="type_3_tax">
+                        <t t-esc="'{0:,.2f}'.format(line_dict['amount'])" />
+                    </p>
+                </t>
+                <t t-if="line_dict['wt_cert_income_type'] == '5'">
+                    <p class="type_5_date">
+                        <t t-esc="date" />
+                    </p>
+                    <p class="type_5_base">
+                        <t t-esc="'{0:,.2f}'.format(line_dict['base'])" />
+                    </p>
+                    <p class="type_5_tax">
+                        <t t-esc="'{0:,.2f}'.format(line_dict['amount'])" />
+                    </p>
+                </t>
+                <t t-if="line_dict['wt_cert_income_type'] == '6'">
+                    <p class="type_6_description">
+                        <t
+                            t-esc="o._compute_desc_type_other(o.wt_line, 'wt_cert_income_desc', '6')"
+                        />
+                    </p>
+                    <p class="type_6_date">
+                        <t t-esc="date" />
+                    </p>
+                    <p class="type_6_base">
+                        <t t-esc="'{0:,.2f}'.format(line_dict['base'])" />
+                    </p>
+                    <p class="type_6_tax">
+                        <t t-esc="'{0:,.2f}'.format(line_dict['amount'])" />
+                    </p>
+                </t>
+            </t>
+            <!-- total -->
+            <t t-set="total_amount_base" t-value="sum(o.wt_line.mapped('base'))" />
+            <t t-set="total_amount_tax" t-value="sum(o.wt_line.mapped('amount'))" />
+            <p class="total_amount">
+                <t t-esc="'{0:,.2f}'.format(total_amount_base)" />
+            </p>
+            <p class="total_tax">
+                <t t-esc="'{0:,.2f}'.format(total_amount_tax)" />
+            </p>
+           <t t-set="total_amount_tax_sum" t-value="round(total_amount_tax, 2)"/>
+
+            <!-- แปลงจำนวนเงินเป็นข้อความภาษาไทย -->
+            <p class="text_amount">
+                <span>
+                    <t t-esc="o.amount_to_text_custom(total_amount_tax_sum)"/>
+                </span>
+            </p>
+
+            <!-- แถว "เงินที่จ่ายเข้า ... กองทุนประกันสังคม ... กองทุนสำรองเลี้ยงชีพ ..." -->
+            <t t-if="o.sso_amount">
+                <p class="fund_sso">
+                    <t t-esc="'{0:,.2f}'.format(o.sso_amount)" />
+                </p>
+            </t>
+            <t t-if="o.provident_fund_amount">
+                <p class="fund_provident">
+                    <t t-esc="'{0:,.2f}'.format(o.provident_fund_amount)" />
+                </p>
+            </t>
+
+            <t t-if="o.tax_payer == 'withholding'">
+                <p class="choich_withholding_tax">X</p>
+            </t>
+            <t t-if="o.tax_payer == 'paid_one_time'">
+                <p class="choich_paid_one_time">X</p>
+            </t>
+            <p class="set_name"> <span t-esc="user.name"></span> </p>
+
+            <!-- โลโก้ของบริษัทที่พนักงานสังกัด
+                 ของเดิมเทียบ company_name กับชื่อแบบไม่มีเว้นวรรค 5 ค่าที่ฝังไว้
+                 พอชื่อบริษัทไม่ตรงเป๊ะก็ไม่ขึ้นโลโก้เลย และเพิ่มบริษัทใหม่ไม่ได้
+                 จึงเปลี่ยนมาใช้โลโก้จากข้อมูลบริษัทโดยตรง -->
+            <t t-if="o.company_id.logo">
+                <p class="set_logo_NPD_Logistics_New">
+                    <img t-att-src="image_data_uri(o.company_id.logo)"
+                         style="max-height: 330px;"/>
+                </p>
+            </t>
+
+            <t t-set="year" t-value="(int((o.date).strftime('%Y')))+543" />
+            <t t-set="date" t-value="'%s/%s' %((o.date).strftime('%d/%m'),year)" />
+            <p class="set_date"> <span t-esc="date"></span> </p>
+
+        </div>
+    </template>
+    <template id="hr_wt_cert_form">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="o">
+                <t
+                    t-call="npd_hr_wt_cert_form.hr_withholding_layout_report"
+                />
+            </t>
+        </t>
+    </template>
+</odoo>

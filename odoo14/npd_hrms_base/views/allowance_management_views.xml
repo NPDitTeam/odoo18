@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_allowance_management_list" model="ir.ui.view">
+        <field name="name">allowance.management.list</field>
+        <field name="model">allowance.management</field>
+        <field name="arch" type="xml">
+            <list string="จัดการค่าเบี้ยเลี้ยง"
+                  decoration-success="state == 'อนุมัติ'"
+                  decoration-warning="state == 'รออนุมัติ'"
+                  decoration-danger="state == 'ไม่อนุมัติ'"
+                  decoration-muted="state == 'ยกเลิก'">
+                <field name="name"/>
+                <field name="branch_ids" widget="many2many_tags"/>
+                <field name="created_at"/>
+                <field name="approved_by"/>
+                <field name="approved_at"/>
+                <field name="state" widget="badge"/>
+                <field name="company_id" groups="base.group_multi_company" optional="hide"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_allowance_management_form" model="ir.ui.view">
+        <field name="name">allowance.management.form</field>
+        <field name="model">allowance.management</field>
+        <field name="arch" type="xml">
+            <form string="จัดการค่าเบี้ยเลี้ยง">
+                <header>
+                    <button name="action_approve" type="object" string="อนุมัติ"
+                            class="btn-primary" invisible="state != 'รออนุมัติ'"/>
+                    <button name="action_reject" type="object" string="ไม่อนุมัติ"
+                            class="btn-secondary" invisible="state != 'รออนุมัติ'"/>
+                    <button name="action_cancel" type="object" string="ยกเลิก"
+                            invisible="state in ('ยกเลิก', 'ไม่อนุมัติ')"/>
+                    <button name="action_reset_draft" type="object" string="กลับเป็นรออนุมัติ"
+                            invisible="state == 'รออนุมัติ'"/>
+                    <field name="state" widget="statusbar"
+                           statusbar_visible="รออนุมัติ,อนุมัติ"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <label for="name"/>
+                        <h1><field name="name"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="branch_ids" widget="many2many_tags"
+                                   options="{'no_create': True}"
+                                   readonly="state != 'รออนุมัติ'"/>
+                            <field name="company_id" groups="base.group_multi_company"/>
+                        </group>
+                        <group>
+                            <field name="created_at"/>
+                            <field name="approved_by"/>
+                            <field name="approved_at"/>
+                        </group>
+                    </group>
+                    <group invisible="not reason">
+                        <field name="reason" readonly="1"/>
+                    </group>
+                    <notebook>
+                        <page string="รายการประเภทค่าเบี้ยเลี้ยง" name="lines">
+                            <field name="line_ids" readonly="state != 'รออนุมัติ'">
+                                <list editable="bottom">
+                                    <field name="name"/>
+                                    <field name="amount"/>
+                                    <field name="amount_foreign"/>
+                                    <field name="note"/>
+                                </list>
+                            </field>
+                            <div class="alert alert-info" role="alert">
+                                เว้นราคาว่างไว้ได้ — ผู้ใช้แอปจะกรอกจำนวนเงินเองตอนเลือกรายการนั้น
+                            </div>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_allowance_management_search" model="ir.ui.view">
+        <field name="name">allowance.management.search</field>
+        <field name="model">allowance.management</field>
+        <field name="arch" type="xml">
+            <search string="ค้นหาค่าเบี้ยเลี้ยง">
+                <field name="name"/>
+                <field name="branch_ids"/>
+                <filter name="filter_pending" string="รออนุมัติ"
+                        domain="[('state', '=', 'รออนุมัติ')]"/>
+                <filter name="filter_approved" string="อนุมัติแล้ว"
+                        domain="[('state', '=', 'อนุมัติ')]"/>
+                <group expand="0" string="จัดกลุ่มตาม">
+                    <filter name="group_state" string="สถานะ" context="{'group_by': 'state'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_allowance_management" model="ir.actions.act_window">
+        <field name="name">จัดการค่าเบี้ยเลี้ยง</field>
+        <field name="res_model">allowance.management</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_allowance_management_search"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">ประกาศประเภทค่าเบี้ยเลี้ยงชุดแรก</p>
+            <p>รายการที่อนุมัติแล้วจะไปแสดงในแอปให้พนักงานสาขานั้นเลือกตอนขอเบิก</p>
+        </field>
+    </record>
+
+    <record id="view_allowance_reject_wizard_form" model="ir.ui.view">
+        <field name="name">allowance.management.reject.wizard.form</field>
+        <field name="model">allowance.management.reject.wizard</field>
+        <field name="arch" type="xml">
+            <form string="ไม่อนุมัติรายการค่าเบี้ยเลี้ยง">
+                <group>
+                    <field name="allowance_id" invisible="1"/>
+                    <field name="reason" placeholder="ระบุเหตุผลที่ไม่อนุมัติ..."/>
+                </group>
+                <footer>
+                    <button name="action_confirm_reject" type="object"
+                            string="ยืนยันไม่อนุมัติ" class="btn-primary"/>
+                    <button string="ยกเลิก" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+</odoo>

@@ -1,0 +1,203 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="paperformat_employee_warning" model="report.paperformat">
+        <field name="name">Employee Warning A4</field>
+        <field name="format">A4</field>
+        <field name="orientation">Portrait</field>
+        <field name="margin_top">10</field>
+        <field name="margin_bottom">10</field>
+        <field name="margin_left">15</field>
+        <field name="margin_right">15</field>
+        <field name="header_line" eval="False"/>
+        <field name="header_spacing">0</field>
+        <field name="dpi">90</field>
+    </record>
+
+    <record id="action_report_employee_warning" model="ir.actions.report">
+        <field name="name">บันทึกการตักเตือนพนักงาน</field>
+        <field name="model">employee.warning.line</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">npd_hrms_payroll.report_employee_warning_document</field>
+        <field name="report_file">npd_hrms_payroll.report_employee_warning_document</field>
+        <field name="print_report_name">'ใบเตือน - %s' % (object.warning_id.employee_code or '')</field>
+        <field name="binding_model_id" ref="npd_hrms_base.model_employee_warning_line"/>
+        <field name="binding_type">report</field>
+        <field name="paperformat_id" ref="paperformat_employee_warning"/>
+    </record>
+
+    <template id="report_employee_warning_document">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="o">
+                <t t-set="info" t-value="o.report_company_info()"/>
+                <t t-set="cfg" t-value="o.report_config()"/>
+                <t t-set="emp" t-value="o.warning_id.employee_id"/>
+                <t t-set="fullname"
+                   t-value="((emp.firstname or '') + ' ' + (emp.lastname or '')).strip() or '-'"/>
+                <div class="article warn-body" style="font-size: 12pt; color: #000; line-height: 1.6;">
+                    <div class="page" style="padding: 0;">
+                    <style>
+                        /* ใช้ฟอนต์ตระกูลเดียวทั้งตัวธรรมดาและตัวหนา
+                           ถ้าเอา TH Sarabun New มาเป็นตัวหนาคู่กับ Sarabun
+                           ตัวหนาจะดูเล็กกว่าตัวธรรมดาชัดเจน ทั้งที่ขนาด pt เท่ากัน
+                           เพราะสองฟอนต์นี้วางตัวอักษรบน em คนละสัดส่วน
+                           ปล่อยให้ตัวเรนเดอร์ทำตัวหนาจากฟอนต์เดียวกันแทน */
+                        @font-face {
+                            font-family: 'NPDSarabun';
+                            src: url(/npd_hrms_payroll/static/src/fonts/Sarabun-Regular.ttf) format('truetype');
+                        }
+                        .warn-body, .warn-body * {
+                            font-family: 'NPDSarabun', 'Sarabun', 'TH Sarabun New', sans-serif !important;
+                        }
+                        /* ตารางในเอกสารนี้ใช้จัดวางตำแหน่งอย่างเดียว ไม่ใช่ตารางข้อมูล
+                           ต้องสั่ง border-style: none เท่านั้น สั่ง border: 0 ไม่พอ
+
+                           bootstrap ที่มากับธีมรายงานของ Odoo ตั้ง
+                           thead,tbody,tfoot,tr,td,th { border-style: solid; border-width: 0 }
+                           ความหนาเปน็ 0 ก็จริง แต่ตัวสร้าง PDF ยังวาดกรอบหนา 0 ลงไฟล์
+                           แล้วโปรแกรมเปิดไฟล์วาดให้เห็นเป็นเส้นบาง ๆ กลายเป็นตาราง */
+                        .warn-body table, .warn-body thead, .warn-body tbody,
+                        .warn-body tfoot, .warn-body tr,
+                        .warn-body td, .warn-body th {
+                            border-style: none !important;
+                            background: transparent !important;
+                        }
+                        .warn-head { border: 1px solid #000 !important; padding: 6px 10px; margin-bottom: 16px; }
+                        .warn-sign-line { display: inline-block; width: 68%; border-bottom: 1px dotted #000; }
+                        .warn-indent { text-indent: 40px; }
+                    </style>
+
+                        <!-- หัวกระดาษ: โลโก้ + ชื่อ/ที่อยู่บริษัทตามสังกัดพนักงาน
+                             โลโก้ดึงจากข้อมูลบริษัท ไม่ได้ฝังไฟล์ของ NPD ไว้ในเทมเพลต
+                             บริษัทที่เช่าระบบจึงได้โลโก้ของตัวเองโดยไม่ต้องแก้โค้ด -->
+                        <div class="warn-head"
+                             style="border: 1px solid #000; padding: 6px 10px;
+                                    margin: 0 0 22px 0;">
+                            <table style="width: 100%; border-collapse: collapse;">
+                                <tr>
+                                    <td t-if="info['company'].logo"
+                                        style="width: 78px; vertical-align: middle;">
+                                        <img t-att-src="image_data_uri(info['company'].logo)"
+                                             style="height: 52px;"/>
+                                    </td>
+                                    <td style="vertical-align: middle;">
+                                        <div style="font-size: 14pt; font-weight: bold; line-height: 1.3;">
+                                            <span t-esc="info['name']"/>
+                                        </div>
+                                        <div style="font-size: 11.5pt; line-height: 1.3;">
+                                            <span t-esc="info['address']"/>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+
+                        <div style="text-align: center; font-size: 16pt; font-weight: bold;
+                                    margin: 10px 0 18px 0;">
+                            บันทึกการตักเตือนพนักงาน <span t-esc="o.warning_number_display"/>
+                        </div>
+
+                        <!-- หัวเรื่อง -->
+                        <table style="width: 100%; font-size: 12pt; border-collapse: collapse;">
+                            <tr>
+                                <td colspan="2" style="padding: 2px 0;">
+                                    เรื่อง <span style="margin-left: 14px;" t-esc="o.subject"/>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td style="width: 58%; padding: 4px 0;">
+                                    ชื่อพนักงาน (ผู้รับหนังสือ) <b t-esc="fullname"/>
+                                </td>
+                                <td style="width: 42%; padding: 4px 0;">
+                                    ตำแหน่ง <span t-esc="emp.position_id.name or '-'"/>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 2px 0;">
+                                    สาขา <span t-esc="emp.branch_id.name or '-'"/>
+                                </td>
+                                <td style="padding: 2px 0;">
+                                    วันที่ออกหนังสือ <span t-esc="o.report_thai_date()"/>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 2px 0;"/>
+                                <td style="padding: 2px 0;">
+                                    ออกโดย <span t-esc="cfg.issuer_name or '-'"/>
+                                </td>
+                            </tr>
+                        </table>
+
+                        <hr style="margin: 6px 0 10px 0; border: 0; border-top: 1px solid #000;"/>
+
+                        <div style="margin-bottom: 8px;">
+                            โดยหนังสือฉบับนี้ <span t-esc="info['name']"/> ขอแจ้งให้ทราบว่า
+                        </div>
+
+                        <!-- รายละเอียดที่โดนเตือน -->
+                        <div class="warn-indent"
+                             style="white-space: pre-wrap; line-height: 1.6; margin-bottom: 10px;
+                                    text-align: justify;"
+                             t-esc="o.description or ''"/>
+
+                        <!-- ข้อบังคับที่อ้างถึง (ตั้งค่าเองในหน้าตั้งค่า ระบบไม่เดาเลขข้อให้) -->
+                        <div class="warn-indent" style="margin-bottom: 4px;">
+                            การกระทำของท่านถือได้ว่าท่านฝ่าฝืนต่อระเบียบข้อบังคับการทำงาน
+                        </div>
+                        <div style="white-space: pre-wrap; line-height: 1.6; margin-bottom: 10px;"
+                             t-esc="cfg.rule_clauses or ''"/>
+
+                        <div class="warn-indent" style="line-height: 1.6; margin-bottom: 14px;">
+                            ดังนั้น ให้พนักงานปรับปรุง แก้ไขพฤติกรรมข้างต้น หรือไม่กระทำการอื่นใด
+                            อันเป็นการฝ่าฝืนคำสั่ง ระเบียบ หรือข้อบังคับเกี่ยวกับการทำงาน มิฉะนั้น
+                            บริษัทฯ จะพิจารณาลงโทษเลิกจ้างและให้พ้นสภาพการเป็นพนักงานโดยไม่จ่ายค่าชดเชย
+                        </div>
+
+                        <!-- ลายเซ็นผู้ออก -->
+                        <table style="width: 100%; text-align: center; margin-bottom: 16px;">
+                            <tr>
+                                <td style="width: 50%; padding: 0 14px 2px 14px;">
+                                    ลงชื่อ <span class="warn-sign-line">&#160;</span>
+                                </td>
+                                <td style="width: 50%; padding: 0 14px 2px 14px;">
+                                    ลงชื่อ <span class="warn-sign-line">&#160;</span>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td style="padding-top: 4px;">(<span t-esc="cfg.branch_manager_name or ''"/>)</td>
+                                <td style="padding-top: 4px;">(<span t-esc="cfg.hr_manager_name or ''"/>)</td>
+                            </tr>
+                            <tr>
+                                <td>ผู้จัดการฝ่ายบริหารสาขา</td>
+                                <td>ผู้จัดการฝ่ายทรัพยากรบุคคล</td>
+                            </tr>
+                        </table>
+
+                        <!-- คำรับทราบของพนักงาน -->
+                        <div style="line-height: 1.6; margin-bottom: 12px;">
+                            ข้าพเจ้า <b t-esc="fullname"/> รับทราบข้อความข้างต้นทุกประการ
+                            และขอสัญญาว่าจะปรับปรุงแก้ไขพฤติกรรมที่ไม่เหมาะสมดังกล่าวนับแต่นี้เป็นต้นไป
+                            และหากข้าพเจ้ากระทำซ้ำความผิดเดิมนี้อีก บริษัทฯ สามารถลงโทษข้าพเจ้าได้ตาม
+                            บทลงโทษของบริษัทฯ ข้างต้น ตามแต่จะเห็นสมควร
+                        </div>
+
+                        <table style="width: 100%; text-align: center; margin-top: 10px;">
+                            <tr>
+                                <td style="width: 50%;"/>
+                                <td style="width: 50%; padding: 0 14px 2px 14px;">
+                                    ลงชื่อ <span class="warn-sign-line">&#160;</span>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td/>
+                                <td style="padding-top: 4px;">(<span t-esc="fullname"/>)</td>
+                            </tr>
+                        </table>
+
+                    </div>
+                </div>
+            </t>
+        </t>
+    </template>
+
+</odoo>

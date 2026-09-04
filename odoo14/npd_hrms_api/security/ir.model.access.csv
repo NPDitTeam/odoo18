@@ -1,0 +1,6 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_hrms_api_token_officer,hrms.api.token officer,model_hrms_api_token,npd_hrms_base.group_hrms_officer,1,1,0,0
+access_hrms_api_token_manager,hrms.api.token manager,model_hrms_api_token,npd_hrms_base.group_hrms_manager,1,1,1,1
+access_hrms_api_login_attempt_manager,hrms.api.login.attempt manager,model_hrms_api_login_attempt,npd_hrms_base.group_hrms_manager,1,1,1,1
+access_hrms_tenant_user,hrms.tenant user,model_hrms_tenant,npd_hrms_base.group_hrms_user,1,0,0,0
+access_hrms_tenant_manager,hrms.tenant manager,model_hrms_tenant,npd_hrms_base.group_hrms_manager,1,1,1,1

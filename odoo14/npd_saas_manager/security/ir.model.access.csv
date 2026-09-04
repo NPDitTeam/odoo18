@@ -1,0 +1,3 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_saas_renewal_admin,saas.renewal admin,model_saas_renewal,base.group_system,1,1,1,1
+access_saas_renew_wizard_admin,saas.renew.wizard admin,model_saas_renew_wizard,base.group_system,1,1,1,1

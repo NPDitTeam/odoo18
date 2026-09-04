@@ -1,0 +1,192 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_payroll_policy_list" model="ir.ui.view">
+        <field name="name">payroll.policy.list</field>
+        <field name="model">payroll.policy</field>
+        <field name="arch" type="xml">
+            <list string="นโยบายการคำนวณเงินเดือน">
+                <field name="name"/>
+                <field name="effective_from"/>
+                <field name="salary_days_divisor"/>
+                <field name="ot_hours_per_day"/>
+                <field name="sso_rate"/>
+                <field name="tax_personal_deduction"/>
+                <field name="company_id" groups="base.group_multi_company"/>
+                <field name="active" column_invisible="1"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_payroll_policy_form" model="ir.ui.view">
+        <field name="name">payroll.policy.form</field>
+        <field name="model">payroll.policy</field>
+        <field name="arch" type="xml">
+            <form string="นโยบายการคำนวณเงินเดือน">
+                <header>
+                    <button name="action_duplicate_for_new_year" type="object"
+                            string="คัดลอกเป็นฉบับใหม่" class="btn-primary"
+                            help="ใช้เมื่อกฎหมายเปลี่ยน — ของเดิมไม่ถูกแตะ สลิปย้อนหลังยังคำนวณด้วยกติกาเดิม"/>
+                    <button name="action_reset_tax_brackets" type="object"
+                            string="คืนขั้นภาษีมาตรฐาน" class="btn-secondary"
+                            confirm="ขั้นภาษีที่แก้ไว้จะถูกแทนที่ด้วยอัตรามาตรฐานของไทย ยืนยันหรือไม่?"/>
+                </header>
+                <sheet>
+                    <widget name="web_ribbon" title="เก็บถาวร" bg_color="text-bg-danger"
+                            invisible="active"/>
+                    <div class="oe_title">
+                        <label for="name"/>
+                        <h1><field name="name"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="effective_from"/>
+                            <field name="company_id" groups="base.group_multi_company"/>
+                        </group>
+                        <group>
+                            <field name="active"/>
+                        </group>
+                    </group>
+                    <div class="alert alert-info" role="alert">
+                        ค่าเริ่มต้นทุกช่องตั้งไว้ตรงกับระบบเดิมของ NPD —
+                        บริษัทที่เช่าระบบไปใช้แก้ตัวเลขตรงนี้ได้เลย ไม่ต้องแก้โปรแกรม
+                    </div>
+                    <notebook>
+                        <page string="ฐานการคำนวณ" name="basis">
+                            <group>
+                                <group string="ตัวหาร">
+                                    <field name="salary_days_divisor"/>
+                                    <field name="ot_hours_per_day"/>
+                                    <field name="use_schedule_hours_for_deduction"/>
+                                </group>
+                                <group string="พักเที่ยง">
+                                    <field name="lunch_enabled"/>
+                                    <field name="lunch_start" widget="float_time"
+                                           invisible="not lunch_enabled"/>
+                                    <field name="lunch_end" widget="float_time"
+                                           invisible="not lunch_enabled"/>
+                                    <field name="lunch_min_shift_hours"
+                                           invisible="not lunch_enabled"/>
+                                </group>
+                            </group>
+                            <group>
+                                <group string="การปัดเศษ">
+                                    <field name="late_rounding"/>
+                                    <field name="early_rounding"/>
+                                </group>
+                                <group string="กฎการหัก">
+                                    <field name="absent_includes_early"/>
+                                    <field name="leave_full_shift_as_full_day"/>
+                                    <field name="skip_late_on_first_workday"/>
+                                    <field name="exclude_leave_overlap"/>
+                                </group>
+                            </group>
+                        </page>
+
+                        <page string="ค่าล่วงเวลา" name="ot">
+                            <group>
+                                <group string="อัตรา (เท่าของค่าจ้างต่อชั่วโมง)">
+                                    <field name="ot_rate_weekday"/>
+                                    <field name="ot_rate_sunday"/>
+                                    <field name="ot_rate_holiday"/>
+                                </group>
+                                <group string="เงื่อนไข">
+                                    <field name="ot_min_hours"/>
+                                </group>
+                            </group>
+                        </page>
+
+                        <page string="ประกันสังคม" name="sso">
+                            <group>
+                                <group>
+                                    <field name="sso_enabled"/>
+                                    <field name="sso_rate" invisible="not sso_enabled"/>
+                                    <field name="sso_min_wage" invisible="not sso_enabled"/>
+                                    <field name="sso_max_wage" invisible="not sso_enabled"/>
+                                </group>
+                                <group>
+                                    <field name="sso_prorate_with_salary"
+                                           invisible="not sso_enabled"/>
+                                    <field name="sso_tax_deduction_cap"
+                                           invisible="not sso_enabled"/>
+                                </group>
+                            </group>
+                        </page>
+
+                        <page string="ภาษี — ค่าลดหย่อน" name="tax_deductions">
+                            <group>
+                                <group string="พื้นฐาน">
+                                    <field name="tax_enabled"/>
+                                    <field name="tax_personal_deduction"/>
+                                    <field name="tax_expense_rate"/>
+                                    <field name="tax_expense_max"/>
+                                </group>
+                                <group string="ครอบครัว">
+                                    <field name="ded_spouse_max"/>
+                                    <field name="ded_parents_max"/>
+                                </group>
+                            </group>
+                            <group>
+                                <group string="ประกัน">
+                                    <field name="ded_health_self_max"/>
+                                    <field name="ded_life_health_max"/>
+                                    <field name="ded_parents_health_max"/>
+                                    <field name="ded_pension_ins_rate"/>
+                                    <field name="ded_pension_ins_max"/>
+                                </group>
+                                <group string="การลงทุน / เกษียณ">
+                                    <field name="ded_rmf_rate"/>
+                                    <field name="ded_rmf_max"/>
+                                    <field name="ded_ssf_rate"/>
+                                    <field name="ded_ssf_max"/>
+                                    <field name="ded_thaiesg_rate"/>
+                                    <field name="ded_thaiesg_max"/>
+                                    <field name="ded_pension_fund_rate"/>
+                                    <field name="ded_pension_fund_max"/>
+                                    <field name="ded_retire_group_max"/>
+                                </group>
+                            </group>
+                            <group>
+                                <group string="อื่นๆ">
+                                    <field name="ded_home_loan_max"/>
+                                    <field name="ded_shopping_max"/>
+                                    <field name="ded_donation_rate"/>
+                                </group>
+                            </group>
+                        </page>
+
+                        <page string="ภาษี — ขั้นบันได" name="tax_brackets">
+                            <field name="tax_bracket_ids">
+                                <list editable="bottom">
+                                    <field name="sequence"/>
+                                    <field name="income_from"/>
+                                    <field name="income_to"/>
+                                    <field name="rate"/>
+                                    <field name="deduction"/>
+                                </list>
+                            </field>
+                            <div class="alert alert-info" role="alert">
+                                สูตรย่อ: ภาษี = (เงินได้สุทธิ × อัตรา) − ค่าลดหย่อนของขั้น
+                            </div>
+                        </page>
+
+                        <page string="หมายเหตุ" name="note">
+                            <field name="note" nolabel="1"/>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_payroll_policy" model="ir.actions.act_window">
+        <field name="name">นโยบายการคำนวณเงินเดือน</field>
+        <field name="res_model">payroll.policy</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">ยังไม่มีนโยบาย</p>
+            <p>ระบบจะสร้างนโยบายมาตรฐานให้อัตโนมัติเมื่อคำนวณเงินเดือนครั้งแรก</p>
+        </field>
+    </record>
+
+</odoo>

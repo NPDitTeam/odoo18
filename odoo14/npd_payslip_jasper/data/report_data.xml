@@ -1,0 +1,29 @@
+<?xml version="1.0"?>
+<odoo>
+
+    <!-- ปุ่มพิมพ์สลิปเงินเดือน (Jasper)
+         binding_model_id ทำให้ปุ่ม "พิมพ์" โผล่บนหน้าจอทำเงินเดือนเอง
+         ทั้งแบบเปิดทีละใบและเลือกหลายรายการจากมุมมองรายการ -->
+    <record id="jasper_npd_payslip_report" model="ir.actions.report">
+        <field name="name">สลิปเงินเดือน</field>
+        <field name="model">payroll.salary</field>
+        <field name="report_type">jasper</field>
+        <field name="file">npd_payslip_jasper/report/payslip.jrxml</field>
+        <field name="attachment_use">False</field>
+        <field name="report_name">สลิปเงินเดือน</field>
+        <field name="jasper_report">True</field>
+        <field name="jasper_output">pdf</field>
+        <field name="model_id" ref="npd_hrms_payroll.model_payroll_salary"/>
+        <field name="binding_model_id" ref="npd_hrms_payroll.model_payroll_salary"/>
+        <field name="binding_type">report</field>
+        <field name="print_report_name">'สลิปเงินเดือน - %s %s' % (object.employee_code or '', object.jasper_period_thai or '')</field>
+    </record>
+
+    <record id="jasper_npd_payslip_file" model="ir.actions.report.xml.file">
+        <field name="default">True</field>
+        <field name="filename">payslip.jrxml</field>
+        <field name="report_id" ref="npd_payslip_jasper.jasper_npd_payslip_report"/>
+        <field name="file" type="base64" file="npd_payslip_jasper/report/payslip.jrxml"/>
+    </record>
+
+</odoo>

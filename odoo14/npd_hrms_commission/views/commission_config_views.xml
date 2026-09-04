@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ================= อัตราตามขั้นยอดขาย ================= -->
+    <record id="view_commission_rate_config_list" model="ir.ui.view">
+        <field name="name">commission.rate.config.list</field>
+        <field name="model">commission.rate.config</field>
+        <field name="arch" type="xml">
+            <list string="อัตราคอมมิชชั่น Sales" editable="bottom">
+                <field name="sequence" widget="handle"/>
+                <field name="comm_type"/>
+                <field name="min_amount"/>
+                <field name="rate"/>
+                <field name="company_id" groups="base.group_multi_company"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="action_commission_rate_config" model="ir.actions.act_window">
+        <field name="name">ตั้งค่าคอมมิชชั่น Sales</field>
+        <field name="res_model">commission.rate.config</field>
+        <field name="view_mode">list</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">กำหนดขั้นยอดขายและอัตราค่าคอม</p>
+            <p>ระบบใช้อัตราของขั้นสูงสุดที่ยอดขายไปถึง</p>
+        </field>
+    </record>
+
+    <!-- ================= อัตราสาขา / Sales ================= -->
+    <record id="view_commission_rate_branch_sales_list" model="ir.ui.view">
+        <field name="name">commission.rate.branch.sales.list</field>
+        <field name="model">commission.rate.branch.sales</field>
+        <field name="arch" type="xml">
+            <list string="อัตราค่าคอมสาขา / Sales" editable="bottom">
+                <field name="name"/>
+                <field name="comm_type"/>
+                <field name="branch_rate"/>
+                <field name="sales_rate"/>
+                <field name="company_id" groups="base.group_multi_company"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="action_commission_rate_branch_sales" model="ir.actions.act_window">
+        <field name="name">อัตราค่าคอมสาขา / Sales</field>
+        <field name="res_model">commission.rate.branch.sales</field>
+        <field name="view_mode">list</field>
+    </record>
+
+    <!-- ================= สัดส่วนรายสาขา ================= -->
+    <record id="view_commission_branch_config_list" model="ir.ui.view">
+        <field name="name">commission.branch.config.list</field>
+        <field name="model">commission.branch.config</field>
+        <field name="arch" type="xml">
+            <list string="สัดส่วนค่าคอมมิชชั่นสาขา">
+                <field name="branch_id"/>
+                <field name="employee_count"/>
+                <field name="total_ratio"/>
+                <field name="company_id" groups="base.group_multi_company"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_commission_branch_config_form" model="ir.ui.view">
+        <field name="name">commission.branch.config.form</field>
+        <field name="model">commission.branch.config</field>
+        <field name="arch" type="xml">
+            <form string="สัดส่วนค่าคอมมิชชั่นสาขา">
+                <header>
+                    <button name="action_refresh_employees" type="object"
+                            string="ดึงพนักงานล่าสุด" class="btn-primary"
+                            help="เพิ่มคนใหม่เข้ามา โดยไม่ลบและไม่แก้สัดส่วนของคนเดิม"/>
+                </header>
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="branch_id" options="{'no_create': True}"/>
+                            <field name="company_id" groups="base.group_multi_company"/>
+                        </group>
+                        <group>
+                            <field name="employee_count"/>
+                            <field name="total_ratio"/>
+                        </group>
+                    </group>
+                    <div class="alert alert-info" role="alert">
+                        ค่าคอมของแต่ละคน = ยอดค่าคอมทั้งสาขา ×
+                        (สัดส่วนของคนนั้น ÷ สัดส่วนรวมทั้งสาขา)
+                        — ตัวเลขสัดส่วนเป็นน้ำหนัก ไม่ต้องรวมกันได้ 100
+                    </div>
+                    <field name="line_ids">
+                        <list editable="bottom">
+                            <field name="employee_code" readonly="1"/>
+                            <field name="employee_id"/>
+                            <field name="position_name" readonly="1"/>
+                            <field name="ratio" sum="รวมสัดส่วน"/>
+                        </list>
+                    </field>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_commission_branch_config" model="ir.actions.act_window">
+        <field name="name">ตั้งค่าคอมมิชชั่นสาขา</field>
+        <field name="res_model">commission.branch.config</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <!-- ================= Sales สำนักงานใหญ่ ================= -->
+    <record id="view_commission_sale_headoffice_list" model="ir.ui.view">
+        <field name="name">commission.sale.headoffice.list</field>
+        <field name="model">commission.sale.headoffice</field>
+        <field name="arch" type="xml">
+            <list string="Sales สำนักงานใหญ่" editable="bottom">
+                <field name="employee_id"/>
+                <field name="employee_code" readonly="1"/>
+                <field name="branch_id" readonly="1"/>
+                <field name="company_id" groups="base.group_multi_company" readonly="1"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="action_commission_sale_headoffice" model="ir.actions.act_window">
+        <field name="name">ค่าคอม Sales สำนักงานใหญ่</field>
+        <field name="res_model">commission.sale.headoffice</field>
+        <field name="view_mode">list</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">ยังไม่มีรายชื่อ</p>
+            <p>คนที่อยู่ในรายชื่อนี้จะใช้ขั้นอัตราค่าคอมแบบ "สำนักงานใหญ่"</p>
+        </field>
+    </record>
+
+</odoo>

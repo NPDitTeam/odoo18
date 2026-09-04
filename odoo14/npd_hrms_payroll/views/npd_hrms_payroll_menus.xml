@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <menuitem id="menu_hrms_payroll_root"
+              name="เงินเดือน"
+              parent="npd_hrms_base.menu_npd_hrms_root"
+              sequence="30"
+              groups="npd_hrms_base.group_hrms_payroll"/>
+
+    <menuitem id="menu_hrms_payroll_period"
+              name="รอบทำเงินเดือน"
+              parent="menu_hrms_payroll_root"
+              action="action_payroll_period"
+              sequence="10"/>
+
+    <menuitem id="menu_hrms_payroll_salary"
+              name="ทำเงินเดือน"
+              parent="menu_hrms_payroll_root"
+              action="action_payroll_salary"
+              sequence="20"/>
+
+    <menuitem id="menu_hrms_other_income"
+              name="เงินได้อื่นๆ"
+              parent="menu_hrms_payroll_root"
+              action="action_other_income"
+              sequence="30"/>
+
+    <menuitem id="menu_hrms_work_security_deposit"
+              name="เงินประกันการทำงาน"
+              parent="menu_hrms_payroll_root"
+              action="action_work_security_deposit"
+              sequence="40"/>
+
+    <menuitem id="menu_pnd1_line"
+              name="ภ.ง.ด.1"
+              parent="menu_hrms_payroll_root"
+              action="action_pnd1_line"
+              sequence="50"/>
+
+    <menuitem id="menu_hrms_payroll_policy"
+              name="นโยบายการคำนวณเงินเดือน"
+              parent="npd_hrms_base.menu_hrms_configuration"
+              action="action_payroll_policy"
+              sequence="70"
+              groups="npd_hrms_base.group_hrms_manager"/>
+
+</odoo>

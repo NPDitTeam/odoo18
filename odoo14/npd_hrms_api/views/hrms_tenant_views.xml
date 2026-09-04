@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_hrms_tenant_list" model="ir.ui.view">
+        <field name="name">hrms.tenant.list</field>
+        <field name="model">hrms.tenant</field>
+        <field name="arch" type="xml">
+            <list string="องค์กรผู้เช่าระบบ">
+                <field name="sequence" widget="handle"/>
+                <field name="code"/>
+                <field name="name"/>
+                <field name="company_id"/>
+                <field name="base_url" string="เซิร์ฟเวอร์"/>
+                <field name="support_phone" optional="hide"/>
+                <field name="active" widget="boolean_toggle"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_hrms_tenant_form" model="ir.ui.view">
+        <field name="name">hrms.tenant.form</field>
+        <field name="model">hrms.tenant</field>
+        <field name="arch" type="xml">
+            <form string="องค์กรผู้เช่าระบบ">
+                <sheet>
+                    <field name="logo" widget="image" class="oe_avatar"/>
+                    <div class="oe_title">
+                        <label for="name"/>
+                        <h1><field name="name" placeholder="ชื่อองค์กรที่แสดงในแอป"/></h1>
+                        <label for="code" string="รหัสองค์กร"/>
+                        <h3><field name="code" placeholder="เช่น npd"/></h3>
+                    </div>
+                    <!-- ทุก group ต้องมี name เพื่อให้โมดูลอื่นแทรกต่อได้
+                         Odoo 17+ ห้ามใช้ string เป็นตัวชี้ตำแหน่งใน view inheritance -->
+                    <group name="main">
+                        <group name="connection" string="การเชื่อมต่อ">
+                            <field name="company_id"/>
+                            <field name="base_url"
+                                   placeholder="ว่างไว้ = ใช้เซิร์ฟเวอร์นี้"/>
+                            <field name="active"/>
+                            <field name="sequence"/>
+                        </group>
+                        <group name="branding" string="หน้าตาในแอป">
+                            <field name="color_primary" placeholder="#FFC107"/>
+                            <field name="color_secondary" placeholder="#212121"/>
+                            <field name="support_phone"/>
+                        </group>
+                    </group>
+                    <group name="note" string="หมายเหตุ">
+                        <field name="note" nolabel="1" placeholder="ข้อตกลงการเช่า วันหมดอายุ ผู้ติดต่อ ฯลฯ"/>
+                    </group>
+                    <div class="alert alert-info" role="alert">
+                        ผู้ใช้กรอก <strong>รหัสองค์กร</strong> นี้ในแอปครั้งแรกครั้งเดียว
+                        แอปจะจำไว้ แล้วดึงชื่อ โลโก้ และสีจากที่นี่ไปแสดง
+                    </div>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_hrms_tenant" model="ir.actions.act_window">
+        <field name="name">องค์กรผู้เช่าระบบ</field>
+        <field name="res_model">hrms.tenant</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">เพิ่มองค์กรแรก</p>
+            <p>ตั้งรหัสองค์กรให้ลูกค้าแต่ละราย เพื่อให้ใช้แอปตัวเดียวกันได้
+               โดยเห็นชื่อ โลโก้ และข้อมูลของตัวเอง</p>
+        </field>
+    </record>
+
+    <!-- ไม่มีเมนูในโมดูลนี้โดยเจตนา
+         โมดูลนี้ถูกติดตั้งใน DB ของลูกค้าทุกรายด้วย ถ้าใส่เมนูทะเบียนผู้เช่าไว้ตรงนี้
+         ลูกค้าจะเห็นเมนูที่ไม่เกี่ยวกับตัวเอง และเข้าใจผิดว่าตัวเองปล่อยเช่าต่อได้
+         เมนูจริงอยู่ใน npd_saas_manager ซึ่งติดตั้งเฉพาะศูนย์ควบคุม -->
+
+</odoo>

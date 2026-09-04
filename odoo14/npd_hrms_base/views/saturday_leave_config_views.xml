@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_saturday_leave_config_list" model="ir.ui.view">
+        <field name="name">saturday.leave.config.list</field>
+        <field name="model">saturday.leave.config</field>
+        <field name="arch" type="xml">
+            <list string="กำหนดสิทธิหยุดวันเสาร์" editable="bottom">
+                <field name="branch_id" readonly="1"/>
+                <field name="days_allowed"/>
+                <field name="employee_override_count" string="พนักงาน (คน)"/>
+                <field name="company_id" groups="base.group_multi_company"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_saturday_leave_config_form" model="ir.ui.view">
+        <field name="name">saturday.leave.config.form</field>
+        <field name="model">saturday.leave.config</field>
+        <field name="arch" type="xml">
+            <form string="กำหนดสิทธิหยุดวันเสาร์">
+                <header>
+                    <button name="action_pull_employees" type="object"
+                            string="ดึงพนักงานในสาขานี้" class="btn-primary"/>
+                </header>
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="branch_id" options="{'no_create': True}"/>
+                            <field name="days_allowed"/>
+                        </group>
+                        <group>
+                            <field name="company_id" groups="base.group_multi_company"/>
+                            <field name="employee_override_count"/>
+                        </group>
+                    </group>
+                    <div class="alert alert-info" role="alert">
+                        แก้ค่าระดับสาขาแล้ว ระบบจะปรับให้พนักงานที่ยังใช้ค่าเดิมของสาขาโดยอัตโนมัติ
+                        — คนที่ตั้งค่าเฉพาะไว้แล้วจะไม่ถูกแตะ
+                    </div>
+                    <notebook>
+                        <page string="สิทธิรายบุคคล (override)" name="employees">
+                            <field name="employee_line_ids">
+                                <list editable="bottom">
+                                    <field name="employee_code" readonly="1"/>
+                                    <field name="employee_id" readonly="1"/>
+                                    <field name="days_allowed"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- เมนูเรียกผ่าน server action เพื่อ seed สาขา/พนักงานก่อนเปิดตาราง -->
+    <record id="action_sync_and_open_saturday_leave_config" model="ir.actions.server">
+        <field name="name">กำหนดสิทธิหยุดวันเสาร์</field>
+        <field name="model_id" ref="model_saturday_leave_config"/>
+        <field name="state">code</field>
+        <field name="code">action = model.action_sync_and_open()</field>
+    </record>
+
+    <record id="action_saturday_leave_config" model="ir.actions.act_window">
+        <field name="name">กำหนดสิทธิหยุดวันเสาร์</field>
+        <field name="res_model">saturday.leave.config</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+</odoo>

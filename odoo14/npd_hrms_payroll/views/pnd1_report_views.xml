@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_pnd1_line_list" model="ir.ui.view">
+        <field name="name">pnd1.line.list</field>
+        <field name="model">pnd1.line</field>
+        <field name="arch" type="xml">
+            <list string="ภ.ง.ด.1" editable="bottom"
+                  decoration-muted="source_type == 'system'">
+                <field name="pay_date"/>
+                <field name="id_card_number"/>
+                <field name="full_name"/>
+                <field name="income" sum="รวมเงินได้"/>
+                <field name="tax" sum="รวมภาษี"/>
+                <field name="source_type" widget="badge"
+                       decoration-info="source_type == 'system'"/>
+                <field name="employee_id" optional="hide"
+                       readonly="source_type == 'system'"/>
+                <field name="period_id" optional="hide" readonly="1"/>
+                <field name="company_id" groups="base.group_multi_company"
+                       optional="hide"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_pnd1_line_search" model="ir.ui.view">
+        <field name="name">pnd1.line.search</field>
+        <field name="model">pnd1.line</field>
+        <field name="arch" type="xml">
+            <search string="ค้นหา ภ.ง.ด.1">
+                <field name="id_card_number"/>
+                <field name="full_name"/>
+                <field name="employee_id"/>
+                <filter name="f_system" string="ดึงจากในระบบ"
+                        domain="[('source_type', '=', 'system')]"/>
+                <filter name="f_excel" string="เข้าผ่าน excel"
+                        domain="[('source_type', '=', 'excel')]"/>
+                <separator/>
+                <filter name="f_this_year" string="ปีนี้"
+                        domain="[('pay_date', '&gt;=', (context_today() + relativedelta(month=1, day=1)).strftime('%Y-%m-%d')),
+                                 ('pay_date', '&lt;=', (context_today() + relativedelta(month=12, day=31)).strftime('%Y-%m-%d'))]"/>
+                <group expand="0" string="จัดกลุ่มตาม">
+                    <filter name="g_company" string="บริษัท"
+                            context="{'group_by': 'company_id'}"/>
+                    <filter name="g_source" string="แหล่งข้อมูล"
+                            context="{'group_by': 'source_type'}"/>
+                    <filter name="g_month" string="เดือนที่จ่าย"
+                            context="{'group_by': 'pay_date:month'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_pnd1_line" model="ir.actions.act_window">
+        <field name="name">ภ.ง.ด.1</field>
+        <field name="res_model">pnd1.line</field>
+        <field name="view_mode">list</field>
+        <field name="search_view_id" ref="view_pnd1_line_search"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">ยังไม่มีข้อมูล ภ.ง.ด.1</p>
+            <p>บรรทัดประเภท "ดึงจากในระบบ" ถูกสร้างให้อัตโนมัติเมื่อออกสลิปในรอบ
+               ส่วนของปีเก่าที่ยังไม่ได้อยู่ในระบบ ให้นำเข้าเป็นประเภท "เข้าผ่าน excel"</p>
+            <p>ยอดทั้งปีจากที่นี่คือฐานของหนังสือรับรองหักภาษี ณ ที่จ่าย (50 ทวิ)</p>
+        </field>
+    </record>
+
+
+</odoo>

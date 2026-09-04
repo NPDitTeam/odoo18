@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ทางลัดจาก hr.employee ของ Odoo → บัตรพนักงาน HRMS -->
+    <record id="view_hr_employee_form_hrms" model="ir.ui.view">
+        <field name="name">hr.employee.form.inherit.npd.hrms</field>
+        <field name="model">hr.employee</field>
+        <field name="inherit_id" ref="hr.view_employee_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//div[@name='button_box']" position="inside">
+                <button name="action_open_hrms_employee" type="object"
+                        class="oe_stat_button" icon="fa-id-card"
+                        invisible="not hrms_employee_id"
+                        groups="npd_hrms_base.group_hrms_officer">
+                    <div class="o_stat_info">
+                        <field name="hrms_employee_code" class="o_stat_value"/>
+                        <span class="o_stat_text">บัตร HRMS</span>
+                    </div>
+                </button>
+                <field name="hrms_employee_id" invisible="1"/>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>

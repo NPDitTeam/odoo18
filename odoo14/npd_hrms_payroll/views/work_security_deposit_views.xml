@@ -1,0 +1,160 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_work_security_deposit_list" model="ir.ui.view">
+        <field name="name">work.security.deposit.list</field>
+        <field name="model">work.security.deposit</field>
+        <field name="arch" type="xml">
+            <list string="เงินประกันการทำงาน" decoration-success="state == 'confirmed'">
+                <field name="name"/>
+                <field name="branch_id"/>
+                <field name="default_amount"/>
+                <field name="default_months"/>
+                <field name="default_monthly_amount"/>
+                <field name="employee_count"/>
+                <field name="state" widget="badge"/>
+                <field name="company_id" groups="base.group_multi_company" optional="hide"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_work_security_deposit_form" model="ir.ui.view">
+        <field name="name">work.security.deposit.form</field>
+        <field name="model">work.security.deposit</field>
+        <field name="arch" type="xml">
+            <form string="เงินประกันการทำงาน">
+                <header>
+                    <button name="action_pull_employees" type="object"
+                            string="ดึงพนักงานในสาขา" class="btn-primary"
+                            invisible="state != 'draft'"/>
+                    <button name="action_confirm" type="object" string="ยืนยัน"
+                            class="btn-primary" invisible="state != 'draft'"/>
+                    <button name="action_reset_draft" type="object" string="กลับเป็นร่าง"
+                            invisible="state == 'draft'"/>
+                    <button name="action_cancel" type="object" string="ยกเลิก"
+                            invisible="state == 'cancelled'"/>
+                    <field name="state" widget="statusbar"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="name" readonly="1"/></h1>
+                    </div>
+                    <group>
+                        <group string="ขอบเขต">
+                            <field name="branch_id" options="{'no_create': True}"/>
+                            <field name="department_ids" widget="many2many_tags"/>
+                            <field name="company_id" groups="base.group_multi_company"/>
+                        </group>
+                        <group string="เงื่อนไขการหัก">
+                            <field name="default_amount"/>
+                            <field name="default_months"/>
+                            <field name="default_monthly_amount"/>
+                            <field name="employee_count"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="รายการพนักงาน" name="lines">
+                            <field name="line_ids">
+                                <list decoration-warning="refund_status == 'pending'"
+                                      decoration-muted="skip_deduction">
+                                    <field name="employee_code"/>
+                                    <field name="firstname"/>
+                                    <field name="lastname"/>
+                                    <field name="start_work_date"/>
+                                    <field name="total_amount"/>
+                                    <field name="deduction_months"/>
+                                    <field name="monthly_amount"/>
+                                    <field name="deducted_amount" sum="หักไปแล้ว"/>
+                                    <field name="months_deducted"/>
+                                    <field name="is_work_permit" optional="hide"/>
+                                    <field name="work_permit_total" optional="hide"/>
+                                    <field name="skip_deduction"/>
+                                    <field name="work_status"/>
+                                    <field name="refund_amount" sum="ต้องคืน"/>
+                                    <field name="refund_status" widget="badge"/>
+                                    <button name="action_generate_schedule" type="object"
+                                            string="สร้างงวด" icon="fa-calendar"
+                                            class="btn-link"/>
+                                    <button name="action_mark_resigned" type="object"
+                                            string="ลาออก" icon="fa-sign-out"
+                                            class="btn-link"
+                                            invisible="work_status == 'resigned'"/>
+                                </list>
+                                <form string="รายการพนักงาน">
+                                    <group>
+                                        <group>
+                                            <field name="employee_id"
+                                                   options="{'no_create': True}"/>
+                                            <field name="start_work_date"/>
+                                            <field name="total_amount"/>
+                                            <field name="deduction_months"/>
+                                            <field name="monthly_amount"/>
+                                            <field name="skip_deduction"/>
+                                        </group>
+                                        <group>
+                                            <field name="work_status"/>
+                                            <field name="resign_date"/>
+                                            <field name="deducted_amount"/>
+                                            <field name="refund_amount"/>
+                                            <field name="refund_status"/>
+                                            <field name="manual_refunded"/>
+                                            <field name="manual_refunded_date"
+                                                   invisible="not manual_refunded"/>
+                                            <field name="manual_refunded_note"
+                                                   invisible="not manual_refunded"/>
+                                        </group>
+                                    </group>
+                                    <notebook>
+                                        <page string="งวดการหัก" name="payments">
+                                            <field name="payment_ids">
+                                                <list editable="bottom">
+                                                    <field name="payment_date"/>
+                                                    <field name="amount" sum="รวม"/>
+                                                    <field name="is_deducted"/>
+                                                    <field name="payroll_id"/>
+                                                    <field name="payment_type" column_invisible="1"/>
+                                                </list>
+                                            </field>
+                                        </page>
+                                        <page string="Work Permit / อื่นๆ" name="wp">
+                                            <field name="is_work_permit"/>
+                                            <field name="work_permit_total"/>
+                                            <field name="work_permit_payment_ids">
+                                                <list editable="bottom">
+                                                    <field name="payment_date"/>
+                                                    <field name="amount" sum="รวม"/>
+                                                    <field name="is_deducted"/>
+                                                    <field name="payroll_id"/>
+                                                    <field name="payment_type" column_invisible="1"/>
+                                                </list>
+                                            </field>
+                                            <div class="alert alert-info" role="alert">
+                                                ค่า Work Permit เป็นค่าใช้จ่ายที่บริษัทออกให้ก่อน
+                                                — ลาออกแล้ว<b>ไม่คืน</b> ต่างจากเงินประกันรายเดือน
+                                            </div>
+                                        </page>
+                                    </notebook>
+                                </form>
+                            </field>
+                        </page>
+                        <page string="หมายเหตุ" name="note">
+                            <field name="note" nolabel="1"/>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_work_security_deposit" model="ir.actions.act_window">
+        <field name="name">เงินประกันการทำงาน</field>
+        <field name="res_model">work.security.deposit</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">ยังไม่มีรายการเงินประกันการทำงาน</p>
+            <p>สร้างต่อสาขา แล้วกด "ดึงพนักงานในสาขา" เพื่อสร้างรายการหักให้ทุกคน</p>
+        </field>
+    </record>
+
+</odoo>

@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ================= ประเภทการลา ================= -->
+    <record id="view_hrms_leave_type_list" model="ir.ui.view">
+        <field name="name">hrms.leave.type.list</field>
+        <field name="model">hrms.leave.type</field>
+        <field name="arch" type="xml">
+            <list string="ประเภทการลา" editable="bottom">
+                <field name="sequence" widget="handle"/>
+                <field name="name"/>
+                <field name="code"/>
+                <field name="days_default"/>
+                <field name="eligible_after_months"/>
+                <field name="eligible_after_years"/>
+                <field name="prorate_first_year"/>
+                <field name="is_paid"/>
+                <field name="requires_attachment"/>
+                <field name="reset_on_new_year"/>
+                <field name="company_id" groups="base.group_multi_company"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_hrms_leave_type_form" model="ir.ui.view">
+        <field name="name">hrms.leave.type.form</field>
+        <field name="model">hrms.leave.type</field>
+        <field name="arch" type="xml">
+            <form string="ประเภทการลา">
+                <sheet>
+                    <div class="oe_title">
+                        <label for="name"/>
+                        <h1><field name="name" placeholder="เช่น ลาพักร้อน"/></h1>
+                    </div>
+                    <group>
+                        <group string="ข้อมูลทั่วไป">
+                            <field name="code" placeholder="leave_vacation"/>
+                            <field name="days_default"/>
+                            <field name="is_paid"/>
+                            <field name="requires_attachment"/>
+                            <field name="reset_on_new_year"/>
+                            <field name="active"/>
+                            <field name="company_id" groups="base.group_multi_company"/>
+                        </group>
+                        <group string="เงื่อนไขการได้สิทธิ์">
+                            <field name="eligible_after_months"/>
+                            <field name="eligible_after_years"/>
+                            <field name="prorate_first_year"/>
+                        </group>
+                    </group>
+                    <div class="alert alert-warning" role="alert">
+                        รหัสอ้างอิงห้ามแก้หลังเริ่มใช้งาน — แอปที่พนักงานติดตั้งอยู่อ้างรหัสนี้
+                        ถ้าเปลี่ยน สิทธิ์การลาในแอปจะแสดงไม่ครบจนกว่าทุกคนจะอัปเดตแอป
+                    </div>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_hrms_leave_type" model="ir.actions.act_window">
+        <field name="name">ประเภทการลา</field>
+        <field name="res_model">hrms.leave.type</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <!-- ================= สิทธิ์การลาคงเหลือ ================= -->
+    <record id="view_hrms_leave_balance_list" model="ir.ui.view">
+        <field name="name">hrms.leave.balance.list</field>
+        <field name="model">hrms.leave.balance</field>
+        <field name="arch" type="xml">
+            <list string="สิทธิ์การลาคงเหลือ" editable="bottom"
+                  decoration-danger="remaining == 0 and total &gt; 0"
+                  decoration-warning="remaining &gt; 0 and remaining &lt;= 1">
+                <field name="employee_code" readonly="1"/>
+                <field name="employee_id" readonly="1"/>
+                <field name="leave_type_id" readonly="1"/>
+                <field name="year" readonly="1"/>
+                <field name="total"/>
+                <field name="used" readonly="1"/>
+                <field name="remaining"/>
+                <field name="company_id" groups="base.group_multi_company" optional="hide"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_hrms_leave_balance_search" model="ir.ui.view">
+        <field name="name">hrms.leave.balance.search</field>
+        <field name="model">hrms.leave.balance</field>
+        <field name="arch" type="xml">
+            <search string="ค้นหาสิทธิ์การลา">
+                <field name="employee_id"/>
+                <field name="employee_code"/>
+                <field name="leave_type_id"/>
+                <field name="year"/>
+                <filter name="filter_exhausted" string="ใช้สิทธิ์หมดแล้ว"
+                        domain="[('remaining', '=', 0), ('total', '&gt;', 0)]"/>
+                <group expand="0" string="จัดกลุ่มตาม">
+                    <filter name="group_employee" string="พนักงาน"
+                            context="{'group_by': 'employee_id'}"/>
+                    <filter name="group_type" string="ประเภทการลา"
+                            context="{'group_by': 'leave_type_id'}"/>
+                    <filter name="group_year" string="ปี" context="{'group_by': 'year'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_hrms_leave_balance" model="ir.actions.act_window">
+        <field name="name">สิทธิ์การลาคงเหลือ</field>
+        <field name="res_model">hrms.leave.balance</field>
+        <field name="view_mode">list</field>
+        <field name="search_view_id" ref="view_hrms_leave_balance_search"/>
+        <field name="context">{'search_default_group_employee': 1}</field>
+    </record>
+
+    <!-- ================= ประเภทการเพิ่มเวลา ================= -->
+    <record id="view_hrms_manual_time_reason_list" model="ir.ui.view">
+        <field name="name">hrms.manual.time.reason.list</field>
+        <field name="model">hrms.manual.time.reason</field>
+        <field name="arch" type="xml">
+            <list string="ประเภทการเพิ่มเวลา" editable="bottom">
+                <field name="sequence" widget="handle"/>
+                <field name="name"/>
+                <field name="code"/>
+                <field name="requires_amount"/>
+                <field name="requires_allowance_type"/>
+                <field name="requires_attachment"/>
+                <field name="counts_as_attendance"/>
+                <field name="is_overtime"/>
+                <field name="ot_kind"/>
+                <field name="payroll_income_field"/>
+                <field name="payroll_line_label"/>
+                <field name="company_id" groups="base.group_multi_company"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="action_hrms_manual_time_reason" model="ir.actions.act_window">
+        <field name="name">ประเภทการเพิ่มเวลา</field>
+        <field name="res_model">hrms.manual.time.reason</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">กำหนดประเภทการเพิ่มเวลา</p>
+            <p>ตั้งค่า "ฟิลด์รายได้ในสลิป" เพื่อให้ยอดที่อนุมัติแล้วเข้าสลิปเงินเดือนอัตโนมัติ</p>
+        </field>
+    </record>
+
+</odoo>

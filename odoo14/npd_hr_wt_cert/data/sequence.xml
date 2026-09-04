@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        <record id="seq_hr_withholding_tax_cert" model="ir.sequence">
+            <field name="name">หนังสือรับรองหักภาษี ณ ที่จ่าย</field>
+            <field name="code">hr.withholding.tax.cert</field>
+            <field name="prefix">WT-%(y)s%(month)s%(day)s-</field>
+            <field name="padding">4</field>
+            <field name="number_next">1</field>
+            <field name="number_increment">1</field>
+        </record>
+    </data>
+</odoo>

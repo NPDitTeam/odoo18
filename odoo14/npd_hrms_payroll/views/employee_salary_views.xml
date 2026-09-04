@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- แท็บบุคคลพิเศษบนบัตรพนักงาน
+         แทน EXECUTIVE_TAX_CONFIG / EXECUTIVE_EMPLOYEE_CODES ที่ Odoo 14 ฝังรหัสไว้ในโค้ด -->
+    <record id="view_employee_salary_form_payroll" model="ir.ui.view">
+        <field name="name">employee.salary.form.inherit.payroll</field>
+        <field name="model">employee.salary</field>
+        <field name="inherit_id" ref="npd_hrms_base.view_employee_salary_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//page[@name='payroll']" position="after">
+                <page string="กติกาเงินเดือนเฉพาะบุคคล" name="payroll_special"
+                      groups="npd_hrms_base.group_hrms_payroll">
+                    <group>
+                        <field name="payroll_special_case"/>
+                    </group>
+                    <div class="alert alert-warning" role="alert"
+                         invisible="not payroll_special_case">
+                        พนักงานคนนี้ถูกตั้งกติกาเฉพาะ — ระบบจะ<b>ไม่</b>คำนวณตามสูตรปกติ
+                        ในหัวข้อที่ระบุไว้ด้านล่าง กรุณาบันทึกเหตุผลไว้ด้วยเพื่อการตรวจสอบ
+                    </div>
+                    <group invisible="not payroll_special_case">
+                        <group string="ภาษี">
+                            <field name="payroll_tax_mode"/>
+                            <field name="payroll_fixed_tax_amount"
+                                   invisible="payroll_tax_mode != 'fixed'"/>
+                        </group>
+                        <group string="ประกันสังคม">
+                            <field name="payroll_sso_mode"/>
+                            <field name="payroll_fixed_sso_amount"
+                                   invisible="payroll_sso_mode != 'fixed'"/>
+                        </group>
+                    </group>
+                    <group invisible="not payroll_special_case">
+                        <group string="เวลาทำงาน">
+                            <field name="payroll_exempt_attendance"/>
+                            <field name="payroll_exempt_ot"/>
+                        </group>
+                    </group>
+                    <group string="เหตุผล" invisible="not payroll_special_case">
+                        <field name="payroll_special_note" nolabel="1"
+                               placeholder="เช่น ผู้บริหารไม่ต้องลงเวลา และตกลงภาษีคงที่เดือนละ 5,000 บาท ตามมติที่ประชุม..."/>
+                    </group>
+                </page>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>

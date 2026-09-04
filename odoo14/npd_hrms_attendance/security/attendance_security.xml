@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+
+        <record id="rule_attendance_branch_company" model="ir.rule">
+            <field name="name">ลงเวลา: เห็นเฉพาะบริษัทที่ได้รับอนุญาต</field>
+            <field name="model_id" ref="model_hr_attendance_branch"/>
+            <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+            <field name="global" eval="True"/>
+        </record>
+
+        <record id="rule_leave_request_company" model="ir.rule">
+            <field name="name">ใบลา: เห็นเฉพาะบริษัทที่ได้รับอนุญาต</field>
+            <field name="model_id" ref="model_hr_attendance_branch_leave"/>
+            <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+            <field name="global" eval="True"/>
+        </record>
+
+        <record id="rule_manual_time_log_company" model="ir.rule">
+            <field name="name">เพิ่มเวลา: เห็นเฉพาะบริษัทที่ได้รับอนุญาต</field>
+            <field name="model_id" ref="model_hr_manual_time_log"/>
+            <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+            <field name="global" eval="True"/>
+        </record>
+
+        <record id="rule_leave_balance_company" model="ir.rule">
+            <field name="name">สิทธิ์วันลา: เห็นเฉพาะบริษัทที่ได้รับอนุญาต</field>
+            <field name="model_id" ref="model_hrms_leave_balance"/>
+            <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+            <field name="global" eval="True"/>
+        </record>
+
+        <record id="rule_hrms_leave_type_company" model="ir.rule">
+            <field name="name">ประเภทการลา: เห็นเฉพาะบริษัทที่ได้รับอนุญาต</field>
+            <field name="model_id" ref="model_hrms_leave_type"/>
+            <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+            <field name="global" eval="True"/>
+        </record>
+
+        <record id="rule_manual_time_reason_company" model="ir.rule">
+            <field name="name">ประเภทการเพิ่มเวลา: เห็นเฉพาะบริษัทที่ได้รับอนุญาต</field>
+            <field name="model_id" ref="model_hrms_manual_time_reason"/>
+            <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+            <field name="global" eval="True"/>
+        </record>
+
+    </data>
+</odoo>

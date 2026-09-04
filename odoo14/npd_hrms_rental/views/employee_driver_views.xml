@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ปุ่มดูงานขนส่งบนบัตรพนักงาน -->
+    <record id="view_employee_salary_form_rental" model="ir.ui.view">
+        <field name="name">employee.salary.form.inherit.rental</field>
+        <field name="model">employee.salary</field>
+        <field name="inherit_id" ref="npd_hrms_base.view_employee_salary_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//div[@name='button_box']" position="inside">
+                <button name="action_view_bookings" type="object"
+                        class="oe_stat_button" icon="fa-truck"
+                        invisible="not is_driver">
+                    <field name="booking_count" widget="statinfo" string="งานขนส่ง"/>
+                </button>
+                <field name="is_driver" invisible="1"/>
+            </xpath>
+            <xpath expr="//field[@name='hr_employee_id']" position="after">
+                <field name="driver_id" readonly="1"
+                       invisible="not driver_id"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- เตือนเมื่อคนขับจับคู่กับพนักงานไม่ได้ -->
+    <record id="view_vehicle_driver_form_hrms" model="ir.ui.view">
+        <field name="name">vehicle.driver.form.inherit.hrms</field>
+        <field name="model">vehicle.driver</field>
+        <field name="inherit_id" ref="vehicle_registration.view_vehicle_driver_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='employee_code']" position="after">
+                <field name="hrms_employee_id" readonly="1"
+                       groups="npd_hrms_base.group_hrms_officer"/>
+                <field name="hrms_matched" invisible="1"/>
+            </xpath>
+            <xpath expr="//sheet" position="inside">
+                <div class="alert alert-warning" role="alert"
+                     invisible="hrms_matched or not employee_code">
+                    รหัสพนักงานนี้ไม่ตรงกับใครในระบบ HR —
+                    <b>ค่าเที่ยวและเบี้ยเลี้ยงของคนขับคนนี้จะไม่เข้าสลิปเงินเดือน</b>
+                    กรุณาตรวจรหัสให้ตรงกับบัตรพนักงาน
+                </div>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>

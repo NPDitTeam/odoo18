@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<odoo>
+    <record id="hr_wt_cert_pdf_report" model="ir.actions.report">
+        <field name="name">พิมพ์หนังสือรับรองหักภาษี ณ ที่จ่าย</field>
+        <field name="model">hr.withholding.tax.cert</field>
+        <field name="report_name">npd_hr_wt_cert_form.hr_wt_cert_form</field>
+        <field name="report_file">npd_hr_wt_cert_form.hr_wt_cert_form</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="print_report_name">(object._get_report_base_filename())</field>
+        <field
+            name="paperformat_id"
+            ref="npd_hr_wt_cert_form.paperformat_hr_withholding_tax"
+        />
+        <field name="binding_model_id" ref="npd_hr_wt_cert.model_hr_withholding_tax_cert" />
+        <field name="binding_type">report</field>
+    </record>
+</odoo>

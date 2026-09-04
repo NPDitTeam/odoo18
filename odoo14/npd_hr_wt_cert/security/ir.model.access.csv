@@ -1,0 +1,6 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_hr_wt_cert_officer,hr.withholding.tax.cert officer,model_hr_withholding_tax_cert,npd_hrms_base.group_hrms_officer,1,0,0,0
+access_hr_wt_cert_payroll,hr.withholding.tax.cert payroll,model_hr_withholding_tax_cert,npd_hrms_base.group_hrms_payroll,1,1,1,1
+access_hr_wt_cert_line_officer,hr.withholding.tax.cert.line officer,model_hr_withholding_tax_cert_line,npd_hrms_base.group_hrms_officer,1,0,0,0
+access_hr_wt_cert_line_payroll,hr.withholding.tax.cert.line payroll,model_hr_withholding_tax_cert_line,npd_hrms_base.group_hrms_payroll,1,1,1,1
+access_generate_hr_wt_cert,generate.hr.wt.cert,model_generate_hr_wt_cert,npd_hrms_base.group_hrms_payroll,1,1,1,1

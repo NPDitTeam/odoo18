@@ -1,0 +1,9 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_commission_rate_config_payroll,commission.rate.config payroll,model_commission_rate_config,npd_hrms_base.group_hrms_payroll,1,0,0,0
+access_commission_rate_config_manager,commission.rate.config manager,model_commission_rate_config,npd_hrms_base.group_hrms_manager,1,1,1,1
+access_commission_rate_branch_sales_payroll,commission.rate.branch.sales payroll,model_commission_rate_branch_sales,npd_hrms_base.group_hrms_payroll,1,0,0,0
+access_commission_rate_branch_sales_manager,commission.rate.branch.sales manager,model_commission_rate_branch_sales,npd_hrms_base.group_hrms_manager,1,1,1,1
+access_commission_branch_config_payroll,commission.branch.config payroll,model_commission_branch_config,npd_hrms_base.group_hrms_payroll,1,1,1,0
+access_commission_branch_config_manager,commission.branch.config manager,model_commission_branch_config,npd_hrms_base.group_hrms_manager,1,1,1,1
+access_commission_branch_config_line_payroll,commission.branch.config.line payroll,model_commission_branch_config_line,npd_hrms_base.group_hrms_payroll,1,1,1,1
+access_commission_sale_headoffice_payroll,commission.sale.headoffice payroll,model_commission_sale_headoffice,npd_hrms_base.group_hrms_payroll,1,1,1,1

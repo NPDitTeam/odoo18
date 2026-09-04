@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <menuitem id="menu_hrms_attendance_root"
+              name="ลงเวลาและการลา"
+              parent="npd_hrms_base.menu_npd_hrms_root"
+              sequence="20"
+              groups="npd_hrms_base.group_hrms_user"/>
+
+    <menuitem id="menu_hrms_attendance_log"
+              name="ลงเวลาเข้า-ออกงาน"
+              parent="menu_hrms_attendance_root"
+              action="action_hr_attendance_branch"
+              sequence="10"/>
+
+    <menuitem id="menu_hrms_leave_request"
+              name="การลา"
+              parent="menu_hrms_attendance_root"
+              action="action_leave_request"
+              sequence="20"/>
+
+    <menuitem id="menu_hrms_leave_request_pending"
+              name="ใบลารออนุมัติ"
+              parent="menu_hrms_attendance_root"
+              action="action_leave_request_pending"
+              sequence="25"/>
+
+    <menuitem id="menu_hrms_manual_time"
+              name="เพิ่มเวลา / เบิกเบี้ยเลี้ยง"
+              parent="menu_hrms_attendance_root"
+              action="action_manual_time_log"
+              sequence="30"/>
+
+    <menuitem id="menu_hrms_manual_time_pending"
+              name="คำขอเพิ่มเวลารออนุมัติ"
+              parent="menu_hrms_attendance_root"
+              action="action_manual_time_log_pending"
+              sequence="35"/>
+
+    <menuitem id="menu_hrms_leave_balance"
+              name="สิทธิ์การลาคงเหลือ"
+              parent="menu_hrms_attendance_root"
+              action="action_hrms_leave_balance"
+              sequence="40"
+              groups="npd_hrms_base.group_hrms_officer"/>
+
+    <!-- ตั้งค่า (แขวนใต้เมนูตั้งค่าของโมดูล base) -->
+    <menuitem id="menu_hrms_leave_type"
+              name="ประเภทการลา"
+              parent="npd_hrms_base.menu_hrms_configuration"
+              action="action_hrms_leave_type"
+              sequence="40"/>
+
+    <menuitem id="menu_hrms_manual_time_reason"
+              name="ประเภทการเพิ่มเวลา"
+              parent="npd_hrms_base.menu_hrms_configuration"
+              action="action_hrms_manual_time_reason"
+              sequence="50"/>
+
+</odoo>

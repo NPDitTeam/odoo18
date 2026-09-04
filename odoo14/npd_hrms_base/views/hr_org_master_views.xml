@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ================= แผนก ================= -->
+    <record id="view_hr_department_custom_list" model="ir.ui.view">
+        <field name="name">hr.department.custom.list</field>
+        <field name="model">hr.department.custom</field>
+        <field name="arch" type="xml">
+            <list string="แผนก" editable="bottom">
+                <field name="sequence" widget="handle"/>
+                <field name="name"/>
+                <field name="department_id" optional="hide"/>
+                <field name="employee_count" string="พนักงาน (คน)"/>
+                <field name="is_active"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_hr_department_custom_form" model="ir.ui.view">
+        <field name="name">hr.department.custom.form</field>
+        <field name="model">hr.department.custom</field>
+        <field name="arch" type="xml">
+            <form string="แผนก">
+                <sheet>
+                    <div class="oe_title">
+                        <label for="name"/>
+                        <h1><field name="name" placeholder="ชื่อแผนก"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="is_active"/>
+                            <field name="sequence"/>
+                        </group>
+                        <group>
+                            <field name="department_id"/>
+                            <field name="employee_count"/>
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_hr_department_custom" model="ir.actions.act_window">
+        <field name="name">แผนก</field>
+        <field name="res_model">hr.department.custom</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">เพิ่มแผนกแรกของคุณ</p>
+        </field>
+    </record>
+
+    <!-- ================= ตำแหน่ง ================= -->
+    <record id="view_hr_position_custom_list" model="ir.ui.view">
+        <field name="name">hr.position.custom.list</field>
+        <field name="model">hr.position.custom</field>
+        <field name="arch" type="xml">
+            <list string="ตำแหน่ง" editable="bottom">
+                <field name="sequence" widget="handle"/>
+                <field name="name"/>
+                <field name="department_id"/>
+                <field name="is_sales" string="ฝ่ายขาย"/>
+                <field name="is_driver" string="คนขับ"/>
+                <field name="is_branch_manager" string="หัวหน้าสาขา"/>
+                <field name="employee_count" string="พนักงาน (คน)"/>
+                <field name="is_active"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_hr_position_custom_form" model="ir.ui.view">
+        <field name="name">hr.position.custom.form</field>
+        <field name="model">hr.position.custom</field>
+        <field name="arch" type="xml">
+            <form string="ตำแหน่ง">
+                <sheet>
+                    <div class="oe_title">
+                        <label for="name"/>
+                        <h1><field name="name" placeholder="ชื่อตำแหน่ง"/></h1>
+                    </div>
+                    <group>
+                        <group string="ข้อมูลทั่วไป">
+                            <field name="department_id"/>
+                            <field name="is_active"/>
+                            <field name="sequence"/>
+                            <field name="job_id"/>
+                        </group>
+                        <group string="ประเภทสายงาน (ใช้ในสูตรเงินเดือน)">
+                            <field name="is_sales"/>
+                            <field name="is_driver"/>
+                            <field name="is_branch_manager"/>
+                            <field name="employee_count"/>
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_hr_position_custom" model="ir.actions.act_window">
+        <field name="name">ตำแหน่ง</field>
+        <field name="res_model">hr.position.custom</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">เพิ่มตำแหน่งแรกของคุณ</p>
+        </field>
+    </record>
+
+</odoo>

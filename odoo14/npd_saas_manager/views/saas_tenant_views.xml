@@ -1,0 +1,236 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ================= ทะเบียนลูกค้าผู้เช่า ================= -->
+    <record id="view_saas_tenant_list" model="ir.ui.view">
+        <field name="name">hrms.tenant.saas.list</field>
+        <field name="model">hrms.tenant</field>
+        <field name="inherit_id" ref="npd_hrms_api.view_hrms_tenant_list"/>
+        <field name="arch" type="xml">
+            <field name="base_url" position="after">
+                <field name="db_name"/>
+                <field name="expire_date"/>
+                <field name="days_left" string="เหลือ (วัน)"/>
+                <field name="employee_count" string="พนักงาน"/>
+                <field name="over_quota" string="เกินโควตา" optional="hide"/>
+                <field name="state" widget="badge"
+                       decoration-success="state == 'active'"
+                       decoration-warning="state in ['grace', 'draft']"
+                       decoration-danger="state in ['suspended', 'expired', 'terminated']"/>
+            </field>
+        </field>
+    </record>
+
+    <record id="view_saas_tenant_form" model="ir.ui.view">
+        <field name="name">hrms.tenant.saas.form</field>
+        <field name="model">hrms.tenant</field>
+        <field name="inherit_id" ref="npd_hrms_api.view_hrms_tenant_form"/>
+        <field name="arch" type="xml">
+
+            <sheet position="before">
+                <header>
+                    <button name="action_provision" type="object"
+                            string="สร้างระบบให้ลูกค้า" class="btn-primary"
+                            invisible="state != 'draft' or is_control_plane"
+                            confirm="ระบบจะโคลนฐานข้อมูลต้นแบบขึ้นมาใหม่ อาจใช้เวลาหลายนาที ยืนยันหรือไม่"/>
+                    <button name="action_renew" type="object"
+                            string="ต่ออายุ" class="btn-primary"
+                            invisible="state in ['draft', 'terminated'] or is_control_plane"/>
+                    <button name="action_reactivate" type="object"
+                            string="เปิดใช้งานอีกครั้ง"
+                            invisible="state not in ['suspended', 'expired'] or is_control_plane"/>
+                    <button name="action_suspend" type="object"
+                            string="ระงับชั่วคราว"
+                            invisible="state not in ['active', 'grace'] or is_control_plane"
+                            confirm="ลูกค้าจะเข้าใช้งานไม่ได้ทันทีทั้งเว็บและแอป ยืนยันหรือไม่"/>
+                    <button name="push_license" type="object"
+                            string="ส่งสัญญาลงระบบลูกค้า"
+                            invisible="state == 'draft' or is_control_plane"/>
+                    <button name="action_refresh_usage" type="object"
+                            string="ตรวจการใช้งาน"
+                            invisible="state in ['draft', 'terminated'] or is_control_plane"/>
+                    <button name="action_reset_admin_password" type="object"
+                            string="ตั้งรหัสผ่านผู้ดูแลใหม่"
+                            invisible="state == 'draft' or not db_name or is_control_plane"
+                            confirm="ผู้ดูแลของลูกค้าจะเข้าด้วยรหัสเดิมไม่ได้อีก ยืนยันหรือไม่"/>
+                    <button name="action_terminate" type="object"
+                            string="ยกเลิกสัญญา" class="btn-secondary"
+                            invisible="state in ['draft', 'terminated'] or is_control_plane"
+                            confirm="ยกเลิกสัญญาและล็อกระบบของลูกค้า (ฐานข้อมูลยังอยู่) ยืนยันหรือไม่"/>
+                    <button name="action_drop_database" type="object"
+                            string="ลบฐานข้อมูลถาวร" class="btn-danger"
+                            invisible="state != 'terminated' or not db_name or is_control_plane"
+                            confirm="ลบฐานข้อมูลของลูกค้าถาวร กู้คืนไม่ได้ ยืนยันหรือไม่"/>
+                    <field name="state" widget="statusbar"
+                           statusbar_visible="draft,active,grace,expired"/>
+                </header>
+            </sheet>
+
+            <xpath expr="//div[hasclass('oe_title')]" position="before">
+                <div class="oe_button_box" name="button_box">
+                    <button name="action_open_tenant" type="object"
+                            class="oe_stat_button" icon="fa-external-link"
+                            invisible="not base_url">
+                        <div class="o_stat_info">
+                            <span class="o_stat_text">เปิดระบบลูกค้า</span>
+                        </div>
+                    </button>
+                </div>
+            </xpath>
+
+            <field name="base_url" position="before">
+                <field name="is_control_plane" invisible="1"/>
+                <field name="subdomain" placeholder="เช่น abc"/>
+                <field name="db_name" placeholder="ปกติใช้ชื่อเดียวกับโดเมนย่อย"
+                       readonly="state != 'draft'"/>
+            </field>
+
+            <xpath expr="//group[@name='branding']" position="after">
+                <group string="สัญญาการใช้งาน">
+                    <field name="start_date"/>
+                    <field name="expire_date"/>
+                    <field name="grace_days"/>
+                    <field name="days_left" readonly="1"/>
+                </group>
+                <group string="โควตาการใช้งาน">
+                    <field name="max_employees"/>
+                    <field name="employee_count"/>
+                    <field name="usage_checked_at"/>
+                    <field name="over_quota" readonly="1"/>
+                    <field name="provisioned_at"/>
+                </group>
+            </xpath>
+
+            <xpath expr="//group[@name='note']" position="after">
+                <notebook>
+                    <page string="ประวัติการต่ออายุ" name="renewals">
+                        <field name="renewal_ids" readonly="1">
+                            <list>
+                                <field name="renew_date"/>
+                                <field name="months"/>
+                                <field name="previous_expire"/>
+                                <field name="new_expire"/>
+                                <field name="amount" sum="รวม"/>
+                                <field name="currency_id" column_invisible="True"/>
+                                <field name="user_id"/>
+                                <field name="note"/>
+                            </list>
+                        </field>
+                    </page>
+                </notebook>
+            </xpath>
+
+        </field>
+    </record>
+
+    <record id="view_saas_tenant_search" model="ir.ui.view">
+        <field name="name">hrms.tenant.saas.search</field>
+        <field name="model">hrms.tenant</field>
+        <field name="arch" type="xml">
+            <search string="ค้นหาองค์กรผู้เช่า">
+                <field name="name"/>
+                <field name="code"/>
+                <field name="db_name"/>
+                <filter name="f_active" string="ใช้งาน" domain="[('state', '=', 'active')]"/>
+                <filter name="f_grace" string="ผ่อนผัน" domain="[('state', '=', 'grace')]"/>
+                <filter name="f_problem" string="ระงับ/หมดอายุ"
+                        domain="[('state', 'in', ['suspended', 'expired'])]"/>
+                <filter name="f_expiring" string="ใกล้หมดอายุใน 30 วัน"
+                        domain="[('expire_date', '&lt;=', (context_today() + relativedelta(days=30)).strftime('%Y-%m-%d')),
+                                 ('state', 'in', ['active', 'grace'])]"/>
+                <filter name="f_over" string="เกินโควตา" domain="[('over_quota', '=', True)]"/>
+                <separator/>
+                <filter name="f_draft" string="ยังไม่สร้างระบบ" domain="[('state', '=', 'draft')]"/>
+                <group expand="0" string="จัดกลุ่มตาม">
+                    <filter name="g_state" string="สถานะ" context="{'group_by': 'state'}"/>
+                    <filter name="g_expire" string="วันหมดอายุ" context="{'group_by': 'expire_date'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_hrms_tenant_saas" model="ir.actions.act_window">
+        <field name="name">ลูกค้าผู้เช่าระบบ</field>
+        <field name="res_model">hrms.tenant</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_saas_tenant_search"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">เพิ่มลูกค้ารายแรก</p>
+            <p>กรอกรหัสองค์กร โดเมนย่อย และวันหมดอายุ แล้วกด "สร้างระบบให้ลูกค้า"
+               ระบบจะโคลนฐานข้อมูลต้นแบบให้อัตโนมัติ</p>
+        </field>
+    </record>
+
+    <!-- ================= ประวัติการต่ออายุ ================= -->
+    <record id="view_saas_renewal_list" model="ir.ui.view">
+        <field name="name">saas.renewal.list</field>
+        <field name="model">saas.renewal</field>
+        <field name="arch" type="xml">
+            <list string="ประวัติการต่ออายุ">
+                <field name="renew_date"/>
+                <field name="tenant_id"/>
+                <field name="months"/>
+                <field name="previous_expire"/>
+                <field name="new_expire"/>
+                <field name="amount" sum="รวม"/>
+                <field name="currency_id" column_invisible="True"/>
+                <field name="user_id"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="action_saas_renewal" model="ir.actions.act_window">
+        <field name="name">ประวัติการต่ออายุ</field>
+        <field name="res_model">saas.renewal</field>
+        <field name="view_mode">list</field>
+    </record>
+
+    <!-- ================= หน้าต่างต่ออายุ ================= -->
+    <record id="view_saas_renew_wizard_form" model="ir.ui.view">
+        <field name="name">saas.renew.wizard.form</field>
+        <field name="model">saas.renew.wizard</field>
+        <field name="arch" type="xml">
+            <form string="ต่ออายุสัญญา">
+                <group>
+                    <field name="tenant_id" readonly="1"/>
+                    <field name="current_expire"/>
+                    <field name="months"/>
+                    <field name="new_expire"/>
+                    <field name="amount"/>
+                    <field name="currency_id" invisible="1"/>
+                    <field name="note"/>
+                </group>
+                <div class="alert alert-info" role="alert">
+                    ถ้าสัญญายังไม่หมด ระบบจะต่อจากวันหมดอายุเดิม (ไม่เสียวันที่จ่ายไปแล้ว)
+                    ถ้าหมดไปแล้วจะเริ่มนับจากวันนี้
+                </div>
+                <footer>
+                    <button name="action_confirm" type="object"
+                            string="ยืนยันต่ออายุ" class="btn-primary"/>
+                    <button string="ยกเลิก" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <!-- ================= เมนู ================= -->
+    <menuitem id="menu_saas_root" name="ปล่อยเช่าระบบ"
+              web_icon="npd_saas_manager,static/description/icon.png"
+              sequence="85"
+              groups="base.group_system"/>
+
+    <menuitem id="menu_saas_tenant" name="ลูกค้าผู้เช่าระบบ"
+              parent="menu_saas_root" action="action_hrms_tenant_saas"
+              sequence="10"/>
+
+    <menuitem id="menu_saas_renewal" name="ประวัติการต่ออายุ"
+              parent="menu_saas_root" action="action_saas_renewal"
+              sequence="20"/>
+
+    <!-- แอปมีตัวเดียวใช้ร่วมกันทุกองค์กร เวอร์ชันจึงประกาศจากที่นี่ที่เดียว
+         แล้วส่งลงไปยังฐานข้อมูลลูกค้าทุกรายพร้อมกับสัญญา -->
+    <menuitem id="menu_saas_app_release" name="เวอร์ชันแอป HR"
+              parent="menu_saas_root" action="npd_hrms_base.action_hrms_app_release"
+              sequence="30"/>
+
+</odoo>

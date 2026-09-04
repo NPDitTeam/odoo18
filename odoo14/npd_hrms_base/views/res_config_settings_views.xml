@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="res_config_settings_view_form_hrms" model="ir.ui.view">
+        <field name="name">res.config.settings.view.form.inherit.npd.hrms</field>
+        <field name="model">res.config.settings</field>
+        <field name="inherit_id" ref="base.res_config_settings_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//form" position="inside">
+                <app string="ระบบบุคคล" name="npd_hrms" groups="npd_hrms_base.group_hrms_manager">
+
+                    <block title="รหัสพนักงาน" name="hrms_employee_code">
+                        <setting string="รูปแบบรหัสพนักงาน"
+                                 help="ระบบจะไล่หาเลขว่างตัวแรกตั้งแต่เลขเริ่มต้นขึ้นไป แล้วเติมคำนำหน้า/ศูนย์ตามที่ตั้ง">
+                            <div class="content-group">
+                                <div class="row">
+                                    <label for="hrms_employee_code_prefix" class="col-lg-4 o_light_label"/>
+                                    <field name="hrms_employee_code_prefix" placeholder="เว้นว่างได้"/>
+                                </div>
+                                <div class="row">
+                                    <label for="hrms_employee_code_start" class="col-lg-4 o_light_label"/>
+                                    <field name="hrms_employee_code_start"/>
+                                </div>
+                                <div class="row">
+                                    <label for="hrms_employee_code_padding" class="col-lg-4 o_light_label"/>
+                                    <field name="hrms_employee_code_padding"/>
+                                </div>
+                            </div>
+                        </setting>
+                    </block>
+
+                    <block title="รอบตัดเงินเดือน" name="hrms_cutoff">
+                        <setting string="วันเริ่มรอบ"
+                                 help="ค่า 25 หมายถึงรอบเงินเดือนคือวันที่ 25 ของเดือนก่อน ถึงวันที่ 24 ของเดือนนี้">
+                            <field name="hrms_cutoff_start_day"/>
+                        </setting>
+                    </block>
+
+                    <block title="ประกันสังคม" name="hrms_sso">
+                        <setting string="คิดประกันสังคม" help="ปิดได้สำหรับบริษัทที่ไม่อยู่ในระบบประกันสังคม">
+                            <field name="hrms_sso_enabled"/>
+                            <div class="content-group" invisible="not hrms_sso_enabled">
+                                <div class="row">
+                                    <label for="hrms_sso_rate" class="col-lg-6 o_light_label"/>
+                                    <field name="hrms_sso_rate"/>
+                                </div>
+                                <div class="row">
+                                    <label for="hrms_sso_min_wage" class="col-lg-6 o_light_label"/>
+                                    <field name="hrms_sso_min_wage"/>
+                                </div>
+                                <div class="row">
+                                    <label for="hrms_sso_max_wage" class="col-lg-6 o_light_label"/>
+                                    <field name="hrms_sso_max_wage"/>
+                                </div>
+                            </div>
+                        </setting>
+                    </block>
+
+                    <block title="สิทธิ์วันลาตั้งต้น" name="hrms_leave">
+                        <setting string="จำนวนวันลาแต่ละประเภท"
+                                 help="ใช้ตอนสร้างพนักงานใหม่ และตอนรีเซ็ตสิทธิ์ขึ้นปีใหม่">
+                            <div class="content-group">
+                                <div class="row">
+                                    <label for="hrms_leave_personal_paid_days" class="col-lg-7 o_light_label"/>
+                                    <field name="hrms_leave_personal_paid_days"/>
+                                </div>
+                                <div class="row">
+                                    <label for="hrms_leave_personal_paid_after_months" class="col-lg-7 o_light_label"/>
+                                    <field name="hrms_leave_personal_paid_after_months"/>
+                                </div>
+                                <div class="row">
+                                    <label for="hrms_leave_personal_unpaid_days" class="col-lg-7 o_light_label"/>
+                                    <field name="hrms_leave_personal_unpaid_days"/>
+                                </div>
+                                <div class="row">
+                                    <label for="hrms_leave_sick_days" class="col-lg-7 o_light_label"/>
+                                    <field name="hrms_leave_sick_days"/>
+                                </div>
+                                <div class="row">
+                                    <label for="hrms_leave_maternity_paid_days" class="col-lg-7 o_light_label"/>
+                                    <field name="hrms_leave_maternity_paid_days"/>
+                                </div>
+                                <div class="row">
+                                    <label for="hrms_leave_maternity_unpaid_days" class="col-lg-7 o_light_label"/>
+                                    <field name="hrms_leave_maternity_unpaid_days"/>
+                                </div>
+                                <div class="row">
+                                    <label for="hrms_leave_vacation_days" class="col-lg-7 o_light_label"/>
+                                    <field name="hrms_leave_vacation_days"/>
+                                </div>
+                                <div class="row">
+                                    <label for="hrms_leave_vacation_after_years" class="col-lg-7 o_light_label"/>
+                                    <field name="hrms_leave_vacation_after_years"/>
+                                </div>
+                                <div class="row">
+                                    <label for="hrms_leave_saturday_days" class="col-lg-7 o_light_label"/>
+                                    <field name="hrms_leave_saturday_days"/>
+                                </div>
+                                <div class="row">
+                                    <label for="hrms_leave_emergency_days" class="col-lg-7 o_light_label"/>
+                                    <field name="hrms_leave_emergency_days"/>
+                                </div>
+                            </div>
+                        </setting>
+                        <setting string="สิทธิหยุดวันเสาร์ต่อเดือน"
+                                 help="ใช้เป็นค่าตั้งต้นตอนสร้างการตั้งค่ารายสาขา">
+                            <div class="content-group">
+                                <div class="row">
+                                    <label for="hrms_saturday_days_hq" class="col-lg-7 o_light_label"/>
+                                    <field name="hrms_saturday_days_hq"/>
+                                </div>
+                                <div class="row">
+                                    <label for="hrms_saturday_days_branch" class="col-lg-7 o_light_label"/>
+                                    <field name="hrms_saturday_days_branch"/>
+                                </div>
+                            </div>
+                        </setting>
+                    </block>
+
+                    <block title="การลงเวลา" name="hrms_attendance">
+                        <setting string="รัศมีเช็คอินเริ่มต้น"
+                                 help="ใช้เมื่อสาขายังไม่ได้ตั้งรัศมีของตัวเอง">
+                            <field name="hrms_checkin_default_radius"/>
+                        </setting>
+                        <setting string="บังคับส่งพิกัด GPS" help="ปฏิเสธการลงเวลาที่ไม่มีพิกัดแนบมา">
+                            <field name="hrms_checkin_require_gps"/>
+                        </setting>
+                        <setting string="อนุญาตล็อกอินหลายเครื่อง"
+                                 help="ค่าเริ่มต้นระดับบริษัท — ตั้งรายบุคคลได้ที่บัตรพนักงาน">
+                            <field name="hrms_allow_multi_login"/>
+                        </setting>
+                    </block>
+
+                </app>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>

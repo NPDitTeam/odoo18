@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- หน้าแสดงสถานะสัญญาแบบอ่านอย่างเดียว
+         เจตนา: ให้ลูกค้าเห็นว่าเหลืออีกกี่วันและติดต่อใคร แต่แก้เองไม่ได้
+         การต่ออายุทำจากศูนย์ควบคุมเท่านั้น -->
+    <record id="action_saas_license_status" model="ir.actions.server">
+        <field name="name">สถานะสัญญาการใช้งาน</field>
+        <field name="model_id" ref="base.model_ir_config_parameter"/>
+        <field name="state">code</field>
+        <field name="code">
+status = env['saas.license'].get_status()
+if not status['managed']:
+    body = 'ฐานข้อมูลนี้ไม่ได้อยู่ภายใต้สัญญาเช่า ใช้งานได้ไม่จำกัด'
+else:
+    lines = ['องค์กร: %s' % (status['tenant_name'] or '-')]
+    lines.append('สถานะ: %s' % {
+        'active': 'ใช้งานปกติ',
+        'grace': 'อยู่ในช่วงผ่อนผัน',
+        'suspended': 'ถูกระงับชั่วคราว',
+        'expired': 'หมดอายุแล้ว',
+        'terminated': 'ยกเลิกสัญญาแล้ว',
+    }.get(status['state'], status['state']))
+    if status['expire_date']:
+        lines.append('วันหมดอายุ: %s' % status['expire_date'])
+    if status['days_left'] is not None:
+        if status['days_left'] >= 0:
+            lines.append('เหลืออีก %s วัน' % status['days_left'])
+        else:
+            lines.append('เลยกำหนดมาแล้ว %s วัน' % abs(status['days_left']))
+    if status['support_phone']:
+        lines.append('ติดต่อผู้ให้บริการ: %s' % status['support_phone'])
+    body = '\n'.join(lines)
+
+action = {
+    'type': 'ir.actions.client',
+    'tag': 'display_notification',
+    'params': {
+        'title': 'สถานะสัญญาการใช้งาน',
+        'message': body,
+        'sticky': True,
+        'type': 'warning' if status.get('locked') or status.get('in_grace') else 'info',
+    },
+}
+        </field>
+    </record>
+
+    <menuitem id="menu_saas_license_status"
+              name="สถานะสัญญาการใช้งาน"
+              parent="base.menu_administration"
+              action="action_saas_license_status"
+              sequence="90"
+              groups="base.group_system"/>
+
+</odoo>

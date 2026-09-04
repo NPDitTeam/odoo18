@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_payroll_lateness_rule_list" model="ir.ui.view">
+        <field name="name">payroll.lateness.rule.list</field>
+        <field name="model">payroll.lateness.rule</field>
+        <field name="arch" type="xml">
+            <list string="สูตรคิดสาย" editable="bottom">
+                <field name="effective_date"/>
+                <field name="mode"/>
+                <field name="grace_minutes"
+                       column_invisible="False"
+                       readonly="mode != 'grace'"/>
+                <field name="deadline_hour" widget="float_time"
+                       readonly="mode != 'deadline'"/>
+                <field name="branch_ids" widget="many2many_tags"
+                       options="{'no_create': True}"/>
+                <field name="note" optional="show"/>
+                <field name="company_id" groups="base.group_multi_company"
+                       optional="hide"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_payroll_lateness_rule_form" model="ir.ui.view">
+        <field name="name">payroll.lateness.rule.form</field>
+        <field name="model">payroll.lateness.rule</field>
+        <field name="arch" type="xml">
+            <form string="สูตรคิดสาย">
+                <sheet>
+                    <div class="oe_title">
+                        <h2><field name="display_summary" readonly="1"/></h2>
+                    </div>
+                    <group>
+                        <group string="ใช้เมื่อไหร่ กับใคร">
+                            <field name="effective_date"/>
+                            <field name="branch_ids" widget="many2many_tags"
+                                   options="{'no_create': True}"
+                                   placeholder="เว้นว่าง = ทุกสาขา"/>
+                            <field name="company_id"
+                                   groups="base.group_multi_company"/>
+                        </group>
+                        <group string="คิดสายอย่างไร">
+                            <field name="mode" widget="radio"/>
+                            <field name="grace_minutes"
+                                   invisible="mode != 'grace'"/>
+                            <field name="deadline_hour" widget="float_time"
+                                   invisible="mode != 'deadline'"/>
+                        </group>
+                    </group>
+                    <group>
+                        <field name="note" placeholder="เช่น มติที่ประชุม 25 ส.ค."/>
+                    </group>
+                    <div class="alert alert-info" role="alert">
+                        สูตรมีผลกับการลงเวลา<strong>ตั้งแต่วันที่เริ่มใช้เป็นต้นไป</strong>
+                        เท่านั้น วันก่อนหน้ายังคิดด้วยสูตรเดิม
+                        รอบเงินเดือนที่คร่อมวันเริ่มใช้จึงคิดถูกทั้งสองช่วงในใบเดียว
+                        <br/>
+                        ถ้าจะกลับไปใช้สูตรเดิม ให้<strong>เพิ่มสูตรใหม่</strong>ที่มีวันเริ่มใช้ถัดไป
+                        อย่าแก้รายการเดิม เพราะจะทำให้ยอดที่คำนวณไปแล้วเปลี่ยนตาม
+                    </div>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_payroll_lateness_rule" model="ir.actions.act_window">
+        <field name="name">สูตรคิดสาย</field>
+        <field name="res_model">payroll.lateness.rule</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">ยังไม่ได้ตั้งสูตรคิดสาย</p>
+            <p>ตอนนี้ระบบใช้ค่าผ่อนผันที่ตั้งไว้ในสลิปแต่ละใบ
+               เพิ่มสูตรที่นี่เพื่อกำหนดให้เหมือนกันทั้งบริษัท
+               หรือแยกตามสาขา พร้อมระบุวันเริ่มใช้</p>
+        </field>
+    </record>
+
+    <menuitem id="menu_payroll_lateness_rule"
+              name="สูตรคิดสาย"
+              parent="npd_hrms_base.menu_hrms_configuration"
+              action="action_payroll_lateness_rule"
+              sequence="75"
+              groups="npd_hrms_base.group_hrms_manager"/>
+
+</odoo>
