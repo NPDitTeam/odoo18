@@ -13,6 +13,25 @@ class ResBranch(models.Model):
     name = fields.Char(required=True, string='Branch Name')
     sequence = fields.Integer(help='Used to order Companies in the branch switcher', default=10)
 
+    def _skip_branch_company_filter(self):
+        """Users who administer branches see every branch, always.
+
+        Why this matters beyond convenience: Odoo verifies record access by
+        re-running a search, so a branch filtered out here does not merely
+        disappear from a list - it reads back as AccessError, and any view that
+        references it (a user's Allowed Branches, an employee's branch, ...)
+        fails to render entirely. Managers were therefore losing whole screens
+        whenever a branch sat outside the company currently selected in the
+        switcher, and had to be granted each new branch by hand.
+        """
+        user = self.env.user
+        return (
+            self.env.su
+            or user._is_superuser()
+            or user.has_group('multi_branch_management_aagam.group_branch_manager')
+            or user.has_group('base.group_system')
+        )
+
     @api.model
     def _search(self, domain, offset=0, limit=None, order=None):
         # Only show branches belonging to the active company/companies so that
@@ -24,7 +43,8 @@ class ResBranch(models.Model):
         # their own branch, which raises AccessError on every page and blocks
         # login. Set the context key 'bypass_branch_company_filter' to disable
         # this entirely (e.g. cross-company reports or maintenance scripts).
-        if not self.env.context.get('bypass_branch_company_filter'):
+        if (not self.env.context.get('bypass_branch_company_filter')
+                and not self._skip_branch_company_filter()):
             own_branch_ids = self.env.user.sudo().branch_ids.ids
             company_domain = expression.OR([
                 [('id', 'in', own_branch_ids)],
@@ -37,8 +57,30 @@ class ResBranch(models.Model):
         'res.company', 'res_branch_res_company_rel', 'res_branch_id', 'res_company_id',
         string='Companies', default=lambda self: self.env.company,
         help='Companies this branch belongs to. A branch can be shared by several companies.')
+    # Compatibility field. This model scopes itself with the many2many
+    # `company_ids`, but Odoo's own web client, several core mixins and most
+    # third-party modules assume any company-scoped model exposes the singular
+    # `company_id`. Without it, anything that references res.branch.company_id
+    # dies at view-parse time with "field is undefined" and the whole view
+    # fails to render (seen on Settings > Users and on the Branches action).
+    # Computed and not stored, so `company_ids` stays the single source of truth.
+    company_id = fields.Many2one(
+        'res.company', string='Company',
+        compute='_compute_company_id', search='_search_company_id',
+        help='First company this branch belongs to. Kept for compatibility with '
+             'code that expects a single company; the real link is Companies.')
+
     email = fields.Char(string='Email')
     phone = fields.Char(string='Mobile No.')
+
+    @api.depends('company_ids')
+    def _compute_company_id(self):
+        for branch in self:
+            branch.company_id = branch.company_ids[:1]
+
+    def _search_company_id(self, operator, value):
+        # Delegate to the many2many so domains on company_id keep working.
+        return [('company_ids', operator, value)]
 
 
     street = fields.Char('Street', compute='_compute_address', inverse='_inverse_street')
