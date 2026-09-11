@@ -1,6 +1,6 @@
 {
     'name': 'จองคิวรถขนส่ง',
-    'version': '18.0.2.7.0',  # เพิ่ม source field (Selection) สำหรับกรอง Dashboard
+    'version': '18.0.2.8.0',  # คลิกรูปก่อนขนส่ง/หลักฐานการส่ง เพื่อดูรูปเต็ม (widget image_popup)
     'category': 'Operations/Inventory',
     'summary': 'ระบบจองคิวรถขนส่ง พร้อมแสดงเส้นทางบน Google Maps และติดตามรถ Real-time',
     'depends': [
@@ -30,12 +30,15 @@
         'web.assets_backend': [
             'transport_booking/static/src/css/google_maps.css',
             'transport_booking/static/src/css/vehicle_tracking.css',
+            'transport_booking/static/src/css/image_popup_field.css',
             'transport_booking/static/src/js/location_autocomplete_widget.js',
             'transport_booking/static/src/js/google_maps_widget.js',
+            'transport_booking/static/src/js/image_popup_field.js',
             'transport_booking/static/src/js/vehicle_tracking_widget.js',
             'transport_booking/static/src/js/copyable_url_field.js',
             'transport_booking/static/src/js/vehicle_tracking_auto_refresh.js',  # ✅ Auto-refresh tracking list จากฐานข้อมูล
             'transport_booking/static/src/xml/google_maps_templates.xml',
+            'transport_booking/static/src/xml/image_popup_field.xml',
             'transport_booking/static/src/xml/vehicle_tracking_templates.xml',
             'transport_booking/static/src/xml/copyable_url_field.xml',
         ],

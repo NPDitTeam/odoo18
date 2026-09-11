@@ -1,0 +1,4 @@
+/* ช่องรูป widget="image_popup" — เคอร์เซอร์แว่นขยาย บอกว่าคลิกดูรูปเต็มได้ */
+.o_image_popup_img {
+    cursor: zoom-in;
+}

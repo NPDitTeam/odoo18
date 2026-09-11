@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <!-- เหมือน web.ImageField ทุกอย่าง แต่คลิกที่รูปแล้วเปิดรูปเต็ม -->
+    <t t-name="transport_booking.ImagePopupField" t-inherit="web.ImageField" t-inherit-mode="primary">
+        <xpath expr="//img" position="attributes">
+            <attribute name="class">o_image_popup_img</attribute>
+            <attribute name="title">คลิกเพื่อดูรูปขนาดเต็ม</attribute>
+            <attribute name="t-on-click">onImageClick</attribute>
+        </xpath>
+    </t>
+
+</templates>

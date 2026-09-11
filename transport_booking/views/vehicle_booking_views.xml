@@ -237,7 +237,7 @@
                             <page string="ติดตามข้อมูลการขนส่ง" invisible="state == 'draft'">
                                 <!-- 📸 รูปถ่ายสินค้าก่อนขนส่ง - แสดงทันที -->
                                 <group string="📸 รูปถ่ายสินค้าก่อนขนส่ง" invisible="not pickup_photo">
-                                    <field name="pickup_photo" widget="image" options="{'size': [400, 400]}" nolabel="1"/>
+                                    <field name="pickup_photo" widget="image_popup" options="{'size': [400, 400]}" nolabel="1" readonly="1"/>
                                     <group>
                                         <field name="actual_pickup_time" string="เวลาที่ถ่ายรูป" readonly="1"/>
                                     </group>
@@ -327,7 +327,7 @@
                                 <!-- รูปภาพการส่งมอบ -->
                                 <group invisible="not delivery_photo or not receiver_signature">
                                     <group string="📸 รูปถ่ายหลักฐานการส่ง" invisible="not delivery_photo">
-                                        <field name="delivery_photo" widget="image" options="{'size': [400, 400]}" nolabel="1"/>
+                                        <field name="delivery_photo" widget="image_popup" options="{'size': [400, 400]}" nolabel="1" readonly="1"/>
                                     </group>
                                     <group string="✍️ ลายเซ็นผู้รับ" invisible="not receiver_signature">
                                         <field name="receiver_signature" widget="image" options="{'size': [400, 200]}" nolabel="1"/>
