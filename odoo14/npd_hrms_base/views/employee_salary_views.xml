@@ -128,6 +128,12 @@
                             <field name="department_id"/>
                             <field name="position_id"/>
                             <field name="employee_type"/>
+                            <field name="work_schedule_state" widget="badge"
+                                   decoration-danger="work_schedule_state == 'unset'"
+                                   decoration-success="work_schedule_state == 'checkin'"
+                                   decoration-info="work_schedule_state == 'no_checkin'"/>
+                            <field name="work_schedule_id" readonly="1"
+                                   invisible="work_schedule_state == 'unset'"/>
                         </group>
                         <group string="ติดต่อ">
                             <field name="nickname"/>

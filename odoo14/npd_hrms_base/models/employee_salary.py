@@ -39,6 +39,12 @@ BANK_SELECTION = [
 ]
 
 
+# ผู้ใช้คนไทยมักกรอกปี พ.ศ. ลงช่องวันที่ (ระบบเก็บ ค.ศ.) เช่น 2538 แทน 1995
+# ปีที่เกิน 2400 ไม่มีทางเป็น ค.ศ. ของคนที่มีชีวิตอยู่ จึงแปลงกลับเป็น ค.ศ. ให้เอง
+BE_OFFSET_YEARS = 543
+BE_YEAR_THRESHOLD = 2400
+
+
 class EmployeeSalary(models.Model):
     _name = 'employee.salary'
     _description = 'พนักงาน'
@@ -102,7 +108,8 @@ class EmployeeSalary(models.Model):
         ('โสด', 'โสด'), ('สมรส', 'สมรส'), ('หย่า', 'หย่า'),
     ], string='สถานะ')
     birthdate = fields.Date(string='วันเกิด')
-    age = fields.Integer(string='อายุ', compute='_compute_age', store=True)
+    # ไม่เก็บค่า (store) — คำนวณทุกครั้งที่เปิดดู อายุจึงขยับเองเมื่อถึงวันเกิด
+    age = fields.Integer(string='อายุ', compute='_compute_age')
     phone_number = fields.Char(string='เบอร์โทรศัพท์')
     email = fields.Char(string='อีเมล')
     line_id = fields.Char(string='LineID ส่วนตัว')
@@ -255,6 +262,24 @@ class EmployeeSalary(models.Model):
                 rec.age = relativedelta(today, rec.birthdate).years
             else:
                 rec.age = 0
+
+    @api.model
+    def _normalize_buddhist_year(self, value):
+        """คืนวันที่แบบ ค.ศ. ถ้าผู้ใช้กรอกปี พ.ศ. มา (ปีเกิน 2400) ไม่งั้นคืนค่าเดิม"""
+        if not value:
+            return value
+        day = fields.Date.to_date(value)
+        if day.year > BE_YEAR_THRESHOLD:
+            return day - relativedelta(years=BE_OFFSET_YEARS)
+        return value
+
+    @api.onchange('birthdate')
+    def _onchange_birthdate_buddhist_year(self):
+        """แปลงให้เห็นทันทีในฟอร์ม — อายุคำนวณตามทันทีโดยไม่ต้องบันทึกก่อน"""
+        for rec in self:
+            fixed = self._normalize_buddhist_year(rec.birthdate)
+            if fixed != rec.birthdate:
+                rec.birthdate = fixed
 
     @api.depends('start_date', 'resign_date')
     def _compute_service_duration(self):
@@ -451,7 +476,14 @@ class EmployeeSalary(models.Model):
             code = (vals.get('employee_code') or '').strip()
             if not code or self._is_employee_code_taken(code):
                 vals['employee_code'] = self._generate_employee_code(company)
+            if vals.get('birthdate'):
+                vals['birthdate'] = self._normalize_buddhist_year(vals['birthdate'])
         return super().create(vals_list)
+
+    def write(self, vals):
+        if vals.get('birthdate'):
+            vals = dict(vals, birthdate=self._normalize_buddhist_year(vals['birthdate']))
+        return super().write(vals)
 
     # ==================================================================
     # ปุ่มดำเนินการ

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'NPD HRMS - Base',
-    'version': '18.0.1.0.0',
+    'version': '18.0.1.0.1',
     'summary': 'ข้อมูลหลักระบบบุคคล — พนักงาน สาขา แผนก ตำแหน่ง ตารางงาน วันหยุด เบี้ยเลี้ยง',
     'description': """
 NPD HRMS - Base
