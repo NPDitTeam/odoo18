@@ -330,7 +330,7 @@
                                         <field name="delivery_photo" widget="image_popup" options="{'size': [400, 400]}" nolabel="1" readonly="1"/>
                                     </group>
                                     <group string="✍️ ลายเซ็นผู้รับ" invisible="not receiver_signature">
-                                        <field name="receiver_signature" widget="image" options="{'size': [400, 200]}" nolabel="1"/>
+                                        <field name="receiver_signature" widget="image_popup" options="{'size': [400, 200]}" nolabel="1" readonly="1"/>
                                     </group>
                                 </group>
                                 
