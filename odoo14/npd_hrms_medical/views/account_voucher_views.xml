@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_purchase_receipt_form_hrms_medical" model="ir.ui.view">
+        <field name="name">account.voucher.purchase.form.hrms.medical</field>
+        <field name="model">account.voucher</field>
+        <field name="inherit_id" ref="account_voucher_npd.view_purchase_receipt_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="(//field[@name='partner_id'])[1]" position="after">
+                <field name="hrms_medical_log_id" invisible="not hrms_medical_log_id"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- เมนูเดิม "คืนเงินประกันค่าเช่า" กรองเฉพาะ check_show = True
+         ใบค่ารักษาพยาบาล (check_show = False) จึงไม่มีที่ให้เปิดดู — ต้องมีเมนูของตัวเอง -->
+    <record id="action_hrms_medical_voucher" model="ir.actions.act_window">
+        <field name="name">ใบสำคัญจ่ายค่ารักษาพยาบาล</field>
+        <field name="res_model">account.voucher</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('hrms_medical_log_id', '!=', False)]</field>
+        <field name="context">{'default_voucher_type': 'purchase', 'voucher_type': 'purchase'}</field>
+        <field name="search_view_id" ref="account_voucher_npd.view_voucher_filter_vendor"/>
+        <field name="view_ids" eval="[(5, 0, 0),
+            (0, 0, {'view_mode': 'list', 'view_id': ref('account_voucher_npd.view_voucher_tree_purchase')}),
+            (0, 0, {'view_mode': 'form', 'view_id': ref('account_voucher_npd.view_purchase_receipt_form')})]"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">ยังไม่มีใบสำคัญจ่ายค่ารักษาพยาบาล</p>
+            <p>ใบจะถูกสร้างอัตโนมัติเมื่อฝ่ายบุคคลกด "อนุมัติส่งเข้าการรับ"</p>
+        </field>
+    </record>
+
+</odoo>

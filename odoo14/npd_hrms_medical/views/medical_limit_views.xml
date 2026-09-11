@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ================= วงเงินรายบุคคล ================= -->
+    <record id="view_hrms_medical_limit_list" model="ir.ui.view">
+        <field name="name">hrms.medical.limit.list</field>
+        <field name="model">hrms.medical.limit</field>
+        <field name="arch" type="xml">
+            <list string="วงเงินค่ารักษาพยาบาลรายบุคคล" editable="bottom">
+                <field name="year"/>
+                <field name="employee_id" options="{'no_create': True}"/>
+                <field name="employee_code" optional="show"/>
+                <field name="branch_id" optional="show"/>
+                <field name="company_id" groups="base.group_multi_company" optional="show"/>
+                <field name="standard_amount" optional="show"/>
+                <field name="amount"/>
+                <field name="note" optional="show"/>
+                <field name="active" column_invisible="1"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_hrms_medical_limit_search" model="ir.ui.view">
+        <field name="name">hrms.medical.limit.search</field>
+        <field name="model">hrms.medical.limit</field>
+        <field name="arch" type="xml">
+            <search string="ค้นหาวงเงิน">
+                <field name="employee_id"/>
+                <field name="employee_code"/>
+                <field name="year"/>
+                <filter name="filter_archived" string="เก็บถาวร"
+                        domain="[('active', '=', False)]"/>
+                <group expand="0" string="จัดกลุ่มตาม">
+                    <filter name="group_year" string="ปี" context="{'group_by': 'year'}"/>
+                    <filter name="group_branch" string="สาขา"
+                            context="{'group_by': 'branch_id'}"/>
+                    <filter name="group_company" string="บริษัท"
+                            context="{'group_by': 'company_id'}"
+                            groups="base.group_multi_company"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_hrms_medical_limit" model="ir.actions.act_window">
+        <field name="name">วงเงินค่ารักษาพยาบาลรายบุคคล</field>
+        <field name="res_model">hrms.medical.limit</field>
+        <field name="view_mode">list</field>
+        <field name="search_view_id" ref="view_hrms_medical_limit_search"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">ยังไม่มีวงเงินรายบุคคล</p>
+            <p>
+                พนักงานที่ไม่อยู่ในรายการนี้ใช้วงเงินมาตรฐานของบริษัท
+                (ตั้งที่หน้าบริษัท แท็บนโยบายระบบบุคคล — ค่าเริ่มต้น 10,000 บาท)
+                วงเงินรายบุคคลของปีก่อนจะถูกยกมาเป็นปีใหม่ให้อัตโนมัติ
+            </p>
+        </field>
+    </record>
+
+    <!-- ================= ยอดยกมา ================= -->
+    <record id="view_hrms_medical_opening_list" model="ir.ui.view">
+        <field name="name">hrms.medical.opening.list</field>
+        <field name="model">hrms.medical.opening</field>
+        <field name="arch" type="xml">
+            <list string="ยอดค่ารักษาพยาบาลยกมา" editable="bottom">
+                <field name="year"/>
+                <field name="employee_id" options="{'no_create': True}"/>
+                <field name="employee_code" optional="show"/>
+                <field name="branch_id" optional="show"/>
+                <field name="company_id" groups="base.group_multi_company" optional="show"/>
+                <field name="used_amount" sum="รวม"/>
+                <field name="annual_limit" optional="show"/>
+                <field name="remaining_preview" optional="show"
+                       decoration-danger="remaining_preview &lt; 0"/>
+                <field name="note" optional="show"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_hrms_medical_opening_search" model="ir.ui.view">
+        <field name="name">hrms.medical.opening.search</field>
+        <field name="model">hrms.medical.opening</field>
+        <field name="arch" type="xml">
+            <search string="ค้นหายอดยกมา">
+                <field name="employee_id"/>
+                <field name="employee_code"/>
+                <field name="year"/>
+                <group expand="0" string="จัดกลุ่มตาม">
+                    <filter name="group_year" string="ปี" context="{'group_by': 'year'}"/>
+                    <filter name="group_company" string="บริษัท"
+                            context="{'group_by': 'company_id'}"
+                            groups="base.group_multi_company"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_hrms_medical_opening" model="ir.actions.act_window">
+        <field name="name">ยอดค่ารักษาพยาบาลยกมา</field>
+        <field name="res_model">hrms.medical.opening</field>
+        <field name="view_mode">list</field>
+        <field name="search_view_id" ref="view_hrms_medical_opening_search"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">ยังไม่มียอดยกมา</p>
+            <p>
+                บันทึกยอดที่พนักงานเบิกไปแล้วในปีนี้ก่อนเริ่มใช้ระบบ
+                ระบบจะหักออกจากวงเงินให้ — นำเข้าจาก CSV ได้ที่เมนูเฟือง &gt; นำเข้าข้อมูล
+            </p>
+        </field>
+    </record>
+
+</odoo>

@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ต่อท้ายแท็บ "นโยบายระบบบุคคล" ของ npd_hrms_base -->
+    <record id="view_company_form_hrms_medical" model="ir.ui.view">
+        <field name="name">res.company.form.inherit.npd.hrms.medical</field>
+        <field name="model">res.company</field>
+        <field name="inherit_id" ref="npd_hrms_base.view_company_form_hrms"/>
+        <field name="arch" type="xml">
+            <xpath expr="//page[@name='hrms_policy']" position="inside">
+                <group string="ค่ารักษาพยาบาล" name="hrms_medical">
+                    <group string="วงเงิน">
+                        <field name="hrms_medical_annual_limit"/>
+                    </group>
+                    <group string="ใบสำคัญจ่ายที่สร้างตอนอนุมัติ">
+                        <field name="hrms_medical_account_id"
+                               domain="[('company_ids', 'in', [id]), ('deprecated', '=', False)]"
+                               options="{'no_create': True}"/>
+                        <field name="hrms_medical_payment_method_id"
+                               domain="[('company_id', 'in', [id, False]), ('is_active', '=', True)]"
+                               options="{'no_create': True}"/>
+                        <field name="hrms_medical_journal_id"
+                               domain="[('company_id', '=', id)]"
+                               options="{'no_create': True}"/>
+                        <field name="hrms_medical_sequence_id"
+                               domain="[('company_id', 'in', [id, False])]"/>
+                        <field name="hrms_medical_branch_id" options="{'no_create': True}"/>
+                        <field name="hrms_medical_analytic_id"
+                               domain="[('company_id', 'in', [id, False])]"
+                               options="{'no_create': True}"/>
+                        <field name="hrms_medical_product_id" options="{'no_create': True}"/>
+                        <field name="hrms_medical_reference"/>
+                        <field name="hrms_medical_line_label"/>
+                    </group>
+                </group>
+                <div class="mb-3">
+                    <button name="action_hrms_medical_autoconfigure" type="object"
+                            string="ตั้งค่าค่ารักษาพยาบาลอัตโนมัติ (เติมเฉพาะช่องที่ว่าง)"
+                            class="btn-secondary"/>
+                </div>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>

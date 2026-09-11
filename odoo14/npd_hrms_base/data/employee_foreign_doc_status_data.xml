@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    ตัวเลือกตั้งต้นของ "สถานะการต่อเอกสาร" ในแท็บข้อมูลต่างชาติ
+    "ครบ 2 ปีแรก" มาจากชีทเดิมของ HR ที่เหลือเป็นช่วงของสัญญาจ้าง MOU (2 + 2 ปี)
+
+    noupdate="1" — สร้างครั้งเดียว HR แก้ชื่อ/เพิ่ม/ปิดใช้งานได้ที่เมนู
+    "สถานะต่อเอกสารต่างชาติ" อัปเกรดรอบหลังจะไม่ทับ
+-->
+<odoo>
+    <data noupdate="1">
+        <record id="foreign_doc_status_first_2y" model="hrms.foreign.doc.status">
+            <field name="name">ครบ 2 ปีแรก</field>
+            <field name="sequence">10</field>
+        </record>
+        <record id="foreign_doc_status_renewed_2y" model="hrms.foreign.doc.status">
+            <field name="name">ต่ออายุ 2 ปีหลังแล้ว</field>
+            <field name="sequence">20</field>
+        </record>
+        <record id="foreign_doc_status_full_4y" model="hrms.foreign.doc.status">
+            <field name="name">ครบ 4 ปี (ต้องเดินทางกลับ)</field>
+            <field name="sequence">30</field>
+        </record>
+        <record id="foreign_doc_status_in_progress" model="hrms.foreign.doc.status">
+            <field name="name">อยู่ระหว่างดำเนินการ</field>
+            <field name="sequence">40</field>
+        </record>
+    </data>
+</odoo>

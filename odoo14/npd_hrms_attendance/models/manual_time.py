@@ -290,9 +290,20 @@ class HrManualTimeLog(models.Model):
         raise UserError('ไม่พบประเภทการเพิ่มเวลา "%s"' % reason_type)
 
     @api.model
+    def _api_submit_extra_vals(self, vals, employee, reason, record, **extra):
+        """จุดต่อยอดให้โมดูลอื่นเติมค่าลงคำขอที่แอปส่งมา
+
+        ``extra`` คือพารามิเตอร์เพิ่มเติมที่ controller ส่งผ่าน ``api_submit``
+        (เช่น ไฟล์หลายไฟล์ / บัญชีธนาคารของค่ารักษาพยาบาล) — ``record`` คือคำขอเดิม
+        กรณีแก้ไข (ยังไม่ได้ตรวจสิทธิ์ ต้องเช็คเองก่อนแตะข้อมูล)
+        คืน dict ที่จะรวมเข้า vals ก่อน create/write
+        """
+        return {}
+
+    @api.model
     def api_submit(self, employee_id, work_date, checkin_time, checkout_time,
                    reason_type, user_note=None, allowance_type=None, amount=None,
-                   request_id=None, attachment=None, filename=None):
+                   request_id=None, attachment=None, filename=None, **extra):
         """ยื่น/แก้ไขคำขอเพิ่มเวลา — แทน POST ของ manual_time_logs_test.php"""
         employee = self.env['employee.salary'].sudo().browse(int(employee_id))
         if not employee.exists():
@@ -316,6 +327,9 @@ class HrManualTimeLog(models.Model):
         }
         if attachment:
             vals.update({'attachment': attachment, 'filename': filename or 'attachment'})
+
+        existing = self.sudo().browse(int(request_id)) if request_id else self.browse()
+        vals.update(self._api_submit_extra_vals(vals, employee, reason, existing, **extra))
 
         if request_id:
             record = self.sudo().browse(int(request_id))

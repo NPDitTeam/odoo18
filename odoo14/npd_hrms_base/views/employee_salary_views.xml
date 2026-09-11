@@ -5,7 +5,8 @@
         <field name="name">employee.salary.list</field>
         <field name="model">employee.salary</field>
         <field name="arch" type="xml">
-            <list string="พนักงาน" decoration-muted="status == 'inactive'">
+            <list string="พนักงาน" decoration-muted="status == 'inactive'"
+                  decoration-danger="foreign_doc_expiring">
                 <field name="employee_code"/>
                 <field name="prefix_th" optional="hide"/>
                 <field name="firstname"/>
@@ -29,6 +30,7 @@
                        decoration-danger="status == 'inactive'"/>
                 <field name="company_id" groups="base.group_multi_company" optional="hide"/>
                 <field name="active" column_invisible="1"/>
+                <field name="foreign_doc_expiring" column_invisible="1"/>
             </list>
         </field>
     </record>
@@ -148,12 +150,65 @@
                                 </group>
                                 <group string="เอกสาร">
                                     <field name="id_card_number"/>
-                                    <field name="passport_number"/>
                                     <field name="social_security_number"/>
                                     <field name="address"/>
                                     <field name="personal_equipment"/>
                                 </group>
                             </group>
+                        </page>
+
+                        <page string="ข้อมูลต่างชาติ" name="foreign_worker">
+                            <!-- เตือนแทนการ "ขึ้นสีแดงก่อนหนึ่งเดือน" ในชีทเดิมของ HR -->
+                            <div class="alert alert-danger" role="alert"
+                                 invisible="not work_permit_expiring">
+                                <b>ใบอนุญาตทำงานจะหมดอายุภายใน 1 เดือน หรือหมดไปแล้ว</b>
+                                — ต้องเริ่มยื่นต่ออายุ
+                            </div>
+                            <div class="alert alert-danger" role="alert"
+                                 invisible="not passport_expiring">
+                                <b>Passport จะหมดอายุภายใน 1 เดือน หรือหมดไปแล้ว</b>
+                            </div>
+                            <div class="alert alert-danger" role="alert"
+                                 invisible="not pink_card_expiring">
+                                <b>บัตรชมพูจะหมดอายุภายใน 1 เดือน หรือหมดไปแล้ว</b>
+                            </div>
+                            <group>
+                                <group string="บัตรชมพู">
+                                    <field name="pink_card_issue_date"/>
+                                    <field name="pink_card_expiry_date"/>
+                                </group>
+                                <group string="หนังสือเดินทาง (Passport)">
+                                    <field name="passport_number"/>
+                                    <field name="passport_issue_date"/>
+                                    <field name="passport_expiry_date"/>
+                                </group>
+                            </group>
+                            <group>
+                                <group string="ข้อมูลนายจ้าง">
+                                    <field name="employer_business_type"/>
+                                    <field name="employer_workplace"/>
+                                </group>
+                                <group string="ใบอนุญาตทำงาน (Work Permit)">
+                                    <field name="work_permit_issue_date"/>
+                                    <field name="work_permit_expiry_date"/>
+                                </group>
+                            </group>
+                            <group string="การต่อเอกสาร">
+                                <group>
+                                    <field name="foreign_doc_status_id"/>
+                                    <field name="return_trip_date"/>
+                                </group>
+                                <group>
+                                    <field name="work_permit_renewal_date"/>
+                                    <field name="bt50_submit_date"/>
+                                </group>
+                            </group>
+                            <group string="หมายเหตุ">
+                                <field name="foreign_doc_note" nolabel="1" colspan="2"/>
+                            </group>
+                            <field name="pink_card_expiring" invisible="1"/>
+                            <field name="passport_expiring" invisible="1"/>
+                            <field name="work_permit_expiring" invisible="1"/>
                         </page>
 
                         <page string="การจ้างงาน" name="employment">
@@ -309,6 +364,14 @@
                         domain="[('work_schedule_state', '=', 'unset')]"/>
                 <filter name="filter_has_schedule" string="ลงกะแล้ว"
                         domain="[('work_schedule_state', '!=', 'unset')]"/>
+                <separator/>
+                <filter name="filter_foreign" string="ต่างชาติ"
+                        domain="[('nationality', '=', 'ต่างชาติ')]"/>
+                <filter name="filter_foreign_doc_expiring" string="เอกสารต่างชาติใกล้หมดอายุ (1 เดือน)"
+                        domain="['|', '|',
+                                 ('work_permit_expiry_date', '&lt;=', (context_today() + relativedelta(months=1)).strftime('%Y-%m-%d')),
+                                 ('passport_expiry_date', '&lt;=', (context_today() + relativedelta(months=1)).strftime('%Y-%m-%d')),
+                                 ('pink_card_expiry_date', '&lt;=', (context_today() + relativedelta(months=1)).strftime('%Y-%m-%d'))]"/>
                 <separator/>
                 <filter name="filter_no_pin" string="ยังไม่มี PIN"
                         domain="[('pin', '=', False)]"/>

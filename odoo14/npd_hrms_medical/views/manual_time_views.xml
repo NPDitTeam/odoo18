@@ -1,0 +1,172 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ================= ฟอร์มคำขอ: ส่วนค่ารักษาพยาบาล ================= -->
+    <record id="view_manual_time_log_form_medical" model="ir.ui.view">
+        <field name="name">hr.manual.time.log.form.medical</field>
+        <field name="model">hr.manual.time.log</field>
+        <field name="inherit_id" ref="npd_hrms_attendance.view_manual_time_log_form"/>
+        <field name="arch" type="xml">
+            <!-- อนุมัติ: ค่ารักษาพยาบาลใช้ปุ่มที่บอกชัดว่าสร้างเอกสารบัญชีด้วย -->
+            <xpath expr="//header/button[@name='action_approve']" position="attributes">
+                <attribute name="invisible">state != 'รออนุมัติ' or is_medical</attribute>
+            </xpath>
+            <xpath expr="//header/button[@name='action_approve']" position="after">
+                <button name="action_approve" type="object" string="อนุมัติส่งเข้าการรับ"
+                        class="btn-primary" invisible="state != 'รออนุมัติ' or not is_medical"
+                        confirm="ยืนยันอนุมัติ? ระบบจะสร้างใบสำคัญจ่ายและลงบัญชีให้ทันที"/>
+            </xpath>
+            <!-- ถอยกลับ: ถ้ามีใบสำคัญจ่ายต้องเตือนว่าจะถูกยกเลิก -->
+            <xpath expr="//header/button[@name='action_reset_to_pending']" position="attributes">
+                <attribute name="invisible">state == 'รออนุมัติ' or has_medical_voucher</attribute>
+            </xpath>
+            <xpath expr="//header/button[@name='action_reset_to_pending']" position="after">
+                <button name="action_reset_to_pending" type="object" string="ถอยกลับการอนุมัติ"
+                        invisible="not has_medical_voucher"
+                        confirm="ถอยกลับเป็นรออนุมัติ? ใบสำคัญจ่ายที่สร้างไว้จะถูกยกเลิก และคืนวงเงินให้พนักงาน"/>
+            </xpath>
+            <xpath expr="//header/button[@name='action_cancel']" position="attributes">
+                <attribute name="confirm">ยืนยันยกเลิกคำขอนี้? ถ้ามีใบสำคัญจ่ายผูกอยู่จะถูกยกเลิกด้วย</attribute>
+            </xpath>
+
+            <xpath expr="//div[hasclass('oe_title')]" position="before">
+                <div class="oe_button_box" name="button_box">
+                    <button name="action_open_medical_voucher" type="object"
+                            class="oe_stat_button" icon="fa-file-text-o"
+                            invisible="not has_medical_voucher"
+                            groups="account.group_account_invoice">
+                        <div class="o_field_widget o_stat_info">
+                            <span class="o_stat_value"><field name="voucher_number"/></span>
+                            <span class="o_stat_text">ใบสำคัญจ่าย</span>
+                        </div>
+                    </button>
+                </div>
+            </xpath>
+            <xpath expr="//div[hasclass('oe_title')]" position="inside">
+                <field name="is_medical" invisible="1"/>
+                <field name="has_medical_voucher" invisible="1"/>
+            </xpath>
+
+            <!-- หมายเหตุของค่ารักษาพยาบาลสร้างอัตโนมัติ (มี 2 บรรทัด) โชว์ในกล่องด้านล่างแทน -->
+            <xpath expr="//field[@name='user_note']" position="attributes">
+                <attribute name="invisible">is_medical</attribute>
+            </xpath>
+            <xpath expr="//field[@name='attachment']" position="attributes">
+                <attribute name="invisible">is_medical and not attachment</attribute>
+            </xpath>
+
+            <!-- กลุ่ม "การอนุมัติ" (Odoo 17+ ห้ามใช้ @string เป็นตัวชี้ จึงเกาะจากฟิลด์ข้างใน) -->
+            <xpath expr="//field[@name='approved_by']/../.." position="before">
+                <group string="ค่ารักษาพยาบาล" name="medical" invisible="not is_medical">
+                    <group string="โอนเข้าบัญชี">
+                        <field name="bank_name" readonly="state != 'รออนุมัติ'"/>
+                        <field name="bank_account_number" readonly="state != 'รออนุมัติ'"/>
+                        <field name="bank_account_name" readonly="state != 'รออนุมัติ'"/>
+                        <field name="medical_note"/>
+                    </group>
+                    <group string="วงเงินปีนี้">
+                        <field name="expense_year"/>
+                        <field name="medical_limit"/>
+                        <field name="medical_opening" invisible="not medical_opening"/>
+                        <field name="medical_approved"/>
+                        <field name="medical_pending"/>
+                        <field name="medical_remaining"/>
+                    </group>
+                    <group string="ใบสำคัญจ่าย" invisible="not has_medical_voucher">
+                        <field name="voucher_number"/>
+                        <field name="voucher_state"/>
+                    </group>
+                </group>
+                <group string="ไฟล์แนบ" name="attachments"
+                       invisible="not is_medical and not attachment_ids">
+                    <field name="attachment_ids" widget="many2many_binary" nolabel="1"
+                           colspan="2" readonly="state != 'รออนุมัติ'"/>
+                </group>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_manual_time_log_list_medical" model="ir.ui.view">
+        <field name="name">hr.manual.time.log.list.medical</field>
+        <field name="model">hr.manual.time.log</field>
+        <field name="inherit_id" ref="npd_hrms_attendance.view_manual_time_log_list"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='state']" position="after">
+                <field name="voucher_number" optional="hide"/>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_manual_time_log_search_medical" model="ir.ui.view">
+        <field name="name">hr.manual.time.log.search.medical</field>
+        <field name="model">hr.manual.time.log</field>
+        <field name="inherit_id" ref="npd_hrms_attendance.view_manual_time_log_search"/>
+        <field name="arch" type="xml">
+            <xpath expr="//filter[@name='filter_this_month']" position="after">
+                <separator/>
+                <filter name="filter_medical" string="ค่ารักษาพยาบาล"
+                        domain="[('is_medical', '=', True)]"/>
+                <filter name="filter_has_voucher" string="ส่งเข้าการรับแล้ว"
+                        domain="[('voucher_id', '!=', False)]"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- ================= รายการคำขอค่ารักษาพยาบาล ================= -->
+    <record id="view_hrms_medical_request_list" model="ir.ui.view">
+        <field name="name">hr.manual.time.log.list.medical.requests</field>
+        <field name="model">hr.manual.time.log</field>
+        <field name="priority">30</field>
+        <field name="arch" type="xml">
+            <list string="ค่ารักษาพยาบาล"
+                  decoration-warning="state == 'รออนุมัติ'"
+                  decoration-success="state == 'อนุมัติ'"
+                  decoration-danger="state == 'ไม่อนุมัติ'"
+                  decoration-muted="state == 'ยกเลิก'">
+                <field name="work_date"/>
+                <field name="employee_code"/>
+                <field name="username"/>
+                <field name="branch_id" optional="show"/>
+                <field name="company_id" groups="base.group_multi_company" optional="show"/>
+                <field name="amount" sum="รวมเงิน"/>
+                <field name="bank_name" optional="show"/>
+                <field name="bank_account_number" optional="show"/>
+                <field name="state" widget="badge"/>
+                <field name="voucher_number"/>
+                <field name="approved_at" optional="hide"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="action_hrms_medical_request" model="ir.actions.act_window">
+        <field name="name">ค่ารักษาพยาบาล</field>
+        <field name="res_model">hr.manual.time.log</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('is_medical', '=', True)]</field>
+        <field name="context">{'hrms_medical_default': True}</field>
+        <field name="search_view_id" ref="npd_hrms_attendance.view_manual_time_log_search"/>
+        <field name="view_ids" eval="[(5, 0, 0),
+            (0, 0, {'view_mode': 'list', 'view_id': ref('view_hrms_medical_request_list')}),
+            (0, 0, {'view_mode': 'form', 'view_id': ref('npd_hrms_attendance.view_manual_time_log_form')})]"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">ยังไม่มีคำขอค่ารักษาพยาบาล</p>
+            <p>
+                พนักงานยื่นผ่านแอป HR หรือกด "สร้าง" เพื่อบันทึกแทน
+                (เช่น ผู้บริหารที่ไม่ได้เบิกผ่านแอป)
+            </p>
+        </field>
+    </record>
+
+    <!-- ================= ประเภทการเพิ่มเวลา: ธงค่ารักษาพยาบาล ================= -->
+    <record id="view_hrms_manual_time_reason_list_medical" model="ir.ui.view">
+        <field name="name">hrms.manual.time.reason.list.medical</field>
+        <field name="model">hrms.manual.time.reason</field>
+        <field name="inherit_id" ref="npd_hrms_attendance.view_hrms_manual_time_reason_list"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='requires_attachment']" position="after">
+                <field name="hrms_is_medical"/>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>

@@ -1,0 +1,5 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_hrms_medical_limit_user,hrms.medical.limit user,model_hrms_medical_limit,npd_hrms_base.group_hrms_user,1,0,0,0
+access_hrms_medical_limit_officer,hrms.medical.limit officer,model_hrms_medical_limit,npd_hrms_base.group_hrms_officer,1,1,1,1
+access_hrms_medical_opening_user,hrms.medical.opening user,model_hrms_medical_opening,npd_hrms_base.group_hrms_user,1,0,0,0
+access_hrms_medical_opening_officer,hrms.medical.opening officer,model_hrms_medical_opening,npd_hrms_base.group_hrms_officer,1,1,1,1

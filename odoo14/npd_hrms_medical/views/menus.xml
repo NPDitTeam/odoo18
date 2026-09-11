@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ระบบบุคคล > ค่ารักษาพยาบาล (sequence 25 = ระหว่างลงเวลา/การลา กับเงินเดือน) -->
+    <menuitem id="menu_hrms_medical_root"
+              name="ค่ารักษาพยาบาล"
+              parent="npd_hrms_base.menu_npd_hrms_root"
+              sequence="25"
+              groups="npd_hrms_base.group_hrms_officer"/>
+
+    <menuitem id="menu_hrms_medical_request"
+              name="คำขอค่ารักษาพยาบาล"
+              parent="menu_hrms_medical_root"
+              action="action_hrms_medical_request"
+              sequence="10"/>
+
+    <menuitem id="menu_hrms_medical_limit"
+              name="วงเงินรายบุคคล"
+              parent="menu_hrms_medical_root"
+              action="action_hrms_medical_limit"
+              sequence="20"/>
+
+    <menuitem id="menu_hrms_medical_opening"
+              name="ยอดยกมา (เบิกก่อนใช้ระบบ)"
+              parent="menu_hrms_medical_root"
+              action="action_hrms_medical_opening"
+              sequence="30"/>
+
+    <menuitem id="menu_hrms_medical_voucher_hr"
+              name="ใบสำคัญจ่ายที่ส่งเข้าการรับ"
+              parent="menu_hrms_medical_root"
+              action="action_hrms_medical_voucher"
+              sequence="40"
+              groups="account.group_account_invoice"/>
+
+    <!-- ฝั่งบัญชี: ต่อจากเมนู "คืนเงินประกันค่าเช่า" (sequence 80) -->
+    <menuitem id="menu_hrms_medical_voucher_account"
+              name="ใบสำคัญจ่ายค่ารักษาพยาบาล"
+              parent="account.menu_finance_payables"
+              action="action_hrms_medical_voucher"
+              sequence="81"/>
+
+</odoo>

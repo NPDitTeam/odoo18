@@ -1116,6 +1116,18 @@ class AccountVoucher(models.Model):
                 raise UserError(_('Cannot delete voucher(s) which are already opened or paid.'))
         return super().unlink()
 
+    def _npd_line_currency_vals(self, company_currency, current_currency, amount_currency):
+        """สกุลเงินของรายการบัญชีที่ใบสำคัญสร้าง
+
+        Odoo 14 ส่ง currency_id=False เมื่อเป็นสกุลเงินบริษัท แต่ Odoo 18 บังคับ
+        account.move.line.currency_id (NOT NULL) → post ใบสำคัญไม่ผ่านทุกใบ
+        สกุลเดียวกันจึงไม่ส่งทั้งสองคีย์ ให้ Odoo คำนวณเอง
+        (currency = สกุลบริษัท, amount_currency = balance) — ต่างสกุลส่งเหมือนเดิม
+        """
+        if company_currency != current_currency:
+            return {'currency_id': current_currency, 'amount_currency': amount_currency}
+        return {}
+
     def first_move_line_get(self, move_id, company_currency, current_currency):
         debit = credit = 0.0
         amount = abs(self.amount - self.wht_amount)
@@ -1140,9 +1152,8 @@ class AccountVoucher(models.Model):
             'move_id': move_id,
             'journal_id': self.journal_id.id,
             'partner_id': self.partner_id.commercial_partner_id.id,
-            'currency_id': company_currency != current_currency and current_currency or False,
-            'amount_currency': (sign * abs(self.amount)
-                                if company_currency != current_currency else 0.0),
+            **self._npd_line_currency_vals(company_currency, current_currency,
+                                           sign * abs(self.amount)),
             'date': self.account_date,
             'date_maturity': self.date_due,
         }
@@ -1171,9 +1182,8 @@ class AccountVoucher(models.Model):
             'move_id': move_id,
             'journal_id': self.journal_id.id,
             'partner_id': self.partner_id.commercial_partner_id.id,
-            'currency_id': company_currency != current_currency and current_currency or False,
-            'amount_currency': (sign * abs(amount)
-                                if company_currency != current_currency else 0.0),
+            **self._npd_line_currency_vals(company_currency, current_currency,
+                                           sign * abs(amount)),
             'date': self.account_date,
             'date_maturity': self.date_due,
         }
@@ -1197,9 +1207,8 @@ class AccountVoucher(models.Model):
             'move_id': move_id,
             'journal_id': self.journal_id.id,
             'partner_id': self.partner_id.commercial_partner_id.id,
-            'currency_id': company_currency != current_currency and current_currency or False,
-            'amount_currency': (sign * abs(self.amount)
-                                if company_currency != current_currency else 0.0),
+            **self._npd_line_currency_vals(company_currency, current_currency,
+                                           sign * abs(self.amount)),
             'date': self.account_date,
             'date_maturity': self.date_due,
         }
@@ -1284,8 +1293,8 @@ class AccountVoucher(models.Model):
                 'debit': debit,
                 'date': self.account_date,
                 'tax_ids': [(4, t.id) for t in line.tax_ids],
-                'amount_currency': line_subtotal if current_currency != company_currency else 0.0,
-                'currency_id': company_currency != current_currency and current_currency or False,
+                **self._npd_line_currency_vals(company_currency, current_currency,
+                                               line_subtotal),
                 'payment_id': self._context.get('payment_id'),
             }
             self.env['account.move.line'].create(move_line)

@@ -70,6 +70,12 @@
               action="action_allowance_management"
               sequence="70"/>
 
+    <menuitem id="menu_hrms_foreign_doc_status"
+              name="สถานะต่อเอกสารต่างชาติ"
+              parent="menu_hrms_master_data"
+              action="action_hrms_foreign_doc_status"
+              sequence="90"/>
+
     <!-- ================= ตั้งค่า ================= -->
     <menuitem id="menu_hrms_configuration"
               name="ตั้งค่า"
