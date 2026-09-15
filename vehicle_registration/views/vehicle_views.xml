@@ -894,13 +894,6 @@
         </field>
     </record>
 
-    <!-- เมนูสำหรับการแจ้งเตือน - ชี้ไปยังประวัติการแจ้งเตือน -->
-    <menuitem id="menu_vehicle_maintenance_notification"
-              name="📱 การแจ้งเตือน"
-              parent="menu_vehicle_maintenance"
-              action="action_notification_history"
-              sequence="30"/>
-
     <!-- ======================================= ประวัติการแจ้งเตือน ======================================= -->
 
     <!-- มุมมองรายการสำหรับประวัติการแจ้งเตือน -->
@@ -976,6 +969,15 @@
             </p>
         </field>
     </record>
+
+    <!-- เมนูสำหรับการแจ้งเตือน - ชี้ไปยังประวัติการแจ้งเตือน
+         ต้องประกาศ "หลัง" action_notification_history เพราะ Odoo อ่าน XML ตามลำดับ
+         (เดิมอยู่ก่อน action ทำให้ติดตั้งโมดูลไม่ผ่าน: External ID not found) -->
+    <menuitem id="menu_vehicle_maintenance_notification"
+              name="📱 การแจ้งเตือน"
+              parent="menu_vehicle_maintenance"
+              action="action_notification_history"
+              sequence="30"/>
 
     <!-- เมนูสำหรับประวัติการแจ้งเตือน (Submenu) -->
     <menuitem id="menu_notification_history"

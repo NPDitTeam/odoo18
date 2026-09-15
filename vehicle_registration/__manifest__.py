@@ -22,6 +22,9 @@
         'fleet',
         'mail',
         'transport_sync',
+        # ใช้ res.users.is_approver ในโดเมนของ maintenance.approval.wizard
+        # ซึ่งประกาศไว้ในโมดูลนี้ — ไม่ใส่ไว้ทำให้ติดตั้งบน DB ใหม่ไม่ผ่าน
+        'user_approver',
     ],
     'data': [
         'security/ir.model.access.csv',
