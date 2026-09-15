@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+
+    <record id="ir_cron_generate_year_date_ranges" model="ir.cron">
+        <field name="name">NPD: สร้าง Sub Sequences ปีใหม่ (ตามรูปแบบล่าสุด)</field>
+        <field name="model_id" ref="base.model_ir_sequence"/>
+        <field name="state">code</field>
+        <field name="code">model._cron_npd_generate_year_date_ranges()</field>
+        <field name="user_id" ref="base.user_root"/>
+        <field name="interval_number">12</field>
+        <field name="interval_type">months</field>
+        <field name="active" eval="True"/>
+        <!-- Odoo 18 ไม่มี numbercall/doall แล้ว
+             nextcall เก็บเป็น UTC เสมอ: 17:01 UTC วันที่ 31 ธ.ค. = 00:01 น. วันที่ 1 ม.ค. เวลาไทย (+7)
+             ถ้าติดตั้งหลังเวลานี้ของปีนั้น cron จะรันทันทีและสร้างของปีปัจจุบัน (นับตามเวลาไทย) -->
+        <field name="nextcall" eval="DateTime.utcnow().replace(month=12, day=31, hour=17, minute=1, second=0, microsecond=0).strftime('%Y-%m-%d %H:%M:%S')"/>
+    </record>
+
+</odoo>
