@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- รันทุกครั้งที่ติดตั้ง/อัปเกรดโมดูลนี้ เติมเฉพาะคำที่ยังไม่มีคำแปลไทย -->
+    <function model="npd.th.labels" name="_npd_apply_th_labels"/>
+</odoo>
