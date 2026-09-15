@@ -138,6 +138,8 @@ def _baht(value):
 # ทุกบรรทัด  ตัวสร้างข้อความทุกตัวต้อง escape ค่าที่มาจากผู้ใช้/ฐานข้อมูลเอง
 # ======================================================================
 BR = '<br/>'
+# คลาสบนข้อความ "แก้เสร็จแล้ว" — ต้องตรงกับ static/src/out_of_focus/out_of_focus_patch.js
+DONE_MESSAGE_CLASS = 'o_npd_ai_it_done'
 
 
 def _dt(value):
@@ -360,7 +362,7 @@ class NpdAiItSession(models.Model):
         self.ensure_one()
         self.sudo().write({'data_json': json.dumps(data, ensure_ascii=False)})
 
-    def _post_bot(self, body_html, commands=None):
+    def _post_bot(self, body_html, commands=None, done=False):
         """ให้บอทพูดในห้องแชท
 
         commands = None (ค่าเริ่มต้น) -> ต่อท้ายด้วยคำสั่งที่ใช้ได้ตลอดให้อัตโนมัติ
@@ -368,6 +370,11 @@ class NpdAiItSession(models.Model):
         ไม่ต้องจำจากข้อความแรกข้อความเดียว
 
         ส่งค่า False เองเมื่อข้อความนั้นจะตามด้วยข้อความถัดไปทันที (จะได้ไม่ซ้ำ)
+
+        done = 'ข้อความสั้น' -> ข้อความแจ้งผล "แก้เสร็จแล้ว" แนบข้อความสั้นแบบซ่อนไว้
+        (คลาส DONE_MESSAGE_CLASS + d-none) ฝั่ง JS (out_of_focus_patch.js) เด้ง popup
+        เฉพาะข้อความแบบนี้ โดยแสดงแค่ข้อความสั้นนั้น เช่น "✅ แก้วันที่คืนเรียบร้อยแล้ว · W3/IN/08511"
+        ข้อความระหว่างทาง (ถามเลขเอกสาร/ยืนยัน) มีแค่เสียง ไม่เด้ง popup
         """
         self.ensure_one()
         if commands is None:
@@ -375,6 +382,12 @@ class NpdAiItSession(models.Model):
             commands = self.state not in ('done', 'cancelled', 'menu')
         if commands:
             body_html = _block(body_html, COMMANDS_FOOTER)
+        if done:
+            text = (done if isinstance(done, str) else 'แก้เรียบร้อยแล้ว').replace('✅', '').strip()
+            if self.document_ref:
+                text = '%s · %s' % (text, self.document_ref)
+            body_html = '<span class="%s d-none">✅ %s</span>%s' % (
+                DONE_MESSAGE_CLASS, html_escape(text), body_html)
         channel = self.channel_id.sudo()
         bot = self._bot_partner()
         if not channel or not bot:
@@ -990,7 +1003,7 @@ class NpdAiItSession(models.Model):
                                _fmt(row['after']), _fmt(row['added']))
                             for row in applied))
         ))
-        self._post_bot('<br/>'.join(lines))
+        self._post_bot('<br/>'.join(lines), done='เติมสต๊อกเรียบร้อยแล้ว')
         _logger.info('ตัวช่วย AI-IT: %s เติมสต๊อกให้ %s (%d รายการ)',
                      self.user_id.display_name, self.document_ref, len(applied))
 
@@ -1064,7 +1077,7 @@ class NpdAiItSession(models.Model):
         })
         self._log_history('stock_cut', html2plaintext(
             '%s<br/>%s' % (title, message) if message else title))
-        self._post_bot('<br/>'.join(body))
+        self._post_bot('<br/>'.join(body), done=title)
         _logger.info('ตัวช่วย AI-IT: %s สั่งตัดสต๊อก %s ผ่านแชทสำเร็จ',
                      self.user_id.display_name, self.document_ref)
 
@@ -1305,7 +1318,7 @@ class NpdAiItSession(models.Model):
                ''.join('<br/>• %s (%s)' % (p['name'], _fmt(p['amount']))
                        for p in result['payments']))
         ))
-        self._post_bot('<br/>'.join(lines))
+        self._post_bot('<br/>'.join(lines), done='ยกเลิกเอกสารเรียบร้อยแล้ว')
 
     # ---- ทางที่ 2: ฉบับร่าง -> ให้ระบุวันที่เอง ------------------------
     def _offer_manual_date(self, move, info, header):
@@ -1604,7 +1617,7 @@ class NpdAiItSession(models.Model):
                result['old_date'] or '-', result['new_date'],
                '<br/>%s' % source_note if source_note else '')
         ))
-        self._post_bot('<br/>'.join(lines))
+        self._post_bot('<br/>'.join(lines), done='แก้วันที่เรียบร้อยแล้ว')
 
     # ==================================================================
     # หัวข้อที่ 3 : แก้ไขวันที่คืนสินค้า
@@ -1776,7 +1789,7 @@ class NpdAiItSession(models.Model):
         })
         self._log_history('return_date',
                           'วันที่คืน: %s → %s' % (old_text, new_text))
-        self._post_bot('<br/>'.join(lines))
+        self._post_bot('<br/>'.join(lines), done='แก้วันที่คืนเรียบร้อยแล้ว')
 
     # ==================================================================
     # หัวข้อที่ 4 : แก้ไขสถานะการเช่า
@@ -1951,7 +1964,7 @@ class NpdAiItSession(models.Model):
         })
         self._log_history('rental_status',
                           'สถานะการเช่า: %s → %s' % (old_label, new_label))
-        self._post_bot('<br/>'.join(lines))
+        self._post_bot('<br/>'.join(lines), done='แก้สถานะการเช่าเรียบร้อยแล้ว')
 
     # ==================================================================
     # หัวข้อที่ 5 : แก้การปัดเศษ VAT ในใบแจ้งหนี้ (สลับได้ทั้งไปและกลับ)
@@ -2224,7 +2237,7 @@ class NpdAiItSession(models.Model):
                _baht(result['old_untaxed']), _baht(result['new_untaxed']),
                _baht(result['old_tax']), _baht(result['new_tax']),
                _baht(result['gross'])))
-        self._post_bot(summary)
+        self._post_bot(summary, done='แก้การปัดเศษ VAT เรียบร้อยแล้ว')
 
     # ------------------------------------------------------------------
     # การอ่านข้อความของพนักงาน (regex ก่อน แล้วค่อยให้ AI ช่วยถ้าอ่านไม่ออก)

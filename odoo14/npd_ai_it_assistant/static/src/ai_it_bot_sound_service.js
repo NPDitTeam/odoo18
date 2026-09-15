@@ -1,22 +1,24 @@
 /**
- * มีเสียงเตือนทุกครั้งที่ "ตัวช่วย AI-IT" ตอบกลับ
+ * เสียงเตือนเมื่อ "ตัวช่วย AI-IT" ตอบกลับ บนจอมือถือ
  *
- * Odoo ส่งเสียงเฉพาะตอนที่หน้าต่างไม่ได้โฟกัส (out_of_focus_service) แต่งานนี้
- * พนักงานนั่งจ้องแชทรออยู่ และบางขั้นตอน (ตัดสต๊อก/ยกเลิกเอกสาร) ใช้เวลาหลายวินาที
- * จึงเล่นเสียงเพิ่มตอนที่หน้าต่างโฟกัสอยู่ (ตอนไม่โฟกัส Odoo เล่นให้เองแล้ว จะได้ไม่ดังซ้ำ)
+ * จอใหญ่: Odoo 18 เล่นเสียงให้เองทุกข้อความแชทใหม่ (mail.out_of_focus notify —
+ * ข้อความบอทที่ไม่ใช่ "แก้เสร็จ" ดู out_of_focus/out_of_focus_patch.js ซึ่งคงเสียงไว้)
+ * ถ้าเล่นซ้ำตรงนี้อีกจะดัง 2 ครั้ง (ของ o14 ต้องเล่นเองเพราะ o14 ดังเฉพาะตอนไม่โฟกัส)
+ * จอมือถือ: Odoo ข้ามการแจ้งเตือนทั้งหมด (store_service_patch: ui.isSmall) จึงเล่นเองเฉพาะกรณีนี้
  * ส่งเสียงเฉพาะข้อความของบอทตัวนี้เท่านั้น แชทกับคนอื่นยังเป็นค่ามาตรฐาน
  */
 import { registry } from "@web/core/registry";
 import { session } from "@web/session";
 
+import { isAiItBotMessage } from "./out_of_focus/out_of_focus_patch";
+
 export const npdAiItBotSoundService = {
-    dependencies: ["mail.sound_effects"],
-    start(env, { "mail.sound_effects": soundEffects }) {
+    dependencies: ["mail.sound_effects", "ui"],
+    start(env, { "mail.sound_effects": soundEffects, ui }) {
         let warned = false;
         env.bus.addEventListener("discuss.channel/new_message", ({ detail }) => {
             try {
-                const botId = session.npd_ai_it_bot_partner_id;
-                if (!botId) {
+                if (!session.npd_ai_it_bot_partner_id) {
                     if (!warned) {
                         warned = true;
                         console.warn(
@@ -27,8 +29,7 @@ export const npdAiItBotSoundService = {
                     return;
                 }
                 const { message, silent } = detail || {};
-                const author = message?.author;
-                if (silent || !author || author.type !== "partner" || author.id !== botId) {
+                if (silent || !ui.isSmall || !isAiItBotMessage(message)) {
                     return;
                 }
                 if (document.hasFocus()) {
