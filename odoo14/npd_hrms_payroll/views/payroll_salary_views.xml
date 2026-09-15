@@ -193,7 +193,7 @@
                             </field>
                         </page>
 
-                        <page string="รายการหัก" name="deductions">
+                        <page string="รายจ่าย" name="deductions">
                             <group>
                                 <group string="หักประจำ">
                                     <field name="expense_provident"/>
