@@ -1,0 +1,7 @@
+// ช่องบันทึกอยู่ใน .o_form_sheet_bg (โหมดด้านล่างของ muk_web_chatter / COMBO ของ Odoo)
+// บนจอ XXL .o_form_sheet_bg เป็น flex แนวตั้งสูงเต็มจอ ถ้าปล่อย flex-shrink ปกติ
+// ชีตเอกสารจะถูกบีบให้เตี้ยลงจนมี scrollbar ของตัวเอง ส่วนช่องบันทึกค้างอยู่ท้ายจอ
+// -> ห้ามบีบ ให้ทั้งหน้าเลื่อนลงไปเจอช่องบันทึกใต้เอกสารแทน
+.o_form_sheet_bg:has(> .o-mail-Form-chatter.o-isInFormSheetBg) > * {
+    flex-shrink: 0;
+}
