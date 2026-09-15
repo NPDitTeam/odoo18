@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_scb_counterparty_alias_tree" model="ir.ui.view">
+        <field name="name">npd.scb.counterparty.alias.tree</field>
+        <field name="model">npd.scb.counterparty.alias</field>
+        <field name="arch" type="xml">
+            <list string="ชื่อผู้โอนที่จดจำไว้" editable="bottom"
+                  decoration-muted="origin == 'auto'">
+                <field name="partner_id" options="{'no_create': True}"/>
+                <field name="name"/>
+                <field name="source"/>
+                <field name="account_digits" readonly="1" optional="show"/>
+                <field name="origin"/>
+                <field name="payment_id" readonly="1" optional="hide"/>
+                <field name="note" optional="show"/>
+                <field name="active" invisible="1"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_scb_counterparty_alias_search" model="ir.ui.view">
+        <field name="name">npd.scb.counterparty.alias.search</field>
+        <field name="model">npd.scb.counterparty.alias</field>
+        <field name="arch" type="xml">
+            <search string="ชื่อผู้โอนที่จดจำไว้">
+                <field name="name"/>
+                <field name="partner_id"/>
+                <filter name="flt_auto" string="ระบบจดจำเอง"
+                        domain="[('origin', '=', 'auto')]"/>
+                <filter name="flt_manual" string="เพิ่มเอง"
+                        domain="[('origin', '=', 'manual')]"/>
+                <separator/>
+                <filter name="flt_inactive" string="เลิกใช้แล้ว"
+                        domain="[('active', '=', False)]"/>
+                <group expand="0" string="จัดกลุ่มตาม">
+                    <filter name="grp_partner" string="ลูกค้า"
+                            context="{'group_by': 'partner_id'}"/>
+                    <filter name="grp_source" string="ธนาคาร"
+                            context="{'group_by': 'source'}"/>
+                    <filter name="grp_origin" string="ที่มา"
+                            context="{'group_by': 'origin'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_scb_counterparty_alias" model="ir.actions.act_window">
+        <field name="name">ชื่อผู้โอนที่จดจำไว้</field>
+        <field name="res_model">npd.scb.counterparty.alias</field>
+        <field name="view_mode">list</field>
+        <field name="search_view_id" ref="view_scb_counterparty_alias_search"/>
+        <field name="context">{'search_default_grp_partner': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">ยังไม่มีชื่อที่จดจำไว้</p>
+            <p>ธนาคารถอดชื่อไทยเป็นอังกฤษแบบไม่เป็นมาตรฐาน (เช่น
+               <b>ธราธร → THATAROTH GHEER</b>) จนเทียบด้วยกฎไม่ได้<br/>
+               ครั้งแรกให้ AI ตัดสิน แล้วระบบจะ <b>จดจำไว้ให้เอง</b> —
+               ครั้งต่อไปที่ลูกค้าคนเดิมโอนมาจะเทียบได้ทันที ไม่ต้องเรียก AI อีก</p>
+            <p>เพิ่มเองล่วงหน้าก็ได้ ถ้ารู้ว่าธนาคารเขียนชื่อลูกค้ารายไหนว่าอย่างไร</p>
+        </field>
+    </record>
+
+    <menuitem id="menu_scb_counterparty_alias"
+              name="ชื่อผู้โอนที่จดจำไว้"
+              parent="menu_scb_auto_payment_root"
+              action="action_scb_counterparty_alias"
+              sequence="20"/>
+</odoo>

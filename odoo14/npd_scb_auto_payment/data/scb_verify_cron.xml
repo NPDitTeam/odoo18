@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ตรวจสอบการโอนของใบรับชำระที่ถึงคิว (ข้อมูลธนาคารมาช้ากว่าจริง ~1 วัน)
+         ทำงานทุก 4 ชั่วโมง เพื่อให้รายการของเมื่อวานถูกตรวจให้เสร็จภายในวันนี้
+         เปิด/ปิดได้ที่เมนู ตรวจสอบการโอนเงิน > ตั้งค่า
+         > เปิดใช้การตรวจสอบการโอนอัตโนมัติ -->
+    <record id="ir_cron_scb_verify_transfers" model="ir.cron">
+        <field name="name">ตรวจสอบการโอนเงินจากสลิปในใบรับชำระ</field>
+        <field name="model_id" ref="account.model_account_payment"/>
+        <field name="user_id" ref="base.user_root"/>
+        <field name="state">code</field>
+        <field name="code">model._cron_scb_verify_transfers()</field>
+        <field name="interval_number">4</field>
+        <field name="interval_type">hours</field>
+        <field name="active" eval="True"/>
+    </record>
+</odoo>

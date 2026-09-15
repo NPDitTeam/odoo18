@@ -1,0 +1,315 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ================= ฟอร์มรับชำระ: ผลตรวจสอบการโอน ================= -->
+    <record id="view_account_payment_form_scb_auto" model="ir.ui.view">
+        <field name="name">account.payment.form.scb.verify</field>
+        <field name="model">account.payment</field>
+        <field name="inherit_id" ref="account.view_account_payment_form"/>
+        <field name="priority">99</field>
+        <field name="arch" type="xml">
+
+            <!-- ปุ่มตรวจสอบการโอนกับรายการเดินบัญชีจริงของธนาคาร
+                 แสดงเฉพาะใบเงินรับที่ "ลงบันทึก" แล้ว — ใบร่างยังแก้ยอด/วันที่ได้
+                 การตรวจตั้งแต่ตอนเป็นร่างจึงใช้อ้างอิงไม่ได้ -->
+            <xpath expr="//header/button[@name='action_post']" position="after">
+                <button name="action_scb_verify_transfer" type="object"
+                        string="ตรวจสอบการโอน" icon="fa-university"
+                        class="oe_highlight"
+                        invisible="state not in ('in_process', 'paid') or payment_type != 'inbound' or scb_verify_state in ('success', 'other_company', 'skipped')"/>
+                <button name="action_scb_verify_transfer_again" type="object"
+                        string="ตรวจสอบการโอนใหม่" icon="fa-refresh"
+                        groups="account.group_account_invoice"
+                        invisible="state not in ('in_process', 'paid') or payment_type != 'inbound' or scb_verify_state in ('to_check', 'no_slip', False)"/>
+            </xpath>
+
+            <!-- แบนเนอร์ผลตรวจสอบ -->
+            <xpath expr="//sheet" position="before">
+                <div class="alert alert-success mb-0" role="alert"
+                     invisible="scb_verify_state != 'success'">
+                    <i class="fa fa-check-circle me-1" title="สถานะการโอน"/>
+                    <b>โอนสำเร็จ</b> — จับคู่กับรายการเงินเข้าในบัญชีธนาคารได้แล้ว
+                </div>
+                <div class="alert alert-danger mb-0" role="alert"
+                     invisible="scb_verify_state != 'failed'">
+                    <i class="fa fa-times-circle me-1" title="สถานะการโอน"/>
+                    <b>ตรวจสอบการโอนไม่สำเร็จ</b>
+                    <field name="scb_verify_summary" readonly="1" nolabel="1" class="mb-0"/>
+                </div>
+                <div class="alert alert-warning mb-0" role="alert"
+                     invisible="scb_verify_state != 'other_company'">
+                    <i class="fa fa-exchange me-1" title="สถานะการโอน"/>
+                    <b>เงินเข้าแล้ว แต่โอนคนละบริษัท</b>
+                    <field name="scb_verify_summary" readonly="1" nolabel="1" class="mb-0"/>
+                </div>
+                <div class="alert alert-warning mb-0" role="alert"
+                     invisible="scb_verify_state != 'waiting'">
+                    <i class="fa fa-clock-o me-1" title="สถานะการโอน"/>
+                    <b>รอข้อมูลจากธนาคาร</b>
+                    <field name="scb_verify_summary" readonly="1" nolabel="1" class="mb-0"/>
+                </div>
+                <div class="alert alert-secondary mb-0" role="alert"
+                     invisible="scb_verify_state != 'skipped'">
+                    <i class="fa fa-ban me-1" title="สถานะการโอน"/>
+                    <b>ไม่ต้องตรวจสอบการโอน</b>
+                    <field name="scb_verify_summary" readonly="1" nolabel="1" class="mb-0"/>
+                </div>
+                <div class="alert alert-warning mb-0" role="alert"
+                     invisible="scb_verify_state != 'no_slip'">
+                    <i class="fa fa-paperclip me-1" title="สถานะการโอน"/>
+                    <b>ยังไม่แนบสลิป</b> — กรุณาแนบไฟล์สลิปการโอนเงิน (รูปภาพหรือ PDF)
+                    ในเอกสารแนบด้านล่าง แล้วระบบจะตรวจสอบให้อัตโนมัติในรอบถัดไป
+                    (หรือกดปุ่ม "ตรวจสอบการโอน" เพื่อตรวจทันที)
+                </div>
+            </xpath>
+
+            <!-- สถานะการโอน (แสดงข้าง ๆ สมุดรายวัน) -->
+            <xpath expr="(//field[@name='journal_id'][not(ancestor::list)])[1]" position="after">
+                <field name="scb_verify_state" widget="badge" readonly="1" force_save="1"
+                       invisible="state not in ('in_process', 'paid') or payment_type != 'inbound'"
+                       decoration-success="scb_verify_state == 'success'"
+                       decoration-danger="scb_verify_state == 'failed'"
+                       decoration-warning="scb_verify_state in ['waiting', 'no_slip', 'other_company']"
+                       decoration-info="scb_verify_state == 'to_check'"
+                       decoration-muted="scb_verify_state == 'skipped'"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- ================= popup ดูรายละเอียดผลตรวจ (กดจากไอคอนในตาราง) =================
+         แยกเป็นฟอร์มของตัวเอง ไม่ใช้ฟอร์มรับชำระเต็ม เพื่อให้เปิดเร็วและเห็นเฉพาะ
+         เรื่องการตรวจสอบ — รายละเอียดเชิงเกณฑ์ยังถูกจำกัดด้วย groups ที่ตัวฟิลด์ -->
+    <record id="view_account_payment_scb_detail_form" model="ir.ui.view">
+        <field name="name">account.payment.scb.detail.form</field>
+        <field name="model">account.payment</field>
+        <field name="priority">99</field>
+        <field name="arch" type="xml">
+            <form string="รายละเอียดผลตรวจสอบการโอน" create="0" edit="0">
+                <div class="alert alert-success mb-2" role="alert"
+                     invisible="scb_verify_state != 'success'">
+                    <i class="fa fa-check-circle me-1" title="สถานะการโอน"/><b>โอนสำเร็จ</b>
+                </div>
+                <div class="alert alert-danger mb-2" role="alert"
+                     invisible="scb_verify_state != 'failed'">
+                    <i class="fa fa-times-circle me-1" title="สถานะการโอน"/><b>ตรวจสอบไม่ผ่าน</b>
+                </div>
+                <div class="alert alert-warning mb-2" role="alert"
+                     invisible="scb_verify_state not in ('waiting', 'no_slip')">
+                    <i class="fa fa-clock-o me-1" title="สถานะการโอน"/><b>ยังตรวจสอบไม่ได้</b>
+                </div>
+                <div class="alert alert-secondary mb-2" role="alert"
+                     invisible="scb_verify_state != 'skipped'">
+                    <i class="fa fa-ban me-1" title="สถานะการโอน"/><b>ไม่ต้องตรวจสอบ</b>
+                </div>
+                <group>
+                    <group string="ใบรับชำระ">
+                        <field name="name" readonly="1"/>
+                        <field name="partner_id" readonly="1"/>
+                        <field name="date" readonly="1"/>
+                        <field name="journal_id" readonly="1"/>
+                        <field name="amount" readonly="1"/>
+                        <field name="currency_id" invisible="1"/>
+                    </group>
+                    <group string="ผลตรวจสอบ">
+                        <field name="scb_verify_state" readonly="1"/>
+                        <field name="scb_verify_summary" readonly="1"/>
+                        <field name="scb_verify_bank" readonly="1"/>
+                        <field name="scb_verify_datetime" readonly="1"/>
+                        <field name="scb_verify_attempts" readonly="1"/>
+                    </group>
+                </group>
+                <separator string="ผลตรวจรายสลิป"/>
+                <field name="scb_slip_ids" nolabel="1" readonly="1">
+                    <list create="0" delete="0" edit="0"
+                          decoration-success="state == 'matched'"
+                          decoration-danger="state == 'not_found'"
+                          decoration-warning="state == 'waiting'"
+                          decoration-muted="state in ['skipped', 'not_slip', 'duplicate']">
+                        <field name="attachment_name"/>
+                        <field name="slip_date"/>
+                        <field name="slip_time"/>
+                        <field name="slip_amount" sum="รวม"/>
+                        <field name="slip_sender"/>
+                        <field name="statement_id"/>
+                        <field name="state" widget="badge"
+                               decoration-success="state == 'matched'"
+                               decoration-danger="state == 'not_found'"
+                               decoration-warning="state == 'waiting'"
+                               decoration-muted="state in ['skipped', 'not_slip', 'duplicate']"/>
+                        <field name="currency_id" invisible="1"/>
+                    </list>
+                </field>
+                <group string="รายละเอียดผลตรวจ (เฉพาะผู้จัดการบัญชี)"
+                       groups="account.group_account_manager">
+                    <field name="scb_verify_reason" nolabel="1" readonly="1"/>
+                </group>
+                <footer>
+                    <button name="action_scb_verify_transfer" type="object"
+                            string="ตรวจสอบใหม่" class="btn-secondary" icon="fa-refresh"
+                            groups="account.group_account_invoice"
+                            invisible="scb_verify_state in ('success', 'skipped')"/>
+                    <button string="ปิด" class="btn-primary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <!-- ================= รายการผลตรวจสอบการโอน ================= -->
+    <record id="view_account_payment_tree_scb_verify" model="ir.ui.view">
+        <field name="name">account.payment.tree.scb.verify</field>
+        <field name="model">account.payment</field>
+        <field name="arch" type="xml">
+            <list string="ผลตรวจสอบการโอน" create="0"
+                  decoration-danger="scb_verify_state == 'failed'"
+                  decoration-warning="scb_verify_state in ['no_slip', 'other_company']"
+                  decoration-muted="scb_verify_state in ['waiting', 'skipped']">
+                <field name="date"/>
+                <field name="name"/>
+                <field name="partner_id"/>
+                <field name="journal_id" optional="show"/>
+                <field name="scb_verify_bank" widget="badge"
+                       decoration-info="scb_verify_bank == 'scb'"
+                       decoration-success="scb_verify_bank == 'kbank'"
+                       decoration-warning="scb_verify_bank == 'ktb'"/>
+                <field name="amount" sum="รวม"/>
+                <field name="scb_slip_date" optional="show"/>
+                <field name="scb_slip_amount" optional="hide"/>
+                <field name="scb_slip_sender" optional="show"/>
+                <field name="scb_statement_id" optional="hide"/>
+                <field name="scb_verify_datetime" optional="hide"/>
+                <field name="scb_verify_attempts" optional="hide"/>
+                <field name="scb_verify_state" widget="badge"
+                       decoration-success="scb_verify_state == 'success'"
+                       decoration-danger="scb_verify_state == 'failed'"
+                       decoration-warning="scb_verify_state in ['waiting', 'no_slip', 'other_company']"
+                       decoration-info="scb_verify_state == 'to_check'"
+                       decoration-muted="scb_verify_state == 'skipped'"/>
+                <field name="state" widget="badge" optional="show"/>
+                <field name="currency_id" invisible="1"/>
+                <!-- ไอคอนดูรายละเอียดผลตรวจแบบ popup (แทน log ที่ซ่อนไปแล้ว) -->
+                <button name="action_scb_show_detail" type="object"
+                        icon="fa-search-plus" string="ดูรายละเอียดผลตรวจ"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_account_payment_search_scb_verify" model="ir.ui.view">
+        <field name="name">account.payment.search.scb.verify</field>
+        <field name="model">account.payment</field>
+        <field name="arch" type="xml">
+            <search string="ผลตรวจสอบการโอน">
+                <field name="name"/>
+                <field name="partner_id"/>
+                <field name="scb_slip_sender"/>
+                <field name="amount"/>
+                <filter name="scb_failed" string="ไม่สำเร็จ"
+                        domain="[('scb_verify_state', '=', 'failed')]"/>
+                <filter name="scb_other_company" string="โอนคนละบริษัท"
+                        domain="[('scb_verify_state', '=', 'other_company')]"/>
+                <filter name="scb_no_slip" string="ยังไม่แนบสลิป"
+                        domain="[('scb_verify_state', '=', 'no_slip')]"/>
+                <filter name="scb_waiting" string="รอข้อมูลธนาคาร"
+                        domain="[('scb_verify_state', '=', 'waiting')]"/>
+                <filter name="scb_to_check" string="รอตรวจสอบ"
+                        domain="[('scb_verify_state', '=', 'to_check')]"/>
+                <filter name="scb_success" string="โอนสำเร็จ"
+                        domain="[('scb_verify_state', '=', 'success')]"/>
+                <filter name="scb_skipped" string="ไม่ต้องตรวจสอบ"
+                        domain="[('scb_verify_state', '=', 'skipped')]"/>
+                <filter name="scb_bank_scb" string="ธนาคาร SCB"
+                        domain="[('scb_verify_bank', '=', 'scb')]"/>
+                <filter name="scb_bank_kbank" string="ธนาคาร Kbank"
+                        domain="[('scb_verify_bank', '=', 'kbank')]"/>
+                <group expand="0" string="จัดกลุ่มตาม">
+                    <filter name="grp_verify" string="สถานะการโอน"
+                            context="{'group_by': 'scb_verify_state'}"/>
+                    <filter name="grp_bank" string="ธนาคารที่ตรวจ"
+                            context="{'group_by': 'scb_verify_bank'}"/>
+                    <filter name="grp_partner" string="ลูกค้า" context="{'group_by': 'partner_id'}"/>
+                    <filter name="grp_date" string="วันที่" context="{'group_by': 'date:day'}"/>
+                    <filter name="grp_journal" string="สมุดรายวัน" context="{'group_by': 'journal_id'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_scb_payment_verify" model="ir.actions.act_window">
+        <field name="name">ผลตรวจสอบการโอน</field>
+        <field name="res_model">account.payment</field>
+        <field name="view_mode">list,form</field>
+        <!-- นับเฉพาะใบที่ลงบันทึกแล้ว (ตรงกับเงื่อนไขที่ระบบใช้ตรวจสอบ) -->
+        <field name="domain">[('payment_type', '=', 'inbound'), ('partner_type', '=', 'customer'), ('state', 'in', ['in_process', 'paid'])]</field>
+        <field name="context">{'search_default_scb_failed': 1, 'search_default_scb_other_company': 1, 'search_default_scb_no_slip': 1, 'search_default_scb_waiting': 1}</field>
+        <field name="search_view_id" ref="view_account_payment_search_scb_verify"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">ยังไม่มีรายการที่ต้องตรวจสอบ</p>
+            <p>ระบบจะไล่ตรวจใบรับชำระที่แนบสลิปไว้โดยอัตโนมัติ
+               (หลังวันที่ในใบรับชำระผ่านไปแล้วตามที่ตั้งค่าไว้)</p>
+        </field>
+    </record>
+
+    <!-- ใช้ tree เฉพาะของเมนูนี้ ไม่กระทบหน้ารับชำระปกติ -->
+    <record id="action_scb_payment_verify_tree_view" model="ir.actions.act_window.view">
+        <field name="sequence" eval="1"/>
+        <field name="view_mode">list</field>
+        <field name="view_id" ref="view_account_payment_tree_scb_verify"/>
+        <field name="act_window_id" ref="action_scb_payment_verify"/>
+    </record>
+    <record id="action_scb_payment_verify_form_view" model="ir.actions.act_window.view">
+        <field name="sequence" eval="2"/>
+        <field name="view_mode">form</field>
+        <field name="view_id" ref="account.view_account_payment_form"/>
+        <field name="act_window_id" ref="action_scb_payment_verify"/>
+    </record>
+
+    <!-- ปุ่มในเมนู Action (เฟือง) ของตาราง: ติ๊กหลายใบแล้วสั่งตรวจรวดเดียว
+         อัปเดตสถานะบนใบเดิม ไม่สร้างรายการใหม่ -->
+    <record id="action_server_scb_verify_selected" model="ir.actions.server">
+        <field name="name">🔄 ตรวจสอบการโอนอีกครั้ง (อัปเดตสถานะ)</field>
+        <field name="model_id" ref="account.model_account_payment"/>
+        <field name="binding_model_id" ref="account.model_account_payment"/>
+        <field name="binding_view_types">list</field>
+        <field name="groups_id" eval="[(4, ref('account.group_account_invoice'))]"/>
+        <field name="state">code</field>
+        <field name="code">action = records.action_scb_verify_selected()</field>
+    </record>
+
+    <!-- ล้างผลตรวจที่ค้าง แล้วให้ระบบเริ่มตรวจใหม่ตั้งแต่ต้น
+         ใช้เมื่อผลเก่าค้างจนแก้ไม่ตก (เช่น ไม่สำเร็จจนครบเพดานแล้ว cron เลิกตรวจ)
+         จำกัดสิทธิ์ผู้จัดการบัญชี เพราะเป็นการล้างประวัติการตรวจสอบ -->
+    <record id="action_server_scb_reset_verify" model="ir.actions.server">
+        <field name="name">🧹 ล้างผลตรวจการโอน (ให้ตรวจใหม่ทั้งหมด)</field>
+        <field name="model_id" ref="account.model_account_payment"/>
+        <field name="binding_model_id" ref="account.model_account_payment"/>
+        <field name="binding_view_types">list</field>
+        <field name="groups_id" eval="[(4, ref('account.group_account_manager'))]"/>
+        <field name="state">code</field>
+        <field name="code">action = records.action_scb_reset_verify()</field>
+    </record>
+
+    <!-- เมนูหลักของโมดูล (เมนูย่อย "ตั้งค่า" อยู่ใน res_config_settings_views.xml)
+         หมายเหตุ: ชื่อทางเทคนิคของโมดูลยังเป็น npd_scb_auto_payment ตามเดิม
+         (เปลี่ยนไม่ได้เพราะผูกกับข้อมูลในฐานข้อมูล) แต่ชื่อที่ผู้ใช้เห็นเปลี่ยนให้
+         ตรงกับงานจริงคือ "ตรวจสอบการโอนเงิน" ไม่ใช่การสร้างใบรับชำระอัตโนมัติแล้ว -->
+    <menuitem id="menu_scb_auto_payment_root" name="ตรวจสอบการโอนเงิน"
+              parent="account.menu_finance" sequence="90"/>
+
+    <menuitem id="menu_scb_payment_verify"
+              name="ผลตรวจสอบการโอน"
+              parent="menu_scb_auto_payment_root"
+              action="action_scb_payment_verify" sequence="5"/>
+
+    <!-- ข้อมูลดิบที่ดึงจากชีต (โมเดลอยู่ในโมดูล npd_scb_cashflow)
+         ระบบใช้ตารางนี้เป็นตัวเทียบกับสลิป จึงเอามาไว้ในเมนูเดียวกันให้เปิดดูง่าย
+         แยกเมนูตามธนาคาร เพราะแต่ละแท็บคนละผังคอลัมน์และใช้กับสมุดรายวันคนละชุด -->
+    <menuitem id="menu_scb_bank_statement"
+              name="รายการเดินบัญชีธนาคาร (จาก Google Sheet) SCB"
+              parent="menu_scb_auto_payment_root"
+              action="npd_scb_cashflow.action_npd_scb_bank_statement_scb"
+              sequence="10"/>
+
+    <menuitem id="menu_scb_bank_statement_kbank"
+              name="รายการเดินบัญชีธนาคาร (จาก Google Sheet) Kbank"
+              parent="menu_scb_auto_payment_root"
+              action="npd_scb_cashflow.action_npd_scb_bank_statement_kbank"
+              sequence="11"/>
+</odoo>

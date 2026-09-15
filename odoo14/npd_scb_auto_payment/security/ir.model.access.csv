@@ -1,0 +1,6 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_scb_payment_settings_manager,scb.payment.settings.manager,model_scb_payment_settings,account.group_account_manager,1,1,1,1
+access_npd_scb_payment_slip_user,npd.scb.payment.slip.user,model_npd_scb_payment_slip,base.group_user,1,0,0,0
+access_npd_scb_payment_slip_invoice,npd.scb.payment.slip.invoice,model_npd_scb_payment_slip,account.group_account_invoice,1,1,1,1
+access_npd_scb_counterparty_alias_user,npd.scb.counterparty.alias.user,model_npd_scb_counterparty_alias,base.group_user,1,0,0,0
+access_npd_scb_counterparty_alias_invoice,npd.scb.counterparty.alias.invoice,model_npd_scb_counterparty_alias,account.group_account_invoice,1,1,1,1

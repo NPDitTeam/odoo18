@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Tree / List (ใช้ร่วมกันทั้ง 3 ธนาคาร) -->
+    <record id="view_npd_scb_cashflow_tree" model="ir.ui.view">
+        <field name="name">npd.scb.cashflow.tree</field>
+        <field name="model">npd.scb.cashflow</field>
+        <field name="arch" type="xml">
+            <list string="กระแสเงินสดธนาคาร" create="0" edit="0" delete="0"
+                  default_order="date desc">
+                <field name="key"/>
+                <field name="bank"/>
+                <field name="account_no"/>
+                <field name="account_name"/>
+                <field name="date"/>
+                <field name="num_transactions" sum="รวม"/>
+                <field name="money_in" widget="monetary" sum="รวม"/>
+                <field name="money_out" widget="monetary" sum="รวม"/>
+                <field name="net_flow" widget="monetary" sum="รวม"/>
+                <field name="balance_eod" widget="monetary"/>
+                <field name="updated_at" optional="hide"/>
+                <field name="currency_id" invisible="1"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Search (ใช้ร่วมกัน) -->
+    <record id="view_npd_scb_cashflow_search" model="ir.ui.view">
+        <field name="name">npd.scb.cashflow.search</field>
+        <field name="model">npd.scb.cashflow</field>
+        <field name="arch" type="xml">
+            <search string="กระแสเงินสดธนาคาร">
+                <field name="key"/>
+                <field name="account_no"/>
+                <field name="account_name"/>
+                <field name="date"/>
+                <filter name="flt_money_in" string="มีเงินเข้า" domain="[('money_in', '>', 0)]"/>
+                <filter name="flt_money_out" string="มีเงินออก" domain="[('money_out', '>', 0)]"/>
+                <group expand="0" string="จัดกลุ่มตาม">
+                    <filter name="grp_source" string="ธนาคาร" context="{'group_by': 'source'}"/>
+                    <filter name="grp_account_name" string="ชื่อบัญชี" context="{'group_by': 'account_name'}"/>
+                    <filter name="grp_account_no" string="เลขบัญชี" context="{'group_by': 'account_no'}"/>
+                    <filter name="grp_date" string="วันที่ (เดือน)" context="{'group_by': 'date:month'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- Action: SCB -->
+    <record id="action_npd_scb_cashflow_scb" model="ir.actions.act_window">
+        <field name="name">กระแสเงินสด ธนาคาร SCB</field>
+        <field name="res_model">npd.scb.cashflow</field>
+        <field name="view_mode">list</field>
+        <field name="domain">[('source', '=', 'scb')]</field>
+        <field name="context">{'default_source': 'scb'}</field>
+        <field name="search_view_id" ref="view_npd_scb_cashflow_search"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">ยังไม่มีข้อมูล SCB</p>
+            <p>กด <b>การดำเนินการ ▸ 🔄 ดึงข้อมูลจาก Google Sheet</b> เพื่อดึงข้อมูล<br/>
+               หรือไปที่ <b>การกำหนดค่า ▸ ตั้งค่ากระแสเงินสดธนาคาร</b> แล้วกด <b>ดึงสรุปรายวันเดี๋ยวนี้</b></p>
+        </field>
+    </record>
+
+    <!-- Action: Kbank -->
+    <record id="action_npd_scb_cashflow_kbank" model="ir.actions.act_window">
+        <field name="name">กระแสเงินสด ธนาคาร Kbank</field>
+        <field name="res_model">npd.scb.cashflow</field>
+        <field name="view_mode">list</field>
+        <field name="domain">[('source', '=', 'kbank')]</field>
+        <field name="context">{'default_source': 'kbank'}</field>
+        <field name="search_view_id" ref="view_npd_scb_cashflow_search"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">ยังไม่มีข้อมูล Kbank</p>
+            <p>กด <b>การดำเนินการ ▸ 🔄 ดึงข้อมูลจาก Google Sheet</b> เพื่อดึงข้อมูล</p>
+        </field>
+    </record>
+
+    <!-- Action: กรุงไทย -->
+    <record id="action_npd_scb_cashflow_ktb" model="ir.actions.act_window">
+        <field name="name">กระแสเงินสด ธนาคารกรุงไทย</field>
+        <field name="res_model">npd.scb.cashflow</field>
+        <field name="view_mode">list</field>
+        <field name="domain">[('source', '=', 'ktb')]</field>
+        <field name="context">{'default_source': 'ktb'}</field>
+        <field name="search_view_id" ref="view_npd_scb_cashflow_search"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">ยังไม่มีข้อมูลกรุงไทย</p>
+            <p>กด <b>การดำเนินการ ▸ 🔄 ดึงข้อมูลจาก Google Sheet</b> เพื่อดึงข้อมูล</p>
+        </field>
+    </record>
+</odoo>

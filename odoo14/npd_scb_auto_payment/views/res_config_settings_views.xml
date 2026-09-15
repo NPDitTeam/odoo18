@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_scb_config_settings_form" model="ir.ui.view">
+        <field name="name">scb.payment.settings.form</field>
+        <field name="model">scb.payment.settings</field>
+        <field name="arch" type="xml">
+            <form string="ตั้งค่าตรวจสอบการโอนเงิน">
+                <sheet>
+                    <div class="oe_title">
+                        <h2>ตั้งค่าตรวจสอบการโอนเงิน</h2>
+                    </div>
+
+                    <div class="alert alert-info" role="alert">
+                        <b>วิธีทำงาน:</b>
+                        <ol style="margin-bottom:0px;">
+                            <li>พนักงานสร้าง <b>ใบรับชำระ</b> แล้ว <b>แนบสลิปการโอน</b> (รูปภาพหรือ PDF)</li>
+                            <li>AI อ่านสลิป → ได้ <b>ชื่อผู้โอน / จำนวนเงิน / วันที่</b>
+                                (ใช้ AI ตัวเดียวกับปุ่ม "ใช้วันที่จากสลิป")</li>
+                            <li>นำไปจับคู่กับ <b>รายการเดินบัญชีจริงของธนาคาร</b>
+                                (ดึงจากแท็บ statement ใน Google Sheet)</li>
+                            <li>ข้อมูลธนาคารมาช้ากว่าจริง — ยึด <b>วันที่ในใบรับชำระ</b>
+                                เช่น โอนวันนี้ ระบบจะตรวจให้ในวันพรุ่งนี้</li>
+                            <li>ผลลัพธ์ขึ้นที่หน้ารับชำระ: <b>โอนสำเร็จ</b> / <b>ไม่สำเร็จ (พร้อมเหตุผล)</b></li>
+                        </ol>
+                    </div>
+
+                    <group string="การตรวจสอบการโอน">
+                        <group>
+                            <field name="verify_enabled"/>
+                            <field name="verify_start_date"/>
+                            <field name="verify_lag_days"/>
+                            <field name="verify_retry_failed"/>
+                            <field name="verify_batch_limit"/>
+                        </group>
+                        <group string="เลือก statement ตามสมุดรายวันของใบรับชำระ">
+                            <field name="verify_skip_journal_keywords"/>
+                            <field name="verify_skip_method_keywords"/>
+                            <field name="verify_skip_slip_keywords"/>
+                            <field name="verify_skip_file_keywords"/>
+                            <field name="verify_deposit_journal_keyword"/>
+                            <field name="verify_bank_deposit"/>
+                            <field name="verify_bank_default"/>
+                            <field name="verify_cross_bank_fallback"/>
+                            <field name="verify_check_own_account"/>
+                            <field name="verify_own_account_names"
+                                   placeholder="เว้นว่าง = ใช้ชื่อบริษัทใน Odoo"
+                                   invisible="not verify_check_own_account"/>
+                            <field name="verify_own_account_numbers"
+                                   placeholder="เช่น 1862247739 (เว้นว่าง = เทียบด้วยชื่อ)"
+                                   invisible="not verify_check_own_account"/>
+                            <div colspan="2" class="text-muted">
+                                ไล่ตรวจตามลำดับ: เข้าเงื่อนไข <b>ไม่ต้องตรวจ</b> ก่อน →
+                                <b>ค่าประกัน</b> → ที่เหลือใช้ธนาคารเริ่มต้น
+                                <div>• ธนาคารที่เดาจากสมุดรายวันเป็นแค่ <b>ที่น่าจะใช่</b> —
+                                     ลูกค้าโอนเข้าบัญชีไหนก็ได้ ถ้าหาไม่เจอระบบจะ
+                                     ขยายไปหาอีกธนาคารให้เอง แล้วบันทึกไว้ในเหตุผล</div>
+                                <div>• Google Sheet รวม statement ของ <b>ทุกบริษัทในเครือ</b> ไว้ด้วยกัน
+                                     ถ้าลูกค้าโอนเข้าบัญชีบริษัทอื่น จะขึ้นสถานะ
+                                     <b>"สำเร็จ แต่โอนคนละบริษัท"</b> เพื่อให้ตามไปปรับบัญชีระหว่างกัน</div>
+                            </div>
+                        </group>
+                        <div colspan="2" class="alert alert-secondary" role="alert">
+                            <b>ช่วงใบรับชำระที่ระบบจะตรวจให้อัตโนมัติ</b> — ยึด "วันที่" ในหน้ารับชำระ
+                            <div>• ต้องเป็นใบที่ <b>ลงบันทึกแล้ว</b> เท่านั้น —
+                                 ใบร่างยังแก้ยอด/วันที่ได้ ระบบจึงยังไม่เริ่มนับ
+                                 (ปุ่ม "ตรวจสอบการโอน" ก็จะยังไม่แสดงบนใบร่าง)</div>
+                            <div>• <b>ขอบล่าง</b> = "เริ่มตรวจสอบใบรับชำระตั้งแต่วันที่"
+                                 (เว้นว่าง = ไม่จำกัดย้อนหลัง — ระวังใบเก่าทั้งฐานข้อมูลถูกดึงมาตรวจ)</div>
+                            <div>• <b>ขอบบน</b> = วันนี้ ลบด้วย "ข้อมูลธนาคารช้ากว่าจริง (วัน)"
+                                 เพราะต้องรอให้ statement ของวันนั้นเข้ามาก่อน</div>
+                            <div>ตอนนี้เข้าเงื่อนไข
+                                 <b><field name="pending_count" nolabel="1" class="oe_inline"/> ใบ</b>
+                                 — ระบบจะทยอยตรวจรอบละไม่เกิน "ตรวจสูงสุดต่อรอบ"</div>
+                            <div>• <b>ธนาคารที่เทียบ</b> เลือกจากสมุดรายวันของใบรับชำระ
+                                 (ดูช่องด้านขวา) — เงินค่าประกันกับค่าเช่าเข้าคนละบัญชี</div>
+                            <div>• สถานะที่เข้าคิว: <b>รอตรวจสอบ / ยังไม่แนบสลิป /
+                                 รอข้อมูลจากธนาคาร</b> (ตรวจซ้ำเรื่อย ๆ) และ
+                                 <b>ไม่สำเร็จ</b> (ตรวจซ้ำจนครบเพดานที่ตั้งไว้)<br/>
+                                 <b>โอนสำเร็จ</b> จะไม่ถูกตรวจซ้ำอีก</div>
+                            <div class="text-muted">ใบที่อยู่นอกช่วงนี้ยังกดปุ่ม
+                                "ตรวจสอบการโอน" ที่หน้ารับชำระเองได้ตามปกติ</div>
+                        </div>
+                        <div colspan="2">
+                            <button name="action_open_bank_statement_config" type="object"
+                                    string="ตั้งค่าการดึงรายการเดินบัญชี (Google Sheet)"
+                                    class="btn-link" icon="fa-table"/>
+                            <button name="action_run_verify_now" type="object"
+                                    string="สั่งตรวจสอบเดี๋ยวนี้"
+                                    class="btn-link" icon="fa-play"
+                                    confirm="ระบบจะไล่ตรวจใบรับชำระที่ถึงคิวทั้งหมดทันที (อาจใช้เวลาสักครู่) ดำเนินการต่อ?"/>
+                        </div>
+                    </group>
+
+                    <group string="เกณฑ์การจับคู่ (ชื่อบริษัท + จำนวนเงิน + วันที่ ต้องตรงกัน)">
+                        <group>
+                            <field name="verify_amount_tolerance"/>
+                            <field name="verify_date_tolerance"/>
+                            <field name="verify_time_tolerance_min"/>
+                            <field name="verify_name_threshold"/>
+                        </group>
+                        <group>
+                            <field name="verify_ai_name_fallback"/>
+                            <field name="verify_allow_no_name"/>
+                            <field name="verify_second_pass"/>
+                            <field name="verify_second_pass_days"
+                                   invisible="not verify_second_pass"/>
+                        </group>
+                        <div colspan="2" class="text-muted">
+                            <div>• <b>ชื่อบริษัท</b> — ธนาคารมักบันทึกชื่อแบบตัดท้าย เช่น
+                                "รับโอนจาก KBANK x7400 บจก. พี.เอ็ม.อี.ซี เม" ระบบจะตัดคำนำหน้า
+                                (รับโอนจาก / ชื่อธนาคาร / เลขบัญชีย่อ) ออกก่อนเทียบ
+                                และรองรับทั้งชื่อไทยและอังกฤษ</div>
+                            <div>• <b>จำนวนเงิน</b> — เทียบกับคอลัมน์ Deposit (เงินเข้า) ของ statement</div>
+                            <div>• <b>วันที่</b> — เทียบวันที่จากสลิปกับวันที่ของรายการในบัญชี</div>
+                        </div>
+                    </group>
+
+                </sheet>
+                <footer>
+                    <button string="บันทึก" name="action_save" type="object" class="btn-primary"/>
+                    <button string="ยกเลิก" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_scb_config_settings" model="ir.actions.act_window">
+        <field name="name">ตั้งค่าตรวจสอบการโอนเงิน</field>
+        <field name="res_model">scb.payment.settings</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+        <field name="view_id" ref="view_scb_config_settings_form"/>
+    </record>
+
+    <menuitem id="menu_scb_config_settings"
+              name="ตั้งค่า"
+              parent="menu_scb_auto_payment_root"
+              action="action_scb_config_settings" sequence="90"
+              groups="account.group_account_manager"/>
+
+</odoo>

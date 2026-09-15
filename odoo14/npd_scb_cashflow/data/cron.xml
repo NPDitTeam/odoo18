@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ดึงข้อมูลจาก Google Sheet อัตโนมัติ (เปิด/ปิดได้ที่ฟิลด์ Auto Sync ในหน้าตั้งค่า) -->
+    <record id="ir_cron_npd_scb_cashflow_sync" model="ir.cron">
+        <field name="name">กระแสเงินสดธนาคาร: ดึงสรุปรายวันจาก Google Sheet</field>
+        <field name="model_id" ref="model_npd_scb_cashflow"/>
+        <field name="user_id" ref="base.user_root"/>
+        <field name="state">code</field>
+        <field name="code">model._cron_refresh()</field>
+        <field name="interval_number">15</field>
+        <field name="interval_type">minutes</field>
+        <field name="active" eval="True"/>
+    </record>
+
+    <!-- ดึง "รายการเดินบัญชี" (statement_*) อัตโนมัติ ทุก 2 ชั่วโมง
+         ข้อมูลธนาคารมาช้ากว่าจริง ~1 วันอยู่แล้ว ตั้งถี่กว่านี้ไม่ได้ช่วยอะไร -->
+    <record id="ir_cron_npd_scb_bank_statement_sync" model="ir.cron">
+        <field name="name">กระแสเงินสดธนาคาร: ดึงรายการเดินบัญชีจาก Google Sheet</field>
+        <field name="model_id" ref="model_npd_scb_bank_statement"/>
+        <field name="user_id" ref="base.user_root"/>
+        <field name="state">code</field>
+        <field name="code">model._cron_sync_statements()</field>
+        <field name="interval_number">2</field>
+        <field name="interval_type">hours</field>
+        <field name="active" eval="True"/>
+    </record>
+</odoo>

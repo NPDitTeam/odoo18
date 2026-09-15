@@ -1,0 +1,175 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Tree -->
+    <record id="view_npd_scb_bank_statement_tree" model="ir.ui.view">
+        <field name="name">npd.scb.bank.statement.tree</field>
+        <field name="model">npd.scb.bank.statement</field>
+        <field name="arch" type="xml">
+            <list string="รายการเดินบัญชีธนาคาร" create="0" edit="0" delete="0"
+                  default_order="date desc, time desc"
+                  decoration-success="deposit &gt; 0"
+                  decoration-muted="withdrawal &gt; 0">
+                <!-- เรียงตามคอลัมน์ในชีต statement_SCB (A -> O) -->
+                <field name="source"/>
+                <field name="account_no" optional="show"/>
+                <field name="account_name" optional="hide"/>
+                <field name="account_type" optional="hide"/>
+                <field name="currency_code" optional="hide"/>
+                <field name="branch_code" optional="hide"/>
+                <field name="date"/>
+                <field name="time"/>
+                <field name="tr_code" optional="hide"/>
+                <field name="tr_description" optional="hide"/>
+                <field name="channel" optional="show"/>
+                <field name="cheque_no" optional="hide"/>
+                <field name="withdrawal" widget="monetary" sum="รวมเงินออก"/>
+                <field name="deposit" widget="monetary" sum="รวมเงินเข้า"/>
+                <field name="balance" widget="monetary" optional="show"/>
+                <field name="description"/>
+                <!-- สกัดจากคอลัมน์ O ใช้จับคู่กับชื่อผู้โอนในสลิป -->
+                <field name="counterparty" optional="show"/>
+                <field name="counterparty_acc" optional="hide"/>
+                <field name="currency_id" invisible="1"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Form (อ่านอย่างเดียว — ข้อมูลมาจากชีต) -->
+    <record id="view_npd_scb_bank_statement_form" model="ir.ui.view">
+        <field name="name">npd.scb.bank.statement.form</field>
+        <field name="model">npd.scb.bank.statement</field>
+        <field name="arch" type="xml">
+            <form string="รายการเดินบัญชี" create="0" edit="0" delete="0">
+                <sheet>
+                    <group>
+                        <group string="บัญชี">
+                            <field name="source"/>
+                            <field name="account_no"/>
+                            <field name="account_name"/>
+                            <field name="account_type"/>
+                            <field name="branch_code"/>
+                            <field name="currency_code"/>
+                        </group>
+                        <group string="รายการ">
+                            <field name="date"/>
+                            <field name="time"/>
+                            <field name="tr_code"/>
+                            <field name="tr_description"/>
+                            <field name="channel"/>
+                            <field name="cheque_no"/>
+                        </group>
+                    </group>
+                    <group>
+                        <group string="จำนวนเงิน">
+                            <field name="withdrawal" widget="monetary"/>
+                            <field name="deposit" widget="monetary"/>
+                            <field name="balance" widget="monetary"/>
+                            <field name="currency_id" invisible="1"/>
+                        </group>
+                        <group string="คู่ค้า">
+                            <field name="description"/>
+                            <field name="counterparty"/>
+                            <field name="counterparty_acc"/>
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Search -->
+    <record id="view_npd_scb_bank_statement_search" model="ir.ui.view">
+        <field name="name">npd.scb.bank.statement.search</field>
+        <field name="model">npd.scb.bank.statement</field>
+        <field name="arch" type="xml">
+            <search string="รายการเดินบัญชีธนาคาร">
+                <field name="description" string="รายละเอียด / คู่ค้า"
+                       filter_domain="['|', ('description', 'ilike', self), ('counterparty', 'ilike', self)]"/>
+                <field name="deposit"/>
+                <field name="date"/>
+                <field name="account_no"/>
+                <filter name="flt_deposit" string="เฉพาะเงินเข้า" domain="[('deposit', '&gt;', 0)]"/>
+                <filter name="flt_withdrawal" string="เฉพาะเงินออก" domain="[('withdrawal', '&gt;', 0)]"/>
+                <separator/>
+                <filter name="flt_today" string="วันนี้"
+                        domain="[('date', '=', context_today().strftime('%Y-%m-%d'))]"/>
+                <filter name="flt_this_month" string="เดือนนี้"
+                        domain="[('date', '&gt;=', (context_today() + relativedelta(day=1)).strftime('%Y-%m-%d'))]"/>
+                <group expand="0" string="จัดกลุ่มตาม">
+                    <filter name="grp_source" string="ธนาคาร" context="{'group_by': 'source'}"/>
+                    <filter name="grp_date" string="วันที่" context="{'group_by': 'date:day'}"/>
+                    <filter name="grp_account_no" string="เลขบัญชี" context="{'group_by': 'account_no'}"/>
+                    <filter name="grp_channel" string="ช่องทาง" context="{'group_by': 'channel'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- Action -->
+    <record id="action_npd_scb_bank_statement" model="ir.actions.act_window">
+        <field name="name">รายการเดินบัญชีธนาคาร</field>
+        <field name="res_model">npd.scb.bank.statement</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_npd_scb_bank_statement_search"/>
+        <!-- แสดงทุกแถวเหมือนที่เห็นในชีต (กดตัวกรอง "เฉพาะเงินเข้า" เอาเองได้) -->
+        <field name="context">{}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">ยังไม่มีรายการเดินบัญชี</p>
+            <p>ตั้งชื่อแท็บ statement ที่ <b>การกำหนดค่า ▸ ตั้งค่ากระแสเงินสดธนาคาร</b>
+               แล้วกด <b>ดึงรายการเดินบัญชี</b><br/>
+               หรือกด <b>การดำเนินการ ▸ 🔄 ดึงรายการเดินบัญชีจาก Google Sheet</b> ที่หน้านี้</p>
+        </field>
+    </record>
+
+    <!-- Action แยกรายธนาคาร (ใช้ทำเมนูแยกแท็บ) -->
+    <record id="action_npd_scb_bank_statement_scb" model="ir.actions.act_window">
+        <field name="name">รายการเดินบัญชีธนาคาร — SCB</field>
+        <field name="res_model">npd.scb.bank.statement</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('source', '=', 'scb')]</field>
+        <field name="context">{'default_source': 'scb'}</field>
+        <field name="search_view_id" ref="view_npd_scb_bank_statement_search"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">ยังไม่มีรายการเดินบัญชีของ SCB</p>
+            <p>ตรวจชื่อแท็บ <b>statement_SCB</b> ที่
+               <b>การกำหนดค่า ▸ ตั้งค่ากระแสเงินสดธนาคาร</b> แล้วกด
+               <b>ดึงรายการเดินบัญชี</b><br/>
+               ดูผลการดึงรายธนาคารได้ที่ช่อง <b>"ผลการดึงล่าสุด (รายธนาคาร)"</b></p>
+        </field>
+    </record>
+
+    <record id="action_npd_scb_bank_statement_kbank" model="ir.actions.act_window">
+        <field name="name">รายการเดินบัญชีธนาคาร — Kbank</field>
+        <field name="res_model">npd.scb.bank.statement</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('source', '=', 'kbank')]</field>
+        <field name="context">{'default_source': 'kbank'}</field>
+        <field name="search_view_id" ref="view_npd_scb_bank_statement_search"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">ยังไม่มีรายการเดินบัญชีของ Kbank</p>
+            <p>ตรวจชื่อแท็บ <b>Statement_Kbank</b> และช่วงข้อมูล <b>A2:I</b> ที่
+               <b>การกำหนดค่า ▸ ตั้งค่ากระแสเงินสดธนาคาร</b> แล้วกด
+               <b>ดึงรายการเดินบัญชี</b><br/>
+               ดูผลการดึงรายธนาคารได้ที่ช่อง <b>"ผลการดึงล่าสุด (รายธนาคาร)"</b></p>
+        </field>
+    </record>
+
+    <record id="action_npd_scb_bank_statement_ktb" model="ir.actions.act_window">
+        <field name="name">รายการเดินบัญชีธนาคาร — กรุงไทย</field>
+        <field name="res_model">npd.scb.bank.statement</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('source', '=', 'ktb')]</field>
+        <field name="context">{'default_source': 'ktb'}</field>
+        <field name="search_view_id" ref="view_npd_scb_bank_statement_search"/>
+    </record>
+
+    <!-- ปุ่มในเมนู Action (เฟือง) ของตาราง -->
+    <record id="action_server_refresh_bank_statement" model="ir.actions.server">
+        <field name="name">🔄 ดึงรายการเดินบัญชีจาก Google Sheet</field>
+        <field name="model_id" ref="model_npd_scb_bank_statement"/>
+        <field name="binding_model_id" ref="model_npd_scb_bank_statement"/>
+        <field name="binding_view_types">list</field>
+        <field name="state">code</field>
+        <field name="code">action = model.action_refresh_statements()</field>
+    </record>
+</odoo>

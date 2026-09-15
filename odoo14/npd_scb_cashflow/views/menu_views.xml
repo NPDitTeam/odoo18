@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- เมนูรายงาน: Accounting/Invoicing > Reporting > กระแสเงินสดธนาคาร > (SCB / Kbank / กรุงไทย) -->
+    <menuitem id="menu_npd_bank_cashflow_root"
+              name="กระแสเงินสดธนาคาร"
+              parent="account.menu_finance_reports"
+              sequence="99"/>
+
+    <menuitem id="menu_npd_cashflow_summary"
+              name="📊 สรุปกระแสเงินสด"
+              parent="menu_npd_bank_cashflow_root"
+              action="action_npd_cashflow_summary"
+              sequence="5"/>
+
+    <menuitem id="menu_npd_cashflow_scb"
+              name="ธนาคาร SCB"
+              parent="menu_npd_bank_cashflow_root"
+              action="action_npd_scb_cashflow_scb"
+              sequence="10"/>
+
+    <menuitem id="menu_npd_cashflow_kbank"
+              name="ธนาคาร Kbank"
+              parent="menu_npd_bank_cashflow_root"
+              action="action_npd_scb_cashflow_kbank"
+              sequence="20"/>
+
+    <menuitem id="menu_npd_cashflow_ktb"
+              name="ธนาคารกรุงไทย"
+              parent="menu_npd_bank_cashflow_root"
+              action="action_npd_scb_cashflow_ktb"
+              sequence="30"/>
+
+    <menuitem id="menu_npd_bank_statement"
+              name="รายการเดินบัญชี (Statement)"
+              parent="menu_npd_bank_cashflow_root"
+              action="action_npd_scb_bank_statement"
+              sequence="40"/>
+
+    <!-- เมนูตั้งค่า: Accounting/Invoicing > Configuration > ตั้งค่ากระแสเงินสดธนาคาร -->
+    <menuitem id="menu_npd_scb_cashflow_config"
+              name="ตั้งค่ากระแสเงินสดธนาคาร"
+              parent="account.menu_finance_configuration"
+              action="action_npd_scb_cashflow_config"
+              groups="account.group_account_manager"
+              sequence="99"/>
+</odoo>

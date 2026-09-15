@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ปุ่ม "ดึงข้อมูลจาก Google Sheet" ในเมนู Action (เฟือง) ของตาราง -->
+    <record id="action_server_refresh_scb_cashflow" model="ir.actions.server">
+        <field name="name">🔄 ดึงข้อมูลจาก Google Sheet (ทุกธนาคาร)</field>
+        <field name="model_id" ref="model_npd_scb_cashflow"/>
+        <field name="binding_model_id" ref="model_npd_scb_cashflow"/>
+        <field name="binding_view_types">list</field>
+        <field name="state">code</field>
+        <field name="code">action = model.action_refresh_from_sheet()</field>
+    </record>
+
+    <!-- ปุ่ม "สรุปกระแสเงินสด" ในเมนู Action (เฟือง) ของตาราง -> เปิด popup (ไม่ใช้ JS) -->
+    <record id="action_server_month_summary_scb_cashflow" model="ir.actions.server">
+        <field name="name">📊 สรุปกระแสเงินสด (ตามบริษัท)</field>
+        <field name="model_id" ref="model_npd_scb_cashflow"/>
+        <field name="binding_model_id" ref="model_npd_scb_cashflow"/>
+        <field name="binding_view_types">list</field>
+        <field name="state">code</field>
+        <field name="code">action = model.action_open_month_summary()</field>
+    </record>
+</odoo>

@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_npd_cashflow_summary_wizard_form" model="ir.ui.view">
+        <field name="name">npd.scb.cashflow.summary.wizard.form</field>
+        <field name="model">npd.scb.cashflow.summary.wizard</field>
+        <field name="arch" type="xml">
+            <form string="กระแสเงินสด เดือนปัจจุบัน">
+                <field name="currency_id" invisible="1"/>
+                <div class="text-center" style="margin-bottom:10px;">
+                    <h2 style="margin:0;">สรุปกระแสเงินสด</h2>
+                </div>
+                <group col="4">
+                    <field name="source"/>
+                    <field name="date_from"/>
+                    <field name="date_to"/>
+                </group>
+                <field name="line_ids" nolabel="1">
+                    <list create="0" edit="0" delete="0">
+                        <field name="company_name" string="บริษัท"/>
+                        <field name="opening" string="ยอดยกมา" sum="รวม"/>
+                        <field name="money_in" string="รับ" sum="รวม"/>
+                        <field name="money_out" string="จ่าย" sum="รวม"/>
+                        <field name="balance" string="คงเหลือ" sum="รวม"/>
+                        <field name="currency_id" invisible="1"/>
+                    </list>
+                </field>
+                <footer>
+                    <button string="ปิด" class="btn-primary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <!-- เปิด popup สรุปจากเมนู (เลือกธนาคาร + ช่วงวันที่เองได้) -->
+    <record id="action_npd_cashflow_summary" model="ir.actions.act_window">
+        <field name="name">สรุปกระแสเงินสด</field>
+        <field name="res_model">npd.scb.cashflow.summary.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="view_id" ref="view_npd_cashflow_summary_wizard_form"/>
+        <field name="target">new</field>
+    </record>
+</odoo>

@@ -1,0 +1,8 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_npd_scb_cashflow_user,npd.scb.cashflow.user,model_npd_scb_cashflow,base.group_user,1,0,0,0
+access_npd_scb_cashflow_manager,npd.scb.cashflow.manager,model_npd_scb_cashflow,account.group_account_manager,1,1,1,1
+access_npd_scb_cashflow_config_manager,npd.scb.cashflow.config.manager,model_npd_scb_cashflow_config,account.group_account_manager,1,1,1,1
+access_npd_scb_cashflow_summary_wizard,npd.scb.cashflow.summary.wizard,model_npd_scb_cashflow_summary_wizard,base.group_user,1,1,1,1
+access_npd_scb_cashflow_summary_line,npd.scb.cashflow.summary.line,model_npd_scb_cashflow_summary_line,base.group_user,1,1,1,1
+access_npd_scb_bank_statement_user,npd.scb.bank.statement.user,model_npd_scb_bank_statement,base.group_user,1,0,0,0
+access_npd_scb_bank_statement_manager,npd.scb.bank.statement.manager,model_npd_scb_bank_statement,account.group_account_manager,1,1,1,1
