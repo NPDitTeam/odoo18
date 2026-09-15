@@ -43,6 +43,9 @@ class AccountMove(models.Model):
                     l.move_id.move_type == 'entry'
                     and not l.payment_id
                     and l.move_id.journal_id.type != 'sale'
+                    # รายการโอนภาษีขายยังไม่ถึงกำหนด (สมุดภาษีเกณฑ์เงินสด) เลขใบกำกับ
+                    # ออกหลังโพสต์โดย OCA ไม่ต้องรอกรอก ถ้าไม่กันไว้จะค้าง draft เงียบ ๆ
+                    and l.tax_line_id.type_tax_use != 'sale'
                 )
             ):
                 if (

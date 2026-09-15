@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<odoo>
+    <template id="internal_layout">
+        <div class="article">
+            <t t-raw="0" />
+        </div>
+        <div class="footer">
+            <div class="row">
+                <div class="col-6 custom_footer">
+                    <span
+                        t-out="context_timestamp(datetime.datetime.now()).strftime('%Y-%m-%d')"
+                    />
+                </div>
+                <div class="col-6 text-right custom_footer">
+                    <span class="page" />
+                    /
+                    <span class="topage" />
+                </div>
+            </div>
+        </div>
+    </template>
+</odoo>
