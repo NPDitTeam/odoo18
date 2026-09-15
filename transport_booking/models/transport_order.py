@@ -16,7 +16,10 @@ class TransportOrder(models.Model):
         # ✅ กรองตาม "สาขาที่ user มีสิทธิ์" — ใช้ multi_branch_id (สาขาที่เลือกบน navbar)
         #    ถ้าว่าง fallback ใช้ branch_ids (Allowed Branches)
         #    ❗ ห้ามใช้ branch_id ตัวเดียว เพราะ navbar switcher เขียนทับ branch_id ตลอด
-        if not user.show_all_transport_booking_branches:
+        # ✅ งานซิงค์ (context transport_sync_all_branches) ต้องเห็นทุกสาขา ไม่งั้นหาใบเดิมไม่เจอแล้วสร้างซ้ำ
+        if self.env.context.get('transport_sync_all_branches'):
+            pass
+        elif not user.show_all_transport_booking_branches:
             allowed_branch_ids = user.multi_branch_id.ids or user.branch_ids.ids
             if allowed_branch_ids:
                 branch_domain = ['|', ('branch_id', '=', False),

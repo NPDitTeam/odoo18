@@ -15,6 +15,9 @@ ODOO14_CONFIG = {
     'password': '1234',
 }
 
+# 🔒 key ของ pg advisory lock กันซิงค์จาก Odoo 14 ซ้อนกัน
+SYNC_LOCK_KEY = 1814001
+
 class TransportOrder(models.Model):
     _name = 'transport.order'
     _description = 'Transport Order from Odoo 14'
@@ -155,7 +158,8 @@ class TransportOrder(models.Model):
         order_data = dict(order_data)
         order_data['id'] = 0
 
-        existing = self.search([
+        # ค้นหาทุกสาขา ไม่งั้นคนต่างสาขากดส่งซ้ำจะได้ใบซ้ำ
+        existing = self.with_context(transport_sync_all_branches=True).search([
             ('name', '=', name),
             ('is_from_odoo18', '=', True),
         ], limit=1)
@@ -210,9 +214,12 @@ class TransportOrder(models.Model):
         """Override search เพื่อกรองตาม branch ของ user"""
         # ✅ เพิ่ม domain filter ตาม user preference
         user = self.env.user
-        
+
         # ถ้า user ไม่เลือก "แสดงทุกสาขา" ให้กรองเฉพาะสาขาของตัวเอง
-        if not user.show_all_branches and user.branch_id:
+        # ยกเว้นงานซิงค์ (context transport_sync_all_branches) ต้องเห็นทุกสาขา
+        if self.env.context.get('transport_sync_all_branches'):
+            pass
+        elif not user.show_all_branches and user.branch_id:
             # เพิ่ม domain สำหรับกรองเฉพาะ branch ของ user
             branch_domain = [('branch_id', '=', user.branch_id.id)]
             domain = domain + branch_domain if domain else branch_domain
@@ -246,9 +253,29 @@ class TransportOrder(models.Model):
             }
         }
 
+    def _get_used_order_ids(self, order_ids):
+        """ id คำสั่งขนส่งที่ถูกนำไปใช้แล้ว ห้ามลบ
+            - vehicle_booking (การจองรถ)
+            - driver_trip_history (ประวัติเที่ยววิ่ง — FK เป็น SET NULL ลบแล้วลิงก์หายเงียบ ๆ)
+        """
+        if not order_ids:
+            return set()
+        used = set()
+        for table in ('vehicle_booking', 'driver_trip_history'):
+            self.env.cr.execute("SELECT to_regclass(%s)", (table,))
+            if not self.env.cr.fetchone()[0]:
+                continue
+            self.env.cr.execute(f"""
+                SELECT DISTINCT transport_order_id
+                FROM {table}
+                WHERE transport_order_id = ANY(%s)
+            """, (list(order_ids),))
+            used.update(row[0] for row in self.env.cr.fetchall())
+        return used
+
     def _remove_duplicate_orders(self):
         """ลบ records ที่มี name ซ้ำกัน (เก็บไว้เฉพาะ record ที่มี id น้อยที่สุด)
-           ✅ ข้าม record ที่มี vehicle_booking อ้างอิงอยู่
+           ✅ ข้าม record ที่ถูกนำไปใช้แล้ว (การจองรถ / ประวัติเที่ยววิ่ง)
         """
         self.env.cr.execute("""
             SELECT name, COUNT(*), array_agg(id ORDER BY id)
@@ -266,14 +293,9 @@ class TransportOrder(models.Model):
             # เก็บ id แรก (น้อยที่สุด) ลบที่เหลือ
             ids_to_delete = ids[1:]  # ข้าม id แรก
             if ids_to_delete:
-                # ✅ เช็คว่ามี vehicle_booking อ้างอิงอยู่หรือไม่
-                self.env.cr.execute("""
-                    SELECT transport_order_id 
-                    FROM vehicle_booking 
-                    WHERE transport_order_id = ANY(%s)
-                """, (ids_to_delete,))
-                used_ids = [row[0] for row in self.env.cr.fetchall()]
-                
+                # ✅ เช็คว่าถูกนำไปใช้แล้วหรือไม่ (จองรถ / ประวัติเที่ยววิ่ง)
+                used_ids = self._get_used_order_ids(ids_to_delete)
+
                 # ✅ กรองเอาเฉพาะ id ที่ไม่ถูกใช้งาน
                 safe_to_delete = [id for id in ids_to_delete if id not in used_ids]
                 skipped_in_use += len(used_ids)
@@ -301,14 +323,9 @@ class TransportOrder(models.Model):
         
         tr_ids = tr_orders.ids
         
-        # ✅ เช็คว่ามี vehicle_booking อ้างอิงอยู่หรือไม่
-        self.env.cr.execute("""
-            SELECT transport_order_id 
-            FROM vehicle_booking 
-            WHERE transport_order_id = ANY(%s)
-        """, (tr_ids,))
-        used_ids = [row[0] for row in self.env.cr.fetchall()]
-        
+        # ✅ เช็คว่าถูกนำไปใช้แล้วหรือไม่ (จองรถ / ประวัติเที่ยววิ่ง)
+        used_ids = self._get_used_order_ids(tr_ids)
+
         # ✅ กรองเอาเฉพาะ id ที่ไม่ถูกใช้งาน
         safe_to_delete = [id for id in tr_ids if id not in used_ids]
         
@@ -331,6 +348,27 @@ class TransportOrder(models.Model):
            today_only=True: ดึงเฉพาะวันนี้ + อัพเดทข้อมูลที่มีอยู่
            today_only=False: ดึงทั้งหมด (Full Sync)
         """
+        # ✅ ซิงค์ได้ทีละงาน — cron (ทุก 5 นาที) กับปุ่มของหลายคนเคยรันพร้อมกัน
+        #    ต่างคนต่างลบรายการซ้ำชุดเดียวกันจนชนกัน (could not serialize access) แล้ว rollback ทั้งหมด
+        #    ล็อกนี้ปลดเองเมื่อ transaction จบ
+        self.env.cr.execute("SELECT pg_try_advisory_xact_lock(%s)", (SYNC_LOCK_KEY,))
+        if not self.env.cr.fetchone()[0]:
+            _logger.info("⏭️ ข้ามการซิงค์ (today_only=%s): มีการซิงค์อื่นกำลังทำงานอยู่", today_only)
+            return {
+                'type': 'ir.actions.client',
+                'tag': 'display_notification',
+                'params': {
+                    'title': 'กำลังซิงค์อยู่',
+                    'message': 'มีการซิงค์ข้อมูลจาก Odoo 14 กำลังทำงานอยู่ (ระบบอัตโนมัติหรือผู้ใช้อื่น) '
+                               'กรุณารอสักครู่แล้วกดใหม่',
+                    'type': 'warning',
+                    'sticky': False,
+                }
+            }
+        # ✅ ค้นหาใบเดิมต้องเห็นทุกสาขา — ถ้ากรองตามสาขาของคนกด จะหาใบของสาขาอื่นไม่เจอแล้วสร้างซ้ำทุกครั้ง
+        return self.with_context(transport_sync_all_branches=True)._run_sync_orders_from_odoo14(today_only)
+
+    def _run_sync_orders_from_odoo14(self, today_only=False):
         try:
             # 🗑️ ลบรายการซ้ำก่อน (ถ้า name ซ้ำกัน ลบให้เหลือแค่ 1)
             duplicate_deleted_count = self._remove_duplicate_orders()
