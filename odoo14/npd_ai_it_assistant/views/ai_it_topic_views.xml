@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+
+        <record id="view_npd_ai_it_topic_tree" model="ir.ui.view">
+            <field name="name">npd.ai.it.topic.tree</field>
+            <field name="model">npd.ai.it.topic</field>
+            <field name="arch" type="xml">
+                <list string="หัวข้อตัวช่วย AI-IT">
+                    <field name="sequence" widget="handle"/>
+                    <field name="name"/>
+                    <field name="code"/>
+                    <field name="description"/>
+                    <field name="active" widget="boolean_toggle"/>
+                </list>
+            </field>
+        </record>
+
+        <record id="view_npd_ai_it_topic_form" model="ir.ui.view">
+            <field name="name">npd.ai.it.topic.form</field>
+            <field name="model">npd.ai.it.topic</field>
+            <field name="arch" type="xml">
+                <form string="หัวข้อตัวช่วย AI-IT">
+                    <sheet>
+                        <widget name="web_ribbon" title="ปิดใช้งาน" bg_color="bg-danger"
+                                invisible="active"/>
+                        <group>
+                            <group>
+                                <field name="name"/>
+                                <field name="code"/>
+                                <field name="sequence"/>
+                                <field name="active"/>
+                            </group>
+                            <group>
+                                <field name="description"/>
+                                <field name="group_ids" widget="many2many_tags"/>
+                            </group>
+                        </group>
+                        <group string="ข้อความเริ่มบทสนทนา (เว้นว่างได้ ระบบจะใช้ข้อความมาตรฐาน)">
+                            <field name="intro_message" nolabel="1" placeholder="ข้อความแรกที่บอทจะทักในแชท..."/>
+                        </group>
+                    </sheet>
+                </form>
+            </field>
+        </record>
+
+        <record id="action_npd_ai_it_topic" model="ir.actions.act_window">
+            <field name="name">หัวข้อตัวช่วย AI-IT</field>
+            <field name="res_model">npd.ai.it.topic</field>
+            <field name="view_mode">list,form</field>
+        </record>
+
+    </data>
+</odoo>

@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <t t-inherit="mail.MessagingMenu.content" t-inherit-mode="extension">
+
+        <!-- ปุ่มแท็บ "ตัวช่วย AI-IT" ต่อท้าย ทั้งหมด / แชท / ช่อง (เดสก์ท็อป) -->
+        <xpath expr="//button[hasclass('o-mail-MessagingMenu-headerFilter')][last()]" position="after">
+            <button t-if="!env.inDiscussApp"
+                    class="o-mail-MessagingMenu-headerFilter o_npd_ai_it_tab btn btn-link px-2 py-1 m-1 lh-1"
+                    t-att-class="store.discuss.activeTab === aiItTabId ? 'fw-bold o-active' : 'text-muted'"
+                    type="button" role="tab" t-on-click="onClickAiItTab">
+                <i class="fa fa-magic me-1" role="img" aria-hidden="true"/><t t-esc="aiItTabLabel"/>
+            </button>
+        </xpath>
+
+        <!-- แท็บนี้ไม่ได้แสดงรายการห้องแชท จึงซ่อนรายการเดิมไว้ -->
+        <xpath expr="//*[@t-ref='notification-list']" position="attributes">
+            <attribute name="t-if">(!env.inDiscussApp or store.discuss.activeTab !== 'main') and store.discuss.activeTab !== aiItTabId</attribute>
+        </xpath>
+
+        <!-- รายการหัวข้อที่ให้ AI ช่วยแก้ -->
+        <xpath expr="//*[@t-ref='notification-list']" position="after">
+            <div t-if="store.discuss.activeTab === aiItTabId"
+                 class="o_npd_ai_it_list d-flex flex-column overflow-auto flex-grow-1"
+                 t-att-class="{ 'o-mobile': ui.isSmall }">
+                <div t-if="aiIt.isLoading" class="o_npd_ai_it_empty">
+                    <i class="fa fa-circle-o-notch fa-spin me-1"/>กำลังโหลดหัวข้อ...
+                </div>
+                <div t-elif="!aiIt.topics.length" class="o_npd_ai_it_empty">
+                    ยังไม่มีหัวข้อให้บริการ กรุณาแจ้งฝ่าย IT
+                </div>
+                <t t-else="">
+                    <div class="o_npd_ai_it_hint">
+                        เลือกหัวข้อปัญหาที่ต้องการให้ช่วย แล้วคุยกับผู้ช่วยในแชทได้เลย
+                    </div>
+                    <t t-foreach="aiIt.topics" t-as="aiItTopic" t-key="aiItTopic.id">
+                        <div class="o_npd_ai_it_topic"
+                             t-att-class="{ 'o-not-ready': !aiItTopic.is_ready, 'o-busy': aiIt.opening }"
+                             t-on-click="() => this.onClickAiItTopic(aiItTopic)">
+                            <div class="o_npd_ai_it_topic_index" t-esc="aiItTopic.index"/>
+                            <div class="o_npd_ai_it_topic_body">
+                                <div class="o_npd_ai_it_topic_name" t-esc="aiItTopic.name"/>
+                                <div class="o_npd_ai_it_topic_description">
+                                    <t t-if="aiItTopic.is_ready" t-esc="aiItTopic.description"/>
+                                    <t t-else="">ยังไม่เปิดให้บริการ</t>
+                                </div>
+                            </div>
+                            <div class="o_npd_ai_it_topic_arrow"><i class="fa fa-angle-right"/></div>
+                        </div>
+                    </t>
+                </t>
+            </div>
+        </xpath>
+
+    </t>
+
+</templates>

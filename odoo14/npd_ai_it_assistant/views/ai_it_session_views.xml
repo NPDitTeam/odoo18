@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+
+        <record id="view_npd_ai_it_session_tree" model="ir.ui.view">
+            <field name="name">npd.ai.it.session.tree</field>
+            <field name="model">npd.ai.it.session</field>
+            <field name="arch" type="xml">
+                <list string="ประวัติตัวช่วย AI-IT" create="false">
+                    <field name="create_date" string="วันที่"/>
+                    <field name="user_id"/>
+                    <field name="topic_id"/>
+                    <field name="document_ref"/>
+                    <field name="branch_id"/>
+                    <field name="change_note"/>
+                    <field name="state"/>
+                </list>
+            </field>
+        </record>
+
+        <record id="view_npd_ai_it_session_form" model="ir.ui.view">
+            <field name="name">npd.ai.it.session.form</field>
+            <field name="model">npd.ai.it.session</field>
+            <field name="arch" type="xml">
+                <form string="ตัวช่วย AI-IT" create="false" edit="false">
+                    <sheet>
+                        <group>
+                            <group>
+                                <field name="user_id"/>
+                                <field name="topic_id"/>
+                                <field name="state"/>
+                                <field name="create_date" string="วันที่"/>
+                            </group>
+                            <group>
+                                <field name="document_ref"/>
+                                <field name="branch_id"/>
+                                <field name="location_id"/>
+                                <field name="change_note"/>
+                                <field name="channel_id"/>
+                            </group>
+                        </group>
+                        <notebook>
+                            <page string="รายการที่เติมสต๊อก">
+                                <field name="line_ids" nolabel="1">
+                                    <list create="false" delete="false">
+                                        <field name="product_id"/>
+                                        <field name="qty_needed"/>
+                                        <field name="qty_before"/>
+                                        <field name="qty_added"/>
+                                        <field name="qty_after"/>
+                                    </list>
+                                </field>
+                            </page>
+                            <page string="สรุปผล">
+                                <field name="summary" nolabel="1"/>
+                            </page>
+                        </notebook>
+                    </sheet>
+                </form>
+            </field>
+        </record>
+
+        <record id="view_npd_ai_it_session_search" model="ir.ui.view">
+            <field name="name">npd.ai.it.session.search</field>
+            <field name="model">npd.ai.it.session</field>
+            <field name="arch" type="xml">
+                <search string="ค้นหาประวัติ">
+                    <field name="document_ref"/>
+                    <field name="user_id"/>
+                    <field name="branch_id"/>
+                    <filter name="filter_done" string="ดำเนินการแล้ว"
+                            domain="[('state', '=', 'done')]"/>
+                    <group expand="0" string="จัดกลุ่มตาม">
+                        <filter name="group_user" string="พนักงาน" context="{'group_by': 'user_id'}"/>
+                        <filter name="group_branch" string="สาขา" context="{'group_by': 'branch_id'}"/>
+                        <filter name="group_topic" string="หัวข้อ" context="{'group_by': 'topic_id'}"/>
+                    </group>
+                </search>
+            </field>
+        </record>
+
+        <record id="action_npd_ai_it_session" model="ir.actions.act_window">
+            <field name="name">ประวัติตัวช่วย AI-IT</field>
+            <field name="res_model">npd.ai.it.session</field>
+            <field name="view_mode">list,form</field>
+            <field name="search_view_id" ref="view_npd_ai_it_session_search"/>
+        </record>
+
+    </data>
+</odoo>

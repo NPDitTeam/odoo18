@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+
+        <record id="view_npd_ai_it_history_tree" model="ir.ui.view">
+            <field name="name">npd.ai.it.history.tree</field>
+            <field name="model">npd.ai.it.history</field>
+            <field name="arch" type="xml">
+                <list string="ประวัติการแก้ AI-IT" create="false" delete="false">
+                    <field name="date"/>
+                    <field name="action_type"/>
+                    <field name="document_ref"/>
+                    <field name="user_id"/>
+                    <field name="branch_id"/>
+                    <field name="note"/>
+                    <field name="topic_id" optional="hide"/>
+                    <field name="res_model" optional="hide"/>
+                </list>
+            </field>
+        </record>
+
+        <record id="view_npd_ai_it_history_form" model="ir.ui.view">
+            <field name="name">npd.ai.it.history.form</field>
+            <field name="model">npd.ai.it.history</field>
+            <field name="arch" type="xml">
+                <form string="ประวัติการแก้ AI-IT" create="false" edit="false">
+                    <header>
+                        <button name="action_open_document" type="object"
+                                string="เปิดเอกสาร" class="btn-primary"
+                                invisible="not res_id"/>
+                    </header>
+                    <sheet>
+                        <group>
+                            <group>
+                                <field name="date"/>
+                                <field name="action_type"/>
+                                <field name="topic_id"/>
+                                <field name="document_ref"/>
+                            </group>
+                            <group>
+                                <field name="user_id"/>
+                                <field name="branch_id"/>
+                                <field name="res_model"/>
+                                <field name="res_id"/>
+                                <field name="session_id"/>
+                            </group>
+                        </group>
+                        <group string="หมายเหตุ (แก้เพราะอะไร)">
+                            <field name="note" nolabel="1"/>
+                        </group>
+                        <group string="รายละเอียดสิ่งที่ทำ">
+                            <field name="detail" nolabel="1"/>
+                        </group>
+                    </sheet>
+                </form>
+            </field>
+        </record>
+
+        <record id="view_npd_ai_it_history_search" model="ir.ui.view">
+            <field name="name">npd.ai.it.history.search</field>
+            <field name="model">npd.ai.it.history</field>
+            <field name="arch" type="xml">
+                <search string="ค้นหาประวัติการแก้">
+                    <field name="document_ref"/>
+                    <field name="user_id"/>
+                    <field name="branch_id"/>
+                    <field name="note"/>
+                    <filter name="filter_today" string="วันนี้"
+                            domain="[('date', '&gt;=', context_today().strftime('%Y-%m-%d 00:00:00'))]"/>
+                    <separator/>
+                    <filter name="filter_invoice" string="งานฝั่งใบแจ้งหนี้"
+                            domain="[('action_type', 'in', ['invoice_date', 'invoice_cancel'])]"/>
+                    <filter name="filter_stock" string="งานฝั่งสต๊อก"
+                            domain="[('action_type', 'in', ['stock_topup', 'stock_cut', 'stock_location'])]"/>
+                    <group expand="0" string="จัดกลุ่มตาม">
+                        <filter name="group_action" string="ประเภทการแก้"
+                                context="{'group_by': 'action_type'}"/>
+                        <filter name="group_user" string="ผู้แก้"
+                                context="{'group_by': 'user_id'}"/>
+                        <filter name="group_branch" string="สาขา"
+                                context="{'group_by': 'branch_id'}"/>
+                        <filter name="group_date" string="เดือนที่แก้"
+                                context="{'group_by': 'date:month'}"/>
+                    </group>
+                </search>
+            </field>
+        </record>
+
+        <record id="action_npd_ai_it_history" model="ir.actions.act_window">
+            <field name="name">ประวัติการแก้ AI-IT</field>
+            <field name="res_model">npd.ai.it.history</field>
+            <field name="view_mode">list,form</field>
+            <field name="search_view_id" ref="view_npd_ai_it_history_search"/>
+            <field name="context">{'search_default_group_action': 1}</field>
+            <field name="help" type="html">
+                <p class="o_view_nocontent_smiling_face">ยังไม่มีประวัติการแก้</p>
+                <p>ทุกครั้งที่ "ตัวช่วย AI-IT" แก้ไขข้อมูลให้สำเร็จ
+                   ระบบจะบันทึกไว้ที่นี่ว่าแก้อะไร ใครแก้ สาขาไหน และเพราะอะไร</p>
+            </field>
+        </record>
+
+        <!-- เมนูใต้ บัญชี > การรายงาน -->
+        <menuitem id="menu_npd_ai_it_history_account"
+                  name="ประวัติการแก้ AI-IT"
+                  parent="account.menu_finance_reports"
+                  action="action_npd_ai_it_history"
+                  sequence="99"/>
+
+        <!-- เมนูเดิมฝั่งตั้งค่า ให้ผู้ดูแลเข้าถึงได้จากที่เดียวกับหัวข้อ -->
+        <menuitem id="menu_npd_ai_it_history_config"
+                  name="ประวัติการแก้"
+                  parent="menu_npd_ai_it_root"
+                  action="action_npd_ai_it_history"
+                  sequence="15"/>
+
+    </data>
+</odoo>

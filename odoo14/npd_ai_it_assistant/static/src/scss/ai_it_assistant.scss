@@ -1,0 +1,99 @@
+// ไฟแสดงสถานะของบอทตัวช่วย AI-IT
+//   เขียว = เรียก AI ได้ (ตั้งค่า Gemini API key แล้ว)
+//   แดง   = เรียก AI ไม่ได้ (ยังไม่ได้ตั้ง key)
+// เจาะจงด้วย data attribute จึงไม่กระทบจุดสถานะของผู้ใช้คนอื่น
+.o-mail-ImStatus[data-npd-ai-it="1"],
+.o-mail-ThreadIcon[data-npd-ai-it="1"] {
+    .fa-circle.text-success {
+        color: $success !important;
+    }
+    // ของเดิมเป็นวงกลมกลวงสีเทา (fa-circle-o) มองไม่ออกว่าใช้ไม่ได้ -> วงกลมทึบสีแดง
+    .fa-circle-o {
+        color: $danger !important;
+        opacity: 1 !important;
+        &::before {
+            content: "\f111";
+        }
+    }
+}
+
+// แท็บ "ตัวช่วย AI-IT" ในเมนูสนทนา
+.o_npd_ai_it_list {
+    max-height: 400px;
+
+    &.o-mobile {
+        max-height: none;
+    }
+}
+
+.o_npd_ai_it_hint {
+    padding: 8px 12px;
+    font-size: 12px;
+    color: $gray-600;
+    background-color: $gray-100;
+}
+
+.o_npd_ai_it_empty {
+    padding: 16px 12px;
+    text-align: center;
+    color: $gray-600;
+}
+
+.o_npd_ai_it_topic {
+    display: flex;
+    align-items: center;
+    padding: 10px 12px;
+    cursor: pointer;
+    border-bottom: 1px solid $gray-200;
+
+    &:hover {
+        background-color: $gray-200;
+    }
+
+    &.o-not-ready {
+        opacity: 0.55;
+    }
+
+    &.o-busy {
+        cursor: progress;
+    }
+
+    .o_npd_ai_it_topic_index {
+        flex: 0 0 auto;
+        width: 24px;
+        height: 24px;
+        margin-right: 10px;
+        border-radius: 50%;
+        background-color: $o-brand-primary;
+        color: white;
+        font-size: 12px;
+        line-height: 24px;
+        text-align: center;
+    }
+
+    .o_npd_ai_it_topic_body {
+        flex: 1 1 auto;
+        min-width: 0;
+    }
+
+    .o_npd_ai_it_topic_name {
+        font-weight: bold;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .o_npd_ai_it_topic_description {
+        font-size: 12px;
+        color: $gray-600;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .o_npd_ai_it_topic_arrow {
+        flex: 0 0 auto;
+        margin-left: 8px;
+        color: $gray-500;
+    }
+}

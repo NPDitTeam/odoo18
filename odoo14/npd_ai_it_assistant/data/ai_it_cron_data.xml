@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+
+        <!--
+            ค่าเริ่มต้น: เก็บประวัติแชทไว้ 14 วัน
+            เปลี่ยนได้ที่ Settings > Technical > System Parameters
+            ใส่ 0 = ไม่ล้างเลย
+        -->
+        <record id="param_chat_history_days" model="ir.config_parameter">
+            <field name="key">npd_ai_it_assistant.chat_history_days</field>
+            <field name="value">14</field>
+        </record>
+
+        <!--
+            รันทุกวันตอนตี 4 (เวลาไทย) ไม่ใช่ทุก 14 วัน โดยตั้งใจ
+            เพราะแต่ละข้อความมี "อายุ" ของตัวเอง การกวาดทุกวันทำให้ข้อความหลุด
+            อายุ 14 วันแล้วถูกลบทันที และแต่ละรอบลบทีละน้อย ไม่ล็อกตารางข้อความ
+            ยาว ๆ เหมือนการมากวาดทีเดียวทุกครึ่งเดือน
+        -->
+        <record id="cron_clean_chat_history" model="ir.cron">
+            <field name="name">ตัวช่วย AI-IT: ล้างประวัติแชทเก่า</field>
+            <field name="model_id" ref="model_npd_ai_it_session"/>
+            <field name="state">code</field>
+            <field name="code">model._cron_clean_chat_history()</field>
+            <field name="interval_number">1</field>
+            <field name="interval_type">days</field>
+            <field name="active" eval="True"/>
+            <field name="user_id" ref="base.user_root"/>
+            <!--
+                ระวัง: ir.cron.nextcall เก็บเป็น UTC และ Odoo เทียบกับ
+                (now() at time zone 'UTC') ถ้าใส่ 04:00:00 ตรง ๆ จะกลายเป็น
+                11 โมงเช้าเวลาไทย ซึ่งเป็นเวลาทำงาน
+
+                ต้องการ "ตี 4 เวลาไทย" -> 21:00 UTC ของวันก่อนหน้า
+                (ไทย = UTC+7 ตายตัว ไม่มี DST จึงคงที่ตลอดปี)
+                DateTime.now() ในไฟล์ data คืนเวลาเครื่อง (เวลาไทย) จึงใช้
+                เฉพาะ "ส่วนวันที่" แล้วปักเวลาเป็น 21:00 UTC ของวันนั้น
+                = ตี 4 เวลาไทยของเช้าวันรุ่งขึ้น
+            -->
+            <field name="nextcall"
+                   eval="DateTime.now().strftime('%Y-%m-%d 21:00:00')"/>
+        </record>
+
+    </data>
+</odoo>

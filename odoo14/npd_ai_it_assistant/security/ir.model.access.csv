@@ -1,0 +1,9 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_npd_ai_it_topic_user,npd.ai.it.topic user,model_npd_ai_it_topic,base.group_user,1,0,0,0
+access_npd_ai_it_topic_manager,npd.ai.it.topic manager,model_npd_ai_it_topic,group_ai_it_manager,1,1,1,1
+access_npd_ai_it_session_user,npd.ai.it.session user,model_npd_ai_it_session,base.group_user,1,0,0,0
+access_npd_ai_it_session_manager,npd.ai.it.session manager,model_npd_ai_it_session,group_ai_it_manager,1,1,1,1
+access_npd_ai_it_session_line_user,npd.ai.it.session.line user,model_npd_ai_it_session_line,base.group_user,1,0,0,0
+access_npd_ai_it_session_line_manager,npd.ai.it.session.line manager,model_npd_ai_it_session_line,group_ai_it_manager,1,1,1,1
+access_npd_ai_it_history_user,npd.ai.it.history user,model_npd_ai_it_history,base.group_user,1,0,0,0
+access_npd_ai_it_history_manager,npd.ai.it.history manager,model_npd_ai_it_history,group_ai_it_manager,1,1,1,1

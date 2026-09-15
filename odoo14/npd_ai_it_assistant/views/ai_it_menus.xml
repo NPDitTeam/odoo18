@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+
+        <menuitem id="menu_npd_ai_it_root"
+                  name="ตัวช่วย AI-IT"
+                  parent="base.menu_administration"
+                  sequence="90"
+                  groups="group_ai_it_manager"/>
+
+        <menuitem id="menu_npd_ai_it_topic"
+                  name="หัวข้อ"
+                  parent="menu_npd_ai_it_root"
+                  action="action_npd_ai_it_topic"
+                  sequence="10"/>
+
+        <menuitem id="menu_npd_ai_it_session"
+                  name="ประวัติการใช้งาน"
+                  parent="menu_npd_ai_it_root"
+                  action="action_npd_ai_it_session"
+                  sequence="20"/>
+
+    </data>
+</odoo>

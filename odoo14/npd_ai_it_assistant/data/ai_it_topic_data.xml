@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+
+        <!-- หัวข้อที่ 1 — หัวข้อทดสอบตัวแรกตามที่ตกลงไว้ -->
+        <record id="topic_stock_not_enough" model="npd.ai.it.topic">
+            <field name="name">แก้ปัญหาตัดสต็อกไม่ได้เนื่องจากสต็อกไม่พอ</field>
+            <field name="code">stock_not_enough</field>
+            <field name="sequence">1</field>
+            <field name="description">แจ้งเลขเอกสาร + จำนวนสต็อกจริง แล้วระบบจะเติมสต๊อกให้ตัดได้</field>
+            <field name="active" eval="True"/>
+        </record>
+
+        <!-- หัวข้อที่ 2 -->
+        <record id="topic_invoice_date_fix" model="npd.ai.it.topic">
+            <field name="name">แก้ไขวันที่ใบแจ้งหนี้</field>
+            <field name="code">invoice_date_fix</field>
+            <field name="sequence">2</field>
+            <field name="description">วาง URL ของใบแจ้งหนี้ แล้วระบบจะแก้วันที่ให้ หรือยกเลิกใบที่ลงบันทึกแล้ว</field>
+            <field name="active" eval="True"/>
+        </record>
+
+        <!-- หัวข้อที่ 3 -->
+        <record id="topic_return_date_fix" model="npd.ai.it.topic">
+            <field name="name">แก้ไขวันที่คืนสินค้า</field>
+            <field name="code">return_date_fix</field>
+            <field name="sequence">3</field>
+            <field name="description">แจ้งเลขที่ใบคืน แล้วระบุวันที่คืนใหม่พร้อมเหตุผล</field>
+            <field name="active" eval="True"/>
+        </record>
+
+        <!-- หัวข้อที่ 4 -->
+        <record id="topic_rental_status_fix" model="npd.ai.it.topic">
+            <field name="name">แก้ไขสถานะการเช่า</field>
+            <field name="code">rental_status_fix</field>
+            <field name="sequence">4</field>
+            <field name="description">ถอยสถานะใบกำกับการเช่า ระบบคำนวณสถานะที่ถูกต้องให้จากวันสิ้นสุดการเช่า</field>
+            <field name="active" eval="True"/>
+        </record>
+
+        <!-- หัวข้อที่ 5 -->
+        <record id="topic_vat_round_fix" model="npd.ai.it.topic">
+            <field name="name">แก้การปัดเศษ VAT ในใบแจ้งหนี้</field>
+            <field name="code">vat_round_fix</field>
+            <field name="sequence">5</field>
+            <field name="description">ลูกค้าทักว่ายอดก่อน VAT ต่างไป 1 สตางค์ สลับระหว่างคิดจากยอดรวมกับคิดรายบรรทัด (ถอยกลับได้)</field>
+            <field name="active" eval="True"/>
+        </record>
+
+    </data>
+</odoo>

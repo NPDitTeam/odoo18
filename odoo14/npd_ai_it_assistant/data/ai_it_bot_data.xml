@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!--
+        noupdate="0" โดยตั้งใจ: ระเบียนนี้เป็นของระบบ ไม่ใช่ข้อมูลที่ผู้ใช้แก้เอง
+        ถ้าตั้ง noupdate="1" การอัปเดตโมดูล (-u) จะไม่แตะระเบียนเดิมเลย
+        รูปโปรไฟล์/ชื่อ/อีเมล ที่แก้ทีหลังจะไม่ถูกนำไปใช้กับ DB ที่ติดตั้งไปแล้ว
+    -->
+    <data noupdate="0">
+
+        <!--
+            คู่สนทนาฝั่ง "ตัวช่วย AI-IT"
+            จงใจสร้างเป็น res.partner เฉย ๆ ไม่ผูก res.users เพราะบอทไม่ต้องล็อกอิน
+            และไม่ควรมี session/สิทธิ์ของตัวเองในระบบ
+        -->
+        <record id="partner_ai_it_bot" model="res.partner">
+            <field name="name">ตัวช่วย AI-IT</field>
+            <field name="active" eval="True"/>
+            <field name="company_id" eval="False"/>
+            <!--
+                จำเป็นต้องมีอีเมล เพราะโมดูล partner_email_required บังคับว่า
+                res.partner ทุกตัวต้องมีอีเมลที่ถูกรูปแบบ (ทั้งตอน create และ write)
+                ตั้งเป็นโดเมน .local ที่ส่งจริงไม่ได้ เพื่อกันเมลหลุดออกไปข้างนอก
+                ห้องแชทของบอทเป็นชนิด chat (email_send = False) จึงไม่มีการส่งเมลอยู่แล้ว
+            -->
+            <field name="email">ai-it-bot@npd.local</field>
+            <!--
+                ต้องมีเบอร์โทร เพราะโมดูล npd_custom_contact_required_fields
+                ประกาศ phone = required=True  บางฐานข้อมูล (เช่น NPD_S_Group_New_V2)
+                คอลัมน์นี้เลยกลายเป็น NOT NULL จริง ๆ ที่ระดับ PostgreSQL
+                (ฐานอื่นไม่โดน เพราะตอนติดตั้งโมดูลนั้นมีข้อมูลเก่าที่ phone ว่างอยู่
+                Odoo จึงข้ามการเพิ่ม constraint ให้) ถ้าไม่ใส่ ติดตั้งจะล้มด้วย
+                    null value in column "phone" violates not-null constraint
+
+                ใช้ 0000000000 เป็นค่าว่างเชิงสัญลักษณ์ ตามที่ระบบนี้ใช้อยู่แล้ว
+            -->
+            <field name="phone">0000000000</field>
+            <!-- รูปโปรไฟล์ที่ขึ้นข้างข้อความของบอทในแชท -->
+            <field name="image_1920" type="base64"
+                   file="npd_ai_it_assistant/static/src/img/ai_it_bot.png"/>
+            <field name="comment">ผู้ช่วยอัตโนมัติของฝ่าย IT (NPD) สำหรับแก้ปัญหาที่พบบ่อยในระบบ</field>
+        </record>
+
+    </data>
+</odoo>
