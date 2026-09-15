@@ -447,12 +447,17 @@ class AccountAdvanceClearAI(models.Model):
         # Receipt substitute certificates — auto-decide if their amount counts
         _sub_re = self._resolve_receipt_substitutes(result, new_receipt_total, s_total)
         # Cash bills — count when new check passes
-        _cbc_re = result.get('cash_bill_check', {}) or {}
-        _cb_match_re = self._check_cash_bill_match_detail()
-        _cb_total_re = 0
-        if _cbc_re.get('required', False) and _cb_match_re['pass']:
-            _cb_total_re = sum((cb.amount or 0) + (cb.vat_amount or 0) for cb in self.cash_bill_ids)
-        ac_data['pass'] = abs(new_receipt_total + _sub_re['amount_to_count'] + _cb_total_re - s_total) < 1.0 if s_total > 0 else True
+        # บวกยอดบิลเงินสดที่ลงทะเบียนเมื่อจับคู่ Detail ได้ (ไม่ผูกกับ AI required)
+        _cb_total_re = self._registered_cash_bill_total(result)
+        _combined_new = round(new_receipt_total + _sub_re['amount_to_count'] + _cb_total_re, 2)
+        _amount_ok_new = self._amount_matches(_combined_new, s_total) if s_total > 0 else True
+        ac_data['pass'] = _amount_ok_new
+        # อัปเดตค่าที่เหลือใน amount_check ให้สอดคล้องกัน — ไม่งั้น combined_total/matches/
+        # message ของ AI จากรอบแรกจะค้างอยู่ใน ai_parsed_result แล้วถูกนำไปแสดงผลผิด
+        ac_data['combined_total'] = _combined_new
+        ac_data['cash_bill_total'] = _cb_total_re
+        ac_data['matches'] = _amount_ok_new
+        ac_data['message'] = ''
 
         # Check analytic (Python check)
         analytic_pass, analytic_missing = self._check_analytic_account()
@@ -575,6 +580,23 @@ class AccountAdvanceClearAI(models.Model):
             tc_ok = True
         if self.env.cr.dbname == 'NPD_Logistics_New':
             tc_ok = True
+        # ข้อ 6: Company — apply skip filter (base-name matching for split files)
+        if skip_company_files:
+            def _fn_in_skip_company_re(fname, skip_set):
+                if not fname or not skip_set:
+                    return False
+                if fname in skip_set:
+                    return True
+                for sf in skip_set:
+                    sf_base = sf.rsplit('.', 1)[0]
+                    if sf_base and fname.startswith(sf_base):
+                        return True
+                return False
+            cnc_mm_re = cnc.get('mismatched_files', [])
+            cnc_mm_re_filtered = [mf for mf in cnc_mm_re
+                                  if isinstance(mf, dict) and not _fn_in_skip_company_re(mf.get('filename', ''), skip_company_files)]
+            if not cnc_mm_re_filtered and cnc_mm_re:
+                company_name_ok = True
         # ข้อ 7: Invoice Detail — apply skip filter (was missing here)
         if skip_invoice_files:
             def _fn_in_skip_re(fname, skip_set):
@@ -1964,6 +1986,32 @@ class AccountAdvanceClearAI(models.Model):
             return False
         return self._check_cash_bill_match_detail()['pass']
 
+    def _registered_cash_bill_total(self, result=None):
+        u"""ยอดบิลเงินสดที่ลงทะเบียน ซึ่งควรนับรวมเข้า combined total ของข้อ 2.
+        นับเมื่อ: มีบิลเงินสดลงทะเบียน และทุกใบจับคู่ยอดกับ price_unit ใน Detail Lines ได้
+        ไม่ผูกกับ AI 'required' แล้ว — รองรับกรณีผู้ใช้ลงทะเบียนบิล/รายการปรับปรุงเอง
+        (เช่น เงินขาด/เงินเกินบัญชี ที่ไม่มีรูปใบเสร็จ AI จึงตั้ง required=False)
+        """
+        if not self.cash_bill_ids:
+            return 0.0
+        if not self._check_cash_bill_match_detail()['pass']:
+            return 0.0
+        return sum((cb.amount or 0) + (cb.vat_amount or 0) for cb in self.cash_bill_ids)
+
+    def _amount_matches(self, combined, system_total, tolerance=1.0):
+        u"""ยอดรวมจากใบเสร็จตรงกับยอดในระบบหรือไม่ — เผื่อกรณีมีภาษีหัก ณ ที่จ่าย (WHT):
+        ใบเสร็จบางใบ AI อ่านยอด 'จำนวนเงินที่ต้องชำระ' (สุทธิหลังหัก ณ ที่จ่าย)
+        แทนยอดรวมก่อนหัก (= มูลค่าสินค้า + VAT) ที่ตรงกับ Unit Price ในระบบ
+        จึงยอมรับทั้ง combined == system และ combined + WHT == system
+        (tolerance 1 บาท ครอบคลุมการปัดเศษ เช่น MISC REV)
+        """
+        if abs(combined - system_total) < tolerance:
+            return True
+        wht = self.wht_amount or 0
+        if wht > 0 and abs(combined + wht - system_total) < tolerance:
+            return True
+        return False
+
     def _resolve_receipt_substitutes(self, result, py_receipt_total, py_system_total, tolerance=1.0):
         u"""ตัดสินว่าใบรับรองแทนใบเสร็จ (is_receipt_substitute=true ใน skipped_files)
         ควรนับยอดเข้า combined_total หรือไม่ โดยเปรียบเทียบยอดรวม:
@@ -2110,17 +2158,13 @@ class AccountAdvanceClearAI(models.Model):
             if _untaxed > 0:
                 py_system_total = _untaxed + _tax
         py_cb_total = 0
-        # ใช้ logic ใหม่ (cash_bill_ok) แทน AI's pass/cross-verify
-        if cbc.get('required', False) and cash_bill_ok:
-            # ถ้า new check ผ่าน ใช้ผลรวม cash_bill_ids ที่ user ลงทะเบียน
-            py_cb_total = sum((cb.amount or 0) + (cb.vat_amount or 0) for cb in self.cash_bill_ids)
-            if not py_cb_total:
-                py_cb_total = cbc_reg_total
+        # บวกยอดบิลเงินสดที่ลงทะเบียนเมื่อจับคู่ Detail ได้ (ไม่ผูกกับ AI required)
+        py_cb_total = self._registered_cash_bill_total(result)
         # ใบรับรองแทนใบเสร็จ — ตัดสินอัตโนมัติว่านับเข้า combined ไหม
         sub_resolution = self._resolve_receipt_substitutes(result, py_receipt_total, py_system_total)
         py_sub_total = sub_resolution['amount_to_count']
         py_combined = py_receipt_total + py_cb_total + py_sub_total
-        py_amount_ok = abs(py_combined - py_system_total) < 1.0 if py_system_total > 0 else ac_data.get('matches', False)
+        py_amount_ok = self._amount_matches(py_combined, py_system_total) if py_system_total > 0 else ac_data.get('matches', False)
 
         # Override AI status: if amount didn't match but now matches with cash bill total → pass
         rc_data = result.get('receipt_check', {})
@@ -2231,10 +2275,21 @@ class AccountAdvanceClearAI(models.Model):
             tc_ok = True
 
         # ข้อ 6: Company Name Check — filter mismatched_files excluding unchecked files
+        # Use base-name matching: AI may split "X.jpg" into "X.0.jpg", "X.jpg (บนซ้าย)" etc.
+        def _fname_in_skip_company(fname, skip_set):
+            if not fname or not skip_set:
+                return False
+            if fname in skip_set:
+                return True
+            for sf in skip_set:
+                sf_base = sf.rsplit('.', 1)[0]
+                if sf_base and fname.startswith(sf_base):
+                    return True
+            return False
         if skip_company_files:
             cnc_mismatched = cnc.get('mismatched_files', [])
             cnc_filtered = [mf for mf in cnc_mismatched
-                            if isinstance(mf, dict) and mf.get('filename', '') not in skip_company_files]
+                            if isinstance(mf, dict) and not _fname_in_skip_company(mf.get('filename', ''), skip_company_files)]
             if not cnc_filtered and cnc_mismatched:
                 # All mismatched files were skipped → force pass
                 company_name_ok = True
@@ -2482,28 +2537,29 @@ class AccountAdvanceClearAI(models.Model):
             if _untaxed_d > 0:
                 s_total = _untaxed_d + _tax_d
 
-        # Resolve cash bill total from registered_total when check passed
-        # ใช้ cash_bill_ok (logic ใหม่) แทน AI's pass
-        if cbc.get('required', False) and cash_bill_ok:
-            # ใช้ผลรวม cash_bill_ids ที่ user ลงทะเบียน (มากกว่า AI's registered_total ที่อาจ stale)
-            reg_total_val = sum((cb.amount or 0) + (cb.vat_amount or 0) for cb in self.cash_bill_ids)
-            if not reg_total_val:
-                reg_total_val = cbc.get('registered_total', 0)
-            if isinstance(reg_total_val, (int, float)) and reg_total_val > 0:
-                cb_total = reg_total_val
+        # ยอดบิลเงินสดที่นับเข้า combined — ใช้ตัวเดียวกับที่ใช้ตัดสิน is_pass
+        # (_registered_cash_bill_total: ลงทะเบียนแล้วและจับคู่ price_unit ใน Detail ได้ครบ)
+        # ไม่ผูกกับ cash_bill_check.required ของ AI และไม่ใช้ registered_total ที่อาจ stale
+        if self.cash_bill_ids:
+            cb_total = self._registered_cash_bill_total(result)
 
         # Receipt substitute certificates — auto-decide if their amount counts
         sub_resolution = self._resolve_receipt_substitutes(result, r_total, s_total)
         sub_total = sub_resolution['amount_to_count']
 
-        # Recompute combined when AI didn't provide it, when Python overrode r_total,
-        # or when there are receipt substitutes to add
-        if (r_total > 0 or cb_total > 0 or sub_total > 0) and (combined == 0 or _py_overrode_r_total or sub_total > 0):
+        # คำนวณ combined ใหม่เสมอจากค่าฝั่ง Python (ใบเสร็จ + บิลเงินสด + ใบรับรองฯ)
+        # ห้ามใช้ combined_total ของ AI เป็นค่าตั้งต้น เพราะเป็นค่าตอนรอบแรก:
+        # ถ้าผู้ใช้แก้ยอดใบเสร็จ / ลงทะเบียนบิลเงินสดเพิ่มทีหลัง ค่าเดิมจะค้าง
+        # ทำให้ Section 2 ขึ้น ✗ ทั้งที่ is_pass (ซึ่งคำนวณเองอยู่แล้ว) = ผ่าน
+        _combined_ai = combined
+        _combined_recomputed = False
+        if r_total > 0 or cb_total > 0 or sub_total > 0:
             combined = round(r_total + cb_total + sub_total, 2)
+            _combined_recomputed = abs(combined - _combined_ai) > 0.01
 
-        # Re-check matches with combined_total
+        # Re-check matches with combined_total (เผื่อ WHT ด้วย)
         if combined > 0 and s_total > 0:
-            ac_pass = abs(combined - s_total) < 1.0  # tolerance 1 baht
+            ac_pass = self._amount_matches(combined, s_total)  # tolerance 1 baht + WHT
 
         # Check if amount check was skipped by condition
         amount_skipped = bool(skip_amount_files and _any_receipt_matches_skip(skip_amount_files))
@@ -2561,8 +2617,11 @@ class AccountAdvanceClearAI(models.Model):
             html += '<p style="color: #6c757d; font-size: 0.9em;">* ใช้ Untaxed + Tax แทน Total เนื่องจากมีภาษีหัก ณ ที่จ่าย %.2f บาท</p>' % _wht_display
         else:
             html += '<p>ยอดในระบบ: <strong>%s บาท</strong></p>' % s_total_str
+        # ข้อความของ AI ใช้ได้เฉพาะตอนที่ยอดยังไม่ถูกคำนวณใหม่ — ถ้าผู้ใช้แก้ยอดใบเสร็จ
+        # หรือลงทะเบียนบิลเงินสดเพิ่ม ข้อความเดิมจะขัดกับตัวเลขจริง (เช่น "บิลเงินสด 0.00
+        # เนื่องจากไม่ผ่านการตรวจสอบ" ทั้งที่ลงทะเบียนผ่านแล้ว) จึงไม่แสดง
         ac_msg = ac.get('message', '')
-        if ac_msg:
+        if ac_msg and not _combined_recomputed:
             html += '<p>%s</p>' % ac_msg
 
         # --- Comparison table: AI receipt amounts vs system unit prices ---
@@ -2887,10 +2946,11 @@ class AccountAdvanceClearAI(models.Model):
         if skip_company_files and cnc_required and not cnc_pass:
             cnc_mismatched_orig = cnc.get('mismatched_files', [])
             cnc_mismatched_filtered = [mf for mf in cnc_mismatched_orig
-                                       if isinstance(mf, dict) and mf.get('filename', '') not in skip_company_files]
+                                       if isinstance(mf, dict) and not _fname_in_skip_company(mf.get('filename', ''), skip_company_files)]
             if not cnc_mismatched_filtered and cnc_mismatched_orig:
                 cnc_pass = True  # all mismatched files were skipped → force pass
-                company_skipped_names = set(mf.get('filename', '') for mf in cnc_mismatched_orig if isinstance(mf, dict)) & skip_company_files
+                company_skipped_names = set(mf.get('filename', '') for mf in cnc_mismatched_orig
+                                            if isinstance(mf, dict) and _fname_in_skip_company(mf.get('filename', ''), skip_company_files))
         check7_company_ok = (not cnc_required) or cnc_pass
         check7_utility_ok = uac_ok  # from Python _check_utility_analytic_partner()
         check7_pass = check7_company_ok and check7_utility_ok
@@ -3107,14 +3167,27 @@ class AccountAdvanceClearAI(models.Model):
                     for kw in ['ลายมือ', 'เขียนมือ', 'บิลเงินสด', 'handwritten', 'cash'])
                 for f in skipped if not f.get('is_receipt_substitute')
             )
+            def _list_skipped(keywords):
+                # คืน HTML รายการไฟล์ที่ reason ตรง keyword (filename — reason)
+                lines = u''
+                for f in skipped:
+                    if f.get('is_receipt_substitute'):
+                        continue
+                    rsn = (f.get('reason', '') or '')
+                    if any(kw in rsn.lower() for kw in keywords):
+                        fn = f.get('filename', '') or u'?'
+                        lines += u'<li>&#128196; <strong>%s</strong> — %s</li>' % (fn, rsn or u'-')
+                return (u'<ul style="margin:6px 0 4px;">%s</ul>' % lines) if lines else u''
             if not receipt_files and not rc.get('found', False) and not has_hw:
                 reason = u'ไม่พบไฟล์ใบเสร็จที่อ่านได้ในเอกสารแนบ'
                 fix = u'อัปโหลดรูปใบเสร็จ/ใบกำกับภาษีที่ชัดเจนในเอกสารแนบ แล้วกด "ตรวจสอบด้วย AI" อีกครั้ง'
             elif has_unclear:
-                reason = u'ใบเสร็จบางใบไม่ชัดเจน ระบบอ่านข้อมูลไม่ออก'
+                reason = u'ใบเสร็จต่อไปนี้ไม่ชัดเจน ระบบอ่านข้อมูลไม่ออก:'
+                reason += _list_skipped([u'ไม่ชัด', u'อ่านไม่ออก', u'เบลอ', u'unclear'])
                 fix = u'ถ่าย/สแกนใบเสร็จใหม่ให้ชัด แล้ว Reset to Draft > อัปโหลดรูปใหม่ > ตรวจสอบด้วย AI อีกครั้ง'
             elif has_hw:
-                reason = u'พบบิลเขียนมือ/บิลเงินสด ที่ยังไม่ได้ลงทะเบียนเข้าระบบ'
+                reason = u'พบบิลเขียนมือ/บิลเงินสด ที่ยังไม่ได้ลงทะเบียนเข้าระบบ:'
+                reason += _list_skipped([u'ลายมือ', u'เขียนมือ', u'บิลเงินสด', u'handwritten', u'cash'])
                 fix = u'กดปุ่ม "เพิ่มรายการบิลเงินสด" เพื่อลงทะเบียนบิล หรือขอใบเสร็จที่พิมพ์จากระบบมาแนบแทน'
             else:
                 reason = u'ใบเสร็จไม่ผ่านการตรวจสอบความถูกต้อง'
@@ -3128,13 +3201,46 @@ class AccountAdvanceClearAI(models.Model):
             diff = abs(s - c)
             reason = (u'ยอดรวมจากใบเสร็จ %s บาท ไม่ตรงกับยอดในระบบ %s บาท (ต่างกัน %s บาท)'
                       % (fmt(c), fmt(s), fmt(diff)))
+            # แสดงยอดที่ AI อ่านได้จากแต่ละไฟล์ เพื่อให้รู้ว่าใบไหนยอดเท่าไหร่
+            rc2 = result.get('receipt_check', {}) or {}
+            r_lines = u''
+            for f in rc2.get('receipt_files', []):
+                if not isinstance(f, dict) or not f.get('filename'):
+                    continue
+                fn = f.get('filename', '')
+                ftype = (f.get('type', '') or '').lower()
+                val = f.get('fee') if 'deposit' in ftype else f.get('amount')
+                if isinstance(val, (int, float)) and val > 0:
+                    label = u' (ค่าธรรมเนียม)' if 'deposit' in ftype else u''
+                    r_lines += u'<li>&#128196; <strong>%s</strong> — %s บาท%s</li>' % (fn, fmt(val), label)
+            if r_lines:
+                reason += u'<div style="margin-top:6px;">AI อ่านยอดจากแต่ละไฟล์:<ul style="margin:4px 0;">%s</ul></div>' % r_lines
             fix = (u'ตรวจสอบว่าแนบใบเสร็จครบทุกใบ และยอดในรายการ (Detail Lines) ถูกต้อง '
                    u'หากมีบิลเงินสดที่ยังไม่ได้ลงทะเบียน ให้กด "เพิ่มรายการบิลเงินสด"')
             items.append({'title': u'2. ยอดเงินไม่ตรง', 'reason': reason, 'fix': fix})
 
         # 3. ภาษีในรายการ (VAT)
         if not flags.get('tc_ok', True):
+            tc = result.get('tax_in_detail_check', {}) or {}
             reason = u'ใบเสร็จมี VAT แต่ในรายการ (Detail Lines) ยังไม่ได้ระบุภาษี (Tax)'
+            # ไฟล์ใบเสร็จที่มี VAT (ถ้า AI ระบุมา)
+            vat_file = tc.get('receipt_filename', '') or ''
+            if vat_file:
+                reason += u'<div style="margin-top:6px;">ใบเสร็จที่มี VAT: <strong>&#128196; %s</strong></div>' % vat_file
+            # รายการ Detail ที่ยังไม่ระบุภาษี (พร้อมไฟล์ที่มา)
+            ml_lines = u''
+            for ml in tc.get('missing_tax_lines', []):
+                if isinstance(ml, dict):
+                    nm = ml.get('product', '') or ml.get('description', '') or ml.get('line', '') or ml.get('name', '') or u'-'
+                    fn = ml.get('receipt_filename', '') or ml.get('invoice_number', '') or u''
+                    sub = ml.get('subtotal', ml.get('unit_price', ''))
+                    sub_str = (u' (%s บาท)' % fmt(sub)) if sub not in ('', None) else u''
+                    fn_str = (u' — ไฟล์: %s' % fn) if fn else u''
+                    ml_lines += u'<li><strong>%s</strong>%s%s</li>' % (nm, sub_str, fn_str)
+                else:
+                    ml_lines += u'<li>%s</li>' % ml
+            if ml_lines:
+                reason += u'<div style="margin-top:6px;">รายการที่ยังไม่ระบุภาษี:<ul style="margin:4px 0;">%s</ul></div>' % ml_lines
             fix = u'เปิดแต่ละบรรทัดใน Detail Lines แล้วเลือกภาษี (Tax) ให้ตรงกับ VAT ในใบเสร็จ'
             items.append({'title': u'3. ภาษี (VAT) ไม่ครบ', 'reason': reason, 'fix': fix})
 
@@ -3151,8 +3257,34 @@ class AccountAdvanceClearAI(models.Model):
         # 5. บิลเงินสด
         if not flags.get('cash_bill_ok', True):
             if not self.cash_bill_ids:
-                reason = u'ระบบพบบิลเงินสด/บิลเขียนมือในเอกสารแนบ แต่ผู้ใช้ยังไม่ได้ลงทะเบียนเข้าระบบ'
-                fix = u'กดปุ่ม "เพิ่มรายการบิลเงินสด" เพื่อลงทะเบียนบิลเงินสดให้ครบทุกใบ'
+                # หาไฟล์ที่ AI จัดว่าเป็นบิลเงินสด/บิลเขียนมือ (จาก skipped_files)
+                rc5 = result.get('receipt_check', {}) or {}
+                cash_files = []
+                for f in rc5.get('skipped_files', []):
+                    if not isinstance(f, dict) or f.get('is_receipt_substitute'):
+                        continue
+                    rsn = (f.get('reason', '') or '').lower()
+                    if any(kw in rsn for kw in [u'ลายมือ', u'เขียนมือ', u'บิลเงินสด', u'handwritten', u'cash']):
+                        cash_files.append(f)
+                if cash_files:
+                    reason = u'AI อ่านว่าไฟล์ต่อไปนี้เป็น "บิลเงินสด/บิลเขียนมือ" แต่ยังไม่ได้ลงทะเบียนเข้าระบบ:'
+                    reason += u'<ul style="margin:6px 0 4px;">'
+                    for f in cash_files:
+                        fn = f.get('filename', '') or u'?'
+                        amt = f.get('amount')
+                        if isinstance(amt, (int, float)) and amt > 0:
+                            reason += u'<li>&#128196; <strong>%s</strong> — ยอดที่ AI อ่านได้ %s บาท</li>' % (fn, fmt(amt))
+                        else:
+                            reason += u'<li>&#128196; <strong>%s</strong> — (AI อ่านยอดไม่ได้)</li>' % fn
+                    reason += u'</ul>'
+                    reason += (u'<div style="margin-top:6px; color:#856404;">หากไฟล์ข้างต้นจริงๆ '
+                               u'เป็นใบกำกับภาษี/ใบเสร็จปกติ (AI อ่านผิดเพราะมีลายเซ็น/ตรายางเขียนมือ) '
+                               u'แปลว่าไม่ใช่บิลเงินสด — ไม่ต้องลงทะเบียน</div>')
+                else:
+                    reason = u'ระบบพบบิลเงินสด/บิลเขียนมือในเอกสารแนบ แต่ผู้ใช้ยังไม่ได้ลงทะเบียนเข้าระบบ'
+                fix = (u'ถ้าเป็นบิลเงินสดจริง ให้กดปุ่ม "เพิ่มรายการบิลเงินสด" ลงทะเบียนให้ครบทุกใบ '
+                       u'/ ถ้า AI อ่านใบเสร็จปกติผิด ให้สแกนใบใหม่ให้ชัด (เลี่ยงลายเซ็นทับตัวเลข) '
+                       u'แล้ว Reset to Draft > อัปโหลดใหม่ > ตรวจสอบด้วย AI อีกครั้ง')
             else:
                 reason = u'ยอดบิลเงินสดที่ลงทะเบียนไว้ ไม่ตรงกับราคาต่อหน่วยในรายการ (Detail Lines)'
                 fix = u'ตรวจสอบยอดในรายการบิลเงินสดที่ลงทะเบียน ให้ตรงกับยอดในรายการ Detail Lines'
@@ -3161,11 +3293,16 @@ class AccountAdvanceClearAI(models.Model):
         # 6. ข้อมูลบริษัทลูกค้า (ผู้ซื้อ)
         if not flags.get('company_name_ok', True):
             cnc = result.get('company_name_check', {}) or {}
-            mm = [m.get('filename', '') for m in cnc.get('mismatched_files', []) if isinstance(m, dict)]
-            mm = [m for m in mm if m]
             reason = u'ชื่อ / เลขภาษี / ที่อยู่ ของบริษัทในใบเสร็จ ไม่ตรงกับบริษัทที่ระบบยอมรับ'
-            if mm:
-                reason += u' (ไฟล์: %s)' % u', '.join(mm)
+            mm_lines = u''
+            for m in cnc.get('mismatched_files', []):
+                if not isinstance(m, dict):
+                    continue
+                fn = m.get('filename', '') or u'?'
+                issue = m.get('issue', '') or u''
+                mm_lines += u'<li>&#128196; <strong>%s</strong>%s</li>' % (fn, (u' — %s' % issue) if issue else u'')
+            if mm_lines:
+                reason += u'<ul style="margin:6px 0 4px;">%s</ul>' % mm_lines
             fix = u'ขอใบเสร็จที่ออกในชื่อ/เลขภาษี/ที่อยู่บริษัทให้ถูกต้อง แล้วอัปโหลดมาตรวจสอบใหม่'
             items.append({'title': u'6. ข้อมูลบริษัทในใบเสร็จไม่ตรง', 'reason': reason, 'fix': fix})
 
@@ -3228,6 +3365,25 @@ class AccountAdvanceClearAI(models.Model):
         if not flags.get('slip_ok', True):
             reason = (u'ไม่พบสลิปโอนเงินที่มียอด (รวมกัน) ตรงกับยอดเคลียร์ (Clear Amount) %s บาท'
                       % fmt(self.clear_amount or 0))
+            # แสดงสลิป/โอนเงินที่ AI เจอ พร้อมยอด เพื่อให้เทียบได้ว่าอ่านใบไหนยอดเท่าไหร่
+            rc9 = result.get('receipt_check', {}) or {}
+            s_lines = u''
+            for f in (rc9.get('skipped_files', []) + rc9.get('receipt_files', [])):
+                if not isinstance(f, dict) or not f.get('filename'):
+                    continue
+                ftype = (f.get('type', '') or '').lower()
+                rsn = (f.get('reason', '') or '').lower()
+                is_slip = ('deposit' in ftype or 'slip' in ftype or 'transfer' in ftype
+                           or u'สลิป' in rsn or u'โอนเงิน' in rsn)
+                if not is_slip:
+                    continue
+                amt = f.get('amount')
+                amt_str = (u'%s บาท' % fmt(amt)) if isinstance(amt, (int, float)) and amt > 0 else u'(อ่านยอดไม่ได้)'
+                s_lines += u'<li>&#128196; <strong>%s</strong> — %s</li>' % (f.get('filename', '') or u'?', amt_str)
+            if s_lines:
+                reason += u'<div style="margin-top:6px;">สลิป/โอนเงินที่ AI เจอ:<ul style="margin:4px 0;">%s</ul></div>' % s_lines
+            else:
+                reason += u'<div style="margin-top:6px; color:#856404;">ไม่พบไฟล์สลิปโอนเงินในเอกสารแนบเลย</div>'
             fix = u'แนบสลิปโอนเงินที่ยอดรวมตรงกับ Clear Amount หรือตรวจสอบยอด Clear Amount ให้ถูกต้อง'
             items.append({'title': u'9. สลิปโอนเงินไม่ตรงยอด', 'reason': reason, 'fix': fix})
 
@@ -3360,17 +3516,13 @@ class AccountAdvanceClearAI(models.Model):
             _tax3 = self.tax_amount or 0
             if _untaxed3 > 0:
                 s_total = _untaxed3 + _tax3
-        cb_total = 0
-        # ใช้ cash_bill_ok (logic ใหม่) แทน AI's pass/cross-verify
-        if cbc.get('required', False) and cash_bill_ok:
-            cb_total = sum((cb.amount or 0) + (cb.vat_amount or 0) for cb in self.cash_bill_ids)
-            if not cb_total:
-                cb_total = cbc_reg2
+        # บวกยอดบิลเงินสดที่ลงทะเบียนเมื่อจับคู่ Detail ได้ (ไม่ผูกกับ AI required)
+        cb_total = self._registered_cash_bill_total(result)
         # ใบรับรองแทนใบเสร็จ — ตัดสินอัตโนมัติว่านับเข้า combined ไหม
         sub_resolution3 = self._resolve_receipt_substitutes(result, r_total, s_total)
         sub_total3 = sub_resolution3['amount_to_count']
         combined = r_total + cb_total + sub_total3
-        amount_ok = abs(combined - s_total) < 1.0 if s_total > 0 else ac_data.get('matches', False)
+        amount_ok = self._amount_matches(combined, s_total) if s_total > 0 else ac_data.get('matches', False)
 
         rc_data = result.get('receipt_check', {})
         dc_data = result.get('description_check', {})
@@ -3457,11 +3609,21 @@ class AccountAdvanceClearAI(models.Model):
             tc_ok = True
         if self.env.cr.dbname == 'NPD_Logistics_New':
             tc_ok = True
-        # ข้อ 6: Company — filter mismatched files
+        # ข้อ 6: Company — filter mismatched files (base-name matching for split files)
+        def _fn_in_skip_company2(fname, skip_set):
+            if not fname or not skip_set:
+                return False
+            if fname in skip_set:
+                return True
+            for sf in skip_set:
+                sf_base = sf.rsplit('.', 1)[0]
+                if sf_base and fname.startswith(sf_base):
+                    return True
+            return False
         if skip_company_files:
             cnc_mm = cnc_data.get('mismatched_files', [])
             cnc_mm_filtered = [mf for mf in cnc_mm
-                               if isinstance(mf, dict) and mf.get('filename', '') not in skip_company_files]
+                               if isinstance(mf, dict) and not _fn_in_skip_company2(mf.get('filename', ''), skip_company_files)]
             if not cnc_mm_filtered and cnc_mm:
                 company_name_ok = True
         # ข้อ 7: Invoice Detail — filter items (use base-name matching for split files)
