@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<odoo>
+
+    <record id="view_npd_depreciation_compute_form" model="ir.ui.view">
+        <field name="name">npd.asset.depreciation.compute.form</field>
+        <field name="model">npd.asset.depreciation.compute</field>
+        <field name="arch" type="xml">
+            <form string="คำนวณค่าเสื่อมราคาประจำปี">
+                <div class="alert alert-info" role="alert">
+                    คำนวณ 12 เดือน (ม.ค. - ธ.ค.) ของปีที่เลือก ทีละบริษัท
+                    <br/>
+                    ค่าเสื่อม = ราคาทรัพย์สิน × ร้อยละต่อปี × จำนวนวันในเดือน ÷ 365
+                    เดือนที่ซื้อจะนับตั้งแต่วันที่ซื้อถึงสิ้นเดือน และจะหยุดตัดเมื่อเหลือเท่ามูลค่าซาก
+                    <br/>
+                    เดือนที่ลงบัญชีไปแล้วจะไม่ถูกคำนวณทับ
+                    <br/>
+                    งวดของปุ่มพิมพ์รายงานและสรุปตามหมวด เลือกเป็นช่วงได้ เช่น ม.ค. ถึง มิ.ย.
+                    (ยอดยกมาเอาต้นงวด ค่าสึกหรอรวมทุกเดือนในงวด ยอดยกไปเอาปลายงวด)
+                    <br/>
+                    ขึ้นปีใหม่ระบบคำนวณต่อให้เอง (งานที่กำหนดไว้ "คำนวณค่าเสื่อมราคาประจำเดือน")
+                    ยอดยกมาเดือน ม.ค. จะเท่ากับยอดยกไปเดือน ธ.ค. ของปีก่อนเสมอ
+                    ถ้าอยากย้อนดูปีเก่าในตารางสินทรัพย์ ให้เลือกปีแล้วกด "ดูปีนี้ในตารางสินทรัพย์"
+                </div>
+                <group>
+                    <group>
+                        <!-- ช่องตัวกรองหมวด/สินทรัพย์ใช้บริษัทใน domain ต้องมีฟิลด์นี้เสมอ -->
+                        <field name="company_id" invisible="1"/>
+                        <field name="company_id" options="{'no_create': True, 'no_open': True}"
+                               groups="base.group_multi_company"/>
+                        <field name="year" options="{'format': false}"/>
+                        <label for="month_from" string="งวด (เดือน)"/>
+                        <div class="o_row">
+                            <field name="month_from" class="oe_inline"/>
+                            <span class="oe_inline"> ถึง </span>
+                            <field name="month_to" class="oe_inline"/>
+                        </div>
+                        <field name="only_active"/>
+                    </group>
+                    <group>
+                        <field name="profile_ids" widget="many2many_tags"
+                               options="{'no_create': True}"/>
+                        <field name="asset_ids" widget="many2many_tags"
+                               options="{'no_create': True}"/>
+                    </group>
+                </group>
+                <footer>
+                    <button name="action_compute" type="object" string="คำนวณ"
+                            class="btn-primary"/>
+                    <button name="action_print_tax_report" type="object"
+                            string="พิมพ์รายงานค่าสึกหรอ (พ.ร.ฎ.)" class="btn-secondary"/>
+                    <button name="action_summary_by_profile" type="object"
+                            string="สรุปตามหมวด" class="btn-secondary"/>
+                    <button name="action_show_year" type="object"
+                            string="ดูปีนี้ในตารางสินทรัพย์" class="btn-secondary"/>
+                    <button name="action_export_xlsx" type="object" string="ออก Excel 12 เดือน"
+                            class="btn-secondary"/>
+                    <button string="ปิด" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_npd_depreciation_compute" model="ir.actions.act_window">
+        <field name="name">คำนวณค่าเสื่อมประจำปี</field>
+        <field name="res_model">npd.asset.depreciation.compute</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+
+</odoo>

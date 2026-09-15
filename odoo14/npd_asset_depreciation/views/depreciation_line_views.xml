@@ -1,0 +1,164 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<odoo>
+
+    <!-- ================= ตาราง ================= -->
+    <record id="view_npd_depreciation_line_tree" model="ir.ui.view">
+        <field name="name">npd.asset.depreciation.line.list</field>
+        <field name="model">npd.asset.depreciation.line</field>
+        <field name="arch" type="xml">
+            <list string="ค่าเสื่อมราคารายเดือน"
+                  decoration-muted="state == 'posted'"
+                  create="false" default_order="year desc, month_no">
+                <field name="month_no" column_invisible="1"/>
+                <field name="year" column_invisible="1"/>
+                <field name="year_label"/>
+                <field name="year_be_label" optional="hide"/>
+                <field name="month"/>
+                <field name="asset_code"/>
+                <field name="asset_id"/>
+                <field name="profile_id" optional="show"/>
+                <field name="company_id" groups="base.group_multi_company" optional="hide"/>
+                <field name="currency_id" column_invisible="1"/>
+                <field name="purchase_value" sum="รวม" optional="show"/>
+                <field name="depre_rate" optional="hide"/>
+                <field name="date_purchase" optional="hide"/>
+                <field name="days" optional="show"/>
+                <field name="opening_value" sum="รวม"/>
+                <field name="depreciation" sum="รวม"/>
+                <field name="closing_value" sum="รวม"/>
+                <field name="move_id" optional="hide"/>
+                <field name="state" widget="badge"
+                       decoration-warning="state == 'draft'"
+                       decoration-success="state == 'posted'"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- ================= ฟอร์ม ================= -->
+    <record id="view_npd_depreciation_line_form" model="ir.ui.view">
+        <field name="name">npd.asset.depreciation.line.form</field>
+        <field name="model">npd.asset.depreciation.line</field>
+        <field name="arch" type="xml">
+            <form string="ค่าเสื่อมราคารายเดือน" create="false">
+                <header>
+                    <button name="action_post" type="object" class="oe_highlight"
+                            string="ลงบัญชี"
+                            invisible="state == 'posted' or depreciation == 0"/>
+                    <button name="action_unpost" type="object"
+                            string="ถอนการลงบัญชี"
+                            confirm="สมุดรายวันของบรรทัดนี้จะถูกดึงกลับเป็นฉบับร่าง ยืนยันหรือไม่"
+                            invisible="state != 'posted'"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,posted"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="name" readonly="1"/></h1>
+                    </div>
+                    <group>
+                        <group string="สินทรัพย์">
+                            <field name="asset_id" readonly="1"/>
+                            <field name="profile_id" readonly="1"/>
+                            <field name="currency_id" invisible="1"/>
+                            <field name="purchase_value" readonly="1"/>
+                            <field name="depre_rate" readonly="1"/>
+                            <field name="date_purchase" readonly="1"/>
+                        </group>
+                        <group string="งวด">
+                            <field name="year_label" readonly="1"/>
+                            <field name="month" readonly="1"/>
+                            <field name="date_start" readonly="1"/>
+                            <field name="date_end" readonly="1"/>
+                            <field name="days" readonly="1"/>
+                        </group>
+                    </group>
+                    <group string="ยอด">
+                        <group>
+                            <field name="opening_value"/>
+                            <field name="depreciation"/>
+                            <field name="closing_value"/>
+                        </group>
+                        <group>
+                            <field name="move_id" readonly="1"/>
+                            <field name="company_id" groups="base.group_multi_company" readonly="1"/>
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- ================= ค้นหา ================= -->
+    <record id="view_npd_depreciation_line_search" model="ir.ui.view">
+        <field name="name">npd.asset.depreciation.line.search</field>
+        <field name="model">npd.asset.depreciation.line</field>
+        <field name="arch" type="xml">
+            <search string="ค้นหาค่าเสื่อม">
+                <field name="asset_id"/>
+                <field name="asset_code"/>
+                <field name="profile_id"/>
+                <field name="year"/>
+                <filter name="filter_draft" string="ยังไม่ลงบัญชี"
+                        domain="[('state', '=', 'draft')]"/>
+                <filter name="filter_posted" string="ลงบัญชีแล้ว"
+                        domain="[('state', '=', 'posted')]"/>
+                <separator/>
+                <filter name="filter_has_dep" string="มีค่าเสื่อมในเดือนนี้"
+                        domain="[('depreciation', '&gt;', 0)]"/>
+                <group expand="0" string="จัดกลุ่มตาม">
+                    <filter name="group_year" string="ปี" context="{'group_by': 'year'}"/>
+                    <filter name="group_month" string="เดือน" context="{'group_by': 'month'}"/>
+                    <filter name="group_profile" string="หมวดสินทรัพย์"
+                            context="{'group_by': 'profile_id'}"/>
+                    <filter name="group_asset" string="สินทรัพย์" context="{'group_by': 'asset_id'}"/>
+                    <filter name="group_state" string="สถานะ" context="{'group_by': 'state'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- ================= Pivot: อ่านเป็นตาราง 12 เดือนบนหน้าจอ ================= -->
+    <record id="view_npd_depreciation_line_pivot" model="ir.ui.view">
+        <field name="name">npd.asset.depreciation.line.pivot</field>
+        <field name="model">npd.asset.depreciation.line</field>
+        <field name="arch" type="xml">
+            <pivot string="ค่าเสื่อมราคา 12 เดือน">
+                <field name="asset_id" type="row"/>
+                <field name="month" type="col"/>
+                <field name="depreciation" type="measure"/>
+            </pivot>
+        </field>
+    </record>
+
+    <!-- ================= Action ================= -->
+    <record id="action_npd_depreciation_line" model="ir.actions.act_window">
+        <field name="name">ค่าเสื่อมราคารายเดือน</field>
+        <field name="res_model">npd.asset.depreciation.line</field>
+        <field name="view_mode">list,pivot,form</field>
+        <field name="search_view_id" ref="view_npd_depreciation_line_search"/>
+        <field name="context">{'search_default_group_year': 1}</field>
+        <field name="help" type="html">
+            <p>ยังไม่มีบรรทัดค่าเสื่อม</p>
+            <p>ไปที่เมนู "คำนวณค่าเสื่อมประจำปี" เลือกปีแล้วกดคำนวณ</p>
+        </field>
+    </record>
+
+    <!-- ลงบัญชี/ถอน แบบเลือกหลายบรรทัดจากเมนู Action ของหน้า list -->
+    <record id="action_server_npd_depreciation_post" model="ir.actions.server">
+        <field name="name">ลงบัญชีค่าเสื่อม</field>
+        <field name="model_id" ref="model_npd_asset_depreciation_line"/>
+        <field name="binding_model_id" ref="model_npd_asset_depreciation_line"/>
+        <field name="binding_view_types">list</field>
+        <field name="state">code</field>
+        <field name="code">records.action_post()</field>
+    </record>
+
+    <record id="action_server_npd_depreciation_unpost" model="ir.actions.server">
+        <field name="name">ถอนการลงบัญชีค่าเสื่อม</field>
+        <field name="model_id" ref="model_npd_asset_depreciation_line"/>
+        <field name="binding_model_id" ref="model_npd_asset_depreciation_line"/>
+        <field name="binding_view_types">list</field>
+        <field name="state">code</field>
+        <field name="code">records.action_unpost()</field>
+    </record>
+
+</odoo>

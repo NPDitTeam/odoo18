@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<odoo>
+
+    <!-- อยู่ใต้เมนู Assets เดิมของโมดูลสินทรัพย์ จะได้ไม่ต้องหาหลายที่ -->
+    <menuitem id="menu_npd_depreciation_compute"
+              name="คำนวณค่าเสื่อมประจำปี"
+              parent="account_asset_management.menu_finance_assets"
+              action="action_npd_depreciation_compute"
+              sequence="120"
+              groups="account.group_account_invoice"/>
+
+    <menuitem id="menu_npd_depreciation_summary"
+              name="สรุปค่าเสื่อมตามหมวด"
+              parent="account_asset_management.menu_finance_assets"
+              action="action_npd_depreciation_summary"
+              sequence="123"
+              groups="account.group_account_invoice"/>
+
+    <menuitem id="menu_npd_depreciation_line"
+              name="ค่าเสื่อมราคารายเดือน"
+              parent="account_asset_management.menu_finance_assets"
+              action="action_npd_depreciation_line"
+              sequence="122"
+              groups="account.group_account_invoice"/>
+
+</odoo>

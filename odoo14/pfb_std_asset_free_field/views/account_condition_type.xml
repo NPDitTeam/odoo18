@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<odoo>
+    <data>
+
+        <record id="account_condition_type_view_form" model="ir.ui.view">
+            <field name="name">account.condition.type.form</field>
+            <field name="model">account.condition.type</field>
+            <field name="arch" type="xml">
+                <form string="Asset Condition Type">
+                    <group>
+                        <group>
+                            <field name="name"/>
+                        </group>
+                    </group>
+                </form>
+            </field>
+        </record>
+
+        <record id="account_condition_type_view_tree" model="ir.ui.view">
+            <field name="name">account.condition.type.list</field>
+            <field name="model">account.condition.type</field>
+            <field name="arch" type="xml">
+                <list string="Asset Condition Type" editable="bottom">
+                    <field name="name"/>
+                </list>
+            </field>
+        </record>
+
+        <record id="account_condition_type_action" model="ir.actions.act_window">
+            <field name="name">Asset Condition Type</field>
+            <field name="res_model">account.condition.type</field>
+            <field name="view_mode">list,form</field>
+        </record>
+
+        <menuitem
+                id="account_condition_type_menu"
+                action="account_condition_type_action"
+                parent="account_asset_management.menu_finance_config_assets"
+        />
+
+    </data>
+</odoo>

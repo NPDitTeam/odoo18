@@ -1,0 +1,16 @@
+<odoo>
+
+    <!-- PDF REPORTS -->
+    <record id="action_report_asset_qrcode_print" model="ir.actions.report">
+        <field name="name">Asset QRcode</field>
+        <field name="model">account.asset</field>
+        <field name="report_name">pfb_asset_qrcode.report_asset_qrcode</field>
+        <field name="report_file">pfb_asset_qrcode.report_asset_qrcode</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="paperformat_id" ref="pfb_asset_qrcode.paperformat_asset_qrcode_print"/>
+        <field name="print_report_name">'Asset QRcode - %s%s' % (object.name, object.state == 'draft' and '-draft' or '')</field>
+        <field name="binding_model_id" ref="account_asset_management.model_account_asset"/>
+        <field name="binding_type">report</field>
+    </record>
+
+</odoo>

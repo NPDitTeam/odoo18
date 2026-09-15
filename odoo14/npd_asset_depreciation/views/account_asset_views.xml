@@ -1,0 +1,255 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<odoo>
+
+    <!-- ================= หมวดสินทรัพย์: รหัสหมวด + อัตราตั้งต้น ================= -->
+    <record id="view_asset_profile_form_npd" model="ir.ui.view">
+        <field name="name">account.asset.profile.form.npd</field>
+        <field name="model">account.asset.profile</field>
+        <field name="inherit_id" ref="account_asset_management.account_asset_profile_view_form"/>
+        <field name="arch" type="xml">
+            <!-- o18 ช่องชื่ออยู่ในหัว h1 จึงวางรหัสหมวด/อัตราไว้ต้นกลุ่มแรกแทน -->
+            <xpath expr="//field[@name='salvage_value']/ancestor::group[1]/label[@for='salvage_value']"
+                   position="before">
+                <field name="npd_code" placeholder="เช่น RE"/>
+                <field name="npd_depre_rate"/>
+            </xpath>
+
+            <!-- อธิบายให้คนตั้งค่าเห็นตรงหน้า ไม่ต้องเอาเมาส์ไปชี้ทีละช่อง -->
+            <xpath expr="//field[@name='journal_id']" position="before">
+                <div class="alert alert-info" role="alert" colspan="2">
+                    <strong>บัญชีสินทรัพย์</strong> = ตัวสั่งสร้าง ลงใบแจ้งหนี้เข้าบัญชีนี้เมื่อไหร่
+                    ระบบสร้างสินทรัพย์หมวดนี้ให้ทันที (ป้ายกำกับของบรรทัด = ชื่อสินทรัพย์)
+                    <br/>
+                    <strong>บัญชีค่าเสื่อมราคาสะสม</strong> = ขาเครดิต ตอนลงบัญชีค่าเสื่อมรายเดือน
+                    <br/>
+                    <strong>บัญชีค่าใช้จ่ายค่าเสื่อมราคา</strong> = ขาเดบิต ตอนลงบัญชีค่าเสื่อมรายเดือน
+                    <br/>
+                    <strong>สมุดรายวัน</strong> = สมุดที่รายการค่าเสื่อมไปลง ไม่เกี่ยวกับการสร้างสินทรัพย์
+                </div>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_asset_profile_tree_npd" model="ir.ui.view">
+        <field name="name">account.asset.profile.list.npd</field>
+        <field name="model">account.asset.profile</field>
+        <field name="inherit_id" ref="account_asset_management.account_asset_profile_view_tree"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='name']" position="after">
+                <field name="npd_code" optional="show"/>
+                <field name="npd_depre_rate" optional="show"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- ================= สินทรัพย์: อัตรา + ยอดยกมา + ปุ่มดูค่าเสื่อม ================= -->
+    <record id="view_account_asset_form_npd" model="ir.ui.view">
+        <field name="name">account.asset.form.npd</field>
+        <field name="model">account.asset</field>
+        <field name="inherit_id" ref="account_asset_management.account_asset_view_form"/>
+        <field name="priority">30</field>
+        <field name="arch" type="xml">
+            <!-- เลขทะเบียนทรัพย์สิน: ระบบออกให้เอง ห้ามแก้มือ และไม่ต้องมีปุ่ม RUN
+                 o18 ใช้ช่องเลขสินทรัพย์ของ OCA (ใต้ชื่อ) เป็นช่องหลัก ช่องเดิมของ pfb ซ่อนไว้
+                 ระบบเติมทั้งสองช่องด้วยเลขเดียวกัน -->
+            <xpath expr="//label[@for='std_barcode']" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+            <xpath expr="//field[@name='std_barcode']/.." position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+            <xpath expr="//field[@name='number']" position="attributes">
+                <attribute name="readonly">1</attribute>
+            </xpath>
+            <xpath expr="//page[@name='std_purchase_information']" position="attributes">
+                <attribute name="string">ข้อมูลการซื้อ</attribute>
+            </xpath>
+
+            <!-- หัวข้อบล็อกทะเบียนทรัพย์สิน (เกาะฟิลด์แทน เพราะห้ามใช้ string ชี้ตำแหน่ง) -->
+            <xpath expr="//field[@name='std_condition_type_id']/preceding-sibling::separator[1]"
+                   position="attributes">
+                <attribute name="string">ทะเบียนทรัพย์สิน</attribute>
+            </xpath>
+
+            <!-- แท็บใหม่: ประวัติค่าเสื่อมรายเดือนของสินทรัพย์ตัวนี้ -->
+            <xpath expr="//notebook" position="inside">
+                <page string="ประวัติค่าเสื่อมรายเดือน" name="npd_depreciation_history">
+                    <field name="npd_depre_line_ids" readonly="1" nolabel="1">
+                        <list string="ค่าเสื่อมรายเดือน" create="false" delete="false"
+                              decoration-muted="state == 'posted'"
+                              default_order="year, month_no">
+                            <field name="month_no" column_invisible="1"/>
+                            <field name="year" column_invisible="1"/>
+                            <field name="year_label"/>
+                            <field name="month"/>
+                            <field name="date_start" optional="hide"/>
+                            <field name="date_end"/>
+                            <field name="days"/>
+                            <field name="opening_value"/>
+                            <field name="depreciation" sum="รวม"/>
+                            <field name="closing_value"/>
+                            <field name="move_id" optional="show"/>
+                            <field name="state" widget="badge"
+                                   decoration-warning="state == 'draft'"
+                                   decoration-success="state == 'posted'"/>
+                            <!-- ลงบัญชี/ถอน ได้จากตรงนี้เลย ไม่ต้องออกไปอีกเมนู
+                                 ช่องสมุดรายวันกับสถานะระบบเติมให้เองตอนกดปุ่มนี้ -->
+                            <button name="action_post" type="object"
+                                    icon="fa-check" title="ลงบัญชี"
+                                    invisible="state == 'posted' or depreciation == 0"/>
+                            <button name="action_unpost" type="object"
+                                    icon="fa-undo" title="ถอนการลงบัญชี"
+                                    invisible="state != 'posted'"/>
+                        </list>
+                    </field>
+                </page>
+            </xpath>
+
+            <!-- ปุ่มยืนยันของระบบเดิมไม่ได้ใช้แล้วสำหรับสินทรัพย์ที่คิดด้วยสูตรนี้
+                 ซ่อนไว้ เหลือปุ่มเดียวคือ "เริ่มคิดค่าเสื่อม" จะได้ไม่ต้องเดาว่ากดอันไหน
+                 สินทรัพย์ที่ยังใช้เครื่องคำนวณเดิม (ไม่ได้ตั้งร้อยละ) ยังเห็นปุ่มเดิมอยู่ -->
+            <xpath expr="//button[@name='validate']" position="attributes">
+                <attribute name="invisible">state != 'draft' or npd_depre_rate != 0</attribute>
+            </xpath>
+
+            <!-- ปุ่มเริ่มคิดค่าเสื่อม วางต่อจากปุ่มยืนยันของเดิม
+                 กดแล้วสถานะเป็น "กำลังทำงานอยู่" และเข้าคิวคำนวณอัตโนมัติทุกเดือน -->
+            <xpath expr="//button[@name='validate']" position="after">
+                <button name="action_npd_start_depreciation" type="object"
+                        string="เริ่มคิดค่าเสื่อม" class="btn-primary"
+                        invisible="state not in ('draft', 'open') or npd_depre_rate == 0"/>
+            </xpath>
+
+            <!-- ปุ่มลัดไปดูค่าเสื่อมรายเดือนของสินทรัพย์ตัวนี้ -->
+            <xpath expr="//div[@name='button_box']" position="inside">
+                <button name="action_npd_view_depreciation" type="object"
+                        class="oe_stat_button" icon="fa-calendar">
+                    <field name="npd_depre_line_count" widget="statinfo"
+                           string="เดือนที่คำนวณ"/>
+                </button>
+            </xpath>
+
+            <!-- ===== ซ่อนส่วนของเครื่องคำนวณเดิม (OCA) ที่โมดูลนี้ไม่ได้ใช้ =====
+                 ผู้ใช้จะได้ไม่ต้องเดาว่าช่องไหนต้องกรอก
+                 ค่าที่ระบบเดิมบังคับ ถูกเติมให้เองใน models/account_asset.py -->
+            <xpath expr="//field[@name='method_time']/ancestor::group[2]" position="attributes">
+                <attribute name="invisible">npd_depre_rate != 0</attribute>
+            </xpath>
+            <xpath expr="//button[@name='compute_depreciation_board']/ancestor::page[1]"
+                   position="attributes">
+                <attribute name="invisible">npd_depre_rate != 0</attribute>
+            </xpath>
+            <!-- มูลค่าซากของระบบเดิมไม่ได้ใช้ (เราใช้ "มูลค่าซากคงเหลือ" ของโมดูลนี้แทน)
+                 ปล่อยไว้สองช่องคนกรอกจะสับสนว่าต้องใส่ช่องไหน -->
+            <xpath expr="//field[@name='salvage_value']" position="attributes">
+                <attribute name="invisible">npd_depre_rate != 0</attribute>
+            </xpath>
+            <!-- กลุ่มสินทรัพย์มีคำแปลเก่าเป็น "หมวดหมู่สินทรัพย์" ชนกับหมวดหมู่จริง
+                 ตั้งชื่อทับที่วิว (ชื่อในวิวมาก่อนคำแปลของฟิลด์) -->
+            <xpath expr="//field[@name='group_ids']" position="attributes">
+                <attribute name="string">กลุ่มสินทรัพย์</attribute>
+            </xpath>
+            <xpath expr="//field[@name='profile_id']" position="attributes">
+                <attribute name="string">หมวดหมู่สินทรัพย์</attribute>
+            </xpath>
+
+            <!-- ตัวเลขสรุปหัวฟอร์ม: ของเดิมมาจากเครื่องคำนวณ OCA จึงเปลี่ยนเป็นของโมดูลนี้ -->
+            <xpath expr="//field[@name='depreciation_base']" position="attributes">
+                <attribute name="invisible">npd_depre_rate != 0</attribute>
+            </xpath>
+            <xpath expr="//field[@name='value_depreciated']" position="after">
+                <field name="npd_accum_dep" invisible="npd_depre_rate == 0"/>
+            </xpath>
+            <xpath expr="//field[@name='value_depreciated']" position="attributes">
+                <attribute name="invisible">npd_depre_rate != 0</attribute>
+            </xpath>
+            <xpath expr="//field[@name='value_residual']" position="after">
+                <field name="npd_value_residual" invisible="npd_depre_rate == 0"/>
+            </xpath>
+            <xpath expr="//field[@name='value_residual']" position="attributes">
+                <attribute name="invisible">npd_depre_rate != 0</attribute>
+            </xpath>
+
+            <!-- อัตราค่าเสื่อม มูลค่าซาก และยอดยกมาจากระบบเดิม วางต่อจากราคาทรัพย์สิน -->
+            <xpath expr="//field[@name='purchase_value']" position="after">
+                <field name="npd_depre_rate"/>
+                <field name="npd_salvage_value"/>
+                <field name="npd_opening_date"/>
+                <field name="npd_opening_nbv" invisible="not npd_opening_date"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- ================= ตารางสินทรัพย์: โชว์อัตราและยอดยกมา ================= -->
+    <record id="view_account_asset_tree_npd" model="ir.ui.view">
+        <field name="name">account.asset.list.npd</field>
+        <field name="model">account.asset</field>
+        <field name="inherit_id" ref="account_asset_management.account_asset_view_tree"/>
+        <field name="arch" type="xml">
+            <!-- คอลัมน์ค่าเสื่อมสะสม/มูลค่าคงเหลือในตาราง เดิมเป็นของเครื่องคำนวณ OCA
+                 ซึ่งไม่ตรงกับที่โชว์บนฟอร์ม เปลี่ยนเป็นตัวเลขชุดเดียวกันให้หมด -->
+            <xpath expr="//list/field[@name='value_depreciated']" position="after">
+                <field name="npd_accum_dep" optional="show"/>
+            </xpath>
+            <xpath expr="//list/field[@name='value_depreciated']" position="attributes">
+                <attribute name="column_invisible">1</attribute>
+            </xpath>
+            <xpath expr="//list/field[@name='value_residual']" position="after">
+                <field name="npd_value_residual" optional="show"/>
+            </xpath>
+            <xpath expr="//list/field[@name='value_residual']" position="attributes">
+                <attribute name="column_invisible">1</attribute>
+            </xpath>
+            <xpath expr="//list/field[@name='depreciation_base']" position="attributes">
+                <attribute name="optional">hide</attribute>
+            </xpath>
+
+            <xpath expr="//list/field[@name='date_start']" position="after">
+                <field name="npd_depre_rate" optional="show"/>
+                <field name="npd_opening_date" optional="hide"/>
+                <field name="npd_opening_nbv" optional="hide"/>
+                <!-- 12 เดือนอยู่ในตารางเดียวกับสินทรัพย์เลย ไม่ต้องเปิดอีกหน้า
+                     ซ่อน/แสดงรายคอลัมน์ได้จากปุ่มตั้งค่าคอลัมน์มุมขวาของตาราง -->
+                <field name="npd_display_year" optional="show"/>
+                <field name="npd_m01_open" sum="รวม" optional="show"/>
+                <field name="npd_m01_dep" sum="รวม" optional="show"/>
+                <field name="npd_m02_open" sum="รวม" optional="show"/>
+                <field name="npd_m02_dep" sum="รวม" optional="show"/>
+                <field name="npd_m03_open" sum="รวม" optional="show"/>
+                <field name="npd_m03_dep" sum="รวม" optional="show"/>
+                <field name="npd_m04_open" sum="รวม" optional="show"/>
+                <field name="npd_m04_dep" sum="รวม" optional="show"/>
+                <field name="npd_m05_open" sum="รวม" optional="show"/>
+                <field name="npd_m05_dep" sum="รวม" optional="show"/>
+                <field name="npd_m06_open" sum="รวม" optional="show"/>
+                <field name="npd_m06_dep" sum="รวม" optional="show"/>
+                <field name="npd_m07_open" sum="รวม" optional="show"/>
+                <field name="npd_m07_dep" sum="รวม" optional="show"/>
+                <field name="npd_m08_open" sum="รวม" optional="show"/>
+                <field name="npd_m08_dep" sum="รวม" optional="show"/>
+                <field name="npd_m09_open" sum="รวม" optional="show"/>
+                <field name="npd_m09_dep" sum="รวม" optional="show"/>
+                <field name="npd_m10_open" sum="รวม" optional="show"/>
+                <field name="npd_m10_dep" sum="รวม" optional="show"/>
+                <field name="npd_m11_open" sum="รวม" optional="show"/>
+                <field name="npd_m11_dep" sum="รวม" optional="show"/>
+                <field name="npd_m12_open" sum="รวม" optional="show"/>
+                <field name="npd_m12_dep" sum="รวม" optional="show"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!--
+        กดเริ่มคิดค่าเสื่อมทีเดียวหลายรายการ สำหรับตอนนำเข้าข้อมูลเข้ามาเป็นชุด
+        เลือกในตาราง -> เมนูการกระทำ -> เริ่มคิดค่าเสื่อม
+    -->
+    <record id="action_server_npd_start_depreciation" model="ir.actions.server">
+        <field name="name">เริ่มคิดค่าเสื่อม</field>
+        <field name="model_id" ref="account_asset_management.model_account_asset"/>
+        <field name="binding_model_id" ref="account_asset_management.model_account_asset"/>
+        <field name="binding_view_types">list</field>
+        <field name="state">code</field>
+        <field name="code">records.action_npd_start_depreciation()</field>
+    </record>
+
+</odoo>

@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<odoo>
+    <record id="inherit_view_account_asset_free_field_view_form" model="ir.ui.view">
+        <field name="name">account.asset.form</field>
+        <field name="model">account.asset</field>
+        <field name="inherit_id" ref="account_asset_management.account_asset_view_form"/>
+        <field name="arch" type="xml">
+            <field name="code" position="after">
+                <label for="std_barcode"/>
+                <div class="o_row">
+                    <field name="std_barcode" class="oe_inline" style="width:200px"
+                           readonly="state in ('open', 'close', 'removed')"/>
+                    <button name="account_asset_sequence" string="RUN" type="object"
+                            class="btn-link oe_inline"/>
+                </div>
+            </field>
+
+            <field name="date_remove" position="after">
+                <field name="std_no_compute_asset"/>
+            </field>
+
+            <!-- o14 ต่อท้าย analytic_tag_ids ซึ่ง o18 ไม่มีแล้ว (เปลี่ยนเป็น analytic_distribution) -->
+            <xpath expr="//field[@name='partner_id']" position="after">
+                <separator string="Asset condition" colspan="2"/>
+                <field name="std_condition_type_id" options="{'no_create': True}"/>
+                <field name="std_employee_id" readonly="state in ('open', 'close', 'removed')"/>
+                <field name="std_condition_remark"/>
+                <field name="std_location_id" readonly="state in ('open', 'close', 'removed')"/>
+            </xpath>
+
+            <xpath expr="//notebook" position="inside">
+                <page string="Purchase information" name="std_purchase_information">
+                    <group>
+                        <group>
+                            <field name="std_invoice" readonly="state in ('open', 'close', 'removed')"/>
+                            <field name="std_asset_purchase_id"/>
+                            <field name="std_purchase_date" readonly="state in ('open', 'close', 'removed')"/>
+                            <field name="std_purchase_price" readonly="state in ('open', 'close', 'removed')"/>
+                        </group>
+                        <group>
+                            <field name="std_model" readonly="state in ('open', 'close', 'removed')"/>
+                            <field name="std_serial_no" readonly="state in ('open', 'close', 'removed')"/>
+                        </group>
+                    </group>
+                </page>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="inherit_view_account_asset_free_field_view_tree" model="ir.ui.view">
+        <field name="name">account.asset.list</field>
+        <field name="model">account.asset</field>
+        <field name="inherit_id" ref="account_asset_management.account_asset_view_tree"/>
+        <field name="arch" type="xml">
+            <field name="code" position="after">
+                <field name="std_employee_id" optional="show"/>
+            </field>
+            <field name="group_ids" position="before">
+                <field name="std_condition_type_id" optional="show"/>
+            </field>
+        </field>
+    </record>
+
+    <record id="inherit_account_asset_profile_view_form" model="ir.ui.view">
+        <field name="name">account.asset.profile.form</field>
+        <field name="model">account.asset.profile</field>
+        <field name="inherit_id" ref="account_asset_management.account_asset_profile_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//sheet/group" position="inside">
+                <group string="Sequence">
+                    <field name="std_asset_sequence_id"/>
+                </group>
+            </xpath>
+        </field>
+    </record>
+</odoo>

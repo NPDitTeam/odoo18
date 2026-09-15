@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<odoo>
+
+    <!--
+        ข้อความบนหน้าจอที่ไม่ได้มาจากชื่อฟิลด์ (หัวข้อกลุ่ม แท็บ ปุ่ม)
+        ต้องแก้ที่วิว ส่วนชื่อฟิลด์แก้ไว้ที่ models/account_asset_labels.py
+        o18 ฟอร์มของ OCA ใช้หัวข้อบน group แทน separator จึงเกาะ group แทน
+    -->
+    <record id="view_account_asset_form_thai" model="ir.ui.view">
+        <field name="name">account.asset.form.thai</field>
+        <field name="model">account.asset</field>
+        <field name="inherit_id" ref="account_asset_management.account_asset_view_form"/>
+        <field name="arch" type="xml">
+
+            <!-- ปุ่มบนหัวเอกสาร -->
+            <xpath expr="//button[@name='validate']" position="attributes">
+                <attribute name="string">ยืนยันสินทรัพย์</attribute>
+            </xpath>
+            <xpath expr="//button[@name='set_to_draft']" position="attributes">
+                <attribute name="string">กลับเป็นฉบับร่าง</attribute>
+            </xpath>
+            <xpath expr="//button[@name='remove']" position="attributes">
+                <attribute name="string">ตัดจำหน่าย</attribute>
+            </xpath>
+            <xpath expr="//button[@name='open_entries']" position="attributes">
+                <attribute name="string">สมุดรายวัน</attribute>
+            </xpath>
+
+            <!-- หัวข้อกลุ่มและแท็บ
+                 Odoo ไม่ให้ใช้ string เป็นตัวชี้ตำแหน่ง จึงเกาะฟิลด์ที่อยู่ในกลุ่มนั้นแทน -->
+            <xpath expr="//field[@name='profile_id']/ancestor::group[2]" position="attributes">
+                <attribute name="string">ข้อมูลอื่น ๆ</attribute>
+            </xpath>
+            <xpath expr="//field[@name='method_time']/ancestor::group[1]" position="attributes">
+                <attribute name="string">กำหนดเวลาค่าเสื่อม (ระบบเดิม)</attribute>
+            </xpath>
+            <xpath expr="//field[@name='method']/ancestor::group[1]" position="attributes">
+                <attribute name="string">วิธีคิดค่าเสื่อม (ระบบเดิม)</attribute>
+            </xpath>
+            <xpath expr="//button[@name='compute_depreciation_board']/ancestor::page[1]"
+                   position="attributes">
+                <attribute name="string">ตารางค่าเสื่อม (ระบบเดิม)</attribute>
+            </xpath>
+            <xpath expr="//button[@name='compute_depreciation_board']" position="attributes">
+                <attribute name="string">คำนวณ (ระบบเดิม)</attribute>
+            </xpath>
+
+        </field>
+    </record>
+
+</odoo>

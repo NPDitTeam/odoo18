@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<odoo>
+    <!--
+        o14 แยกฐานละบริษัทจึงไม่ต้องมีกฎนี้ o18 อยู่ฐานเดียว
+        ผู้ใช้เห็นค่าเสื่อมเฉพาะบริษัทที่เลือกไว้มุมขวาบน เหมือนสินทรัพย์ของ OCA
+    -->
+    <record id="rule_npd_depreciation_line_company" model="ir.rule">
+        <field name="name">NPD ค่าเสื่อมรายเดือน: เฉพาะบริษัทที่เลือก</field>
+        <field name="model_id" ref="model_npd_asset_depreciation_line"/>
+        <field name="global" eval="True"/>
+        <field name="domain_force">[('company_id', 'in', company_ids + [False])]</field>
+    </record>
+    <record id="rule_npd_depreciation_year_company" model="ir.rule">
+        <field name="name">NPD ตารางค่าเสื่อม 12 เดือน: เฉพาะบริษัทที่เลือก</field>
+        <field name="model_id" ref="model_npd_asset_depreciation_year"/>
+        <field name="global" eval="True"/>
+        <field name="domain_force">[('company_id', 'in', company_ids + [False])]</field>
+    </record>
+    <record id="rule_npd_depreciation_summary_company" model="ir.rule">
+        <field name="name">NPD สรุปค่าเสื่อมตามหมวด: เฉพาะบริษัทที่เลือก</field>
+        <field name="model_id" ref="model_npd_asset_depreciation_summary"/>
+        <field name="global" eval="True"/>
+        <field name="domain_force">[('company_id', 'in', company_ids + [False])]</field>
+    </record>
+</odoo>

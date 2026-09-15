@@ -1,0 +1,254 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<odoo>
+    <!--
+        รายละเอียดค่าสึกหรอและค่าเสื่อมราคาที่หักได้ตามพระราชกฤษฎีกาฯ
+        จัดหน้าตามแบบฟอร์มเดิมที่ผู้ใช้ส่งมา (7.69-INTER.pdf)
+
+        หัวกระดาษอยู่ใน div.header เพื่อให้ wkhtmltopdf พิมพ์ซ้ำทุกหน้าพร้อมเลขหน้า
+        เหมือนต้นฉบับ (หน้า 2, 3 มีหัวตารางครบ)
+        ตัวเลขใช้ฟอนต์ความกว้างคงที่ คอลัมน์จะได้เรียงตรงกันเหมือนรายงานเดิม
+    -->
+    <record id="paperformat_npd_tax_depreciation" model="report.paperformat">
+        <field name="name">รายงานค่าสึกหรอ พ.ร.ฎ. A4</field>
+        <field name="default" eval="False"/>
+        <field name="format">A4</field>
+        <field name="orientation">Portrait</field>
+        <field name="margin_top">30</field>
+        <field name="margin_bottom">28</field>
+        <field name="margin_left">5</field>
+        <field name="margin_right">5</field>
+        <field name="header_line" eval="False"/>
+        <field name="header_spacing">6</field>
+        <field name="dpi">96</field>
+    </record>
+
+    <!-- o18 ไม่มีแท็ก <report> แล้ว ต้องประกาศเป็น ir.actions.report -->
+    <record id="action_npd_tax_depreciation_report" model="ir.actions.report">
+        <field name="name">รายละเอียดค่าสึกหรอและค่าเสื่อมราคา (พ.ร.ฎ.)</field>
+        <field name="model">npd.asset.depreciation.compute</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">npd_asset_depreciation.report_npd_tax_depreciation</field>
+        <field name="report_file">npd_asset_depreciation.report_npd_tax_depreciation</field>
+        <field name="print_report_name">'ค่าสึกหรอ %s-%s' % (object.month_from, object.year + 543)</field>
+        <field name="paperformat_id" ref="npd_asset_depreciation.paperformat_npd_tax_depreciation"/>
+    </record>
+
+    <template id="report_npd_tax_depreciation">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="doc">
+                <t t-set="data" t-value="doc.get_tax_report_data()"/>
+                <t t-set="font_base" t-value="(web_base_url or '') + '/npd_asset_depreciation/static/fonts/'"/>
+                <!-- น้ำหนักปกติใช้ไฟล์ Bold เพื่อให้เส้นหนาอ่านง่ายขึ้น
+                     ถ้าหนาไปเปลี่ยนกลับเป็น 'THSarabunNew.ttf' ได้ตรงนี้จุดเดียว -->
+                <t t-set="font_regular" t-value="font_base + 'THSarabunNew-Bold.ttf'"/>
+                <t t-set="font_bold" t-value="font_base + 'THSarabunNew-Bold.ttf'"/>
+
+                <!-- ===== หัวกระดาษ ซ้ำทุกหน้า ===== -->
+                <div class="header">
+                    <style>
+                        @font-face { font-family: 'NPDThai'; font-weight: normal;
+                            src: url('<t t-out="font_regular"/>') format('truetype'); }
+                        @font-face { font-family: 'NPDThai'; font-weight: bold;
+                            src: url('<t t-out="font_bold"/>') format('truetype'); }
+.ndp-font, .ndp-font * {
+font-family: 'NPDThai', 'TH Sarabun New', 'THSarabunNew',
+                                         'Sarabun', 'Laksaman', sans-serif !important;
+                            /* วางตำแหน่งตัวอักษรตามค่าจริง ไม่ปัดเข้ากริดพิกเซล
+                               สระ/วรรณยุกต์ไทยจึงลอยตรงหัวตัวอักษรพอดี
+                               ห้ามใส่ -webkit-text-stroke ตรงนี้ เคยลอง 0.18px แล้ว
+                               เส้นขอบของสระกับวรรณยุกต์ไปทับกันเองจนตัวหนังสือเละ */
+                            text-rendering: geometricPrecision;
+                        }
+                    </style>
+                    <div class="ndp-font" style="font-size:19px; color:#000; line-height:1.3;
+                                                 padding-left:5mm; padding-right:5mm;
+                                                 padding-top:7mm;">
+                        <table style="width:100%; border-collapse:collapse; table-layout:fixed;">
+                            <tr>
+                                <td style="text-align:left; white-space:nowrap; font-weight:bold;
+                                           font-size:21px;"><span t-out="data['company_name']"/></td>
+                                <td style="text-align:right; white-space:nowrap;">
+                                    หน้า : <span class="page"/>
+                                </td>
+                            </tr>
+                        </table>
+                        <div>รายละเอียดค่าสึกหรอและค่าเสื่อมราคาที่หักได้ตามพระราชกฤษฎีกาฯ</div>
+                        <table style="width:100%; border-collapse:collapse; table-layout:fixed;">
+                            <tr>
+                                <td style="text-align:left; white-space:nowrap; overflow:visible;">รอบระยะเวลาบัญชีตั้งแต่
+                                    <span t-out="data['date_from']"/> ถึง <span t-out="data['date_to']"/></td>
+                                <td style="text-align:right; white-space:nowrap; width:26%;">
+                                    วันที่ : <span t-out="data['print_date']"/>
+                                </td>
+                            </tr>
+                        </table>
+                        <div style="border-top:1px dashed #000; margin:4px 0 0 0;"/>
+                    </div>
+                </div>
+
+                <!-- ===== เนื้อรายงาน ===== -->
+                <div class="page ndp-font">
+                    <style>
+                        /* ฟอนต์อยู่ในโมดูลนี้เอง เรียกด้วย URL เต็ม เพราะเอกสารตัวเนื้อหา
+                           ที่ส่งให้ wkhtmltopdf ไม่มี &lt;base href&gt; ให้อ้างอิงพาธสัมพัทธ์
+                           จำเป็นต้องฝังมาเอง เพราะคอนเทนเนอร์ของเซิร์ฟเวอร์มีฟอนต์ไทย
+                           ตัวเดียวคือ Laksaman ไม่มี THSarabunNew */
+                        @font-face { font-family: 'NPDThai'; font-weight: normal;
+                            src: url('<t t-out="font_regular"/>') format('truetype'); }
+                        @font-face { font-family: 'NPDThai'; font-weight: bold;
+                            src: url('<t t-out="font_bold"/>') format('truetype'); }
+.ndp-font, .ndp-font * {
+font-family: 'NPDThai', 'TH Sarabun New', 'THSarabunNew',
+                                         'Sarabun', 'Laksaman', sans-serif !important;
+                            /* วางตำแหน่งตัวอักษรตามค่าจริง ไม่ปัดเข้ากริดพิกเซล
+                               สระ/วรรณยุกต์ไทยจึงลอยตรงหัวตัวอักษรพอดี
+                               ห้ามใส่ -webkit-text-stroke ตรงนี้ เคยลอง 0.18px แล้ว
+                               เส้นขอบของสระกับวรรณยุกต์ไปทับกันเองจนตัวหนังสือเละ */
+                            text-rendering: geometricPrecision;
+                        }
+                        .ndp-body { font-size: 19px; color: #000; line-height: 1.6; }
+                        table.ndp-tb { width: 100%; border-collapse: collapse; font-size: 19px;
+                                       table-layout: fixed; }
+                        .ndp-tb td { padding: 1px 4px; vertical-align: top; }
+                        .ndp-head-row th { padding: 2px 4px; font-weight: bold; }
+                        /* ป้ายบรรทัดรวม: กินพื้นที่ถึงคอลัมน์วันที่ แต่ดันข้อความ
+                           ให้ไปจบตรงท้ายคอลัมน์ชื่อ จะได้ไม่ชนคอลัมน์วันที่ */
+                        .ndp-sum-label { text-align: right; padding-right: 3%;
+                                         font-size: 17px; }
+                        .ndp-head-rule td { padding: 0; font-size: 2px; line-height: 1; }
+                        .ndp-head-rule span { display: block; border-top: 1px dashed #000; }
+                        .ndp-r { text-align: right; white-space: nowrap; }
+                        .ndp-c { text-align: center; white-space: nowrap; }
+                        .ndp-grp td { padding-top: 10px; padding-bottom: 2px; font-weight: bold; }
+                        /* เส้นประใต้ตัวเลขก่อนบรรทัดรวม เหมือนต้นฉบับ */
+                        .ndp-dash td { font-size: 4px; line-height: 1; padding: 0 4px; }
+                        .ndp-dash span { border-top: 1px dashed #333; display: block; }
+                        .ndp-eq span { border-top: 1px dashed #333; border-bottom: 1px dashed #333;
+                                       height: 2px; display: block; }
+                    </style>
+
+                    <table class="ndp-tb ndp-body">
+                        <thead>
+                            <tr class="ndp-head-row">
+                                <th style="width:3%;"/>
+                                <th style="width:26%; text-align:center;">รายการทรัพย์สิน</th>
+                                <th style="width:8%; text-align:center;">วันที่ซื้อ</th>
+                                <th style="width:12%; text-align:right;">ราคาทรัพย์สิน</th>
+                                <th style="width:12%; text-align:right;">ยอดยกมา</th>
+                                <th style="width:5%; text-align:right;">ร้อยละ</th>
+                                <th style="width:12%; text-align:right;">ค่าสึกหรอ</th>
+                                <th style="width:12%; text-align:right;">ยอดยกไป</th>
+                                <th style="width:10%; text-align:center;">วันที่ขาย</th>
+                            </tr>
+                            <tr class="ndp-head-rule">
+                                <td colspan="9"><span/></td>
+                            </tr>
+                        </thead>
+                        <t t-foreach="data['groups']" t-as="grp">
+                            <tr class="ndp-grp">
+                                <td colspan="9">
+                                    <span t-out="grp['code']"/> - <span t-out="grp['name']"/>
+                                </td>
+                            </tr>
+                            <tr t-foreach="grp['lines']" t-as="row">
+                                <td style="width:3%;" class="ndp-r"><span t-out="row['seq']"/></td>
+                                <td style="width:26%; padding-left:6px;">
+                                    <span t-out="row['code']"/> - <span t-out="row['name']"/>
+                                </td>
+                                <td style="width:8%;" class="ndp-c"><span t-out="row['date_buy']"/></td>
+                                <td style="width:12%;" class="ndp-r"><span t-out="row['purchase']"/></td>
+                                <td style="width:12%;" class="ndp-r"><span t-out="row['opening']"/></td>
+                                <td style="width:5%;" class="ndp-r"><span t-out="row['rate']"/></td>
+                                <td style="width:12%;" class="ndp-r"><span t-out="row['depreciation']"/></td>
+                                <td style="width:12%;" class="ndp-r"><span t-out="row['closing']"/></td>
+                                <td style="width:10%;" class="ndp-c"><span t-out="row['date_sold']"/></td>
+                            </tr>
+                            <tr class="ndp-dash">
+                                <td colspan="3"/>
+                                <td><span/></td><td><span/></td><td/>
+                                <td><span/></td><td><span/></td><td/>
+                            </tr>
+                            <tr>
+                                <td colspan="3" class="ndp-sum-label">รวม&#160;&#160;<span t-out="grp['name']"/></td>
+                                <td class="ndp-r"><span t-out="grp['purchase']"/></td>
+                                <td class="ndp-r"><span t-out="grp['opening']"/></td>
+                                <td/>
+                                <td class="ndp-r"><span t-out="grp['depreciation']"/></td>
+                                <td class="ndp-r"><span t-out="grp['closing']"/></td>
+                                <td/>
+                            </tr>
+                        </t>
+
+                        <tr class="ndp-dash">
+                            <td colspan="3"/>
+                            <td><span/></td><td><span/></td><td/>
+                            <td><span/></td><td><span/></td><td/>
+                        </tr>
+                        <tr>
+                            <td colspan="3" class="ndp-sum-label">
+                                รวมทั้งสิ้น <span t-out="data['count']"/> รายการ
+                            </td>
+                            <td class="ndp-r"><span t-out="data['purchase']"/></td>
+                            <td class="ndp-r"><span t-out="data['opening']"/></td>
+                            <td/>
+                            <td class="ndp-r"><span t-out="data['depreciation']"/></td>
+                            <td class="ndp-r"><span t-out="data['closing']"/></td>
+                            <td/>
+                        </tr>
+                        <tr>
+                            <td colspan="3" class="ndp-sum-label">ทรัพย์สินที่ขายระหว่างงวดบัญชี</td>
+                            <td class="ndp-r"><span t-out="data['sold_purchase']"/></td>
+                            <td class="ndp-r"><span t-out="data['sold_opening']"/></td>
+                            <td/>
+                            <td class="ndp-r"><span t-out="data['sold_depreciation']"/></td>
+                            <td class="ndp-r"><span t-out="data['sold_closing']"/></td>
+                            <td/>
+                        </tr>
+                        <tr class="ndp-dash">
+                            <td colspan="3"/>
+                            <td><span/></td><td><span/></td><td/>
+                            <td><span/></td><td><span/></td><td/>
+                        </tr>
+                        <tr>
+                            <td colspan="3" class="ndp-sum-label">รวมทรัพย์สินที่ยังเหลืออยู่</td>
+                            <td class="ndp-r"><span t-out="data['left_purchase']"/></td>
+                            <td class="ndp-r"><span t-out="data['left_opening']"/></td>
+                            <td/>
+                            <td class="ndp-r"><span t-out="data['left_depreciation']"/></td>
+                            <td class="ndp-r"><span t-out="data['left_closing']"/></td>
+                            <td/>
+                        </tr>
+                        <tr class="ndp-dash ndp-eq">
+                            <td colspan="3"/>
+                            <td><span/></td><td><span/></td><td/>
+                            <td><span/></td><td><span/></td><td/>
+                        </tr>
+                    </table>
+
+                </div>
+
+                <!-- บล็อกรับรอง/ลายมือชื่อ อยู่ท้ายกระดาษทุกหน้าเหมือนต้นฉบับ -->
+                <div class="footer">
+                    <style>
+                        @font-face { font-family: 'NPDThai'; font-weight: normal;
+                            src: url('<t t-out="font_regular"/>') format('truetype'); }
+.ndp-sign, .ndp-sign * {
+font-family: 'NPDThai', 'TH Sarabun New', 'THSarabunNew',
+                                         'Sarabun', 'Laksaman', sans-serif !important;
+                            /* วางตำแหน่งตัวอักษรตามค่าจริง ไม่ปัดเข้ากริดพิกเซล
+                               สระ/วรรณยุกต์ไทยจึงลอยตรงหัวตัวอักษรพอดี
+                               ห้ามใส่ -webkit-text-stroke ตรงนี้ เคยลอง 0.18px แล้ว
+                               เส้นขอบของสระกับวรรณยุกต์ไปทับกันเองจนตัวหนังสือเละ */
+                            text-rendering: geometricPrecision;
+                        }
+                    </style>
+                    <div class="ndp-sign" style="text-align:center; font-size:21px; color:#000;
+                                                 padding-left:5mm; padding-right:5mm;">
+                        <div>ขอรับรองว่าเป็นรายการที่ถูกต้อง</div>
+                        <div style="margin-top:22px;">ลายมือชื่อ______________________________________กรรมการ</div>
+                    </div>
+                </div>
+            </t>
+        </t>
+    </template>
+</odoo>

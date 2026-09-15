@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<odoo>
+
+    <!--
+        ตาราง 12 เดือน หน้าตาเดียวกับไฟล์ Excel เดิม
+        ซ้าย = ข้อมูลสินทรัพย์ / ขวา = ยอดยกมา-ค่าเสื่อม สลับกันไปทีละเดือน
+        เลื่อนแนวนอนดูได้ทั้งปีในบรรทัดเดียว
+    -->
+    <record id="view_npd_depreciation_year_tree" model="ir.ui.view">
+        <field name="name">npd.asset.depreciation.year.list</field>
+        <field name="model">npd.asset.depreciation.year</field>
+        <field name="arch" type="xml">
+            <list string="ตารางค่าเสื่อมราคา 12 เดือน" create="false" delete="false">
+                <field name="profile_code" string="รหัสหมวด"/>
+                <field name="profile_name" string="ชื่อหมวด"/>
+                <field name="asset_code" string="รหัสทรัพย์สิน"/>
+                <field name="asset_id" string="ชื่อทรัพย์สิน"/>
+                <field name="date_purchase_be" string="วันที่ซื้อ (พ.ศ.)"/>
+                <field name="date_purchase" string="วันที่ซื้อ (ค.ศ.)"/>
+                <field name="currency_id" column_invisible="1"/>
+                <field name="purchase_value" sum="รวม"/>
+                <field name="depre_rate"/>
+                <field name="m01_open" sum="รวม"/>
+                <field name="m01_dep" sum="รวม"/>
+                <field name="m02_open" sum="รวม"/>
+                <field name="m02_dep" sum="รวม"/>
+                <field name="m03_open" sum="รวม"/>
+                <field name="m03_dep" sum="รวม"/>
+                <field name="m04_open" sum="รวม"/>
+                <field name="m04_dep" sum="รวม"/>
+                <field name="m05_open" sum="รวม"/>
+                <field name="m05_dep" sum="รวม"/>
+                <field name="m06_open" sum="รวม"/>
+                <field name="m06_dep" sum="รวม"/>
+                <field name="m07_open" sum="รวม"/>
+                <field name="m07_dep" sum="รวม"/>
+                <field name="m08_open" sum="รวม"/>
+                <field name="m08_dep" sum="รวม"/>
+                <field name="m09_open" sum="รวม"/>
+                <field name="m09_dep" sum="รวม"/>
+                <field name="m10_open" sum="รวม"/>
+                <field name="m10_dep" sum="รวม"/>
+                <field name="m11_open" sum="รวม"/>
+                <field name="m11_dep" sum="รวม"/>
+                <field name="m12_open" sum="รวม"/>
+                <field name="m12_dep" sum="รวม"/>
+                <field name="total_dep" sum="รวม"/>
+                <field name="closing_value" sum="รวม"/>
+                <field name="company_id" groups="base.group_multi_company" optional="hide"/>
+                <field name="year" optional="hide"/>
+                <field name="year_be" optional="hide"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_npd_depreciation_year_search" model="ir.ui.view">
+        <field name="name">npd.asset.depreciation.year.search</field>
+        <field name="model">npd.asset.depreciation.year</field>
+        <field name="arch" type="xml">
+            <search string="ค้นหาตารางค่าเสื่อม">
+                <field name="asset_id"/>
+                <field name="asset_code"/>
+                <field name="profile_id"/>
+                <field name="year"/>
+                <filter name="filter_this_year" string="ปีนี้"
+                        domain="[('year', '=', context_today().year)]"/>
+                <filter name="filter_has_dep" string="มีค่าเสื่อมในปีนี้"
+                        domain="[('total_dep', '&gt;', 0)]"/>
+                <group expand="0" string="จัดกลุ่มตาม">
+                    <filter name="group_year" string="ปี" context="{'group_by': 'year'}"/>
+                    <filter name="group_profile" string="หมวดสินทรัพย์"
+                            context="{'group_by': 'profile_id'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_npd_depreciation_year" model="ir.actions.act_window">
+        <field name="name">ตารางค่าเสื่อม 12 เดือน</field>
+        <field name="res_model">npd.asset.depreciation.year</field>
+        <field name="view_mode">list</field>
+        <field name="search_view_id" ref="view_npd_depreciation_year_search"/>
+        <field name="context">{'search_default_filter_this_year': 1}</field>
+        <field name="help" type="html">
+            <p>ยังไม่มีข้อมูลของปีนี้</p>
+            <p>ไปที่เมนู "คำนวณค่าเสื่อมประจำปี" เลือกปีแล้วกดคำนวณ ตารางนี้จะถูกสร้างให้เอง</p>
+        </field>
+    </record>
+
+</odoo>

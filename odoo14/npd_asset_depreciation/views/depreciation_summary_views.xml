@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<odoo>
+
+    <record id="view_npd_depreciation_summary_tree" model="ir.ui.view">
+        <field name="name">npd.asset.depreciation.summary.list</field>
+        <field name="model">npd.asset.depreciation.summary</field>
+        <field name="arch" type="xml">
+            <list string="สรุปค่าเสื่อมตามหมวด" create="false" delete="false"
+                  default_order="year desc, month_no desc, profile_code">
+                <field name="month_no" column_invisible="1"/>
+                <field name="year" column_invisible="1"/>
+                <field name="year_label"/>
+                <field name="period_label"/>
+                <field name="month" optional="hide"/>
+                <field name="month_to" optional="hide"/>
+                <field name="profile_code"/>
+                <field name="profile_name"/>
+                <field name="asset_count" sum="รวม"/>
+                <field name="purchase_value" sum="รวม"/>
+                <field name="opening_value" sum="รวม"/>
+                <field name="depreciation" sum="รวม"/>
+                <field name="closing_value" sum="รวม"/>
+                <!-- เก็บค่าเป็นร้อยละอยู่แล้ว (35.00 = 35%) widget percentage จะคูณ 100 ซ้ำ
+                     ขึ้นเป็น 3500% (o14 เป็นแบบนี้) จึงแสดงเป็นตัวเลขตรง ๆ ชื่อคอลัมน์มี % อยู่แล้ว -->
+                <field name="pct_of_total" optional="show"/>
+                <field name="pct_remaining" optional="show"/>
+                <field name="done_count" sum="รวม"/>
+                <field name="company_id" groups="base.group_multi_company" optional="hide"/>
+                <field name="date_end" optional="hide"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_npd_depreciation_summary_search" model="ir.ui.view">
+        <field name="name">npd.asset.depreciation.summary.search</field>
+        <field name="model">npd.asset.depreciation.summary</field>
+        <field name="arch" type="xml">
+            <search string="ค้นหาสรุปตามหมวด">
+                <field name="profile_name"/>
+                <field name="profile_code"/>
+                <field name="year"/>
+                <filter name="filter_this_year" string="ปีนี้"
+                        domain="[('year', '=', context_today().year)]"/>
+                <filter name="filter_has_dep" string="มีค่าเสื่อมในงวดนี้"
+                        domain="[('depreciation', '&gt;', 0)]"/>
+                <group expand="0" string="จัดกลุ่มตาม">
+                    <filter name="group_year" string="ปี" context="{'group_by': 'year'}"/>
+                    <filter name="group_month" string="เดือน" context="{'group_by': 'month'}"/>
+                    <filter name="group_profile" string="หมวดสินทรัพย์"
+                            context="{'group_by': 'profile_id'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_npd_depreciation_summary" model="ir.actions.act_window">
+        <field name="name">สรุปค่าเสื่อมตามหมวด</field>
+        <field name="res_model">npd.asset.depreciation.summary</field>
+        <field name="view_mode">list</field>
+        <field name="search_view_id" ref="view_npd_depreciation_summary_search"/>
+        <field name="context">{'search_default_filter_this_year': 1}</field>
+        <field name="help" type="html">
+            <p>ยังไม่มีข้อมูลสรุป</p>
+            <p>ไปที่เมนู "คำนวณค่าเสื่อมประจำปี" เลือกปีกับเดือน แล้วกด "สรุปตามหมวด"</p>
+        </field>
+    </record>
+
+</odoo>
