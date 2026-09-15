@@ -35,27 +35,59 @@ class AccountPayment(models.Model):
                 extra = extra_journals.filtered('outbound_payment_method_line_ids')
             pay.available_journal_ids = pay.available_journal_ids | extra
 
+    # ------------------------------------------------------------------
+    # เลขที่ใบรับ/จ่ายชำระ แบบ Odoo 14
+    #
+    # o14: ใบรับชำระ = CUST.IN-260915-0013 (sequence customer.payment)
+    #      รายการบันทึกบัญชี = RV-2609150008 (sequence ของสมุดรายวัน)
+    # o18 เดิมคัดลอกเลขรายการบันทึกบัญชีมาเป็นเลขใบรับชำระ (_compute_name ของ Odoo)
+    # แล้วโมดูลนี้ยังเขียน CUST.IN ทับเลขรายการบันทึกบัญชีด้วย SQL ทั้งสองเลขจึงกลายเป็นเลขเดียวกัน
+    # ตอนนี้แยกกันเหมือน o14: เลขรายการบันทึกบัญชีปล่อยให้ psn_journal_sequence ออกตามสมุดรายวัน
+    # เลขใบรับชำระออกจาก sequence ของบริษัทนั้น ตามวันที่ของใบ (ไม่ใช่วันที่กดยืนยัน)
+    # ------------------------------------------------------------------
+    npd_number_assigned = fields.Boolean(
+        string='ออกเลขใบรับ/จ่ายชำระแล้ว',
+        copy=False,
+        help='ออกเลขจาก sequence customer.payment / supplier.payment แล้ว '
+             'เลขนี้จะไม่ถูกเปลี่ยนตามเลขรายการบันทึกบัญชีอีก และกลับเป็นร่างแล้วยืนยันใหม่ก็ใช้เลขเดิม',
+    )
+
+    # ต้องประกาศ depends เดิมซ้ำ เพราะ override ไปแทนที่ method ใน MRO
+    @api.depends('move_id.name', 'state')
+    def _compute_name(self):
+        assigned = self.filtered('npd_number_assigned')
+        for payment in assigned:
+            payment.name = payment.name
+        others = self - assigned
+        if others:
+            super(AccountPayment, others)._compute_name()
+
     def get_seq_payment(self):
-        if self.payment_type == 'inbound':
-            return self.env['ir.sequence'].next_by_code('customer.payment') or '/'
-        else:
-            return self.env['ir.sequence'].next_by_code('supplier.payment') or '/'
+        """เลขถัดไปของ customer.payment / supplier.payment ของบริษัทใบนี้ ตามวันที่ของใบ
+
+        ฐานเดียวหลายบริษัท: next_by_code เลือก sequence ของบริษัทที่อยู่ใน env ก่อน
+        (o14 แยกฐานละบริษัท เลขของแต่ละบริษัทจึงไม่ปนกัน)
+        """
+        self.ensure_one()
+        code = 'customer.payment' if self.payment_type == 'inbound' else 'supplier.payment'
+        return self.env['ir.sequence'].with_company(self.company_id).next_by_code(
+            code, sequence_date=self.date) or '/'
+
+    def _npd_assign_payment_number(self):
+        for payment in self:
+            if payment.npd_number_assigned or payment.state not in ('in_process', 'paid'):
+                continue
+            number = payment.get_seq_payment()
+            if number and number != '/':
+                payment.write({'name': number, 'npd_number_assigned': True})
 
     def action_post(self):
-        """Override action_post to replace journal sequence with custom sequence + auto-reconcile"""
+        """ออกเลขใบรับ/จ่ายชำระ + ใส่หมายเหตุจากใบแจ้งหนี้ + กระทบยอดกับใบแจ้งหนี้"""
         res = super().action_post()
+        self._npd_assign_payment_number()
         for payment in self:
             if not payment.move_id:
                 continue
-
-            # 1. Replace sequence via SQL (bypass Odoo 18 constraints)
-            seq_name = payment.get_seq_payment()
-            if seq_name and seq_name != '/':
-                self.env.cr.execute(
-                    "UPDATE account_move SET name = %s WHERE id = %s",
-                    (seq_name, payment.move_id.id),
-                )
-                payment.move_id.invalidate_recordset(['name'])
 
             # 2. voucher_source_id is Many2one to account.payment (NOT account.move)
             # ไม่ set ที่นี่ — ใช้ voucher_number แทน

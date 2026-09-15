@@ -505,7 +505,9 @@ class AccountVoucher(models.Model):
             payment = self.env['account.payment'].create(payment_vals)
 
             try:
-                payment.action_post()
+                # ข้ามการตรวจสลิป (payment_slip_date_ai) เพราะเป็นการหักยอดจากเงินประกันในระบบ
+                # ไม่ใช่การโอนเงินจริงที่มีสลิป (เหมือน o14)
+                payment.with_context(skip_slip_date_check=True).action_post()
                 payment.voucher_source_id = self.id
                 created_payments |= payment
             except Exception as e:

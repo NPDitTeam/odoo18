@@ -114,7 +114,9 @@ class AccountPayment(models.Model):
         ('other', 'อื่นๆ'),
     ], string='ประเภท', copy=False)
 
-    pfb_date_of_rent = fields.Date(string='Day of Rent', copy=False)
+    # จำนวนวันเช่า (ตัวเลข) เหมือน o14 และเหมือน pfb_date_of_rent ของใบสั่งขาย/ใบแจ้งหนี้ใน o18
+    # เดิมพอร์ตมาเป็นวันที่ — ดู migrations/18.0.1.0.1/pre-migrate.py
+    pfb_date_of_rent = fields.Float(string='Day of Rent', copy=False)
     search_invoice_name = fields.Char(string='เลขใบแจ้งหนี้', copy=False)
     payment_memo = fields.Char(string='หมายเหตุ', copy=False)
     voucher_number = fields.Char(
@@ -448,11 +450,16 @@ class AccountPayment(models.Model):
                     vals['analytic_distribution'] = paid.analytic_distribution
                 line_vals_list.append(vals)
         else:
-            # Single payment method - use journal default account
-            payment_account = self.journal_id.default_account_id
+            # Single payment method - ใช้บัญชีของ Payment Method (เหมือน Odoo 14)
+            # สมุดรายวันรับชำระ/จ่ายชำระ (type receivable/payable) ไม่มี default account
+            payment_account = (
+                self.payment_method_one_id.account_id
+                or self.journal_id.default_account_id
+            )
             if not payment_account:
                 raise UserError(
-                    _("สมุดรายวัน %s ไม่มีบัญชีเริ่มต้น") % self.journal_id.name
+                    _("กรุณาเลือก Payment Method (ที่ตั้งค่าบัญชีไว้) "
+                      "หรือตั้งบัญชีเริ่มต้นให้สมุดรายวัน %s") % self.journal_id.name
                 )
             payment_amount = self.amount
             if has_refund:
@@ -803,34 +810,13 @@ class AccountPayment(models.Model):
         for rec in self:
             if not rec.custom_invoice_ids:
                 continue
-            # ---- สร้างเลข RV/PV ----
-            if not rec.voucher_number:
-                if rec.payment_type == 'inbound':
-                    seq_code = 'account.payment.receipt.voucher'
-                else:
-                    seq_code = 'account.payment.payment.voucher'
-                try:
-                    rv_name = self.env['ir.sequence'].with_context(
-                        ir_sequence_date=rec.date,
-                    ).next_by_code(seq_code)
-                    if rv_name:
-                        rec.voucher_number = rv_name
-                except Exception as e:
-                    _logger.warning('Voucher number error: %s', e)
-
-            # ---- ตั้งชื่อ move เป็นเลข RV/PV (เหมือน Odoo 14) ----
-            # Odoo 18: account.payment เป็น standalone model (ไม่ใช่ _inherits)
-            # payment.name กับ move.name แยกกัน → เปลี่ยน move name ได้โดยไม่กระทบ payment
-            if rec.voucher_number and rec.move_id:
-                self.env.cr.execute(
-                    "UPDATE account_move SET name = %s WHERE id = %s",
-                    (rec.voucher_number, rec.move_id.id),
-                )
-                rec.move_id.invalidate_recordset(['name'])
-                _logger.info(
-                    'Move name updated (SQL): move=%s → %s, payment=%s stays',
-                    rec.move_id.id, rec.voucher_number, rec.name,
-                )
+            # ---- เลข RV/PV = เลขรายการบันทึกบัญชี (เหมือน Odoo 14) ----
+            # o14 เลขรายการบันทึกบัญชีออกจาก sequence ของสมุดรายวัน (RV-2609150008,
+            # RVINS-202609150005) ซึ่ง o18 ทำให้แล้วโดย psn_journal_sequence
+            # เดิมตรงนี้ออกเลขจาก sequence RV/PV กลางอีกชุด (มีเฉพาะบริษัทแรก ไม่มีช่วงรายวัน)
+            # แล้วเขียนทับเลขรายการบันทึกบัญชีด้วย SQL เลขจึงไม่ตรงกับสมุดรายวัน
+            if rec.move_id and rec.move_id.name and rec.move_id.name != '/':
+                rec.voucher_number = rec.move_id.name
 
             # ---- Post-processing ----
             try:

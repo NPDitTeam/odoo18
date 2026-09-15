@@ -1,6 +1,6 @@
 {
     "name": "Account Payment Invoice",
-    "version": "18.0.1.0.0",
+    "version": "18.0.1.0.1",
     "license": "LGPL-3",
     "category": "Accounting",
     "summary": "Custom payment with invoice lines, paid lines, and WHT certificates",

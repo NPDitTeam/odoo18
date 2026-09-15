@@ -4,9 +4,11 @@ import logging
 from collections import defaultdict
 from datetime import date, datetime, timedelta
 
+import calendar
+
 import pytz
 
-from odoo import api, models
+from odoo import api, fields, models
 
 from .sub_sequence_format import describe, detect_period, infer_format, render, year_periods
 
@@ -158,6 +160,82 @@ class IrSequence(models.Model):
                 # Odoo สร้างช่วงไม่มี prefix เองเมื่อมีเอกสารก่อน cron รัน
                 return 'attention', created, detail + ' (มีช่วงไม่มี prefix %s ช่วง ต้องตรวจ)' % len(blank)
         return ('created' if created else 'exists'), created, detail
+
+    # ------------------------------------------------------------------
+    # เอกสารลงวันที่ที่ยังไม่มี Sub Sequence ครอบ
+    # ------------------------------------------------------------------
+    # จำนวนช่วงล่าสุดที่ใช้เดารูปแบบ (หลายตัวอย่างกันวันที่ วัน=เดือน ทำให้เดาสลับ %d/%m)
+    RECENT_RANGE_SAMPLES = 40
+
+    def _npd_recent_range_pattern(self):
+        """(ชนิดช่วง, anchor, prefix_fmt, suffix_fmt) จากช่วงล่าสุดของ Sequence นี้
+
+        :return: None ถ้าไม่มีช่วงที่มี prefix/suffix หรือชนิดช่วงปนกัน/เดารูปแบบไม่ได้
+        """
+        self.ensure_one()
+        ranges = self.env['ir.sequence.date_range'].sudo().search(
+            [('sequence_id', '=', self.id)], order='date_from desc',
+            limit=self.RECENT_RANGE_SAMPLES,
+        ).filtered(lambda r: r.prefix or r.suffix)
+        if not ranges:
+            return None
+        if all(r.date_from == r.date_to for r in ranges):
+            period = 'day'
+        elif all(r.date_from.day == 1 and r.date_from.month == r.date_to.month
+                 and r.date_to.day == calendar.monthrange(r.date_to.year, r.date_to.month)[1]
+                 for r in ranges):
+            period = 'month'
+        elif all((r.date_from.month, r.date_from.day, r.date_to.month, r.date_to.day) == (1, 1, 12, 31)
+                 and r.date_from.year == r.date_to.year for r in ranges):
+            period = 'year'
+        else:
+            return None
+        inferred = self._npd_infer_batch_format(ranges)
+        if not inferred:
+            return None
+        return (period,) + inferred
+
+    def _create_date_range_seq(self, date):
+        """ไม่มีช่วงครอบวันที่เอกสาร: สร้างช่วงชนิดเดียวกับที่ใช้อยู่ พร้อม prefix/suffix รูปแบบเดิม
+
+        ของเดิม Odoo สร้างช่วงทั้งปีแบบไม่มี prefix ให้ Sequence ที่ใช้ %(prefix)s
+        รายวัน เลขจึงออกเป็น RV-0001 แทน RV-2609150001 และนับต่อกันทั้งปี
+        (เกิดเมื่อลงเอกสารย้อนหลัง/ข้ามปีก่อน cron สร้างช่วงให้)
+        Sequence ที่ไม่เคยมีช่วงที่มี prefix/suffix ทำงานแบบเดิมทุกอย่าง
+        """
+        pattern = self._npd_recent_range_pattern()
+        if not pattern:
+            return super()._create_date_range_seq(date)
+        period, anchor, prefix_fmt, suffix_fmt = pattern
+        day = fields.Date.to_date(date)
+        if period == 'day':
+            date_from = date_to = day
+        elif period == 'month':
+            date_from = day.replace(day=1)
+            date_to = day.replace(day=calendar.monthrange(day.year, day.month)[1])
+        else:
+            date_from, date_to = day.replace(month=1, day=1), day.replace(month=12, day=31)
+        # ไม่ให้ทับช่วงที่มีอยู่ (เช่นมีช่วงรายเดือนบางส่วนของเดือนนั้นแล้ว) ตัดขอบแบบเดียวกับของเดิม
+        DateRange = self.env['ir.sequence.date_range'].sudo()
+        after = DateRange.search([('sequence_id', '=', self.id), ('date_from', '>', day),
+                                  ('date_from', '<=', date_to)], order='date_from', limit=1)
+        if after:
+            date_to = after.date_from - timedelta(days=1)
+        before = DateRange.search([('sequence_id', '=', self.id), ('date_to', '<', day),
+                                   ('date_to', '>=', date_from)], order='date_to desc', limit=1)
+        if before:
+            date_from = before.date_to + timedelta(days=1)
+        anchor_date = date_from if anchor == 'date_from' else date_to
+        date_range = DateRange.create({
+            'sequence_id': self.id,
+            'date_from': date_from,
+            'date_to': date_to,
+            'prefix': render(prefix_fmt, anchor_date) or False,
+            'suffix': render(suffix_fmt, anchor_date) or False,
+        })
+        _logger.info('npd_sequence_auto_year_range: %s (id %s) สร้างช่วง %s ถึง %s prefix %s ตามรูปแบบเดิม',
+                     self.name, self.id, date_from, date_to, date_range.prefix)
+        return date_range
 
     @api.model
     def _npd_log_summary(self, year, results):

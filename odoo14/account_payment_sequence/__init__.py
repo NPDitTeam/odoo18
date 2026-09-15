@@ -2,21 +2,9 @@ from . import models
 
 
 def post_init_hook(env):
-    """Force update payment sequences to correct prefix format"""
-    # Customer Payment: CUST.IN-YYMMDD-XXXX
-    seq = env['ir.sequence'].search([('code', '=', 'customer.payment')], limit=1)
-    if seq:
-        seq.write({
-            'prefix': 'CUST.IN-%(y)s%(month)s%(day)s-',
-            'padding': 4,
-            'use_date_range': True,
-        })
+    """ตั้งรูปแบบเลขใบรับ/จ่ายชำระและสมุดรายวันรับ/จ่ายชำระตาม Odoo 14 ให้ทุกบริษัท
 
-    # Supplier Payment: CUST.OUT-YYMMDD-XXXX
-    seq = env['ir.sequence'].search([('code', '=', 'supplier.payment')], limit=1)
-    if seq:
-        seq.write({
-            'prefix': 'CUST.OUT-%(y)s%(month)s%(day)s-',
-            'padding': 4,
-            'use_date_range': True,
-        })
+    เดิมบังคับ prefix ของ sequence กลางตัวเดียวให้ทุกบริษัท (เลขปนกันข้ามบริษัท)
+    ดูรายละเอียดที่ models/payment_numbering.py
+    """
+    env['account.payment']._npd_setup_payment_numbering()

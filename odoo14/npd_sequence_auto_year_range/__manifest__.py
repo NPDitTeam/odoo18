@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'NPD Sequence: Auto Yearly Sub Sequences',
-    'version': '18.0.1.0.0',
+    'version': '18.0.1.1.0',
     'summary': 'ขึ้นปีใหม่ สร้างช่วงเลขรันเอกสาร (Sub Sequences) ของปีนั้นให้อัตโนมัติ ตามรูปแบบล่าสุด',
     'description': """
 สร้าง Sub Sequences ปีใหม่อัตโนมัติ (พอร์ตจาก Odoo 14)
