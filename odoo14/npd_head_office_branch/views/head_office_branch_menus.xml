@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <menuitem id="menu_npd_head_office_branch_root"
+              name="สาขาสำนักงานใหญ่"
+              parent="account.menu_finance_configuration"
+              sequence="95"
+              groups="account.group_account_manager"/>
+
+    <menuitem id="menu_npd_head_office_branch_config"
+              name="กำหนดค่าสาขา"
+              parent="menu_npd_head_office_branch_root"
+              action="action_open_npd_head_office_branch_config"
+              sequence="10"
+              groups="account.group_account_manager"/>
+
+    <menuitem id="menu_npd_head_office_branch_apply_log"
+              name="ประวัติการปรับใช้ย้อนหลัง"
+              parent="menu_npd_head_office_branch_root"
+              action="action_npd_head_office_branch_apply_log"
+              sequence="20"
+              groups="account.group_account_manager"/>
+
+</odoo>

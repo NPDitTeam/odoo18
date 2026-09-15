@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- หัวรายงาน View / PDF: เพิ่มช่องสาขาที่เลือก ต่อท้าย Branch ID -->
+    <template id="report_tax_report_filters_branch"
+              inherit_id="l10n_th_tax_report.report_tax_report_filters">
+        <xpath expr="//div[hasclass('labels')]" position="inside">
+            <div class="act_as_cell">
+                <t t-esc="o._get_branch_filter_cell()[0]"/>
+            </div>
+        </xpath>
+        <xpath expr="//div[hasclass('act_as_row')][not(hasclass('labels'))]" position="inside">
+            <div class="act_as_cell">
+                <t t-esc="o._get_branch_filter_cell()[1]"/>
+            </div>
+        </xpath>
+    </template>
+
+</odoo>

@@ -46,6 +46,16 @@ class TaxReport(models.TransientModel):
         help="Use compute fields, so there is nothing store in database",
     )
 
+    def _get_extra_where(self):
+        """เงื่อนไขเพิ่มเติมของคิวรีรายงาน ให้โมดูลอื่น override (เช่น กรองสาขา)
+
+        ใช้ alias ในคิวรีได้: t = account_move_tax_invoice,
+        ml = account_move_line, m = account_move
+
+        :return: (sql ที่ขึ้นต้นด้วย 'and ...', tuple ของ params)
+        """
+        return "", ()
+
     def _compute_results(self):
         self.ensure_one()
         print('taxxxxxxxxxxxxx')
@@ -54,6 +64,9 @@ class TaxReport(models.TransientModel):
         print(self.date_from)
         print(self.date_to)
         print(self.company_id.id)
+        extra_where, extra_params = self._get_extra_where()
+        # คิวรี SQL ตรง ต้องเขียนค่าที่ค้างใน ORM ลงฐานข้อมูลก่อน
+        self.env.flush_all()
         self._cr.execute(
             """
             select company_id, account_id, partner_id,
@@ -80,22 +93,24 @@ class TaxReport(models.TransientModel):
               and ml.account_id in (select distinct account_id
                                     from account_tax_repartition_line
                                     where account_id is not null
-                                    and invoice_tax_id in %s or refund_tax_id in %s)
+                                    and tax_id in %s)
               and t.report_date >= %s and t.report_date <= %s
               and ml.company_id = %s
               and t.reversed_id is null
+              {extra_where}
             ) a
             group by company_id, account_id, partner_id,
                 tax_invoice_number, tax_date, name, tax_id
             order by tax_date, tax_invoice_number
-        """,
+        """.format(extra_where=extra_where),
+            # Odoo 18: repartition line ใช้ tax_id + document_type (invoice/refund)
+            # แทน invoice_tax_id / refund_tax_id ของ Odoo 14
             (
-                tuple(self.tax_id.ids),
                 tuple(self.tax_id.ids),
                 self.date_from,
                 self.date_to,
                 self.company_id.id,
-            ),
+            ) + tuple(extra_params),
         )
         tax_report_results = self._cr.dictfetchall()
         ReportLine = self.env["tax.report.view"]

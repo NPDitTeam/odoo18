@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- เมนู บิล ผู้ขาย -->
+    <record id="view_move_form_head_office_branch" model="ir.ui.view">
+        <field name="name">account.move.form.head.office.branch</field>
+        <field name="model">account.move</field>
+        <field name="inherit_id" ref="multi_branch_management_aagam.view_move_form_branch_inherit"/>
+        <field name="arch" type="xml">
+            <!-- ช่อง Branch ที่ multi_branch_management_aagam วางไว้ต่อจากวันที่ใบแจ้งหนี้ -->
+            <xpath expr="//group[@id='header_right_group']/field[@name='branch_id']" position="after">
+                <field name="can_edit_head_office_branch" invisible="1"/>
+                <!-- แก้เองได้เฉพาะผู้ใช้ที่ติ๊ก "แก้ไขสาขาสำนักงานใหญ่เองได้" -->
+                <field name="head_office_branch_id"
+                       force_save="1"
+                       options="{'no_open': True, 'no_create': True}"
+                       invisible="move_type not in ('in_invoice', 'in_refund')"
+                       readonly="not can_edit_head_office_branch"/>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>

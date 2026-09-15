@@ -1,0 +1,7 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_npd_ho_branch_config_user,npd.head.office.branch.config user,model_npd_head_office_branch_config,base.group_user,1,0,0,0
+access_npd_ho_branch_config_manager,npd.head.office.branch.config manager,model_npd_head_office_branch_config,account.group_account_manager,1,1,1,1
+access_npd_ho_branch_log_user,npd.head.office.branch.apply.log user,model_npd_head_office_branch_apply_log,base.group_user,1,0,0,0
+access_npd_ho_branch_log_manager,npd.head.office.branch.apply.log manager,model_npd_head_office_branch_apply_log,account.group_account_manager,1,1,1,1
+access_npd_ho_branch_log_line_user,npd.head.office.branch.apply.log.line user,model_npd_head_office_branch_apply_log_line,base.group_user,1,0,0,0
+access_npd_ho_branch_log_line_manager,npd.head.office.branch.apply.log.line manager,model_npd_head_office_branch_apply_log_line,account.group_account_manager,1,1,1,1

@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_npd_head_office_branch_config_form" model="ir.ui.view">
+        <field name="name">npd.head.office.branch.config.form</field>
+        <field name="model">npd.head.office.branch.config</field>
+        <field name="arch" type="xml">
+            <form string="กำหนดค่าสาขา (สำนักงานใหญ่)">
+                <div class="alert alert-info" role="alert">
+                    กำหนดว่าเอกสารในเมนูใด ถ้าเลือก <b>Branch</b> เป็นสาขาที่ระบุไว้
+                    ให้ระบบเติมฟิลด์ <b>สาขาสำนักงานใหญ่</b> ให้อัตโนมัติ
+                    <br/>
+                    เอกสารที่บันทึกใหม่จะได้ค่าทันที ส่วนเอกสารเก่าให้กดปุ่ม
+                    <b>บันทึก + ปรับใช้ย้อนหลัง</b>
+                    (เอกสารที่ผู้ใช้แก้สาขาสำนักงานใหญ่เอง จะไม่ถูกคำนวณทับ)
+                </div>
+                <group>
+                    <group>
+                        <field name="company_id"
+                               groups="base.group_multi_company"
+                               options="{'no_create': True, 'no_open': True}"/>
+                        <field name="head_office_branch_id"
+                               required="1"
+                               options="{'no_create': True, 'no_open': True}"/>
+                    </group>
+                    <group>
+                        <field name="fallback_own_branch"/>
+                    </group>
+                </group>
+                <notebook>
+                    <page string="บิลผู้ขาย" name="bill">
+                        <field name="bill_branch_ids"
+                               widget="many2many_tags"
+                               options="{'no_create': True}"
+                               placeholder="เลือกสาขาที่ให้ออกบิลในนามสำนักงานใหญ่..."/>
+                    </page>
+                    <page string="Avance Clear" name="advance_clear">
+                        <field name="advance_clear_branch_ids"
+                               widget="many2many_tags"
+                               options="{'no_create': True}"
+                               placeholder="เลือกสาขาที่ให้เคลียร์เงินทดรองในนามสำนักงานใหญ่..."/>
+                    </page>
+                    <page string="การรับ" name="voucher">
+                        <field name="voucher_branch_ids"
+                               widget="many2many_tags"
+                               options="{'no_create': True}"
+                               placeholder="เลือกสาขาที่ให้ออกใบรับในนามสำนักงานใหญ่..."/>
+                        <div class="text-muted mt-2">
+                            เมนู การรับ จะใช้เฉพาะเอกสารที่ check_type_show_selection = False เท่านั้น
+                        </div>
+                    </page>
+                    <page string="ประวัติการปรับใช้ย้อนหลัง" name="apply_log">
+                        <field name="apply_log_ids" nolabel="1" readonly="1">
+                            <list>
+                                <field name="apply_date"/>
+                                <field name="user_id"/>
+                                <field name="head_office_branch_id"/>
+                                <field name="scanned_count" sum="รวม"/>
+                                <field name="updated_count" sum="รวม"/>
+                            </list>
+                        </field>
+                    </page>
+                </notebook>
+                <footer>
+                    <button name="action_save_close"
+                            string="บันทึก"
+                            type="object"
+                            class="btn-primary"/>
+                    <button name="action_apply_history"
+                            string="บันทึก + ปรับใช้ย้อนหลัง"
+                            type="object"
+                            class="btn-secondary"
+                            confirm="ระบบจะคำนวณฟิลด์ สาขาสำนักงานใหญ่ ให้เอกสารเก่าทั้งหมดของบริษัทนี้ใหม่ ยืนยันหรือไม่?"/>
+                    <button string="ยกเลิก" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_npd_head_office_branch_config_tree" model="ir.ui.view">
+        <field name="name">npd.head.office.branch.config.tree</field>
+        <field name="model">npd.head.office.branch.config</field>
+        <field name="arch" type="xml">
+            <list string="กำหนดค่าสาขา (สำนักงานใหญ่)">
+                <field name="company_id"/>
+                <field name="head_office_branch_id"/>
+                <field name="fallback_own_branch"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- เมนู "กำหนดค่าสาขา" ต้องเด้งเป็น popup ของบริษัทปัจจุบัน จึงใช้ server action -->
+    <record id="action_open_npd_head_office_branch_config" model="ir.actions.server">
+        <field name="name">กำหนดค่าสาขา (สำนักงานใหญ่)</field>
+        <field name="model_id" ref="model_npd_head_office_branch_config"/>
+        <field name="state">code</field>
+        <field name="code">action = model.action_open_config()</field>
+    </record>
+
+</odoo>

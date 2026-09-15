@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="npd_head_office_branch_config_company_rule" model="ir.rule">
+        <field name="name">กำหนดค่าสาขาสำนักงานใหญ่: แยกตามบริษัท</field>
+        <field name="model_id" ref="model_npd_head_office_branch_config"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+        <field name="global" eval="True"/>
+    </record>
+
+    <record id="npd_head_office_branch_apply_log_company_rule" model="ir.rule">
+        <field name="name">ประวัติการปรับใช้สาขาสำนักงานใหญ่: แยกตามบริษัท</field>
+        <field name="model_id" ref="model_npd_head_office_branch_apply_log"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+        <field name="global" eval="True"/>
+    </record>
+
+</odoo>

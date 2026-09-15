@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- เมนู Avance Clear -->
+    <record id="view_advance_clear_form_head_office_branch" model="ir.ui.view">
+        <field name="name">account.advance.clear.form.head.office.branch</field>
+        <field name="model">account.advance.clear</field>
+        <field name="inherit_id" ref="account_advance.account_advance_clear_form_view"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='branch_id']" position="after">
+                <field name="can_edit_head_office_branch" invisible="1"/>
+                <!-- แก้เองได้เฉพาะผู้ใช้ที่ติ๊ก "แก้ไขสาขาสำนักงานใหญ่เองได้" -->
+                <field name="head_office_branch_id"
+                       force_save="1"
+                       options="{'no_open': True, 'no_create': True}"
+                       readonly="not can_edit_head_office_branch"/>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>

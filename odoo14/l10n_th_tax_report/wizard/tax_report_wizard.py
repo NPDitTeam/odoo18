@@ -136,6 +136,10 @@ class TaxReportWizard(models.TransientModel):
             sheet.write(row, col + 1, company_name, text_format)
             sheet.write(row, col + 2, company_vat, text_format)
             sheet.write(row, col + 3, company_branch, text_format)
+            # ช่องเงื่อนไขเพิ่มเติมจากโมดูลอื่น ต่อท้ายคอลัมน์ Branch ID
+            for offset, (label, value) in enumerate(self._get_extra_filter_cells(), start=4):
+                sheet.write(row - 1, col + offset, label, header_format)
+                sheet.write(row, col + offset, value, text_format)
             row += 2
 
             # Detailed Report Data
@@ -237,6 +241,13 @@ class TaxReportWizard(models.TransientModel):
         except Exception as e:
             _logger.error("Error creating Excel report: %s", e, exc_info=True)
             raise
+
+    def _get_extra_filter_cells(self):
+        """หัวตารางเงื่อนไขเพิ่มเติมใน Excel ให้โมดูลอื่น override
+
+        :return: list ของ (หัวคอลัมน์, ค่า)
+        """
+        return []
 
     def _get_report_action(self, is_test_report=False):
         """Helper to generate and prepare the report data for download."""

@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_npd_head_office_branch_apply_log_tree" model="ir.ui.view">
+        <field name="name">npd.head.office.branch.apply.log.tree</field>
+        <field name="model">npd.head.office.branch.apply.log</field>
+        <field name="arch" type="xml">
+            <list string="ประวัติการปรับใช้ย้อนหลัง" create="false">
+                <field name="apply_date"/>
+                <field name="user_id"/>
+                <field name="company_id" groups="base.group_multi_company"/>
+                <field name="head_office_branch_id"/>
+                <field name="scanned_count" sum="รวม"/>
+                <field name="updated_count" sum="รวม"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_npd_head_office_branch_apply_log_form" model="ir.ui.view">
+        <field name="name">npd.head.office.branch.apply.log.form</field>
+        <field name="model">npd.head.office.branch.apply.log</field>
+        <field name="arch" type="xml">
+            <form string="ประวัติการปรับใช้ย้อนหลัง" create="false" edit="false">
+                <sheet>
+                    <group>
+                        <group string="การปรับใช้">
+                            <field name="apply_date"/>
+                            <field name="user_id"/>
+                            <field name="company_id" groups="base.group_multi_company"/>
+                            <field name="scanned_count"/>
+                            <field name="updated_count"/>
+                        </group>
+                        <group string="ค่าที่ตั้งไว้ ณ เวลานั้น">
+                            <field name="head_office_branch_id"/>
+                            <field name="fallback_own_branch"/>
+                            <field name="bill_branch_names"/>
+                            <field name="advance_clear_branch_names"/>
+                            <field name="voucher_branch_names"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="รายการที่เปลี่ยนค่า" name="lines">
+                            <field name="line_ids" nolabel="1">
+                                <list create="false" delete="false">
+                                    <field name="doc_type"/>
+                                    <field name="doc_name"/>
+                                    <field name="branch_id"/>
+                                    <field name="old_branch_id"/>
+                                    <field name="new_branch_id"/>
+                                    <field name="res_model" column_invisible="1"/>
+                                    <field name="res_id" column_invisible="1"/>
+                                    <button name="action_open_document"
+                                            type="object"
+                                            icon="fa-external-link"
+                                            string="เปิดเอกสาร"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_npd_head_office_branch_apply_log_search" model="ir.ui.view">
+        <field name="name">npd.head.office.branch.apply.log.search</field>
+        <field name="model">npd.head.office.branch.apply.log</field>
+        <field name="arch" type="xml">
+            <search string="ประวัติการปรับใช้ย้อนหลัง">
+                <field name="user_id"/>
+                <field name="head_office_branch_id"/>
+                <group expand="0" string="จัดกลุ่มตาม">
+                    <filter string="ผู้ปรับใช้" name="group_user" context="{'group_by': 'user_id'}"/>
+                    <filter string="วันที่ปรับใช้" name="group_date" context="{'group_by': 'apply_date:day'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_npd_head_office_branch_apply_log" model="ir.actions.act_window">
+        <field name="name">ประวัติการปรับใช้สาขาสำนักงานใหญ่</field>
+        <field name="res_model">npd.head.office.branch.apply.log</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_npd_head_office_branch_apply_log_search"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                ยังไม่เคยกดปรับใช้ย้อนหลัง
+            </p>
+            <p>
+                เมื่อกดปุ่ม "บันทึก + ปรับใช้ย้อนหลัง" ในหน้ากำหนดค่าสาขา
+                ระบบจะเก็บผลการปรับใช้แต่ละครั้งไว้ที่นี่
+            </p>
+        </field>
+    </record>
+
+</odoo>

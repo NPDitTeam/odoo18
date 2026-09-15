@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- เมนู การรับ (Purchase Receipts) -->
+    <record id="view_purchase_receipt_form_head_office_branch" model="ir.ui.view">
+        <field name="name">account.voucher.purchase.form.head.office.branch</field>
+        <field name="model">account.voucher</field>
+        <field name="inherit_id" ref="npd_commission_fields.view_purchase_receipt_form_commission"/>
+        <field name="arch" type="xml">
+            <!-- ช่อง Branch มาจากโมดูล npd_commission_fields -->
+            <xpath expr="//field[@name='branch_id']" position="after">
+                <field name="can_edit_head_office_branch" invisible="1"/>
+                <field name="head_office_branch_id"
+                       force_save="1"
+                       options="{'no_open': True, 'no_create': True}"
+                       invisible="check_type_show_selection == 'true'"
+                       readonly="not can_edit_head_office_branch"/>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>
