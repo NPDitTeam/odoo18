@@ -306,10 +306,12 @@ class AccountAdvanceClear(models.Model):
             "currency_id": current_currency
             if company_currency != current_currency
             else company_currency,
+            # Odoo 18: สกุลเดียวกับบริษัทต้องส่ง amount_currency = debit - credit
+            # ถ้าส่ง 0 Odoo จะคำนวณ debit/credit เป็น 0 ตาม amount_currency
             "amount_currency": (
                 sign * abs(self.amount)
                 if company_currency != current_currency
-                else 0.0
+                else debit - credit
             ),
             "date": self.doc_date,
             "date_maturity": self.doc_date,
@@ -337,7 +339,7 @@ class AccountAdvanceClear(models.Model):
             "amount_currency": (
                 abs(self.amount)
                 if company_currency != current_currency
-                else 0.0
+                else abs(debit) - abs(credit)
             ),
             "date": self.doc_date,
             "date_maturity": self.doc_date,
@@ -385,7 +387,7 @@ class AccountAdvanceClear(models.Model):
                 "tax_ids": [(4, t.id) for t in line.tax_ids],
                 "amount_currency": line_subtotal
                 if current_currency != company_currency
-                else 0.0,
+                else abs(amount),
                 "currency_id": current_currency
                 if company_currency != current_currency
                 else company_currency,
@@ -425,7 +427,7 @@ class AccountAdvanceClear(models.Model):
             "amount_currency": (
                 sign * abs(wht_cert_line.amount)
                 if company_currency != current_currency
-                else 0.0
+                else debit - credit
             ),
             "date": self.doc_date,
             "date_maturity": self.doc_date,
@@ -445,18 +447,19 @@ class AccountAdvanceClear(models.Model):
             ctx = dict(self._context)
             ctx["date"] = advance_clear.doc_date
             ctx["check_move_validity"] = False
+            # Odoo 18 สร้างบรรทัดภาษีจาก tax_ids เอง + เติม "บรรทัดปรับสมดุลอัตโนมัติ" เอง
+            # ซ้อนกับบรรทัด VAT รายใบกำกับที่โมดูลนี้สร้าง (แบบ o14) จึงปิดการ sync ทั้งขั้นตอน
+            ctx["skip_invoice_sync"] = True
+            clear_ctx = advance_clear.with_context(**ctx)
+            MoveLine = clear_ctx.env["account.move.line"]
             # Create the account move record
-            move = self.env["account.move"].create(
+            move = clear_ctx.env["account.move"].create(
                 advance_clear.account_move_get()
             )
             # Create the first line of the advance clear
-            move_line = (
-                self.env["account.move.line"]
-                .with_context(**ctx)
-                .create(
-                    advance_clear.with_context(**ctx).first_move_line_get(
-                        move.id, company_currency, current_currency
-                    )
+            move_line = MoveLine.create(
+                clear_ctx.first_move_line_get(
+                    move.id, company_currency, current_currency
                 )
             )
             line_total = move_line.debit - move_line.credit
@@ -464,23 +467,19 @@ class AccountAdvanceClear(models.Model):
                 advance_clear.tax_amount
             )
 
-            if self.clear_amount != 0:
-                self.env["account.move.line"].with_context(**ctx).create(
-                    advance_clear.with_context(**ctx).clear_move_line_get(
+            if advance_clear.clear_amount != 0:
+                MoveLine.create(
+                    clear_ctx.clear_move_line_get(
                         move.id, company_currency, current_currency
                     )
                 )
 
             # Create move line with wht certificate lines
-            for cert in self.wt_cert_ids:
+            for cert in advance_clear.wt_cert_ids:
                 for wht_cert_line in cert.wht_line:
                     if wht_cert_line.amount:
-                        self.env["account.move.line"].with_context(
-                            **ctx
-                        ).create(
-                            advance_clear.with_context(
-                                **ctx
-                            ).wht_move_line_get(
+                        MoveLine.create(
+                            clear_ctx.wht_move_line_get(
                                 move.id,
                                 company_currency,
                                 current_currency,
@@ -488,24 +487,20 @@ class AccountAdvanceClear(models.Model):
                             )
                         )
             # Create one move line per advance clear line
-            line_total = (
-                advance_clear.with_context(
-                    **ctx
-                ).advance_clear_move_line_create(
-                    line_total,
-                    move.id,
-                    company_currency,
-                    current_currency,
-                )
+            line_total = clear_ctx.advance_clear_move_line_create(
+                line_total,
+                move.id,
+                company_currency,
+                current_currency,
             )
-            # Create move line vat
-            advance_clear.with_context(**ctx).vat_move_line_create(
+            # Create move line vat: 1 บรรทัด + 1 ใบกำกับ ต่อ (ภาษี, เลขที่ใบกำกับ, ผู้ขาย) แบบ o14
+            clear_ctx.vat_move_line_create(
                 move.id, company_currency, current_currency
             )
 
             # Add tax correction to move line if any
             if advance_clear.tax_correction != 0.0:
-                tax_move_line = self.env["account.move.line"].search(
+                tax_move_line = MoveLine.search(
                     [
                         ("move_id", "=", move.id),
                         ("tax_line_id", "!=", False),
@@ -513,54 +508,44 @@ class AccountAdvanceClear(models.Model):
                     limit=1,
                 )
                 if tax_move_line:
-                    tax_move_line.write(
-                        {
-                            "debit": tax_move_line.debit
-                            + advance_clear.tax_correction
-                            if tax_move_line.debit > 0
-                            else 0,
-                            "credit": tax_move_line.credit
-                            + advance_clear.tax_correction
-                            if tax_move_line.credit > 0
-                            else 0,
-                        }
+                    advance_clear._set_line_amount(
+                        tax_move_line,
+                        tax_move_line.debit + advance_clear.tax_correction
+                        if tax_move_line.debit > 0 else 0,
+                        tax_move_line.credit + advance_clear.tax_correction
+                        if tax_move_line.credit > 0 else 0,
                     )
-            # Fill in tax invoice number/date and amounts for l10n_th
-            # Build lookup from clear lines: tax_id -> data
-            tax_inv_data = {}
-            for line in advance_clear.clear_ids:
-                if line.tax_ids and line.invoice_number:
-                    tax_info = line.tax_ids.compute_all(
-                        line.price_unit,
-                        advance_clear.currency_id,
-                        line.quantity,
-                        line.product_id,
-                        line.partner_id,
-                    )
-                    for t in tax_info.get("taxes", []):
-                        tax_inv_data.setdefault(t["id"], {
-                            "tax_invoice_number": line.invoice_number,
-                            "tax_invoice_date": line.invoice_date,
-                            "partner_id": line.partner_id.id,
-                            "advance_clear_id": advance_clear.id,
-                            "tax_base_amount": 0.0,
-                            "balance": 0.0,
-                        })
-                        tax_inv_data[t["id"]]["tax_base_amount"] += t["base"]
-                        tax_inv_data[t["id"]]["balance"] += t["amount"]
-            # Update all tax invoice records on the move that need data
-            all_tax_invoices = self.env["account.move.tax.invoice"].search([
-                ("move_id", "=", move.id),
-            ])
-            for tax_inv in all_tax_invoices:
-                tax_id = tax_inv.tax_line_id.id
-                if tax_id in tax_inv_data:
-                    tax_inv.write(tax_inv_data[tax_id])
-                elif not tax_inv.tax_invoice_number:
-                    # Fallback: use first available data
-                    if tax_inv_data:
-                        first_data = list(tax_inv_data.values())[0]
-                        tax_inv.write(first_data)
+
+            # --- Auto-balance rounding residual (พอร์ตจาก o14 86fcf8c3) ---
+            # เหตุ: ยอดรวม/clear_amount ปัด VAT แบบ Round Globally (round(ผลรวม))
+            # แต่บรรทัด VAT ลงบัญชีจริงปัดแยกรายใบกำกับ (ผลรวม(round แต่ละใบ))
+            # ทำให้เดบิต-เครดิตเหลื่อมกันได้ทีละ 1-2 สตางค์ -> unbalanced journal entry
+            # แก้โดยดันส่วนต่างที่เหลือลงบรรทัดเงินสด/โอน (หรือบรรทัดเงินทดรอง) ก่อนโพสต์
+            move_lines = MoveLine.search([("move_id", "=", move.id)])
+            diff = advance_clear.currency_id.round(
+                sum(move_lines.mapped("debit")) - sum(move_lines.mapped("credit"))
+            )
+            if diff:
+                adj = move_lines.filtered(
+                    lambda l: l.account_id == advance_clear.payment_method_id.account_id
+                )[:1]
+                if not adj:
+                    adj = move_lines.filtered(
+                        lambda l: l.account_id == advance_clear.account_id
+                    )[:1]
+                if adj:
+                    if diff > 0:  # เดบิตเกิน
+                        if adj.debit >= diff:
+                            advance_clear._set_line_amount(adj, adj.debit - diff, adj.credit)
+                        else:
+                            advance_clear._set_line_amount(adj, adj.debit, adj.credit + diff)
+                    else:  # เครดิตเกิน
+                        d = -diff
+                        if adj.credit >= d:
+                            advance_clear._set_line_amount(adj, adj.debit, adj.credit - d)
+                        else:
+                            advance_clear._set_line_amount(adj, adj.debit + d, adj.credit)
+            # --- end fix ---
 
             # Post the advance clear
             advance_clear.write(
@@ -568,8 +553,16 @@ class AccountAdvanceClear(models.Model):
                     "move_id": move.id,
                 }
             )
-            move.action_post()
+            move.with_context(skip_invoice_sync=True).action_post()
         return True
+
+    def _set_line_amount(self, line, debit, credit):
+        """แก้ยอดบรรทัดโดยไม่ให้ Odoo 18 sync บรรทัดภาษี/ปรับสมดุลเอง
+        สกุลเดียวกับบริษัทต้องแก้ amount_currency ไปพร้อมกัน ไม่งั้นยอดไม่ตรงกัน"""
+        vals = {"debit": debit, "credit": credit}
+        if line.currency_id == line.company_currency_id:
+            vals["amount_currency"] = debit - credit
+        line.with_context(check_move_validity=False, skip_invoice_sync=True).write(vals)
 
     def action_cancel_draft(self):
         self.write({"state": "cancel"})
@@ -645,21 +638,26 @@ class AccountAdvanceClear(models.Model):
         current_cur = Currency.browse(current_currency)
 
         for tax in tax_vals:
+            vals = tax_vals[tax]
+            amount = company_cur.round(vals["amount"] or 0.0)
             temp = {
-                "account_id": tax_vals[tax]["account_id"],
-                "name": tax_vals[tax]["name"],
-                "tax_line_id": tax_vals[tax]["tax_line_id"],
+                "account_id": vals["account_id"],
+                "name": vals["name"],
                 "move_id": move_id,
                 "date": self.doc_date,
-                "partner_id": tax_vals[tax]["partner_id"],
-                "debit": tax_vals[tax]["amount"] or 0.0,
+                "partner_id": vals["partner_id"],
+                "debit": amount,
                 "credit": 0.0,
                 "branch_id": self.branch_id.id,
+                # Odoo 18: ต้องใส่ repartition line ตอนสร้าง ถึงจะเป็นบรรทัดภาษีจริง
+                # (display_type = tax, tax_line_id) ของ o14 ใช้ update หลังสร้าง
+                "tax_repartition_line_id": vals["tax_repartition_line_id"],
+                "tax_base_amount": abs(vals["base"]),
             }
             if company_currency != current_currency:
                 sign = -1 if temp["credit"] else 1
                 amount_currency = company_cur._convert(
-                    tax_vals[tax]["amount"],
+                    vals["amount"],
                     current_cur,
                     self.company_id,
                     self.doc_date or fields.Date.today(),
@@ -669,17 +667,20 @@ class AccountAdvanceClear(models.Model):
                 temp["amount_currency"] = sign * abs(amount_currency)
             else:
                 temp["currency_id"] = company_currency
-                temp["amount_currency"] = 0.0
+                temp["amount_currency"] = temp["debit"] - temp["credit"]
 
-            move_line_id = self.env["account.move.line"].with_context(
-                check_move_validity=False
+            move_line = self.env["account.move.line"].with_context(
+                check_move_validity=False, skip_invoice_sync=True
             ).create(temp)
-            move_line_id.update(
-                {
-                    "tax_repartition_line_id": tax_vals[tax][
-                        "tax_repartition_line_id"
-                    ]
-                }
+            self._create_tax_move(
+                move_id,
+                move_line,
+                vals["tax_line_id"],
+                vals["base"],
+                amount,
+                vals["partner_id"],
+                vals["invoice_number"],
+                vals["invoice_date"],
             )
 
     def _create_tax_move(
@@ -693,20 +694,27 @@ class AccountAdvanceClear(models.Model):
         invoice_number=None,
         invoice_date=None,
     ):
-        TaxInvoice = self.env["account.move.tax.invoice"]
-        TaxInvoice.create(
-            {
-                "move_id": move_id,
-                "move_line_id": move_line_id.id,
-                "advance_clear_id": self.id,
-                "partner_id": partner_id,
-                "tax_invoice_number": invoice_number,
-                "tax_invoice_date": invoice_date or False,
-                "tax_base_amount": abs(tax_base),
-                "balance": abs(tax_amount),
-                "tax_line_id": tax_line_id,
-            }
-        )
+        """ใบกำกับภาษี 1 ใบต่อบรรทัด VAT (แบบ o14)
+
+        Odoo 18: l10n_th_account_tax สร้างระเบียนใบกำกับให้เองเมื่อสร้างบรรทัดภาษี
+        จึงเติมข้อมูลลงระเบียนนั้น ถ้าไม่มีค่อยสร้างใหม่ (กันซ้ำ)
+        """
+        vals = {
+            "move_id": move_id,
+            "move_line_id": move_line_id.id,
+            "advance_clear_id": self.id,
+            "partner_id": partner_id,
+            "tax_invoice_number": invoice_number,
+            "tax_invoice_date": invoice_date or False,
+            "tax_base_amount": abs(tax_base),
+            "balance": abs(tax_amount),
+        }
+        tax_invoices = move_line_id.tax_invoice_ids
+        if tax_invoices:
+            tax_invoices[:1].write(vals)
+            (tax_invoices - tax_invoices[:1]).with_context(force_remove_tax_invoice=True).unlink()
+        else:
+            self.env["account.move.tax.invoice"].create(dict(vals, tax_line_id=tax_line_id))
 
     @api.onchange("advance_id")
     def _onchange_advance_id(self):

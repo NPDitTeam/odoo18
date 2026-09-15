@@ -1,5 +1,6 @@
 from odoo import api, fields, models, _
 from odoo.exceptions import UserError
+from odoo.tools import float_is_zero
 from datetime import date
 
 
@@ -35,8 +36,13 @@ class AccountAdvance(models.Model):
                 else 0
                 for clear in adv.clear_ids
             )
-            adv.remain = adv.payment_total - adv.clear
-            if adv.remain == 0:
+            remain = adv.payment_total - adv.clear
+            # ผลบวกทศนิยมของใบเคลียร์ทำให้เหลือเศษระดับ 1e-13 (เช่น 933.92 + 66.08)
+            # ถ้าเทียบ == 0 ตรง ๆ เอกสารที่เคลียร์ครบจะค้าง Wait Clear (พอร์ตจาก o14 60773f03)
+            if float_is_zero(remain, precision_digits=2):
+                remain = 0.0
+            adv.remain = remain
+            if remain == 0.0:
                 adv.state_remain = "Clear"
             else:
                 adv.state_remain = "Wait Clear"
