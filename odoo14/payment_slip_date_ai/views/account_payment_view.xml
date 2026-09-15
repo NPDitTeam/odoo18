@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <record id="view_account_payment_form_slip_date_ai" model="ir.ui.view">
+            <field name="name">account.payment.form.slip.date.ai</field>
+            <field name="model">account.payment</field>
+            <field name="inherit_id" ref="account.view_account_payment_form"/>
+            <field name="priority">999</field>
+            <field name="arch" type="xml">
+
+                <!-- Add invisible fields for slip extraction tracking in sheet -->
+                <xpath expr="//sheet//field[@name='id']" position="after">
+                    <field name="slip_date_extracted" invisible="1"/>
+                    <field name="slip_date_checked" invisible="1"/>
+                </xpath>
+
+                <!-- Add button in form header, visible in all states -->
+                <xpath expr="//header/button[@name='action_post']" position="before">
+                    <button name="action_extract_slip_date"
+                            string="ใช้วันที่จากสลิป"
+                            type="object"
+                            class="oe_highlight"
+                            icon="fa-calendar-check-o"/>
+                </xpath>
+
+            </field>
+        </record>
+    </data>
+</odoo>

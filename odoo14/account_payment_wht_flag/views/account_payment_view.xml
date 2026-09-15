@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+  <!-- Inherit ฟอร์มชำระเงิน เพื่อเพิ่มช่องติ๊ก (ต่อจากสถานะโอนคืนค่าเช่าส่วนต่าง เหมือน o14) -->
+  <record id="view_account_payment_form_wht_flag_inherit" model="ir.ui.view">
+    <field name="name">account.payment.form.wht.flag.inherit</field>
+    <field name="model">account.payment</field>
+    <field name="inherit_id" ref="l10n_th_account_tax.view_account_payment_form"/>
+    <field name="priority">60</field>
+    <field name="arch" type="xml">
+      <xpath expr="//field[@name='rental_difference_status']" position="after">
+        <field name="wht_has_slip"/>
+        <field name="received_payment"/>
+      </xpath>
+    </field>
+  </record>
+</odoo>

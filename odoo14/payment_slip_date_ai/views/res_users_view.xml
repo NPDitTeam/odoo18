@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <!-- เพิ่ม tab "สิทธิ์ ข้ามตรวจสลิป (AI)" ในหน้า User Settings
+             ใช้ pattern เดียวกับ advance_clear_ai_check (สิทธิ์ Reset Draft (Keep AI))
+             — สร้าง page ใหม่หลัง access_rights แทนที่จะ position="inside" ใน page
+             references เนื่องจาก position="inside" บน references ทำให้ widget
+             ของ groups_id ใน access_rights tab render เป็น flat list ผิดปกติ -->
+        <record id="view_users_form_skip_slip_date_check" model="ir.ui.view">
+            <field name="name">res.users.form.skip.slip.date.check</field>
+            <field name="model">res.users</field>
+            <field name="inherit_id" ref="base.view_users_form"/>
+            <field name="arch" type="xml">
+                <xpath expr="//page[@name='access_rights']" position="after">
+                    <page string="สิทธิ์ ข้ามตรวจสลิป (AI)" name="skip_slip_date_check_rights">
+                        <group string="สิทธิ์ การข้ามการตรวจวันที่จากสลิป">
+                            <field name="allow_skip_slip_date_check"/>
+                        </group>
+                        <group>
+                            <div class="alert alert-info" role="alert" style="margin-bottom:0px;">
+                                <p><strong>คำอธิบาย:</strong></p>
+                                <ul>
+                                    <li><strong>อนุญาตข้ามการตรวจวันที่จากสลิป:</strong>
+                                        ผู้ใช้นี้สามารถ post ใบรับชำระได้โดยไม่ต้องผ่านเงื่อนไข
+                                        กดปุ่ม "ใช้วันที่จากสลิป" — ใช้เป็นทางออกกรณี AI อ่านสลิปไม่ได้</li>
+                                </ul>
+                                <p class="text-danger"><strong>หมายเหตุ:</strong>
+                                    ผู้ดูแลระบบ (Administrator) มีสิทธิ์ทั้งหมดโดยอัตโนมัติ</p>
+                            </div>
+                        </group>
+                    </page>
+                </xpath>
+            </field>
+        </record>
+    </data>
+</odoo>
