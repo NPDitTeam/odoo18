@@ -101,18 +101,23 @@ class CommissionSource(models.AbstractModel):
 
     @api.model
     def _sum_branch_base(self, branch, month, year, company):
-        """ยอดฐานคิดค่าคอมของสาขาในงวดนั้น
+        """ยอดฐานคิดค่าคอมของสาขาในงวดนั้น = **ยอดเช่าสุทธิ**
 
-        แยกเป็นเมธอดต่างหากเพื่อให้ปรับวิธีอ่านได้ที่เดียว เมื่อพอร์ต
-        ``npd_commission_report`` มาแล้วชื่อฟิลด์อาจต่างจากที่คาดไว้
+        ต้องเป็นยอดสุทธิ (ยอดเช่า + รับชำระหนี้ − หนี้ค้าง − รายจ่าย)
+        ไม่ใช่ยอดเช่าดิบ — ของ Odoo 14 ส่งตัวแปรชื่อ ``total_net_rental``
+        เข้าไปคิดขั้นบันไดค่าคอม ถ้าใช้ยอดดิบ ค่าคอมจะสูงเกินจริงทุกสาขา
+        เพราะยังไม่ได้หักรายจ่ายออก
         """
         Report = self.env[BRANCH_REPORT_MODEL].sudo()
+        # โมดูลรายงานมีเมธอดสำเร็จให้ใช้ ใช้ตัวนั้นก่อนเสมอ
+        if hasattr(Report, 'get_net_rental'):
+            return Report.get_net_rental(branch, month, year, company=company)
+
         date_from, date_to = self._month_window(month, year)
         records = Report.search([
             ('branch_id', '=', branch.id),
             ('company_id', '=', company.id),
         ])
-        # รองรับได้ทั้งแบบเก็บ month/year และแบบเก็บช่วงวันที่
         field_names = Report._fields
         if 'month' in field_names and 'year' in field_names:
             records = records.filtered(
@@ -120,7 +125,7 @@ class CommissionSource(models.AbstractModel):
         elif 'date_from' in field_names:
             records = records.filtered(
                 lambda r: r.date_from and date_from <= r.date_from <= date_to)
-        for candidate in ('rental_amount', 'total_amount', 'amount_untaxed', 'amount'):
+        for candidate in ('net_rental', 'total_amount', 'amount'):
             if candidate in field_names:
                 return sum(records.mapped(candidate))
         _logger.warning(
@@ -170,10 +175,18 @@ class CommissionSource(models.AbstractModel):
 
     @api.model
     def _sum_sales_base(self, employee, month, year, company):
+        """ยอดฐานค่าคอม Sales = **ยอดเช่าสุทธิ** รวมทุกสาขาของเซลล์คนนั้น
+
+        เหตุผลเดียวกับฝั่งสาขา — Odoo 14 ส่ง ``total_net_rental`` เข้าไปคิด
+        ขั้นบันได ถ้าใช้ยอดเช่าดิบค่าคอมจะสูงเกินจริงเพราะยังไม่หักค่าขนส่ง
+        และหนี้ค้าง
+        """
         Report = self.env[SALES_REPORT_MODEL].sudo()
+        if hasattr(Report, 'get_net_rental'):
+            return Report.get_net_rental(employee, month, year, company=company)
+
         field_names = Report._fields
         domain = [('company_id', '=', company.id)]
-        # จับคู่พนักงานกับ Sales ด้วยรหัสพนักงานก่อน แล้วค่อยชื่อ
         if 'employee_code' in field_names:
             domain.append(('employee_code', '=', employee.employee_code))
         elif 'sales_name' in field_names:
@@ -187,7 +200,7 @@ class CommissionSource(models.AbstractModel):
         if 'month' in field_names and 'year' in field_names:
             records = records.filtered(
                 lambda r: str(r.month) == str(month) and str(r.year) == str(year))
-        for candidate in ('total_amount', 'rental_amount', 'amount_untaxed', 'amount'):
+        for candidate in ('net_rental', 'total_amount', 'amount'):
             if candidate in field_names:
                 return sum(records.mapped(candidate))
         return 0.0

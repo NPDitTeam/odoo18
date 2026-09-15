@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_npd_commission_report_sales_list" model="ir.ui.view">
+        <field name="name">npd.commission.report.sales.list</field>
+        <field name="model">npd.commission.report.sales</field>
+        <field name="arch" type="xml">
+            <list string="รายงานค่าคอม Sales" create="false" edit="false">
+                <field name="sales_contact_id"/>
+                <field name="employee_code" optional="show"/>
+                <field name="branch_id"/>
+                <field name="month"/>
+                <field name="year"/>
+                <field name="rental_amount" sum="รวม"/>
+                <field name="payment_received" sum="รวม"/>
+                <field name="outstanding_debt" sum="รวม"/>
+                <field name="shipping_cost" sum="รวม"/>
+                <field name="net_rental" sum="รวม" decoration-danger="net_rental &lt; 0"/>
+                <field name="is_headoffice" optional="hide"/>
+                <field name="company_id" groups="base.group_multi_company"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_npd_commission_report_sales_form" model="ir.ui.view">
+        <field name="name">npd.commission.report.sales.form</field>
+        <field name="model">npd.commission.report.sales</field>
+        <field name="arch" type="xml">
+            <form string="รายงานค่าคอม Sales" create="false" edit="false">
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="display_summary" readonly="1"/></h1>
+                    </div>
+                    <group>
+                        <group string="งวด">
+                            <field name="company_id"/>
+                            <field name="sales_contact_id"/>
+                            <field name="employee_code"/>
+                            <field name="branch_id"/>
+                            <field name="month"/>
+                            <field name="year"/>
+                            <field name="is_headoffice"/>
+                        </group>
+                        <group string="ยอด">
+                            <field name="rental_amount"/>
+                            <field name="payment_received"/>
+                            <field name="outstanding_debt"/>
+                            <field name="shipping_cost"/>
+                            <field name="net_rental"
+                                   class="oe_subtotal_footer_separator"/>
+                        </group>
+                    </group>
+                    <div class="alert alert-info" role="alert">
+                        <b>ยอดเช่าสุทธิ</b> = ยอดเช่า + รับชำระหนี้ − หนี้ค้างชำระ − ค่าขนส่ง
+                        <br/>ระบบเงินเดือนนำยอดนี้ (รวมทุกสาขาของเซลล์คนนั้น) ไปคิดค่าคอมตามขั้นบันได
+                    </div>
+                    <div class="alert alert-warning" role="alert" invisible="not is_headoffice">
+                        เซลล์คนนี้อยู่ในรายชื่อ <b>Sales สำนักงานใหญ่</b>
+                        ยอดเช่าจึงนับเฉพาะบิลแรก ไม่นับบิลต่ออายุ
+                    </div>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_npd_commission_report_sales_search" model="ir.ui.view">
+        <field name="name">npd.commission.report.sales.search</field>
+        <field name="model">npd.commission.report.sales</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="sales_contact_id"/>
+                <field name="employee_code"/>
+                <field name="branch_id"/>
+                <filter name="filter_ho" string="Sales สำนักงานใหญ่"
+                        domain="[('is_headoffice', '=', True)]"/>
+                <group expand="0" string="จัดกลุ่มตาม">
+                    <filter name="group_sales" string="Sales"
+                            context="{'group_by': 'sales_contact_id'}"/>
+                    <filter name="group_branch" string="สาขา"
+                            context="{'group_by': 'branch_id'}"/>
+                    <filter name="group_year" string="ปี"
+                            context="{'group_by': 'year'}"/>
+                    <filter name="group_month" string="เดือน"
+                            context="{'group_by': 'month'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_npd_commission_report_sales" model="ir.actions.act_window">
+        <field name="name">รายงานค่าคอม Sales</field>
+        <field name="res_model">npd.commission.report.sales</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <menuitem id="menu_npd_commission_report_sales"
+              name="รายงานค่าคอม Sales"
+              parent="menu_npd_commission_root"
+              action="action_npd_commission_report_sales"
+              sequence="15"/>
+
+</odoo>

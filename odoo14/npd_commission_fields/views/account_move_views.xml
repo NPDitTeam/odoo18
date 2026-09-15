@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_move_form_commission_fields" model="ir.ui.view">
+        <field name="name">account.move.form.commission.fields</field>
+        <field name="model">account.move</field>
+        <field name="inherit_id" ref="account.view_move_form"/>
+        <field name="arch" type="xml">
+            <!-- วางไว้ข้างวันที่ใบแจ้งหนี้ ให้เห็นพร้อมข้อมูลหัวเอกสาร
+                 sales_contact_id อ่านอย่างเดียว เพราะคัดลอกมาจากใบสั่งขาย
+                 ถ้าปล่อยให้แก้ที่นี่ ยอดค่าคอมจะไม่ตรงกับใบสั่งขาย -->
+            <field name="invoice_date" position="after">
+                <field name="sales_contact_id" readonly="1"
+                       invisible="move_type not in ('out_invoice', 'out_refund')"/>
+                <field name="reason_code_id"
+                       invisible="move_type not in ('out_invoice', 'out_refund')"
+                       options="{'no_create': True}"/>
+            </field>
+        </field>
+    </record>
+
+</odoo>

@@ -1,0 +1,8 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_npd_commission_config_user,npd.commission.config user,model_npd_commission_config,base.group_user,1,0,0,0
+access_npd_commission_config_manager,npd.commission.config manager,model_npd_commission_config,account.group_account_manager,1,1,1,1
+access_npd_commission_report_user,npd.commission.report user,model_npd_commission_report,base.group_user,1,0,0,0
+access_npd_commission_report_manager,npd.commission.report manager,model_npd_commission_report,account.group_account_manager,1,1,1,1
+access_npd_commission_generate_manager,generate.commission.report manager,model_generate_commission_report,account.group_account_manager,1,1,1,1
+access_npd_commission_report_sales_user,npd.commission.report.sales user,model_npd_commission_report_sales,base.group_user,1,0,0,0
+access_npd_commission_report_sales_manager,npd.commission.report.sales manager,model_npd_commission_report_sales,account.group_account_manager,1,1,1,1

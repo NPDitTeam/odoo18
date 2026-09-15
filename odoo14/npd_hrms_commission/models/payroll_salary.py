@@ -8,6 +8,8 @@ import logging
 
 from odoo import models, fields, api
 
+from .commission_source import BRANCH_REPORT_MODEL, SALES_REPORT_MODEL
+
 _logger = logging.getLogger(__name__)
 
 
@@ -34,8 +36,23 @@ class PayrollSalaryCommission(models.Model):
 
     commission_source_ready = fields.Boolean(
         string='มีข้อมูลรายงานค่าคอมแล้ว', readonly=True,
+        compute='_compute_commission_source_ready',
         help='ปิดอยู่ = ยังไม่ได้ติดตั้งโมดูลรายงานค่าคอมฝั่ง ERP '
              '(npd_commission_report) ระบบจึงคิดค่าคอมเป็น 0')
+
+    def _compute_commission_source_ready(self):
+        """ดูจากของจริงตอนเปิดหน้าจอ ไม่ใช่ค่าที่ค้างไว้ตอนคำนวณสลิป
+
+        เดิมฟิลด์นี้เก็บค่าลงฐานตอนคำนวณสลิปครั้งล่าสุด พอติดตั้งโมดูลรายงาน
+        ทีหลัง สลิปที่คำนวณไว้ก่อนหน้าจะยังค้างว่า "ยังไม่มีโมดูล" และขึ้น
+        คำเตือนต่อไปเรื่อย ๆ ทั้งที่ติดตั้งไปแล้ว ต้องไปกดคำนวณใหม่ทีละใบ
+        ถึงจะหาย — คิดสดทุกครั้งจึงตรงกับความจริงเสมอ
+        """
+        Source = self.env['commission.source']
+        ready = (Source._report_available(BRANCH_REPORT_MODEL)
+                 or Source._report_available(SALES_REPORT_MODEL))
+        for rec in self:
+            rec.commission_source_ready = ready
 
     manual_override_commission = fields.Boolean(
         string='กรอกค่าคอมเอง', default=False,
@@ -70,8 +87,6 @@ class PayrollSalaryCommission(models.Model):
         self.commission_sale_base = sales['base']
         self.commission_sale_rate = sales['rate']
         self.commission_sale_type = sales['comm_type']
-
-        self.commission_source_ready = branch['available'] or sales['available']
 
         if self.income_commission or self.income_commission_sale:
             _logger.info(

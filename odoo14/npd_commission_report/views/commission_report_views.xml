@@ -1,0 +1,222 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ================= รายงานค่าคอมสาขา ================= -->
+    <record id="view_npd_commission_report_list" model="ir.ui.view">
+        <field name="name">npd.commission.report.list</field>
+        <field name="model">npd.commission.report</field>
+        <field name="arch" type="xml">
+            <list string="รายงานค่าคอมมิชชั่นสาขา" create="false" edit="false">
+                <field name="branch_id"/>
+                <field name="month"/>
+                <field name="year"/>
+                <field name="rental_amount" sum="รวม"/>
+                <field name="payment_received" sum="รวม"/>
+                <field name="outstanding_debt" sum="รวม"/>
+                <field name="total_expense" sum="รวม"/>
+                <field name="salary_expense" sum="รวม" optional="hide"/>
+                <field name="net_rental" sum="รวม" decoration-danger="net_rental &lt; 0"/>
+                <field name="company_id" groups="base.group_multi_company"/>
+                <field name="generated_at" optional="hide"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_npd_commission_report_form" model="ir.ui.view">
+        <field name="name">npd.commission.report.form</field>
+        <field name="model">npd.commission.report</field>
+        <field name="arch" type="xml">
+            <form string="รายงานค่าคอมมิชชั่นสาขา" create="false" edit="false">
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="display_summary" readonly="1"/></h1>
+                    </div>
+                    <group>
+                        <group string="งวด">
+                            <field name="company_id"/>
+                            <field name="branch_id"/>
+                            <field name="month"/>
+                            <field name="year"/>
+                            <field name="date_from"/>
+                            <field name="date_to"/>
+                        </group>
+                        <group string="ยอด">
+                            <field name="rental_amount"/>
+                            <field name="payment_received"/>
+                            <field name="outstanding_debt"/>
+                            <field name="total_expense"/>
+                            <field name="salary_expense"/>
+                            <field name="net_rental"
+                                   class="oe_subtotal_footer_separator"/>
+                        </group>
+                    </group>
+                    <div class="alert alert-info" role="alert">
+                        <b>ยอดเช่าสุทธิ</b> = ยอดเช่า + รับชำระหนี้ − หนี้ค้างชำระ − รายจ่ายรวม
+                        <br/>ตัวเลขนี้คือ<b>ฐานคิดค่าคอมสาขา</b> ที่ระบบเงินเดือนนำไปใช้
+                    </div>
+                    <group string="หมายเหตุการคำนวณ" invisible="not note">
+                        <field name="note" nolabel="1" readonly="1"/>
+                    </group>
+                    <field name="generated_at" invisible="1"/>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_npd_commission_report_search" model="ir.ui.view">
+        <field name="name">npd.commission.report.search</field>
+        <field name="model">npd.commission.report</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="branch_id"/>
+                <field name="year"/>
+                <filter name="filter_negative" string="ยอดสุทธิติดลบ"
+                        domain="[('net_rental', '&lt;', 0)]"/>
+                <group expand="0" string="จัดกลุ่มตาม">
+                    <filter name="group_branch" string="สาขา"
+                            context="{'group_by': 'branch_id'}"/>
+                    <filter name="group_year" string="ปี"
+                            context="{'group_by': 'year'}"/>
+                    <filter name="group_month" string="เดือน"
+                            context="{'group_by': 'month'}"/>
+                    <filter name="group_company" string="บริษัท"
+                            context="{'group_by': 'company_id'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_npd_commission_report" model="ir.actions.act_window">
+        <field name="name">รายงานค่าคอมมิชชั่นสาขา</field>
+        <field name="res_model">npd.commission.report</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">ยังไม่มีรายงานในระบบ</p>
+            <p>กดเมนู "สร้างรายงานค่าคอม" เพื่อคำนวณยอดของงวดที่ต้องการ</p>
+        </field>
+    </record>
+
+    <!-- ================= ตัวช่วยสร้างรายงาน ================= -->
+    <record id="view_generate_commission_report_form" model="ir.ui.view">
+        <field name="name">generate.commission.report.form</field>
+        <field name="model">generate.commission.report</field>
+        <field name="arch" type="xml">
+            <form string="สร้างรายงานค่าคอมมิชชั่น">
+                <div class="alert alert-info" role="alert">
+                    ระบบจะคำนวณยอดเช่า รับชำระหนี้ หนี้ค้าง และรายจ่ายของทุกสาขาในบริษัทที่เลือก
+                    แล้วเก็บเป็นรายงานของงวดนั้น
+                    <br/>สร้างซ้ำงวดเดิมได้ ระบบจะเขียนทับตัวเลขเดิมให้
+                </div>
+                <group>
+                    <group>
+                        <field name="company_id"/>
+                        <field name="month"/>
+                        <field name="year"/>
+                    </group>
+                    <group>
+                        <field name="branch_ids" widget="many2many_tags"
+                               options="{'no_create': True}"/>
+                    </group>
+                </group>
+                <footer>
+                    <button name="action_generate" type="object"
+                            string="คำนวณและบันทึก" class="btn-primary"/>
+                    <button string="ยกเลิก" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_generate_commission_report" model="ir.actions.act_window">
+        <field name="name">สร้างรายงานค่าคอม</field>
+        <field name="res_model">generate.commission.report</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+
+    <!-- ================= ตั้งค่า ================= -->
+    <record id="view_npd_commission_config_form" model="ir.ui.view">
+        <field name="name">npd.commission.config.form</field>
+        <field name="model">npd.commission.config</field>
+        <field name="arch" type="xml">
+            <form string="ตั้งค่ารายงานค่าคอมมิชชั่น">
+                <div class="alert alert-warning" role="alert">
+                    ระบบอ่านยอดจาก<b>สมุดรายวันที่เลือกไว้ตรงนี้เท่านั้น</b>
+                    ถ้าไม่เลือก ยอดจะเป็น 0 ทุกสาขาโดยไม่มีอะไรเตือน
+                    <br/>ตั้งแยกกันได้ทีละบริษัท เพราะแต่ละบริษัทมีสมุดรายวันของตัวเอง
+                </div>
+                <sheet>
+                    <group>
+                        <field name="company_id"/>
+                    </group>
+                    <group>
+                        <group string="ฝั่งรายได้">
+                            <field name="rental_journal_ids" widget="many2many_tags"
+                                   options="{'no_create': True}"/>
+                            <field name="penalty_journal_ids" widget="many2many_tags"
+                                   options="{'no_create': True}"/>
+                            <field name="credit_note_journal_id"
+                                   options="{'no_create': True}"/>
+                        </group>
+                        <group string="ฝั่งรับชำระ">
+                            <field name="payment_journal_ids" widget="many2many_tags"
+                                   options="{'no_create': True}"/>
+                            <field name="gross_payment_journal_ids"
+                                   widget="many2many_tags"
+                                   options="{'no_create': True}"/>
+                        </group>
+                    </group>
+                    <group string="อื่นๆ">
+                        <field name="vat_rate"/>
+                        <field name="include_salary_in_expense"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_npd_commission_config_list" model="ir.ui.view">
+        <field name="name">npd.commission.config.list</field>
+        <field name="model">npd.commission.config</field>
+        <field name="arch" type="xml">
+            <list string="ตั้งค่ารายงานค่าคอมมิชชั่น">
+                <field name="company_id"/>
+                <field name="rental_journal_ids" widget="many2many_tags"/>
+                <field name="payment_journal_ids" widget="many2many_tags"/>
+                <field name="vat_rate"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="action_npd_commission_config" model="ir.actions.act_window">
+        <field name="name">ตั้งค่ารายงานค่าคอม</field>
+        <field name="res_model">npd.commission.config</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <!-- ================= เมนู ================= -->
+    <menuitem id="menu_npd_commission_root"
+              name="ค่าคอมมิชชั่น"
+              parent="account.menu_finance_reports"
+              sequence="90"/>
+
+    <menuitem id="menu_npd_commission_report"
+              name="รายงานค่าคอมสาขา"
+              parent="menu_npd_commission_root"
+              action="action_npd_commission_report"
+              sequence="10"/>
+
+    <menuitem id="menu_npd_commission_generate"
+              name="สร้างรายงานค่าคอม"
+              parent="menu_npd_commission_root"
+              action="action_generate_commission_report"
+              sequence="20"/>
+
+    <menuitem id="menu_npd_commission_config"
+              name="ตั้งค่าสมุดรายวัน"
+              parent="menu_npd_commission_root"
+              action="action_npd_commission_config"
+              sequence="90"
+              groups="account.group_account_manager"/>
+
+</odoo>
