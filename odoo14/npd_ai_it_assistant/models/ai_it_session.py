@@ -2281,10 +2281,12 @@ class NpdAiItSession(models.Model):
         # ต้องมาก่อนการอ่านทีละบรรทัด — เดิม (o14) อ่านทีละบรรทัดก่อน แล้ว "1=1, 2=30"
         # ถูกตีเป็นรายการที่ 1 = 30 (เลขตัวท้ายของบรรทัด) และรายการที่ 2 หายไป
         # ทั้งที่เป็นรูปแบบเดียวกับตัวอย่างที่บอทบอกให้ตอบ
-        for index, qty in re.findall(r'(?<![\d.,])(\d{1,2})\s*[=:]\s*(\d+(?:\.\d+)?)', text):
+        # จำนวนรับเลขหลักพันมีจุลภาค "1=1,500" แต่ "1=1,2=30" (ไม่เว้นวรรค) ยังแยกเป็นสองคู่
+        for index, qty in re.findall(
+                r'(?<![\d.])(\d{1,2})\s*[=:]\s*(\d{1,3}(?:,\d{3})+(?:\.\d+)?|\d+(?:\.\d+)?)', text):
             index = int(index)
             if 1 <= index <= count:
-                result[index] = float(qty)
+                result[index] = float(qty.replace(',', ''))
         if len(result) == count:
             return result
 
