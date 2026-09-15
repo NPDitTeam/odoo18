@@ -18,6 +18,7 @@ import logging
 from odoo import http, fields
 from odoo.exceptions import AccessError, UserError, ValidationError
 from odoo.http import request, Response
+from odoo.tools.mimetypes import guess_mimetype
 
 _logger = logging.getLogger(__name__)
 
@@ -328,6 +329,50 @@ class HrmsApiController(http.Controller):
         def run():
             employee = self._current_employee(_payload())
             return _ok('', employee._api_profile())
+        return run()
+
+    @http.route(f'{API_ROOT}/employee/photo', type='http', auth='public',
+                methods=['GET', 'POST', 'OPTIONS'], csrf=False, cors='*')
+    def employee_photo(self, **kwargs):
+        """GET = รูปโปรไฟล์ปัจจุบัน, POST = อัปโหลดรูปใหม่ (หรือส่ง action=delete)
+
+        รวมสองเมธอดไว้ route เดียวแบบเดียวกับ /leave/requests เพื่อไม่ให้ routing กำกวม
+        """
+        if request.httprequest.method == 'GET':
+            return self._employee_photo_get()
+        return self._employee_photo_post()
+
+    def _employee_photo_get(self):
+        @self._guard
+        def run():
+            employee = self._current_employee(_payload())
+            image = employee.sudo().employee_image
+            if not image:
+                return _err('ยังไม่มีรูปโปรไฟล์', status=404)
+            raw = base64.b64decode(image)
+            return request.make_response(raw, headers=[
+                ('Content-Type', guess_mimetype(raw, 'image/png')),
+                # รูปเปลี่ยนได้ทั้งจากแอปและจากฝ่ายบุคคล — ห้ามค้าง cache
+                ('Cache-Control', 'no-store'),
+            ])
+        return run()
+
+    def _employee_photo_post(self):
+        @self._guard
+        def run():
+            data = _payload()
+            employee = self._current_employee(data)
+            if str(data.get('action') or '').lower() == 'delete':
+                return _ok('ลบรูปโปรไฟล์แล้ว', employee.api_clear_photo())
+            uploaded = (request.httprequest.files.get('photo')
+                        or request.httprequest.files.get('file'))
+            raw = uploaded.read() if uploaded and uploaded.filename else b''
+            if not raw and data.get('photo_base64'):
+                try:
+                    raw = base64.b64decode(data['photo_base64'])
+                except Exception:
+                    raw = b''
+            return _ok('อัปเดตรูปโปรไฟล์แล้ว', employee.api_set_photo(raw))
         return run()
 
     # ==================================================================

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'NPD HRMS - Mobile API',
-    'version': '18.0.1.0.0',
+    'version': '18.0.1.0.1',
     'summary': 'REST API ให้แอป HR คุยกับ Odoo โดยตรง (แทน PHP npdhrms.com ทั้งหมด)',
     'description': """
 NPD HRMS - Mobile API

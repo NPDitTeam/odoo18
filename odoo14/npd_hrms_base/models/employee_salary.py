@@ -8,6 +8,7 @@
 * branch_id → res.branch, company (Selection) → company_id (res.company)
 * รหัสพนักงาน / ประกันสังคม / วันตัดรอบ อ่านจากนโยบายบริษัท
 """
+import base64
 import calendar
 import logging
 from datetime import date
@@ -361,6 +362,40 @@ class EmployeeSalary(models.Model):
             if not rec.employee_image and user.image_1920:
                 rec.employee_image = user.image_1920
 
+    # ------------------------------------------------------------------
+    # รูปโปรไฟล์ (พนักงานเปลี่ยนเองจากแอปได้)
+    # ------------------------------------------------------------------
+    #: ขนาดไฟล์รูปสูงสุดที่รับจากแอป — กันอัปไฟล์ต้นฉบับจากกล้องหลายสิบเมกะ
+    API_PHOTO_MAX_BYTES = 8 * 1024 * 1024
+
+    def api_set_photo(self, raw_bytes):
+        """ตั้งรูปโปรไฟล์จากแอป — คืน dict ให้ API ส่งกลับ
+
+        เก็บลงช่องเดียวกับที่ฝ่ายบุคคลใช้ (``employee_image``) รูปที่พนักงาน
+        อัปเองจึงขึ้นในบัตรพนักงานฝั่ง Odoo ด้วย ไม่ต้องมีช่องรูปสองที่ให้ไม่ตรงกัน
+        """
+        self.ensure_one()
+        if not raw_bytes:
+            raise UserError('ไม่พบไฟล์รูปที่ส่งมา')
+        if len(raw_bytes) > self.API_PHOTO_MAX_BYTES:
+            raise UserError('ไฟล์รูปใหญ่เกิน %d MB'
+                            % (self.API_PHOTO_MAX_BYTES // (1024 * 1024)))
+        try:
+            # ฟิลด์ Image ของ Odoo ตรวจว่าเป็นรูปจริงและย่อขนาดให้เองตามที่ประกาศไว้
+            self.sudo().write({'employee_image': base64.b64encode(raw_bytes)})
+        except UserError:
+            raise
+        except Exception as exc:
+            _logger.warning('ตั้งรูปโปรไฟล์ไม่สำเร็จ (พนักงาน %s): %s', self.id, exc)
+            raise UserError('ไฟล์ที่ส่งมาไม่ใช่รูปภาพที่รองรับ')
+        return {'has_photo': True}
+
+    def api_clear_photo(self):
+        """ลบรูปโปรไฟล์ — แอปกลับไปแสดงตัวอักษรย่อแทน"""
+        self.ensure_one()
+        self.sudo().write({'employee_image': False})
+        return {'has_photo': False}
+
     @api.constrains('user_id')
     def _check_user_unique(self):
         """ผู้ใช้หนึ่งคนผูกได้กับบัตรพนักงานใบเดียว
@@ -643,6 +678,7 @@ class EmployeeSalary(models.Model):
         rec = self.sudo()
         return {
             'employee_code': rec.employee_code or '',
+            'has_photo': bool(rec.employee_image),
             'prefix_th': rec.prefix_th or '',
             'firstname': rec.firstname or '',
             'lastname': rec.lastname or '',
