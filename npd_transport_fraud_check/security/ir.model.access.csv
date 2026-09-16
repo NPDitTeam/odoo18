@@ -1,0 +1,7 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_fraud_check_viewer,npd.transport.fraud.check viewer,model_npd_transport_fraud_check,group_transport_fraud_viewer,1,0,0,0
+access_fraud_check_manager,npd.transport.fraud.check manager,model_npd_transport_fraud_check,group_transport_fraud_manager,1,1,1,0
+access_fraud_check_system,npd.transport.fraud.check system,model_npd_transport_fraud_check,base.group_system,1,1,1,1
+access_fraud_flag_viewer,npd.transport.fraud.flag viewer,model_npd_transport_fraud_flag,group_transport_fraud_viewer,1,0,0,0
+access_fraud_flag_manager,npd.transport.fraud.flag manager,model_npd_transport_fraud_flag,group_transport_fraud_manager,1,1,1,0
+access_fraud_flag_system,npd.transport.fraud.flag system,model_npd_transport_fraud_flag,base.group_system,1,1,1,1

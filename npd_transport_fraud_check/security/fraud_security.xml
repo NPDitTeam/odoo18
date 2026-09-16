@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        <!-- กลุ่มสิทธิ์: ใครเห็นเมนู "ตรวจทุจริตการจัดส่ง" บ้าง
+             ตอนติดตั้งเปิดให้ Npd_admin กับ User004 (ดู hooks.py)
+             คนอื่นเพิ่มเองได้ที่ ตั้งค่า > ผู้ใช้ > สิทธิ์ -->
+        <record id="group_transport_fraud_viewer" model="res.groups">
+            <field name="name">ตรวจทุจริตการจัดส่ง: ผู้มีสิทธิ์ดู</field>
+            <field name="category_id" ref="base.module_category_operations_inventory"/>
+            <field name="comment">เห็นเมนูและผลการตรวจทุจริตของเที่ยวจัดส่งทุกสาขา</field>
+        </record>
+
+        <record id="group_transport_fraud_manager" model="res.groups">
+            <field name="name">ตรวจทุจริตการจัดส่ง: ผู้ตรวจสอบ</field>
+            <field name="category_id" ref="base.module_category_operations_inventory"/>
+            <field name="implied_ids" eval="[(4, ref('group_transport_fraud_viewer'))]"/>
+            <field name="comment">บันทึกผลการตรวจ (ตรวจแล้วไม่มีปัญหา / มีปัญหาจริง) และสั่งตรวจย้อนหลังได้</field>
+        </record>
+    </data>
+</odoo>

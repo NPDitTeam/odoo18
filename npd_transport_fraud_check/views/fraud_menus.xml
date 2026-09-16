@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- เมนูอยู่ใต้ "จองคิวรถขนส่ง" และเห็นเฉพาะกลุ่มที่ได้รับสิทธิ์
+         (ตอนติดตั้งเปิดให้ Npd_admin กับ User004 — คนอื่นติ๊กเพิ่มเองได้) -->
+    <menuitem id="menu_transport_fraud_root"
+              name="ตรวจทุจริตการจัดส่ง"
+              parent="transport_booking.menu_vehicle_booking_root"
+              groups="npd_transport_fraud_check.group_transport_fraud_viewer"
+              sequence="30"/>
+
+    <menuitem id="menu_transport_fraud_check"
+              name="ผลตรวจรายเที่ยว"
+              parent="menu_transport_fraud_root"
+              action="action_fraud_check"
+              groups="npd_transport_fraud_check.group_transport_fraud_viewer"
+              sequence="10"/>
+</odoo>

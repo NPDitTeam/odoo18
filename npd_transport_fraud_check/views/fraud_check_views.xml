@@ -1,0 +1,188 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ========================= List ========================= -->
+    <record id="view_fraud_check_list" model="ir.ui.view">
+        <field name="name">npd.transport.fraud.check.list</field>
+        <field name="model">npd.transport.fraud.check</field>
+        <field name="arch" type="xml">
+            <list string="ผลตรวจทุจริตการจัดส่ง" create="0" delete="0"
+                  decoration-danger="risk_level == 'high'"
+                  decoration-warning="risk_level == 'watch'"
+                  decoration-muted="review_state in ('ok', 'issue')">
+                <header>
+                    <button name="action_backfill_button" type="object"
+                            string="🔁 ตรวจย้อนหลังตั้งแต่ มิ.ย."
+                            groups="npd_transport_fraud_check.group_transport_fraud_manager"/>
+                </header>
+                <field name="delivery_date"/>
+                <field name="booking_name" string="เลขที่จอง"/>
+                <field name="branch_id"/>
+                <field name="driver_name" string="คนขับ"/>
+                <field name="partner_id" optional="show"/>
+                <field name="delivery_type" optional="hide"/>
+                <field name="done_method" optional="show"/>
+                <field name="distance_km" sum="รวม กม."/>
+                <field name="travel_expenses" sum="รวมค่าเที่ยว"/>
+                <field name="daily_allowance" sum="รวมเบี้ยเลี้ยง"/>
+                <field name="shipping_cost" string="ค่าขนส่งที่เก็บ" sum="รวม" optional="show"/>
+                <field name="flag_count" string="ข้อสังเกต"/>
+                <field name="risk_score" string="คะแนน"/>
+                <field name="risk_level" widget="badge"
+                       decoration-danger="risk_level == 'high'"
+                       decoration-warning="risk_level == 'watch'"
+                       decoration-success="risk_level == 'ok'"/>
+                <field name="ai_severity" string="AI ให้ระดับ" widget="badge" optional="show"
+                       decoration-danger="ai_severity == 'high'"
+                       decoration-warning="ai_severity == 'watch'"
+                       decoration-success="ai_severity == 'ok'"/>
+                <field name="ai_state" optional="hide"/>
+                <field name="review_state" widget="badge" optional="show"
+                       decoration-info="review_state == 'new'"
+                       decoration-success="review_state == 'ok'"
+                       decoration-danger="review_state == 'issue'"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- ========================= Form ========================= -->
+    <record id="view_fraud_check_form" model="ir.ui.view">
+        <field name="name">npd.transport.fraud.check.form</field>
+        <field name="model">npd.transport.fraud.check</field>
+        <field name="arch" type="xml">
+            <form string="ผลตรวจทุจริตการจัดส่ง" create="0">
+                <header>
+                    <button name="action_open_booking" type="object" string="เปิดใบจอง" class="btn-secondary"/>
+                    <button name="action_ai_analyze" type="object" string="🤖 ให้ AI วิเคราะห์ใหม่"
+                            groups="npd_transport_fraud_check.group_transport_fraud_manager"/>
+                    <button name="action_mark_checking" type="object" string="กำลังตรวจ"
+                            groups="npd_transport_fraud_check.group_transport_fraud_manager"
+                            invisible="review_state != 'new'"/>
+                    <button name="action_mark_ok" type="object" string="✅ ไม่มีปัญหา" class="btn-success"
+                            groups="npd_transport_fraud_check.group_transport_fraud_manager"
+                            invisible="review_state == 'ok'"/>
+                    <button name="action_mark_issue" type="object" string="⚠️ มีปัญหาจริง" class="btn-danger"
+                            groups="npd_transport_fraud_check.group_transport_fraud_manager"
+                            invisible="review_state == 'issue'"/>
+                    <field name="review_state" widget="statusbar"
+                           statusbar_visible="new,checking,ok,issue"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="booking_name" readonly="1"/></h1>
+                        <h3>
+                            <field name="risk_level" widget="badge" readonly="1"
+                                   decoration-danger="risk_level == 'high'"
+                                   decoration-warning="risk_level == 'watch'"
+                                   decoration-success="risk_level == 'ok'"/>
+                            <field name="risk_score" readonly="1" string="คะแนน" class="ms-2"/>
+                        </h3>
+                    </div>
+                    <group>
+                        <group string="เที่ยวจัดส่ง">
+                            <field name="booking_id" readonly="1"/>
+                            <field name="order_name" readonly="1"/>
+                            <field name="delivery_date" readonly="1"/>
+                            <field name="branch_id" readonly="1"/>
+                            <field name="driver_name" readonly="1"/>
+                            <field name="partner_id" readonly="1"/>
+                            <field name="vehicle_id" readonly="1"/>
+                        </group>
+                        <group string="ข้อมูลที่ใช้ตรวจ">
+                            <field name="delivery_type" readonly="1"/>
+                            <field name="delivery_source" readonly="1"/>
+                            <field name="done_method" readonly="1"/>
+                            <field name="distance_km" readonly="1"/>
+                            <field name="travel_expenses" readonly="1"/>
+                            <field name="daily_allowance" readonly="1"/>
+                            <field name="shipping_cost" readonly="1"/>
+                            <field name="order_trip_allowance" readonly="1"/>
+                            <field name="order_daily_allowance" readonly="1"/>
+                            <field name="free_shipping" readonly="1"/>
+                        </group>
+                    </group>
+                    <group string="เหตุผลที่ไม่ได้ปิดผ่านแอป" invisible="not no_app_done_reason">
+                        <field name="no_app_done_reason" nolabel="1" readonly="1"/>
+                    </group>
+                    <notebook>
+                        <page string="ข้อสังเกตจากระบบ" name="flags">
+                            <field name="flag_ids" nolabel="1" readonly="1">
+                                <list create="0" delete="0" edit="0"
+                                      decoration-danger="severity == 'high'"
+                                      decoration-warning="severity == 'medium'">
+                                    <field name="name"/>
+                                    <field name="severity" widget="badge"
+                                           decoration-danger="severity == 'high'"
+                                           decoration-warning="severity == 'medium'"/>
+                                    <field name="score"/>
+                                    <field name="value" optional="show"/>
+                                    <field name="baseline" optional="show"/>
+                                    <field name="detail" string="รายละเอียด"/>
+                                    <field name="code" optional="hide"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="ผลวิเคราะห์ของ AI" name="ai">
+                            <group>
+                                <field name="ai_state" readonly="1"/>
+                                <field name="ai_severity" readonly="1"/>
+                                <field name="ai_date" readonly="1"/>
+                            </group>
+                            <field name="ai_summary" nolabel="1" readonly="1"/>
+                        </page>
+                        <page string="บันทึกการตรวจ" name="review">
+                            <group>
+                                <field name="review_user_id" readonly="1"/>
+                                <field name="review_date" readonly="1"/>
+                            </group>
+                            <field name="review_note" placeholder="บันทึกว่าตรวจแล้วเจออะไร คุยกับใคร สรุปอย่างไร"
+                                   groups="npd_transport_fraud_check.group_transport_fraud_manager"/>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- ========================= Search ========================= -->
+    <record id="view_fraud_check_search" model="ir.ui.view">
+        <field name="name">npd.transport.fraud.check.search</field>
+        <field name="model">npd.transport.fraud.check</field>
+        <field name="arch" type="xml">
+            <search string="ค้นหาผลตรวจ">
+                <field name="booking_name"/>
+                <field name="driver_name"/>
+                <field name="branch_id"/>
+                <field name="partner_id"/>
+                <filter name="risk_high" string="น่าสงสัยมาก" domain="[('risk_level', '=', 'high')]"/>
+                <filter name="risk_watch" string="ควรดู" domain="[('risk_level', '=', 'watch')]"/>
+                <separator/>
+                <filter name="not_reviewed" string="ยังไม่ตรวจ" domain="[('review_state', 'in', ('new', 'checking'))]"/>
+                <filter name="issue" string="ตรวจแล้วมีปัญหา" domain="[('review_state', '=', 'issue')]"/>
+                <separator/>
+                <filter name="manual_done" string="ปิดงานเองในระบบ" domain="[('done_method', '=', 'manual')]"/>
+                <filter name="this_month" string="เดือนนี้"
+                        domain="[('delivery_date', '&gt;=', (context_today()).strftime('%Y-%m-01'))]"/>
+                <group expand="0" string="จัดกลุ่มตาม">
+                    <filter name="group_branch" string="สาขา" context="{'group_by': 'branch_id'}"/>
+                    <filter name="group_driver" string="คนขับ" context="{'group_by': 'driver_id'}"/>
+                    <filter name="group_risk" string="ระดับความเสี่ยง" context="{'group_by': 'risk_level'}"/>
+                    <filter name="group_review" string="สถานะการตรวจ" context="{'group_by': 'review_state'}"/>
+                    <filter name="group_month" string="เดือนที่ส่ง" context="{'group_by': 'delivery_date:month'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_fraud_check" model="ir.actions.act_window">
+        <field name="name">ตรวจทุจริตการจัดส่ง</field>
+        <field name="res_model">npd.transport.fraud.check</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_fraud_check_search"/>
+        <field name="context">{'search_default_risk_high': 1, 'search_default_risk_watch': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">ยังไม่มีผลตรวจ</p>
+            <p>ระบบจะตรวจให้อัตโนมัติทุกครั้งที่เที่ยวจัดส่งถูกปิดเป็น "เสร็จสิ้น"
+               และกดปุ่ม "ตรวจย้อนหลัง" เพื่อตรวจเที่ยวเก่าได้</p>
+        </field>
+    </record>
+</odoo>
