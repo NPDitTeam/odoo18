@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- สถานะติดตามหนี้ ยกมาจาก o14 prod (ชุดเดียวกันทั้ง NPD_S_Group_New_V2 /
+         NPD_Intertrading_New / NPD_Bangkok_New ตรวจเมื่อ 16 ก.ย. 2569)
+         noupdate="1" เพื่อให้ผู้ใช้แก้ชื่อ/ช่วงวัน/สวิตช์รายงานเองได้
+         โดยการอัปเดตโมดูลครั้งต่อไปจะไม่เขียนทับ -->
+    <data noupdate="1">
+        <record id="debt_status_01" model="npd.debt.collection.status">
+            <field name="name">โทร.ก่อนครบกำหนด,คืนสินค้า,แจ้งวางบิล,Up/Cross.Sale</field>
+            <field name="day_from">1</field>
+            <field name="day_to">7</field>
+            <field name="show_in_report" eval="False"/>
+        </record>
+        <record id="debt_status_02" model="npd.debt.collection.status">
+            <field name="name">ตามหนี้..เตือนหนี้ค้างLINE OA</field>
+            <field name="day_from">8</field>
+            <field name="day_to">45</field>
+            <field name="show_in_report" eval="False"/>
+        </record>
+        <record id="debt_status_03" model="npd.debt.collection.status">
+            <field name="name">โทร.ตามหนี้.หนังสือรับสภาพหนี้.เฟีรัน.สดอ.แหม่ม</field>
+            <field name="day_from">46</field>
+            <field name="day_to">60</field>
+            <field name="show_in_report" eval="False"/>
+        </record>
+        <record id="debt_status_04" model="npd.debt.collection.status">
+            <field name="name">PSOนัดพบ.ลค.</field>
+            <field name="day_from">61</field>
+            <field name="day_to">70</field>
+            <field name="show_in_report" eval="False"/>
+        </record>
+        <record id="debt_status_05" model="npd.debt.collection.status">
+            <field name="name">ขออนุมัติส่วนลดคุณเฟิร์น.ปิดหนี้</field>
+            <field name="day_from">71</field>
+            <field name="day_to">80</field>
+            <field name="show_in_report" eval="False"/>
+        </record>
+        <record id="debt_status_06" model="npd.debt.collection.status">
+            <field name="name">Update ประวัติลูกหนี้</field>
+            <field name="day_from">81</field>
+            <field name="day_to">90</field>
+            <field name="show_in_report" eval="False"/>
+        </record>
+        <record id="debt_status_07" model="npd.debt.collection.status">
+            <field name="name">Notice 1: Tracking ไว้ในระบบ.หนังสือรับสภาพหนี้</field>
+            <field name="day_from">91</field>
+            <field name="day_to">100</field>
+            <field name="show_in_report" eval="True"/>
+        </record>
+        <record id="debt_status_08" model="npd.debt.collection.status">
+            <field name="name">Notice 2: หนังสือรับสภาพหนี้</field>
+            <field name="day_from">101</field>
+            <field name="day_to">115</field>
+            <field name="show_in_report" eval="True"/>
+        </record>
+        <record id="debt_status_09" model="npd.debt.collection.status">
+            <field name="name">หนังสือรับสภาพหนี้</field>
+            <field name="day_from">116</field>
+            <field name="day_to">120</field>
+            <field name="show_in_report" eval="True"/>
+        </record>
+        <record id="debt_status_10" model="npd.debt.collection.status">
+            <field name="name">หนังสือบอกกล่าวก่อนดำเนินคดี</field>
+            <field name="day_from">121</field>
+            <field name="day_to">130</field>
+            <field name="show_in_report" eval="True"/>
+        </record>
+        <record id="debt_status_11" model="npd.debt.collection.status">
+            <field name="name">ลูกค้า/เจรจา?ปิดเดล/ปรับสถานะเป็น/ผ่อนชำระ ผ่อนชำระ</field>
+            <field name="day_from">131</field>
+            <field name="day_to">137</field>
+            <field name="show_in_report" eval="True"/>
+        </record>
+        <record id="debt_status_12" model="npd.debt.collection.status">
+            <field name="name">ตรวจ/ประเมิน.จัดทำค่าค่าฟ้อง-ยื่นฟ้อง</field>
+            <field name="day_from">138</field>
+            <field name="day_to">140</field>
+            <field name="show_in_report" eval="True"/>
+        </record>
+    </data>
+</odoo>

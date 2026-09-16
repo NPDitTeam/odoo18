@@ -1,0 +1,311 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<odoo>
+    <!--
+        หนังสือ "ขอให้รีบชำระหนี้ค้างตามสัญญาเช่า" ออกจากเมนูพิมพ์ของรวมหนี้ลูกค้า
+        หน้า 1 = ตัวหนังสือ / หน้า 2 = ตารางสรุปยอดหนี้ค้างชำระ
+        ข้อมูลเตรียมไว้ที่ models/collection_letter.py -> get_collection_letter_data()
+    -->
+    <record id="paperformat_debt_collection_letter" model="report.paperformat">
+        <field name="name">หนังสือทวงถามหนี้ค้างชำระ A4</field>
+        <field name="default" eval="False"/>
+        <field name="format">A4</field>
+        <field name="orientation">Portrait</field>
+        <field name="margin_top">10</field>
+        <!-- ขอบล่างเผื่อพื้นที่ให้ footer (หมายเหตุ 2 บรรทัด + เลขหน้า) -->
+        <field name="margin_bottom">22</field>
+        <field name="margin_left">14</field>
+        <field name="margin_right">12</field>
+        <field name="header_line" eval="False"/>
+        <field name="header_spacing">8</field>
+        <!-- ตรึง dpi 96 ให้ Windows กับ Linux ได้ขนาดเท่ากัน -->
+        <field name="dpi">96</field>
+        <field name="disable_shrinking" eval="True"/>
+    </record>
+
+    <record id="action_debt_collection_letter" model="ir.actions.report">
+        <field name="name">หนังสือขอให้ชำระหนี้ค้างตามสัญญาเช่า</field>
+        <field name="model">npd.debt.summary</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">npd_debt_summary.report_debt_collection_letter</field>
+        <field name="report_file">npd_debt_summary.report_debt_collection_letter</field>
+        <field name="print_report_name">'หนังสือทวงถาม - %s' % (object.name)</field>
+        <field name="paperformat_id" ref="npd_debt_summary.paperformat_debt_collection_letter"/>
+        <field name="binding_model_id" ref="model_npd_debt_summary"/>
+        <field name="binding_type">report</field>
+    </record>
+
+    <!-- ================= หัวกระดาษ (ข้อมูลบริษัทจาก Companies) ================= -->
+    <template id="letter_header">
+        <div class="dcl-head">
+            <table style="width:100%; border-collapse:collapse;">
+                <tr>
+                    <td style="width:90px; vertical-align:middle;">
+                        <img t-if="company.logo" t-att-src="image_data_uri(company.logo)"
+                             style="max-height:60px; max-width:85px;"/>
+                    </td>
+                    <td style="vertical-align:middle; font-size:14px;">
+                        <!-- เว้นความสูงบรรทัดให้พอ ไม่งั้นวรรณยุกต์/สระบนของชื่อบริษัทโดนตัด -->
+                        <div style="font-size:17px; font-weight:bold; line-height:1.6; padding-top:2px;"><span t-esc="company.name"/></div>
+                        <div>
+                            <span t-esc="company.street or ''"/>
+                            <span t-if="company.street2"> <span t-esc="company.street2"/></span>
+                            <span t-if="company.city"> <span t-esc="company.city"/></span>
+                            <span t-if="company.state_id"> <span t-esc="company.state_id.name"/></span>
+                            <span t-if="company.zip"> <span t-esc="company.zip"/></span>
+                        </div>
+                        <div t-if="company.phone">โทรศัพท์ <span t-esc="company.phone"/> (สำนักงานใหญ่)</div>
+                        <div>
+                            <span t-if="company.email">E-mail : <span t-esc="company.email"/></span>
+                            <span t-if="company.website">, Web Site : <span t-esc="company.website"/></span>
+                        </div>
+                    </td>
+                </tr>
+            </table>
+        </div>
+    </template>
+
+    <!-- ================= ท้ายกระดาษ ================= -->
+    <template id="letter_footer">
+        <!-- footer ถูกเรนเดอร์เป็นคนละเอกสารกับเนื้อหา ห้ามอ้างอิงไฟล์ภายนอก
+             (เคยใส่ @font-face ที่ต้องโหลดไฟล์ฟอนต์ไว้ตรงนี้ รอบไหนที่ wkhtmltopdf
+             โหลดไม่สำเร็จ มันจะทิ้ง footer ทั้งก้อน หมายเหตุเลยขึ้นบ้างไม่ขึ้นบ้าง)
+             ใช้ inline style ล้วน ไม่มี resource ให้ต้องโหลด -->
+        <script type="text/javascript">
+            // Odoo ประกาศ subst() ไว้ใน layout ของ footer และ wkhtmltopdf เรียกมัน
+            // ทุกหน้าเพื่อเติมเลขหน้าลงใน span.page เราเกาะฟังก์ชันนี้เพื่อโชว์เฉพาะหน้าแรก
+            (function () {
+                var origSubst = window.subst;
+                window.subst = function () {
+                    if (origSubst) { origSubst(); }
+                    var note = document.getElementById('dcl_note');
+                    var pageEl = document.getElementsByClassName('dcl_page_no')[0];
+                    if (!note || !pageEl) { return; }
+                    var page = (pageEl.textContent || '').trim();
+                    note.style.visibility = (page === '1') ? 'visible' : 'hidden';
+                };
+            })();
+        </script>
+        <span class="page dcl_page_no" style="display:none;"/>
+        <!-- ห้ามใส่ @font-face หรือฝังฟอนต์ในบล็อกนี้ (ทดสอบแล้วทั้งแบบ URL และ base64
+             wkhtmltopdf ทิ้ง footer ทั้งก้อน) ปล่อยให้ใช้ฟอนต์ระบบ แล้วไล่ลำดับสำรองไว้ -->
+        <div id="dcl_note"
+             style="font-family: 'THSarabunNew', 'TH Sarabun New', 'Sarabun', 'Laksaman', 'Tahoma', sans-serif; font-size: 19px; font-weight: bold; line-height: 1.5; color: #000;">
+            <div>
+                หมายเหตุ : มีข้อสอบถามเพิ่มเติมเกี่ยวกับหนังสือฉบับนี้ ติดต่อสอบถามได้ที่
+                สำนักงานใหญ่ โทร. <span style="font-weight:bold;">02-433-5556</span>
+                หรือ นิติกร โทร. <span style="font-weight:bold;">089-810-0266</span>
+            </div>
+            <div>หากได้ชำระเงินตามที่ระบุในหนังสือฉบับนี้เรียบร้อยก่อนได้รับหนังสือฉบับนี้ ต้องขออภัยท่านเป็นอย่างสูง</div>
+        </div>
+    </template>
+
+    <!-- ================= ตารางสรุปยอดหนี้ค้างชำระ ================= -->
+    <template id="letter_summary_table">
+        <div style="text-align:center; font-weight:bold; font-size:16px;">ตารางสรุปยอดหนี้ค้างชำระ</div>
+        <div style="text-align:center; margin-bottom:10px;">ณ วันที่ <span t-esc="today_text"/></div>
+        <table class="dcl-tb">
+            <thead>
+                <tr>
+                    <th style="width:8%;">ลำดับ</th>
+                    <th style="width:30%;">สัญญา</th>
+                    <th style="width:42%;">ใบแจ้งหนี้</th>
+                    <th style="width:20%;">จำนวนเงินค้างชำระ(บาท)</th>
+                </tr>
+            </thead>
+            <tbody>
+                <t t-foreach="data['groups']" t-as="group">
+                    <t t-set="rowspan" t-value="len(group['invoices'])"/>
+                    <t t-foreach="group['invoices']" t-as="inv">
+                        <tr>
+                            <td t-if="inv_index == 0" t-att-rowspan="rowspan" class="dcl-c">
+                                <span t-esc="group['seq']"/>
+                            </td>
+                            <td t-if="inv_index == 0" t-att-rowspan="rowspan">
+                                <!-- ไม่มีเลขที่สัญญา -> เว้นว่าง เหลือแค่ "ฉบับลงวันที่" -->
+                                <t t-if="group['contract_no']">
+                                    สัญญาเช่าเลขที่ <span t-esc="group['contract_no']"/><br/>
+                                </t>
+                                <t t-if="group['contract_date']">
+                                    ฉบับลงวันที่ <span t-esc="doc.letter_thai_date(group['contract_date'])"/>
+                                </t>
+                            </td>
+                            <td>
+                                ประเภทใบแจ้งหนี้ <span t-esc="inv['doc_type']"/><br/>
+                                เลขที่ <span class="dcl-nowrap" t-esc="inv['name']"/>
+                                <t t-if="inv['date']">
+                                    ลงวันที่ <span class="dcl-nowrap"
+                                                  t-esc="doc.letter_thai_date(inv['date'])"/>
+                                </t>
+                            </td>
+                            <td class="dcl-r"><span t-esc="doc.letter_amount(inv['amount'])"/></td>
+                        </tr>
+                    </t>
+                </t>
+                <tr>
+                    <td colspan="3" class="dcl-r" style="font-weight:bold;">รวมทั้งสิ้น</td>
+                    <td class="dcl-r" style="font-weight:bold;">
+                        <span t-esc="doc.letter_amount(data['amounts']['total'])"/>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+        <div style="margin-top:6px;">*หมายเหตุ : จำนวนเงินค้างชำระนี้ยังไม่รวมดอกเบี้ยตามกฎหมาย</div>
+    </template>
+
+    <!-- ================= เอกสารหลัก ================= -->
+    <template id="report_debt_collection_letter">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="doc">
+                <t t-set="company" t-value="doc.company_id"/>
+                <t t-set="data" t-value="doc.get_collection_letter_data()"/>
+                <t t-set="today_text" t-value="doc.letter_today_text()"/>
+                <t t-set="dots" t-value="'.............'"/>
+                <!-- ฟอนต์ไทยต้องอ้างด้วย URL เต็ม เพราะเอกสารที่ส่งให้ wkhtmltopdf
+                     ไม่มี base href และในคอนเทนเนอร์มีแต่ฟอนต์ Laksaman
+                     (วิธีเดียวกับรายงานค่าเสื่อม npd_asset_depreciation) -->
+                <t t-set="font_base" t-value="(web_base_url or '') + '/npd_debt_summary/static/fonts/'"/>
+                <div class="page dcl-page">
+                    <style>
+                        @font-face { font-family: 'NPDThai'; font-weight: normal;
+                            src: url('<t t-out="font_base + 'THSarabunNew.ttf'"/>') format('truetype'); }
+                        @font-face { font-family: 'NPDThai'; font-weight: bold;
+                            src: url('<t t-out="font_base + 'THSarabunNew-Bold.ttf'"/>') format('truetype'); }
+                        .dcl-page, .dcl-page * { font-family: 'NPDThai', 'TH Sarabun New', 'THSarabunNew',
+                            'Sarabun', 'Laksaman', sans-serif !important; text-rendering: geometricPrecision; }
+                        .dcl-page { font-size: 15px; line-height: 1.55; color: #000; }
+                        .dcl-head { margin-bottom: 14px; }
+                        /* หัวข้อซ้าย (เลขที่/เรื่อง/เรียน/อ้างถึง) -- ชิดเนื้อหาให้มากที่สุด */
+                        .dcl-lbl { vertical-align: top; white-space: nowrap; padding-right: 4px;
+                                   width: 1%; font-weight: bold; }
+                        .dcl-meta { font-size: 14px; }
+                        .dcl-meta td { padding-top: 4px; padding-bottom: 4px; line-height: 1.6; }
+                        .dcl-p { text-indent: 3em; margin: 0 0 8px 0; text-align: left; font-size: 14px; }
+                        .dcl-item { margin: 0 0 2px 0; padding-left: 4em; font-size: 14px; }
+                        .dcl-ref { margin: 0 0 3px 0; line-height: 1.55; font-size: 14px; }
+                        .dcl-sign { margin-top: 16px; text-align: center; font-size: 15px; }
+                        .dcl-tb { width: 100%; border-collapse: collapse; font-size: 14px; }
+                        .dcl-tb th, .dcl-tb td { border: 1px solid #000; padding: 4px 6px; vertical-align: top; }
+                        .dcl-tb th { text-align: center; font-weight: bold; }
+                        /* กันเลขที่เอกสาร/วันที่ ถูกตัดกลางคำเวลาขึ้นบรรทัดใหม่ */
+                        .dcl-nowrap { white-space: nowrap; }
+                        .dcl-c { text-align: center; }
+                        .dcl-r { text-align: right; }
+                        .dcl-brk { page-break-before: always; }
+                    </style>
+
+                    <t t-call="npd_debt_summary.letter_header"/>
+
+                    <!-- วันที่สั่งพิมพ์ วางกึ่งกลางหน้า -->
+                    <div style="text-align:center; margin-bottom:6px;">วันที่ <span t-esc="today_text"/></div>
+
+                    <table class="dcl-meta" style="border-collapse:collapse; margin-bottom:10px;">
+                        <tr>
+                            <td class="dcl-lbl">เลขที่</td>
+                            <td><span t-esc="doc.name"/></td>
+                        </tr>
+                        <tr>
+                            <td class="dcl-lbl">เรื่อง</td>
+                            <!-- ประเภทที่ไม่มีหนี้ค้างจะไม่ถูกเอ่ยถึงในหัวเรื่อง -->
+                            <td>ขอให้รีบชำระหนี้ค้างตามสัญญาเช่า<span t-esc="data['topics_text']"/></td>
+                        </tr>
+                        <tr>
+                            <td class="dcl-lbl">เรียน</td>
+                            <td>
+                                <!-- ลูกค้านิติบุคคลต้องจ่าหน้าถึงกรรมการผู้มีอำนาจ -->
+                                <t t-if="doc.customer_id.is_company">กรรมการผู้มีอำนาจ </t>
+                                <span t-esc="doc.partner_name or doc.customer_id.name or ''"/>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="dcl-lbl">อ้างถึง</td>
+                            <td>
+                                <t t-if="data['refs']">
+                                    <t t-foreach="data['refs']" t-as="ref">
+                                        <div class="dcl-ref">
+                                            <span t-esc="ref_index + 1"/>. สัญญาเช่า
+                                            <t t-if="ref['contract_no']">
+                                                เลขที่ <span t-esc="ref['contract_no']"/>
+                                            </t>
+                                            <t t-if="ref['contract_date']">
+                                                ฉบับลงวันที่ <span t-esc="doc.letter_thai_date(ref['contract_date'])"/>
+                                            </t>
+                                            ใบแจ้งหนี้ จำนวน <span t-esc="len(ref['invoices'])"/> ฉบับ
+                                        </div>
+                                    </t>
+                                </t>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td colspan="2" style="padding-top:2px;">
+                                <span style="font-weight:bold;">สิ่งที่ส่งมาด้วย</span>
+                                ตารางสรุปยอดหนี้ค้างชำระ
+                            </td>
+                        </tr>
+                    </table>
+
+                    <p class="dcl-p">
+                        ตามที่ <span t-esc="doc.partner_name or doc.customer_id.name or ''"/>
+                        ได้เช่าอุปกรณ์ก่อสร้างจาก<span t-esc="company.name"/>
+                        ตามสัญญาและใบกำกับการเช่า ซึ่งท่านได้รับสินค้าที่เช่าไปครบถ้วนแล้วนั้น
+                    </p>
+
+                    <p class="dcl-p">
+                        <!-- ใช้ชุดประเภทเดียวกับหัวเรื่อง ข้อความสองที่จะได้ไม่ขัดกัน -->
+                        ปรากฏว่า เมื่อครบกำหนดที่ท่านต้องชำระค่าเช่าและส่งคืนสินค้าที่เช่า ท่านยังคงค้างชำระหนี้ค่าเช่า<span
+                            t-esc="data['topics_text']"/> รายละเอียดตามตารางสรุปยอดหนี้ค้างชำระ มีรายการดังนี้
+                    </p>
+
+                    <!-- ข้อที่ยอดเป็น 0 ถูกตัดออกตั้งแต่ใน python แล้ว เลขข้อจึงเรียงต่อกันเสมอ -->
+                    <t t-foreach="data['items']" t-as="item">
+                        <div class="dcl-item"
+                             t-att-style="'margin-bottom:10px;' if item_last else ''">
+                            <span t-esc="item_index + 1"/>. <span t-esc="item['label']"/>
+                            ค้างชำระ <span t-esc="doc.letter_amount(item['amount'])"/> บาท
+                            (<span t-esc="doc.letter_baht_text(item['amount'])"/>)
+                        </div>
+                    </t>
+
+                    <p class="dcl-p">
+                        รวมเป็นเงินทั้งสิ้นจำนวน <span t-esc="doc.letter_amount(data['amounts']['total'])"/> บาท
+                        (<span t-esc="doc.letter_baht_text(data['amounts']['total'])"/>)
+                        รายละเอียดปรากฏตามเอกสารที่อ้างถึง ซึ่งท่านทราบดีอยู่แล้วนั้น
+                    </p>
+
+                    <p class="dcl-p">
+                        ดังนั้น บริษัทฯ <span style="font-weight:bold;">ขอแจ้งให้ท่านรีบชำระเงินจำนวน
+                        <span t-esc="doc.letter_amount(data['amounts']['total'])"/> บาท</span>
+                        (<span t-esc="doc.letter_baht_text(data['amounts']['total'])"/>)
+                        พร้อมดอกเบี้ยในอัตราร้อยละ 15 ต่อปี
+                        นับแต่วันที่ผิดนัดจนกว่าจะชำระเสร็จสิ้นให้แก่บริษัทฯ โดยโอนเงินชำระได้ที่บัญชี
+                        <!-- บัญชีรับโอนของแต่ละบริษัท ดูที่ models/collection_letter.py -->
+                        <t t-set="bank" t-value="doc.letter_bank_account()"/>
+                        <t t-if="bank"><span t-esc="bank"/></t>
+                        <t t-else=""><span t-esc="dots"/></t>
+                        <span style="font-weight:bold;">ภายใน 7 วัน นับแต่วันที่ท่านได้รับหนังสือฉบับนี้</span>
+                        หากพ้นกำหนดเวลาดังกล่าวแล้วท่านยังคงเพิกเฉย บริษัทฯ มีความจำเป็นต้องดำเนินการตามกฎหมายเพื่อบังคับชำระหนี้ต่อไป
+                    </p>
+
+                    <p class="dcl-p">จึงเรียนมาเพื่อโปรดทราบและดำเนินการโดยเร็ว</p>
+
+                    <div class="dcl-sign">
+                        <div>ขอแสดงความนับถือ</div>
+                        <div style="margin-top:34px;">....................................................</div>
+                        <div>( คุณ<span t-esc="doc.letter_user_name()"/> )</div>
+                        <div>เจ้าหน้าที่เร่งรัดหนี้ค้างชำระ</div>
+                    </div>
+
+                    <!-- ============ หน้า 2 : ตารางสรุป ============ -->
+                    <div class="dcl-brk">
+                        <t t-call="npd_debt_summary.letter_header"/>
+                        <t t-call="npd_debt_summary.letter_summary_table"/>
+                    </div>
+                </div>
+
+                <!-- footer มาตรฐาน: wkhtmltopdf วาดไว้ในขอบล่างของทุกหน้า -->
+                <div class="footer">
+                    <t t-call="npd_debt_summary.letter_footer"/>
+                </div>
+            </t>
+        </t>
+    </template>
+</odoo>

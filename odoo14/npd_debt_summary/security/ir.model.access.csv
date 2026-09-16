@@ -1,0 +1,11 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_npd_debt_summary_user,npd.debt.summary.user,model_npd_debt_summary,base.group_user,1,1,1,1
+access_npd_debt_summary_invoice_line_user,npd.debt.summary.invoice.line.user,model_npd_debt_summary_invoice_line,base.group_user,1,1,1,1
+access_npd_debt_summary_deposit_line_user,npd.debt.summary.deposit.line.user,model_npd_debt_summary_deposit_line,base.group_user,1,1,1,1
+access_npd_debt_summary_rentdiff_line_user,npd.debt.summary.rentdiff.line.user,model_npd_debt_summary_rentdiff_line,base.group_user,1,1,1,1
+access_npd_debt_summary_penalty_line_user,npd.debt.summary.penalty.line.user,model_npd_debt_summary_penalty_line,base.group_user,1,1,1,1
+access_npd_debt_summary_penalty_product_line_user,npd.debt.summary.penalty.product.line.user,model_npd_debt_summary_penalty_product_line,base.group_user,1,1,1,1
+access_npd_debt_summary_damage_line_user,npd.debt.summary.damage.line.user,model_npd_debt_summary_damage_line,base.group_user,1,1,1,1
+access_npd_debt_summary_transport_line_user,npd.debt.summary.transport.line.user,model_npd_debt_summary_transport_line,base.group_user,1,1,1,1
+access_npd_debt_summary_tax_line_user,npd.debt.summary.tax.line.user,model_npd_debt_summary_tax_line,base.group_user,1,1,1,1
+access_npd_debt_collection_status_user,npd.debt.collection.status.user,model_npd_debt_collection_status,base.group_user,1,1,1,1

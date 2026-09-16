@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ========================= List (แก้ไขในตารางได้เลย) ========================= -->
+    <record id="npd_debt_collection_status_view_tree" model="ir.ui.view">
+        <field name="name">npd.debt.collection.status.list</field>
+        <field name="model">npd.debt.collection.status</field>
+        <field name="arch" type="xml">
+            <list string="กำหนดสถานะติดตามหนี้" editable="bottom">
+                <field name="name"/>
+                <field name="day_from"/>
+                <field name="day_to"/>
+                <field name="show_in_report" widget="boolean_toggle"/>
+                <field name="active" column_invisible="True"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- ========================= Form ========================= -->
+    <record id="npd_debt_collection_status_view_form" model="ir.ui.view">
+        <field name="name">npd.debt.collection.status.form</field>
+        <field name="model">npd.debt.collection.status</field>
+        <field name="arch" type="xml">
+            <form string="กำหนดสถานะติดตามหนี้">
+                <sheet>
+                    <widget name="web_ribbon" title="เก็บถาวร" bg_color="bg-danger"
+                            invisible="active"/>
+                    <div class="oe_title">
+                        <label for="name" string="ชื่อสถานะที่เป็นหนี้"/>
+                        <h1><field name="name" placeholder="เช่น ค้างใหม่"/></h1>
+                    </div>
+                    <group>
+                        <group string="ช่วงจำนวนวันค้างชำระ">
+                            <label for="day_from" string="ช่วงวัน"/>
+                            <div class="o_row">
+                                <field name="day_from"/>
+                                <span>ถึง</span>
+                                <field name="day_to"/>
+                                <span>วัน</span>
+                            </div>
+                        </group>
+                        <group string="รายงาน">
+                            <field name="show_in_report"/>
+                            <field name="active"/>
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- ========================= Search ========================= -->
+    <record id="npd_debt_collection_status_view_search" model="ir.ui.view">
+        <field name="name">npd.debt.collection.status.search</field>
+        <field name="model">npd.debt.collection.status</field>
+        <field name="arch" type="xml">
+            <search string="กำหนดสถานะติดตามหนี้">
+                <field name="name"/>
+                <filter name="filter_show_in_report" string="แสดงที่รายงาน"
+                        domain="[('show_in_report', '=', True)]"/>
+                <filter name="filter_inactive" string="เก็บถาวร"
+                        domain="[('active', '=', False)]"/>
+            </search>
+        </field>
+    </record>
+
+    <!-- ========================= Window Action ========================= -->
+    <record id="action_npd_debt_collection_status" model="ir.actions.act_window">
+        <field name="name">กำหนดสถานะติดตามหนี้</field>
+        <field name="res_model">npd.debt.collection.status</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="npd_debt_collection_status_view_search"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">สร้างสถานะติดตามหนี้</p>
+            <p>กำหนดช่วงจำนวนวันค้างชำระ เช่น 1 ถึง 7 วัน แล้วตั้งชื่อสถานะให้ช่วงนั้น สร้างได้หลายสถานะ</p>
+        </field>
+    </record>
+
+    <!-- ========================= Menu (อยู่ใต้ รวมหนี้ลูกค้า) ========================= -->
+    <menuitem id="menu_npd_debt_collection_status" name="กำหนดสถานะติดตามหนี้"
+              parent="menu_npd_debt_summary_root"
+              action="action_npd_debt_collection_status" sequence="20"/>
+</odoo>
