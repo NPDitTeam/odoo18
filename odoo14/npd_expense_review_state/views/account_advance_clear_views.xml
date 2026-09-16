@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- เมนู Avance Clear -->
+    <record id="view_advance_clear_form_review_state" model="ir.ui.view">
+        <field name="name">account.advance.clear.form.review.state</field>
+        <field name="model">account.advance.clear</field>
+        <field name="inherit_id" ref="account_advance.account_advance_clear_form_view"/>
+        <field name="arch" type="xml">
+            <xpath expr="//header" position="inside">
+                <button name="action_review_checked"
+                        string="ตรวจสอบแล้ว"
+                        type="object"
+                        class="btn-success"
+                        groups="npd_expense_review_state.group_expense_review"
+                        invisible="review_state == 'checked'"/>
+                <button name="action_review_waiting"
+                        string="รอตรวจสอบ"
+                        type="object"
+                        groups="npd_expense_review_state.group_expense_review"
+                        confirm="ต้องการเปลี่ยนสถานะกลับเป็น รอตรวจสอบ ใช่หรือไม่?"
+                        invisible="review_state == 'waiting'"/>
+            </xpath>
+            <xpath expr="//field[@name='doc_date']" position="before">
+                <field name="review_state"
+                       widget="badge"
+                       decoration-warning="review_state == 'waiting'"
+                       decoration-success="review_state == 'checked'"/>
+                <field name="review_user_id"
+                       options="{'no_open': True}"
+                       invisible="review_state != 'checked'"/>
+                <field name="review_date"
+                       invisible="review_state != 'checked'"/>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_advance_clear_tree_review_state" model="ir.ui.view">
+        <field name="name">account.advance.clear.list.review.state</field>
+        <field name="model">account.advance.clear</field>
+        <field name="inherit_id" ref="account_advance.account_advance_clear_tree"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='state']" position="after">
+                <field name="review_state"
+                       widget="badge"
+                       decoration-warning="review_state == 'waiting'"
+                       decoration-success="review_state == 'checked'"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- account_advance ไม่มี search view ของ Avance Clear จึงสร้างให้ -->
+    <record id="view_advance_clear_search_review_state" model="ir.ui.view">
+        <field name="name">account.advance.clear.search.review.state</field>
+        <field name="model">account.advance.clear</field>
+        <field name="arch" type="xml">
+            <search string="Avance Clear">
+                <field name="name"/>
+                <field name="employee_id"/>
+                <field name="advance_id"/>
+                <filter string="รอตรวจสอบ" name="review_waiting"
+                        domain="[('review_state', '=', 'waiting')]"/>
+                <filter string="ตรวจสอบแล้ว" name="review_checked"
+                        domain="[('review_state', '=', 'checked')]"/>
+                <group expand="0" string="จัดกลุ่มตาม">
+                    <filter string="สถานะ" name="group_state"
+                            context="{'group_by': 'state'}"/>
+                    <filter string="สถานะตรวจสอบ" name="group_review_state"
+                            context="{'group_by': 'review_state'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+</odoo>

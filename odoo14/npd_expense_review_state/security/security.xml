@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        <!-- กลุ่มสิทธิ์: ผู้มีสิทธิ์กดปุ่ม "ตรวจสอบแล้ว" / "รอตรวจสอบ" -->
+        <record id="group_expense_review" model="res.groups">
+            <field name="name">Expense Review - แสดงปุ่มตรวจสอบแล้ว</field>
+            <field name="category_id" ref="base.module_category_accounting_and_finance"/>
+            <field name="comment">ผู้ใช้ที่อยู่ในกลุ่มนี้จะเห็นและกดปุ่ม "ตรวจสอบแล้ว" / "รอตรวจสอบ" บนบิลผู้ขาย / Avance Clear / การรับ</field>
+        </record>
+    </data>
+</odoo>

@@ -47,5 +47,14 @@
             <field name="active" eval="True"/>
         </record>
 
+        <!-- หัวข้อที่ 6 — ถาม-ตอบข้อมูลค่าใช้จ่าย (อ่านอย่างเดียว ไม่แก้เอกสาร) -->
+        <record id="topic_expense_check" model="npd.ai.it.topic">
+            <field name="name">ตรวจสอบค่าใช้จ่าย</field>
+            <field name="code">expense_check</field>
+            <field name="sequence">6</field>
+            <field name="description">ถามข้อมูลบิลผู้ขาย / Avance Clear / การรับ แล้ว AI ค้นให้พร้อมสรุปเป็นตาราง</field>
+            <field name="active" eval="True"/>
+        </record>
+
     </data>
 </odoo>

@@ -42,6 +42,7 @@ TOPIC_START_STATE = {
     'return_date_fix': 'ask_return_doc',
     'rental_status_fix': 'ask_rental_doc',
     'vat_round_fix': 'ask_vat_doc',
+    'expense_check': 'ask_expense',
 }
 
 # ไอคอนประจำหัวข้อ ใช้เป็นจุดสังเกตหัวเรื่องในแชท
@@ -51,6 +52,7 @@ TOPIC_ICONS = {
     'return_date_fix': '↩️',
     'rental_status_fix': '🔄',
     'vat_round_fix': '🧮',
+    'expense_check': '🔎',
 }
 
 # หัวข้อ 5 — คำที่พนักงานใช้เลือกวิธีปัดเศษ VAT
@@ -247,6 +249,7 @@ class NpdAiItSession(models.Model):
         ('ask_return_date', 'รอวันที่คืนใหม่'),
         ('ask_rental_doc', 'รอเลขที่ใบสั่งขาย'),
         ('confirm_status', 'รอยืนยันการแก้สถานะการเช่า'),
+        ('ask_expense', 'รอคำถามเรื่องค่าใช้จ่าย'),
         ('ask_vat_doc', 'รอใบแจ้งหนี้ที่จะแก้การปัดเศษ VAT'),
         ('ask_vat_mode', 'รอเลือกวิธีปัดเศษ VAT'),
         ('confirm_vat', 'รอยืนยันการแก้การปัดเศษ VAT'),
@@ -362,7 +365,7 @@ class NpdAiItSession(models.Model):
         self.ensure_one()
         self.sudo().write({'data_json': json.dumps(data, ensure_ascii=False)})
 
-    def _post_bot(self, body_html, commands=None, done=False):
+    def _post_bot(self, body_html, commands=None, done=False, attachments=None):
         """ให้บอทพูดในห้องแชท
 
         commands = None (ค่าเริ่มต้น) -> ต่อท้ายด้วยคำสั่งที่ใช้ได้ตลอดให้อัตโนมัติ
@@ -402,6 +405,8 @@ class NpdAiItSession(models.Model):
             author_id=bot.id,
             message_type='comment',
             subtype_xmlid='mail.mt_comment',
+            # attachments = [(ชื่อไฟล์, ไบต์)] เช่น Excel ที่พนักงานบัญชีขอ
+            attachments=attachments or [],
         )
 
     @api.model
@@ -524,6 +529,25 @@ class NpdAiItSession(models.Model):
                 ),
                 'พิมพ์ <b>เลขที่ใบแจ้งหนี้</b> หรือวาง <b>URL</b> ของหน้านั้นมาก็ได้<br/>'
                 + _hint('เช่น INV-2608070024'),
+            ))
+            return
+        if topic.code == 'expense_check':
+            self._post_bot(_block(
+                heading,
+                _rows(
+                    'ถามเรื่อง<b>ค่าใช้จ่าย</b>ได้เลยครับ ผมจะค้นให้แล้วสรุปเป็นตาราง',
+                    _hint('ตอบได้ทั้ง %s' % self.env['npd.ai.it.expense']._menu_labels_text()),
+                ),
+                _rows(
+                    _hint('ตัวอย่างคำถาม'),
+                    _indent('• บิลผู้ขายเดือนนี้มีกี่ใบ ยอดรวมเท่าไร'),
+                    _indent('• บิลผู้ขายที่ยังค้างจ่าย เรียงจากยอดมากไปน้อย'),
+                    _indent('• สรุปยอดบิลผู้ขายปีนี้ แยกตามผู้ขาย'),
+                ),
+                _rows(
+                    _hint('ถามต่อเนื่องได้ ผมจำคำถามก่อนหน้าไว้ให้'),
+                    _hint('อยากได้เป็นไฟล์ พิมพ์ว่า <b>"ขอเป็นไฟล์ Excel"</b> ผมแนบไฟล์ให้ในแชท'),
+                ),
             ))
             return
         self._post_bot(_block(
@@ -679,6 +703,9 @@ class NpdAiItSession(models.Model):
             return
         if code == 'vat_round_fix':
             self._handle_vat_round_fix(text)
+            return
+        if code == 'expense_check':
+            self._handle_expense_check(text)
             return
 
         self._post_bot('หัวข้อนี้ยังไม่เปิดให้บริการ กรุณาแจ้งฝ่าย IT โดยตรงไปก่อน')
@@ -2238,6 +2265,76 @@ class NpdAiItSession(models.Model):
                _baht(result['old_tax']), _baht(result['new_tax']),
                _baht(result['gross'])))
         self._post_bot(summary, done='แก้การปัดเศษ VAT เรียบร้อยแล้ว')
+
+    # ==================================================================
+    # หัวข้อที่ 6 : ตรวจสอบค่าใช้จ่าย (ถาม-ตอบ ไม่มีการแก้ข้อมูล)
+    # ==================================================================
+    def _handle_expense_check(self, text):
+        """ทุกข้อความในหัวข้อนี้คือ "คำถาม" ตอบแล้วรออีกคำถามต่อได้เรื่อย ๆ
+
+        ไม่มีขั้นยืนยัน เพราะเป็นการอ่านข้อมูลอย่างเดียว ไม่แก้เอกสารใด ๆ
+        """
+        self.ensure_one()
+        question = (text or '').strip()
+        if not question:
+            self._post_bot('พิมพ์คำถามเรื่องค่าใช้จ่ายได้เลยครับ')
+            return
+
+        Expense = self.env['npd.ai.it.expense']
+        data = self._get_data()
+        history = data.get('expense_history') or []
+
+        # "ขอเป็นไฟล์ Excel" — ถ้าพิมพ์มาแค่ขอไฟล์เฉย ๆ ให้ใช้แผนของคำถามล่าสุด
+        # (ไม่ต้องเรียก AI ซ้ำ) ถ้าพิมพ์คำถามใหม่มาพร้อมกัน ก็ค้นใหม่แล้วค่อยแนบไฟล์
+        want_excel = Expense.wants_excel(question)
+        reuse_plan = None
+        if want_excel:
+            remainder = Expense.strip_excel_words(question)
+            if len(remainder) < 8 and history:
+                reuse_plan = (history[-1] or {}).get('plan')
+                if not reuse_plan:
+                    self._post_bot('ถามคำถามที่ต้องการก่อนนะครับ แล้วค่อยบอกว่า "ขอเป็นไฟล์ Excel"')
+                    return
+
+        blocks, plan, error = Expense.answer(question, history=history[-2:], plan=reuse_plan)
+        if error:
+            self._post_bot(_block(
+                _rows(_title('ยังตอบคำถามนี้ไม่ได้', '🤔'), html_escape(error)),
+                _rows(
+                    _hint('ลองถามให้เจาะจงขึ้น เช่น ระบุช่วงเวลา สาขา หรือชื่อผู้ขาย'),
+                    _hint('ตอนนี้ค้นได้: %s' % Expense._menu_labels_text()),
+                ),
+            ))
+            return
+
+        # เก็บคำถามกับแผนล่าสุดไว้ ให้ถามต่อเนื่องได้ ("แล้วเดือนที่แล้วล่ะ")
+        history.append({
+            'q': question[:200],
+            'plan': {key: plan.get(key) for key in ('model', 'intent', 'domain', 'group_by')},
+        })
+        data['expense_history'] = history[-3:]
+        self._set_data(data)
+
+        body = [_rows(_title(plan.get('explain') or 'ผลการค้นหา', '🔎'))]
+        body += [_rows(block) for block in blocks]
+
+        attachments = []
+        if want_excel:
+            filename, content, rows = Expense.build_excel(plan)
+            if content:
+                attachments.append((filename, content))
+                body.append(_rows(_title('แนบไฟล์ Excel ให้แล้ว %s แถว' % '{:,}'.format(rows), '📎'),
+                                  _hint('กดที่ไฟล์ท้ายข้อความนี้เพื่อดาวน์โหลด')))
+            else:
+                body.append(_hint('สร้างไฟล์ Excel ไม่สำเร็จ (ไม่มีไลบรารี xlsxwriter) '
+                                  'กรุณาแจ้งฝ่าย IT'))
+        else:
+            body.append(_hint('อยากได้เป็นไฟล์ Excel พิมพ์ว่า "ขอเป็นไฟล์ Excel" ได้เลย'))
+
+        body.append(_hint('ถามต่อได้เลยครับ หรือพิมพ์ "เริ่มใหม่" เพื่อเปลี่ยนหัวข้อ'))
+        self._post_bot(_block(*body), commands=False, attachments=attachments)
+        self._log_history('expense_check', html2plaintext(
+            'คำถาม: %s<br/>โมเดล: %s' % (question[:150], plan.get('model') or '-')))
 
     # ------------------------------------------------------------------
     # การอ่านข้อความของพนักงาน (regex ก่อน แล้วค่อยให้ AI ช่วยถ้าอ่านไม่ออก)

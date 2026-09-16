@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- เมนู บิลผู้ขาย: ปุ่ม + สถานะตรวจสอบในฟอร์ม
+         o18 ใช้ invisible="นิพจน์" แทน attrs ของ o14 -->
+    <record id="view_move_form_review_state" model="ir.ui.view">
+        <field name="name">account.move.form.review.state</field>
+        <field name="model">account.move</field>
+        <field name="inherit_id" ref="account.view_move_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//header" position="inside">
+                <button name="action_review_checked"
+                        string="ตรวจสอบแล้ว"
+                        type="object"
+                        class="btn-success"
+                        groups="npd_expense_review_state.group_expense_review"
+                        invisible="move_type not in ['in_invoice', 'in_refund'] or review_state == 'checked'"/>
+                <button name="action_review_waiting"
+                        string="รอตรวจสอบ"
+                        type="object"
+                        groups="npd_expense_review_state.group_expense_review"
+                        confirm="ต้องการเปลี่ยนสถานะกลับเป็น รอตรวจสอบ ใช่หรือไม่?"
+                        invisible="move_type not in ['in_invoice', 'in_refund'] or review_state == 'waiting'"/>
+            </xpath>
+            <xpath expr="//group[@id='header_right_group']" position="inside">
+                <field name="review_state"
+                       widget="badge"
+                       decoration-warning="review_state == 'waiting'"
+                       decoration-success="review_state == 'checked'"
+                       invisible="move_type not in ['in_invoice', 'in_refund']"/>
+                <field name="review_user_id"
+                       options="{'no_open': True}"
+                       invisible="move_type not in ['in_invoice', 'in_refund'] or review_state != 'checked'"/>
+                <field name="review_date"
+                       invisible="move_type not in ['in_invoice', 'in_refund'] or review_state != 'checked'"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- รายการบิลผู้ขาย
+         o18: view_in_invoice_tree เป็นวิวลูก (แก้แค่ ref) ตัวจริงคือ view_invoice_tree
+         จึงต่อที่ตัวจริง แล้วซ่อนคอลัมน์เมื่อไม่ได้เปิดจากเมนูบิลผู้ขาย -->
+    <record id="view_invoice_tree_review_state" model="ir.ui.view">
+        <field name="name">account.move.list.review.state</field>
+        <field name="model">account.move</field>
+        <field name="inherit_id" ref="account.view_invoice_tree"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='status_in_payment']" position="after">
+                <field name="review_state"
+                       string="สถานะตรวจสอบ"
+                       widget="badge"
+                       optional="show"
+                       column_invisible="context.get('default_move_type') not in ('in_invoice', 'in_refund')"
+                       decoration-warning="review_state == 'waiting'"
+                       decoration-success="review_state == 'checked'"/>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_account_invoice_filter_review_state" model="ir.ui.view">
+        <field name="name">account.move.select.review.state</field>
+        <field name="model">account.move</field>
+        <field name="inherit_id" ref="account.view_account_invoice_filter"/>
+        <field name="arch" type="xml">
+            <xpath expr="//filter[@name='draft']" position="before">
+                <filter string="รอตรวจสอบ" name="review_waiting"
+                        domain="[('review_state', '=', 'waiting'), ('move_type', 'in', ['in_invoice', 'in_refund'])]"/>
+                <filter string="ตรวจสอบแล้ว" name="review_checked"
+                        domain="[('review_state', '=', 'checked'), ('move_type', 'in', ['in_invoice', 'in_refund'])]"/>
+                <separator/>
+            </xpath>
+            <xpath expr="//group" position="inside">
+                <filter string="สถานะตรวจสอบ" name="group_review_state"
+                        context="{'group_by': 'review_state'}"/>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>
