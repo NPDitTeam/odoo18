@@ -25,8 +25,12 @@ class AccountPayment(models.Model):
     tax_invoice_ids = fields.One2many(
         'account.move.tax.invoice', 'payment_id', string='ใบกำกับภาษี',
     )
+    # ชี้กลับไปยัง "ใบสำคัญ" (account.voucher) ที่กดสร้างใบรับชำระนี้ ไม่ใช่ใบรับชำระด้วยกันเอง
+    # ตอนพอร์ตมา o18 ประกาศเป็น account.payment ทำให้ปุ่มรับชำระหนี้ค้างบนใบคืนเงินประกัน
+    # เขียนค่าแล้วชน foreign key (ฝั่ง o14 เป็น account.voucher มาตลอด)
     voucher_source_id = fields.Many2one(
-        'account.payment', string='รายการบันทึกบัญชี', copy=False,
+        'account.voucher', string='สร้างจากใบรับชำระค้างชำระ', copy=False,
+        help='ชี้กลับไปยังใบสำคัญที่กดสร้างรายการนี้',
     )
     cheque_id = fields.Many2one(
         'account.cheque', string='เช็ค', copy=False,

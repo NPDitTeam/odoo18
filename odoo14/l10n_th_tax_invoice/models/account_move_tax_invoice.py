@@ -33,8 +33,13 @@ class AccountMoveTaxInvoice(models.Model):
 
     # Fields required by account_advance module
     advance_clear_id = fields.Many2one('account.advance.clear', string='Account Clear', ondelete='cascade')
-    reversing_id = fields.Many2one('account.move.tax.invoice', string='Reversing Tax Invoice')
-    reversed_id = fields.Many2one('account.move.tax.invoice', string='Reversed Tax Invoice')
+    # ต้องเป็น account.move ให้ตรงกับ l10n_th_account_tax (OCA) ที่เป็นคนเขียนค่าสองช่องนี้
+    # (มันเก็บ id ของสมุดรายวันที่กลับรายการ) ถ้าประกาศเป็น account.move.tax.invoice
+    # โมเดลจะรวมนิยามกันแล้วตัวนี้ชนะ → กลับรายการทีไรชน foreign key
+    reversing_id = fields.Many2one('account.move', string='Reversing Tax Invoice',
+                                   help='สมุดรายวันที่กลับรายการใบนี้')
+    reversed_id = fields.Many2one('account.move', string='Reversed Tax Invoice',
+                                  help='สมุดรายวันที่ใบนี้ไปกลับรายการให้')
 
     @api.depends('tax_invoice_date', 'report_late_mo')
     def _compute_report_date(self):

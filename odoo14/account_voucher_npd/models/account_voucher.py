@@ -410,12 +410,17 @@ class AccountVoucher(models.Model):
         selected_invoice_ids = selected_invoices.ids
         snapshot_amount = self.total_outstanding
 
+        # ต้องกรองบริษัทด้วย — แต่ละบริษัทมีวิธีชำระชื่อเดียวกันของตัวเอง
+        # ถ้าหยิบของบริษัทอื่นมา บัญชีจะข้ามบริษัทแล้วโพสต์ไม่ผ่าน
         payment_method = self.env['custom.payment.method'].search([
             ('name', '=', 'หักเงินประกันค่าเช่า'),
-            ('is_active', '=', True)
+            ('is_active', '=', True),
+            ('company_id', '=', self.company_id.id),
         ], limit=1)
         if not payment_method:
-            raise UserError(_("ไม่พบวิธีการชำระ 'หักเงินประกันค่าเช่า' กรุณาตั้งค่าในระบบก่อน"))
+            raise UserError(_(
+                "ไม่พบวิธีการชำระ 'หักเงินประกันค่าเช่า' ของบริษัท %s กรุณาตั้งค่าในระบบก่อน"
+            ) % self.company_id.display_name)
         if not payment_method.account_id:
             raise UserError(_("วิธีการชำระ 'หักเงินประกันค่าเช่า' ยังไม่ได้ตั้งค่าบัญชี"))
 
@@ -463,9 +468,17 @@ class AccountVoucher(models.Model):
 
             return default_journal
 
-        destination_account = self.partner_id.property_account_receivable_id
+        # บัญชีลูกหนี้ของลูกค้าเป็นค่าแยกตามบริษัท (company-dependent) ต้องอ่านในบริบท
+        # บริษัทของใบสำคัญ ไม่งั้นได้บัญชีของบริษัทที่ผู้ใช้เลือกอยู่แล้วโพสต์ไม่ผ่าน
+        destination_account = self.partner_id.with_company(
+            self.company_id
+        ).property_account_receivable_id
         if not destination_account:
-            raise UserError(_("ลูกค้ายังไม่ได้ตั้งค่าบัญชีลูกหนี้"))
+            raise UserError(_(
+                "ลูกค้า %(partner)s ยังไม่ได้ตั้งค่าบัญชีลูกหนี้ของบริษัท %(company)s",
+                partner=self.partner_id.display_name,
+                company=self.company_id.display_name,
+            ))
 
         created_payments = self.env['account.payment']
 
@@ -476,14 +489,17 @@ class AccountVoucher(models.Model):
 
             journal = get_journal_for_invoice(invoice)
 
+            # รายการใบแจ้งหนี้บนใบรับชำระ — โครงสร้างของ o18 ต่างจาก o14:
+            #   o14: payment.invoice_ids -> invoice_id / paid / wht_total / wht_base
+            #   o18: payment.custom_invoice_ids -> move_id / select / paid_total
+            #        (amount_total, amount_residual เป็นฟิลด์ related ห้ามเขียน
+            #         ส่วนภาษีหัก ณ ที่จ่ายมาจาก wt_cert_ids ของใบรับชำระ ไม่ใช่รายการนี้
+            #         การหักจากเงินประกันไม่มีหนังสือรับรอง จึงไม่มียอด WHT)
             invoice_lines = [(0, 0, {
-                'invoice_id': invoice.id,
+                'move_id': invoice.id,
                 'amount_due': amount_residual,
-                'amount_total': invoice.amount_total,
-                'paid': True,
                 'paid_total': amount_residual,
-                'wht_total': invoice.wht_amt or 0,
-                'wht_base': invoice.wht_base or 0,
+                'select': True,
             })]
 
             payment_vals = {
@@ -496,10 +512,12 @@ class AccountVoucher(models.Model):
                 'journal_id': journal.id,
                 'payment_method_one_id': payment_method.id,
                 'is_payment_multi': False,
-                'invoice_ids': invoice_lines,
+                'custom_invoice_ids': invoice_lines,
+                'invoice_ids': [(6, 0, [invoice.id])],
                 'destination_account_id': destination_account.id,
                 'search_invoice_name': invoice.name,
-                'ref': f"เปิดบิลเช่าหักจากเงินประกัน {self.number or 'Draft Voucher'} - {invoice.name}",
+                # o18 เปลี่ยนชื่อฟิลด์หมายเหตุของใบรับชำระจาก ref เป็น memo
+                'memo': f"เปิดบิลเช่าหักจากเงินประกัน {self.number or 'Draft Voucher'} - {invoice.name}",
             }
 
             payment = self.env['account.payment'].create(payment_vals)
