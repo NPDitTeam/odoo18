@@ -1,17 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <data noupdate="1">
+    <!-- noupdate="0" เพราะกฎเดิมเทียบกับ "บริษัทหลัก" ของผู้ใช้ (user.company_id)
+         ไม่ใช่บริษัทที่ผู้ใช้เลือกอยู่ตอนนั้น พอสลับไปบริษัทอื่นจึงบันทึกใบสำคัญไม่ได้
+         ต้องให้อัปเดตทับกฎเดิมในฐานที่ติดตั้งไปแล้วได้ -->
+    <data noupdate="0">
         <record id="voucher_comp_rule" model="ir.rule">
             <field name="name">Voucher multi-company</field>
             <field name="model_id" ref="model_account_voucher"/>
             <field eval="1" name="global"/>
-            <field name="domain_force">['|',('company_id','=',False),('company_id','child_of',[user.company_id.id])]</field>
+            <!-- company_ids = บริษัทที่ผู้ใช้เลือกใช้งานอยู่ (แบบเดียวกับกฎ Account Entry ของ Odoo) -->
+            <field name="domain_force">['|',('company_id','=',False),('company_id','in',company_ids)]</field>
         </record>
         <record id="voucher_line_comp_rule" model="ir.rule">
             <field name="name">Voucher Line multi-company</field>
             <field name="model_id" ref="model_account_voucher_line"/>
             <field eval="1" name="global"/>
-            <field name="domain_force">['|',('company_id','=',False),('company_id','child_of',[user.company_id.id])]</field>
+            <field name="domain_force">['|',('company_id','=',False),('company_id','in',company_ids)]</field>
         </record>
     </data>
 </odoo>

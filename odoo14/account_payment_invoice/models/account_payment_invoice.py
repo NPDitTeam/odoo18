@@ -827,38 +827,58 @@ class AccountPayment(models.Model):
         return res
 
     def _unreconcile_all(self):
-        """Helper: Unreconcile ทุก invoice + payment move lines"""
+        """Helper: Unreconcile ทุก invoice + payment move lines
+
+        ทุกจังหวะที่อาจพังต้องอยู่ใน savepoint — ถ้าเกิด error ระดับฐานข้อมูล
+        (เช่น foreign key) แล้วไม่มี savepoint ธุรกรรมจะพังทั้งก้อน ทำให้บรรทัด
+        ``except`` อ่านชื่อเอกสารไม่ได้ ผู้ใช้เลยเห็นแค่ InFailedSqlTransaction
+        แทนสาเหตุจริง และเราจะไม่กลืน error เงียบ ๆ เพราะถ้าตัดคู่บัญชีไม่ออก
+        แต่บอกว่าสำเร็จ ยอดค้างชำระจะเพี้ยน
+        """
+        failures = []
         for rec in self:
             # Unreconcile invoice lines
             for inv_line in rec.custom_invoice_ids:
                 invoice = inv_line.move_id
                 if not invoice:
                     continue
+                invoice_name = invoice.name or str(invoice.id)
                 try:
-                    for line in invoice.line_ids.filtered(
-                        lambda l: l.account_id.reconcile and l.reconciled
-                    ):
-                        line.remove_move_reconcile()
-                        _logger.info(
-                            'Unreconciled invoice line: %s (account=%s) for %s',
-                            line.name, line.account_id.code, invoice.name,
-                        )
+                    with self.env.cr.savepoint():
+                        for line in invoice.line_ids.filtered(
+                            lambda l: l.account_id.reconcile and l.reconciled
+                        ):
+                            line.remove_move_reconcile()
+                            _logger.info(
+                                'Unreconciled invoice line: %s (account=%s) for %s',
+                                line.name, line.account_id.code, invoice_name,
+                            )
                 except Exception as e:
-                    _logger.warning('Unreconcile error for %s: %s', invoice.name, e)
+                    _logger.warning('Unreconcile error for %s: %s', invoice_name, e)
+                    failures.append('%s: %s' % (invoice_name, e))
 
             # Unreconcile payment move lines
             if rec.move_id:
+                payment_name = rec.name or rec.move_id.name or str(rec.id)
                 try:
-                    for pml in rec.move_id.line_ids.filtered(
-                        lambda l: l.account_id.reconcile and l.reconciled
-                    ):
-                        pml.remove_move_reconcile()
-                        _logger.info(
-                            'Unreconciled payment line: %s (account=%s)',
-                            pml.name, pml.account_id.code,
-                        )
+                    with self.env.cr.savepoint():
+                        for pml in rec.move_id.line_ids.filtered(
+                            lambda l: l.account_id.reconcile and l.reconciled
+                        ):
+                            pml.remove_move_reconcile()
+                            _logger.info(
+                                'Unreconciled payment line: %s (account=%s)',
+                                pml.name, pml.account_id.code,
+                            )
                 except Exception as e:
                     _logger.warning('Unreconcile payment move error: %s', e)
+                    failures.append('%s: %s' % (payment_name, e))
+
+        if failures:
+            raise UserError(
+                _("ตัดคู่บัญชีไม่สำเร็จ จึงยังรีเซ็ตเป็นฉบับร่างไม่ได้\n\n%s")
+                % '\n'.join(failures)
+            )
 
     def _reset_invoice_payment_states(self):
         """Helper: Reset invoice payment_state → not_paid"""
