@@ -24,6 +24,9 @@ This module manages:
         'withholding_tax_cert_amount',
         # ใช้เมนูตั้งค่าสมุดรายวัน (npd.invoice.journal.config)
         'pfb_npd_all_customs',
+        # คืนเงินประกันค่าเช่าต้องหักใบเพิ่มหนี้ (สินค้าหาย/ชำรุด) ผ่าน debit_note_ids
+        # ฝั่ง o14 ติดตั้งโมดูลนี้ไว้ทุกฐานที่ใช้ใบสำคัญอยู่แล้ว
+        'account_debit_note',
     ],
     'demo': [],
     'data': [

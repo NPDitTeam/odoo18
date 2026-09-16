@@ -801,11 +801,15 @@ class AccountVoucher(models.Model):
             discount_total_d = 0.0
             for debit_note in debit_notes_d:
                 for line in debit_note.invoice_line_ids:
-                    if line.discount_method == 'per':
-                        discount_value = ((line.quantity * line.price_unit) * line.discount_amount / 100)
-                        discount_total_d += _to_float(discount_value)
+                    # ส่วนลดแบบบาท/เปอร์เซ็นต์มาจาก bi_sale_purchase_discount_with_tax
+                    # ซึ่ง o18 ยังไม่ได้ติดตั้ง ถ้าไม่มีให้ถือว่าไม่มีส่วนลด (ไม่ใช่ error)
+                    discount_amount = _to_float(getattr(line, 'discount_amount', 0.0))
+                    if not discount_amount:
+                        continue
+                    if getattr(line, 'discount_method', False) == 'per':
+                        discount_total_d += _to_float((line.quantity * line.price_unit) * discount_amount / 100)
                     else:
-                        discount_total_d += _to_float(line.discount_amount)
+                        discount_total_d += discount_amount
 
             discount_total_d = _to_float(discount_total_d or 0.0)
 
