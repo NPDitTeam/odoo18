@@ -45,6 +45,60 @@ def _fmt(value):
     return '{:,.2f}'.format(value or 0.0)
 
 
+def describe_time(distance_km, hours):
+    """อธิบายเวลาเดินทางเป็นภาษาคน เช่น "ระยะ 113 กม. ส่งถึงใน 12 นาที (เฉลี่ย 560 กม./ชม.)" """
+    if not hours or hours <= 0:
+        return ''
+    if hours < 1:
+        spent = '%d นาที' % round(hours * 60)
+    elif hours < 24:
+        spent = '%.1f ชั่วโมง' % hours
+    else:
+        spent = '%.1f วัน' % (hours / 24.0)
+    if distance_km:
+        return 'ระยะ %.1f กม. ใช้เวลา %s (เฉลี่ย %.0f กม./ชม.)' % (
+            distance_km, spent, distance_km / hours)
+    return 'ใช้เวลา %s' % spent
+
+
+def build_headline(booking, order, flags, distance, fee, allowance, hours):
+    """บรรทัดเดียวที่บอกว่าเที่ยวนี้ผิดปกติตรงไหน (ให้ผู้ตรวจอ่านเข้าใจทันที)"""
+    if not flags:
+        return 'ไม่พบข้อสังเกต'
+    codes = {flag['code'] for flag in flags}
+    parts = []
+
+    if 'impossible_speed' in codes or 'time_reversed' in codes:
+        text = describe_time(distance, hours)
+        parts.append('ส่งเร็วผิดปกติ — %s' % text if text else 'เวลาส่งผิดปกติ')
+    elif 'slow_short_trip' in codes or 'cross_day_delivery' in codes:
+        parts.append('ใช้เวลานานผิดปกติ — %s' % describe_time(distance, hours))
+
+    if 'rate_mismatch' in codes or 'both_fee_and_allowance' in codes or 'mismatch_o14' in codes:
+        where = ('ไม่ตรงเกณฑ์ระยะ %.0f กม.' % distance) if distance else 'ทั้งที่ไม่มีระยะทางในระบบ'
+        parts.append('จ่ายค่าเที่ยว %s + เบี้ยเลี้ยง %s %s' % (_fmt(fee), _fmt(allowance), where))
+    if 'pay_changed_after_done' in codes:
+        parts.append('ยอดถูกแก้หลังปิดงานแล้ว')
+    if 'distance_changed' in codes:
+        order_km = (order.distance_km or 0.0) if order else 0.0
+        parts.append('ระยะทางเปลี่ยนจาก %.0f เป็น %.0f กม.' % (order_km, distance or 0))
+    if 'driver_customer_share' in codes:
+        parts.append('คนขับอ้าง "ลูกค้าให้ไปส่ง" บ่อยกว่าเพื่อนร่วมสาขามาก')
+    if 'shipping_edited' in codes:
+        parts.append('ค่าขนส่งถูกแก้จากที่ระบบคิด')
+    if 'free_far_delivery' in codes:
+        parts.append('ส่ง %.0f กม. แต่ไม่คิดค่าขนส่ง' % (distance or 0))
+    if 'backdated_booking' in codes:
+        parts.append('สร้างใบจองย้อนหลัง')
+    if 'concurrent_double_pay' in codes:
+        parts.append('งานซ้อนคันเดียวกันแต่จ่ายสองใบ')
+
+    if not parts:
+        # เหลือแต่ข้อสังเกตเบา ๆ
+        parts.append(flags[0]['name'])
+    return ' · '.join(parts[:3])
+
+
 def expected_pay(vehicle_type_name, distance_km):
     """คืน (ค่าเที่ยวที่ควรได้, เบี้ยเลี้ยงที่ควรได้, อธิบายเกณฑ์) ตามสูตรของ Odoo 14
 
@@ -258,17 +312,19 @@ def build_flags(booking, order, stats, env):
             })
         elif hours <= 0:
             flags.append({
-                'code': 'time_reversed', 'name': 'เวลาส่งถึงก่อนเวลาออกเดินทาง',
+                'code': 'time_reversed', 'name': 'เวลาส่งถึงย้อนหลังกว่าเวลาออกเดินทาง',
                 'severity': 'high', 'score': 25,
-                'detail': 'ออกเดินทาง %s แต่ส่งถึง %s' % (pickup, delivered),
+                'detail': ('ออกเดินทาง %s แต่บันทึกว่าส่งถึง %s ซึ่งเป็นเวลาก่อนหน้า '
+                           'แปลว่าเวลาถูกกรอกเอง ไม่ได้มาจากการทำงานจริง' % (pickup, delivered)),
             })
         elif distance / hours > IMPOSSIBLE_SPEED_KMH:
             flags.append({
-                'code': 'impossible_speed', 'name': 'ใช้เวลาน้อยเกินกว่าจะวิ่งได้จริง',
+                'code': 'impossible_speed', 'name': 'ระยะทางขนาดนี้ ส่งถึงเร็วเกินกว่าจะเป็นไปได้',
                 'severity': 'high', 'score': 25,
                 'value': round(distance / hours, 1), 'baseline': IMPOSSIBLE_SPEED_KMH,
-                'detail': 'ระยะ %.1f กม. ใช้เวลา %.2f ชม. = เฉลี่ย %.0f กม./ชม.' % (
-                    distance, hours, distance / hours),
+                'detail': ('%s — รถบรรทุกวิ่งจริงได้ราว %.0f กม./ชม. '
+                           'เวลาที่บันทึกไว้จึงไม่น่าเป็นเวลาที่วิ่งจริง (ออก %s ถึง %s)'
+                           % (describe_time(distance, hours), IMPOSSIBLE_SPEED_KMH, pickup, delivered)),
             })
 
     # ── R11 ยอดถูกแก้หลังปิดงานแล้ว (ค่าเที่ยว/เบี้ยเลี้ยงมี tracking อยู่แล้ว) ──
@@ -316,7 +372,46 @@ def build_flags(booking, order, stats, env):
                           _fmt(booking.total_expense), _fmt(trip_cost - charged))),
         })
 
-    # ── R14 ไม่มีระยะทางแต่เบิกเงิน ──
+    # ── R14 จองย้อนหลัง: สร้างใบจองหลังวันที่ส่งของไปแล้ว ──
+    if booking.create_date and booking.delivery_date:
+        gap_days = (booking.create_date.date() - booking.delivery_date).days
+        if gap_days >= 1:
+            flags.append({
+                'code': 'backdated_booking',
+                'name': 'สร้างใบจองย้อนหลังหลังวันที่ส่งของ',
+                'severity': 'high' if gap_days >= 3 else 'medium',
+                'score': 25 if gap_days >= 3 else 15,
+                'value': gap_days,
+                'detail': ('วันที่ส่ง %s แต่ใบจองเพิ่งถูกสร้างเมื่อ %s (หลังไป %s วัน) '
+                           'ตรวจว่าเป็นการตามเก็บงานย้อนหลังจริงหรือสร้างขึ้นเพื่อเบิกเงิน'
+                           % (booking.delivery_date, booking.create_date, gap_days)),
+            })
+
+    # ── R15 เวลารับงาน-ส่งถึง ไม่สมเหตุสมผลกับระยะทาง ──
+    if pickup and delivered and 0.034 <= (delivered - pickup).total_seconds() / 3600.0:
+        hours = (delivered - pickup).total_seconds() / 3600.0
+        # ใช้เวลานานผิดปกติกับระยะทางสั้น (เกิน 8 ชม. สำหรับงานในเมือง)
+        if distance and distance < 50 and hours > 8:
+            flags.append({
+                'code': 'slow_short_trip',
+                'name': 'งานระยะใกล้แต่ใช้เวลานานผิดปกติ',
+                'severity': 'low', 'score': 8,
+                'value': round(hours, 2), 'baseline': 8.0,
+                'detail': ('ระยะ %.1f กม. แต่ใช้เวลา %.1f ชม. (รับงาน %s ส่งถึง %s)'
+                           % (distance, hours, pickup, delivered)),
+            })
+        # ส่งข้ามวันโดยที่ไม่ใช่งานไกล
+        elif distance and distance < LONG_TRIP_KM and delivered.date() > pickup.date():
+            flags.append({
+                'code': 'cross_day_delivery',
+                'name': 'รับงานวันหนึ่ง ส่งถึงอีกวันหนึ่ง',
+                'severity': 'low', 'score': 8,
+                'detail': ('รับงาน %s ส่งถึง %s ระยะ %.1f กม. '
+                           'ถ้าไม่ใช่งานค้างคืนจริง ควรตรวจว่าเวลาถูกบันทึกถูกต้องไหม'
+                           % (pickup, delivered, distance)),
+            })
+
+    # ── R16 ไม่มีระยะทางแต่เบิกเงิน ──
     if (fee > 0 or allowance > 0) and distance <= 0:
         flags.append({
             'code': 'missing_distance', 'name': 'ไม่มีระยะทางแต่มีการจ่ายเงิน',

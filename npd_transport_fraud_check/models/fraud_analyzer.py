@@ -102,7 +102,19 @@ class NpdTransportFraudAnalyzer(models.AbstractModel):
         fee_median = {(row['delivery_type'], row['band']): (row['median_fee'] or 0.0, row['trips'])
                       for row in cr.dictfetchall()}
 
+        # ประวัติที่เคยตรวจเจอของคนขับแต่ละคน (นับทีเดียว ไม่นับทีละใบ)
+        cr.execute("""
+            SELECT driver_id,
+                   COUNT(*) FILTER (WHERE risk_level IN ('watch', 'high')) AS flagged,
+                   COUNT(*) FILTER (WHERE review_state = 'issue') AS issues
+              FROM npd_transport_fraud_check
+             WHERE driver_id IS NOT NULL
+             GROUP BY driver_id
+        """)
+        driver_history = {row['driver_id']: row for row in cr.dictfetchall()}
+
         return {'drivers': drivers, 'branches': branches, 'fee_median': fee_median,
+                'driver_history': driver_history,
                 'date_from': date_from, 'ref_date': ref_date}
 
     @staticmethod
@@ -171,8 +183,13 @@ class NpdTransportFraudAnalyzer(models.AbstractModel):
                 'order_trip_allowance': (order.trip_allowance or 0.0) if order else 0.0,
                 'order_daily_allowance': (order.daily_allowance or 0.0) if order else 0.0,
                 'free_shipping': bool(order and getattr(order, 'use_special_delivery_zero', False)),
+                **self._detail_values(booking, order, stats),
                 'risk_score': score,
                 'risk_level': level,
+                'headline': fraud_rules.build_headline(
+                    booking, order, flags, booking.distance_km or 0.0,
+                    booking.travel_expenses or 0.0, booking.daily_allowance or 0.0,
+                    self._trip_hours(booking)),
                 'summary': '\n'.join('• %s — %s' % (f['name'], f.get('detail') or '') for f in flags),
                 'ai_state': 'pending' if score >= SCORE_AI else 'skipped',
                 'flag_ids': [(5, 0, 0)] + [(0, 0, {
@@ -184,11 +201,72 @@ class NpdTransportFraudAnalyzer(models.AbstractModel):
             }
             check = by_booking.get(booking.id)
             if check:
+                # ตรวจซ้ำแล้วได้ข้อสังเกตเดิม -> เก็บผลวิเคราะห์ของ AI ไว้ ไม่ต้องให้ AI ทำใหม่
+                same_profile = (check.risk_score == score
+                                and set(check.flag_ids.mapped('code')) == {f['code'] for f in flags})
+                if check.ai_state == 'done' and same_profile:
+                    vals.pop('ai_state', None)
                 check.write(vals)
             else:
                 check = Check.create(vals)
             results |= check
         return results
+
+    @api.model
+    def _trip_hours(self, booking):
+        """ชั่วโมงที่ใช้เดินทางจริง (0 ถ้าไม่มีเวลาให้คำนวณ)"""
+        pickup = booking.actual_pickup_time or booking.planned_start_date_t
+        delivered = (booking.actual_delivery_time or booking.delivery_timestamp
+                     or booking.planned_end_date_t)
+        if not pickup or not delivered:
+            return 0.0
+        return (delivered - pickup).total_seconds() / 3600.0
+
+    @api.model
+    def _detail_values(self, booking, order, stats):
+        """รายละเอียดเพิ่มเติมที่ผู้ใช้ขอให้เก็บ (16 ก.ย. 2569)
+
+        - วันที่/เวลารับงานกับส่งถึง (ถ้าปิดงานผ่านแอปจะมีเวลาจริงจากแอปด้วย)
+        - ค่าขนส่งที่ระบบคิดให้ เทียบกับที่เก็บจริง
+        - สถิติย้อนหลังของคนขับ/สาขา ณ เวลาที่ตรวจ
+        """
+        pickup = booking.actual_pickup_time or booking.planned_start_date_t
+        delivered = (booking.actual_delivery_time or booking.delivery_timestamp
+                     or booking.planned_end_date_t)
+        duration = 0.0
+        if pickup and delivered:
+            duration = round((delivered - pickup).total_seconds() / 3600.0, 2)
+
+        days_gap = 0
+        if booking.create_date and booking.delivery_date:
+            days_gap = (booking.delivery_date - booking.create_date.date()).days
+
+        system_cost = 0.0
+        if order:
+            system_cost = (order.shipping_cost_m if (order.shipping_cost_m or 0.0) > 0
+                           else (order.shipping_cost or 0.0))
+
+        driver_stat = stats['drivers'].get((booking.driver_id.id, booking.branch_id.id)) or {}
+        branch_stat = stats['branches'].get(booking.branch_id.id) or {}
+
+        history = (stats.get('driver_history') or {}).get(booking.driver_id.id) or {}
+        prior_flags = history.get('flagged', 0)
+        prior_issues = history.get('issues', 0)
+        return {
+            'pickup_datetime': pickup or False,
+            'delivered_datetime': delivered or False,
+            'app_delivery_timestamp': booking.delivery_timestamp or False,
+            'duration_hours': duration,
+            'booking_create_date': booking.create_date or False,
+            'days_booking_to_delivery': days_gap,
+            'shipping_cost_system': system_cost,
+            'shipping_diff': (booking.shipping_cost or 0.0) - system_cost,
+            'driver_trip_count': driver_stat.get('trips', 0),
+            'driver_customer_share': round(driver_stat.get('share', 0.0) * 100, 1),
+            'branch_customer_share': round(branch_stat.get('share', 0.0) * 100, 1),
+            'driver_prior_flag_count': prior_flags,
+            'driver_confirmed_issue_count': prior_issues,
+        }
 
     # ------------------------------------------------------------------
     # AI อธิบายใบที่เข้าข่าย (ทำเป็นรอบ ไม่ถ่วงตอนปิดงาน)
@@ -214,9 +292,27 @@ class NpdTransportFraudAnalyzer(models.AbstractModel):
                 'ค่าเที่ยว': check.travel_expenses,
                 'เบี้ยเลี้ยง': check.daily_allowance,
                 'ค่าขนส่งที่เก็บลูกค้า': check.shipping_cost,
+                'ค่าขนส่งที่ระบบคิดให้': check.shipping_cost_system,
+                'ส่วนต่างค่าขนส่ง': check.shipping_diff,
                 'ค่าเที่ยวตาม_odoo14': check.order_trip_allowance,
                 'เบี้ยเลี้ยงตาม_odoo14': check.order_daily_allowance,
                 'ตั้งไม่คิดค่าขนส่ง': check.free_shipping,
+                'วันเวลา': {
+                    'สร้างใบจอง': str(check.booking_create_date or ''),
+                    'รับงาน_ออกเดินทาง': str(check.pickup_datetime or ''),
+                    'ส่งถึง': str(check.delivered_datetime or ''),
+                    'เวลาส่งจากแอป_GPS': str(check.app_delivery_timestamp or ''),
+                    'ใช้เวลา_ชม': check.duration_hours,
+                    'ห่างจากวันสร้างใบจองถึงวันส่ง_วัน': check.days_booking_to_delivery,
+                },
+                'สถิติย้อนหลังของคนขับ': {
+                    'เที่ยวใน_120_วัน': check.driver_trip_count,
+                    'สัดส่วนลูกค้าให้ไปส่ง_ของคนขับ_pct': check.driver_customer_share,
+                    'สัดส่วนของทั้งสาขา_pct': check.branch_customer_share,
+                    'ใบที่เคยเข้าข่าย': check.driver_prior_flag_count,
+                    'ใบที่ตรวจแล้วพบปัญหาจริง': check.driver_confirmed_issue_count,
+                },
+                'สรุปสั้นจากระบบ': check.headline,
                 'ข้อสังเกตจากระบบ': [
                     {'กฎ': flag.name, 'ความรุนแรง': flag.severity, 'รายละเอียด': flag.detail}
                     for flag in check.flag_ids
@@ -230,7 +326,10 @@ class NpdTransportFraudAnalyzer(models.AbstractModel):
                 'บริบทที่ต้องรู้: ประเภทการจัดส่ง "ลูกค้าให้ไปส่ง" จ่ายค่าเที่ยวสูงกว่า "ส่งของสาขา" '
                 'พนักงานบางคนจึงอ้างว่าลูกค้าเรียกให้ไปส่ง/ไปรับของ เพื่อให้ได้ค่าเที่ยวเพิ่ม\n\n'
                 'ช่วยสรุปเป็นภาษาไทยสั้น ๆ ว่า\n'
-                '1. เที่ยวนี้น่าสงสัยเรื่องอะไรบ้าง (อ้างตัวเลขที่เห็น)\n'
+                '1. เที่ยวนี้น่าสงสัยเรื่องอะไรบ้าง (อ้างตัวเลขที่เห็น '
+                'ถ้ามีเวลารับงาน/เวลาส่งถึงจากแอป ให้ใช้ประกอบด้วยว่าเวลาสมเหตุสมผลกับระยะทางไหม '
+                'และถ้าค่าขนส่งที่เก็บต่างจากที่ระบบคิดให้ ให้บอกว่าต่างเท่าไรและกระทบอย่างไร '
+                'พร้อมดูสถิติย้อนหลังของคนขับว่าเป็นพฤติกรรมซ้ำหรือเป็นครั้งเดียว)\n'
                 '2. ถ้าจะตรวจต่อ ควรขอหลักฐานหรือถามอะไรกับใคร\n'
                 '3. ให้ระดับความเสี่ยงของคุณเอง: ok / watch / high\n\n'
                 'ตอบเป็น JSON เท่านั้น: {"severity": "ok|watch|high", '
@@ -278,7 +377,8 @@ class NpdTransportFraudAnalyzer(models.AbstractModel):
         return self.analyze_bookings(bookings)
 
     @api.model
-    def action_backfill(self, date_from=None, limit=None, force=False):
+    def action_backfill(self, date_from=None, limit=None, force=False,
+                        batch_size=250, commit=False):
         """ตรวจย้อนหลังตั้งแต่เดือน 6 (ผู้ใช้ขอให้เก็บสถิติย้อนหลัง)
 
         เรียกซ้ำได้เรื่อย ๆ — ใบที่ตรวจแล้วจะถูกข้าม (ยกเว้นสั่ง force)
@@ -288,9 +388,16 @@ class NpdTransportFraudAnalyzer(models.AbstractModel):
         bookings = self.env['vehicle.booking'].sudo().search(domain, order='delivery_date, id',
                                                              limit=limit or None)
         stats = self._peer_stats()
-        done = self.analyze_bookings(bookings, stats=stats, force=force)
-        _logger.info('ตรวจทุจริตการจัดส่ง: ตรวจย้อนหลังตั้งแต่ %s แล้ว %s เที่ยว', date_from, len(done))
-        return len(done)
+        total = 0
+        # แบ่งเป็นช่วง ๆ แล้ว commit ระหว่างทาง ไม่ถือล็อกยาวจนไปบล็อกการปิดงานของคนขับ
+        # (เคยรันรวดเดียว 1,925 ใบบนเครื่องจริงแล้วไปบล็อก cron ของ AI 16 ก.ย. 2569)
+        for index in range(0, len(bookings), batch_size):
+            chunk = bookings[index:index + batch_size]
+            total += len(self.analyze_bookings(chunk, stats=stats, force=force))
+            if commit:
+                self.env.cr.commit()
+        _logger.info('ตรวจทุจริตการจัดส่ง: ตรวจย้อนหลังตั้งแต่ %s แล้ว %s เที่ยว', date_from, total)
+        return total
 
     @api.model
     def action_backfill_button(self):

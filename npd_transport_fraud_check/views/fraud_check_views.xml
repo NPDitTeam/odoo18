@@ -25,6 +25,7 @@
                 <field name="travel_expenses" sum="รวมค่าเที่ยว"/>
                 <field name="daily_allowance" sum="รวมเบี้ยเลี้ยง"/>
                 <field name="shipping_cost" string="ค่าขนส่งที่เก็บ" sum="รวม" optional="show"/>
+                <field name="headline" string="สรุปสั้น ๆ" width="300"/>
                 <field name="flag_count" string="ข้อสังเกต"/>
                 <field name="risk_score" string="คะแนน"/>
                 <field name="risk_level" widget="badge"
@@ -69,6 +70,7 @@
                 <sheet>
                     <div class="oe_title">
                         <h1><field name="booking_name" readonly="1"/></h1>
+                        <h2><field name="headline" readonly="1"/></h2>
                         <h3>
                             <field name="risk_level" widget="badge" readonly="1"
                                    decoration-danger="risk_level == 'high'"
@@ -87,6 +89,21 @@
                             <field name="partner_id" readonly="1"/>
                             <field name="vehicle_id" readonly="1"/>
                         </group>
+                        <group string="เวลาทำงานจริง">
+                            <field name="booking_create_date" readonly="1"/>
+                            <field name="pickup_datetime" readonly="1"/>
+                            <field name="delivered_datetime" readonly="1"/>
+                            <field name="app_delivery_timestamp" readonly="1"/>
+                            <field name="duration_hours" readonly="1"/>
+                            <field name="days_booking_to_delivery" readonly="1"/>
+                        </group>
+                        <group string="สถิติย้อนหลังของคนขับ">
+                            <field name="driver_trip_count" readonly="1"/>
+                            <field name="driver_customer_share" readonly="1"/>
+                            <field name="branch_customer_share" readonly="1"/>
+                            <field name="driver_prior_flag_count" readonly="1"/>
+                            <field name="driver_confirmed_issue_count" readonly="1"/>
+                        </group>
                         <group string="ข้อมูลที่ใช้ตรวจ">
                             <field name="delivery_type" readonly="1"/>
                             <field name="delivery_source" readonly="1"/>
@@ -95,6 +112,8 @@
                             <field name="travel_expenses" readonly="1"/>
                             <field name="daily_allowance" readonly="1"/>
                             <field name="shipping_cost" readonly="1"/>
+                            <field name="shipping_cost_system" readonly="1"/>
+                            <field name="shipping_diff" readonly="1"/>
                             <field name="order_trip_allowance" readonly="1"/>
                             <field name="order_daily_allowance" readonly="1"/>
                             <field name="free_shipping" readonly="1"/>

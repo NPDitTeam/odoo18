@@ -16,5 +16,13 @@
             <field name="implied_ids" eval="[(4, ref('group_transport_fraud_viewer'))]"/>
             <field name="comment">บันทึกผลการตรวจ (ตรวจแล้วไม่มีปัญหา / มีปัญหาจริง) และสั่งตรวจย้อนหลังได้</field>
         </record>
+
+        <!-- กลุ่มยกเว้น: แก้ค่าเที่ยว/ค่าเบี้ยเลี้ยงเองได้ (ปกติไม่มีใครอยู่ในกลุ่มนี้)
+             ระบบยังบันทึกไว้ในแชทของใบจองว่าใครแก้จากเท่าไรเป็นเท่าไร -->
+        <record id="group_transport_pay_override" model="res.groups">
+            <field name="name">ตรวจทุจริตการจัดส่ง: แก้ค่าเที่ยว/เบี้ยเลี้ยงเองได้ (ยกเว้น)</field>
+            <field name="category_id" ref="base.module_category_operations_inventory"/>
+            <field name="comment">ปกติค่าเที่ยวและเบี้ยเลี้ยงถูกล็อกให้ดึงจากคำสั่งขนส่งเท่านั้น กลุ่มนี้คือข้อยกเว้น</field>
+        </record>
     </data>
 </odoo>

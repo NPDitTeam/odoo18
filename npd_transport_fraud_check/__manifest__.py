@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'ตรวจทุจริตการจัดส่ง (AI)',
-    'version': '18.0.1.0.0',
+    'version': '18.0.1.1.0',
     'summary': 'AI ตรวจเที่ยวจัดส่งตอนกดเสร็จสิ้น หาความผิดปกติของค่าเที่ยว/เบี้ยเลี้ยง/ประเภทการจัดส่ง',
     'description': """
 ตรวจทุจริตการจัดส่ง (AI)
@@ -38,6 +38,7 @@
         'security/ir.model.access.csv',
         'data/fraud_cron.xml',
         'views/fraud_check_views.xml',
+        'views/booking_pay_lock_views.xml',
         'views/fraud_menus.xml',
     ],
     'post_init_hook': 'post_init_hook',

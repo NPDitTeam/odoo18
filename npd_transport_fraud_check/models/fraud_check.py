@@ -56,18 +56,37 @@ class NpdTransportFraudCheck(models.Model):
     ], string='วิธีปิดงาน')
     no_app_done_reason = fields.Text(string='เหตุผลที่ไม่ได้ปิดผ่านแอป')
 
+    # เวลาจริงของงาน (แอปคนขับบันทึกให้ถ้าปิดงานผ่านแอป)
+    pickup_datetime = fields.Datetime(string='เวลารับงาน/ออกเดินทาง')
+    delivered_datetime = fields.Datetime(string='เวลาส่งถึง')
+    app_delivery_timestamp = fields.Datetime(string='เวลาส่งจากแอป (GPS)')
+    duration_hours = fields.Float(string='ใช้เวลา (ชม.)', digits=(10, 2))
+    booking_create_date = fields.Datetime(string='เวลาที่สร้างใบจอง')
+    days_booking_to_delivery = fields.Integer(string='ห่างจากวันจองถึงวันส่ง (วัน)')
+
     distance_km = fields.Float(string='ระยะทาง (กม.)')
     travel_expenses = fields.Float(string='ค่าเที่ยว')
     daily_allowance = fields.Float(string='ค่าเบี้ยเลี้ยง')
     shipping_cost = fields.Float(string='ค่าขนส่งที่เก็บลูกค้า')
     order_trip_allowance = fields.Float(string='ค่าเที่ยวตาม Odoo 14')
     order_daily_allowance = fields.Float(string='เบี้ยเลี้ยงตาม Odoo 14')
+    shipping_cost_system = fields.Float(string='ค่าขนส่งที่ระบบคิด')
+    shipping_diff = fields.Float(string='ส่วนต่างค่าขนส่ง', help='เก็บจริง - ที่ระบบคิด (ติดลบ = ลดให้ลูกค้า)')
     free_shipping = fields.Boolean(string='ตั้งไม่คิดค่าขนส่ง')
+
+    # สถิติย้อนหลังของคนขับ/สาขา ณ เวลาที่ตรวจ (เก็บไว้ให้ดูย้อนหลังได้ว่าตอนนั้นเทียบกับอะไร)
+    driver_trip_count = fields.Integer(string='เที่ยวของคนขับ (120 วัน)')
+    driver_customer_share = fields.Float(string='สัดส่วน "ลูกค้าให้ไปส่ง" ของคนขับ (%)', digits=(5, 1))
+    branch_customer_share = fields.Float(string='สัดส่วนของทั้งสาขา (%)', digits=(5, 1))
+    driver_prior_flag_count = fields.Integer(string='ใบที่เคยเข้าข่ายของคนขับ')
+    driver_confirmed_issue_count = fields.Integer(string='ใบที่ตรวจแล้วพบปัญหาจริงของคนขับ')
 
     risk_score = fields.Integer(string='คะแนนความเสี่ยง', index=True)
     risk_level = fields.Selection(RISK_LEVELS, string='ระดับความเสี่ยง', index=True, default='ok')
     flag_ids = fields.One2many('npd.transport.fraud.flag', 'check_id', string='ข้อสังเกต')
     flag_count = fields.Integer(string='จำนวนข้อสังเกต', compute='_compute_flag_count', store=True)
+    headline = fields.Char(string='สรุปสั้น ๆ',
+                           help='อ่านบรรทัดเดียวให้รู้ว่าเที่ยวนี้ผิดปกติตรงไหน')
     summary = fields.Text(string='สรุปข้อสังเกต (จากกฎ)')
 
     ai_state = fields.Selection(AI_STATES, string='สถานะ AI', default='skipped', index=True)

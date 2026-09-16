@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ค่าเที่ยว/ค่าเบี้ยเลี้ยง: ล็อกไม่ให้พิมพ์เอง ดึงจากคำสั่งขนส่งอย่างเดียว
+         ตัวล็อกจริงอยู่ฝั่งเซิร์ฟเวอร์ (models/booking_pay_lock.py) ซึ่งครอบคลุมทั้ง
+         หน้าจอและ API ตรงนี้แค่ทำให้หน้าจอสื่อสารให้ตรงกัน ไม่ต้องให้พนักงานลองพิมพ์
+         คนที่อยู่กลุ่มยกเว้นยังแก้ได้ผ่านปุ่ม/สคริปต์ของฝ่าย IT -->
+    <record id="view_vehicle_booking_form_pay_lock" model="ir.ui.view">
+        <field name="name">vehicle.booking.form.pay.lock</field>
+        <field name="model">vehicle.booking</field>
+        <field name="inherit_id" ref="transport_booking.view_vehicle_booking_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='travel_expenses']" position="attributes">
+                <attribute name="readonly">1</attribute>
+                <attribute name="help">ดึงจากคำสั่งขนส่งอัตโนมัติ แก้เองไม่ได้ (ถ้าตัวเลขไม่ถูก ให้แก้ที่คำสั่งขนส่ง)</attribute>
+            </xpath>
+            <xpath expr="//field[@name='daily_allowance']" position="attributes">
+                <attribute name="readonly">1</attribute>
+                <attribute name="help">ดึงจากคำสั่งขนส่งอัตโนมัติ แก้เองไม่ได้ (ถ้าตัวเลขไม่ถูก ให้แก้ที่คำสั่งขนส่ง)</attribute>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- ปุ่มดึงยอดจากคำสั่งขนส่งใหม่ (สำหรับผู้ตรวจสอบ เผื่อใบเก่าค่าไม่ตรง) -->
+    <record id="view_vehicle_booking_form_pay_resync" model="ir.ui.view">
+        <field name="name">vehicle.booking.form.pay.resync</field>
+        <field name="model">vehicle.booking</field>
+        <field name="inherit_id" ref="transport_booking.view_vehicle_booking_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//header" position="inside">
+                <button name="action_resync_pay_from_order" type="object"
+                        string="🔄 ดึงค่าเที่ยว/เบี้ยเลี้ยงจากคำสั่งขนส่ง"
+                        groups="npd_transport_fraud_check.group_transport_fraud_manager"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>
