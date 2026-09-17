@@ -9,6 +9,26 @@ def _strip_product_code(name):
     return re.sub(r'^\[[^\]]*\]\s*', '', name)
 
 
+def _price_unit_no_vat(sale_line):
+    """ราคาต่อหน่วยถอด VAT — สูตรเดียวกับ price_unit_no_vat ของ npd_rent_price_round (o14)
+
+    ถอด VAT เมื่อ ใช้สูตรใหม่ + ภาษีขาย 7% แบบรวมในราคา + ไม่ใช่ราคาบ้านเขียว
+    o18 ยังไม่ได้พอร์ตแฟล็ก use_new_calc / use_baan_kheaw ถ้าไม่มีฟิลด์ให้ถือว่า
+    ใช้สูตรใหม่และไม่ใช่บ้านเขียว (แบบเดียวกับใบเสนอราคาเช่า/ใบแจ้งหนี้ Jasper ใน o18)
+    """
+    order = sale_line.order_id
+    use_new_calc = getattr(order, 'use_new_calc', True) if order else False
+    use_baan_kheaw = getattr(order, 'use_baan_kheaw', False) if order else False
+    has_vat_7_incl = any(
+        tax.price_include and abs(tax.amount - 7.0) < 0.01
+        for tax in sale_line.tax_id
+    )
+    price_unit = sale_line.price_unit or 0.0
+    if use_new_calc and has_vat_7_incl and not use_baan_kheaw:
+        return round(price_unit / 1.07, 2)
+    return price_unit
+
+
 class StockMove(models.Model):
     _inherit = 'stock.move'
 
@@ -102,7 +122,9 @@ class StockMove(models.Model):
 
             move.jasper_line_name = _strip_product_code(sale_line.name or move.product_id.display_name or '')
             move.jasper_line_weight = getattr(sale_line, 'second_uom_qty', 0.0) or 0.0
-            move.jasper_line_price_unit = sale_line.price_unit or 0.0
+            # ราคา/หน่วย โชว์ราคาถอด VAT ให้ตรงกับหน้าจอ SO (o14 เปลี่ยนเมื่อ 8 ส.ค. 2569)
+            # ส่วน "รวมเป็นเงิน" ด้านล่างยังใช้ price_unit รวม VAT ตามเดิม ให้ตรงกับยอดท้ายเอกสาร
+            move.jasper_line_price_unit = _price_unit_no_vat(sale_line)
             move.jasper_line_qty_rent = qty_rent
             move.jasper_line_qty_return = qty_return
             move.jasper_line_lost = lost_amt
