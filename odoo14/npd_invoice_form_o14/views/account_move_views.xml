@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- หัวฟอร์มใบแจ้งหนี้เรียงแบบ o14 (ดูลำดับจาก fields_view_get ของ o14 NPD_Intertrading_New)
+         priority สูง = ใช้หลังวิวอื่นที่แทรกฟิลด์ไว้แล้ว จึงย้าย (position="move") ฟิลด์ของโมดูลอื่นได้ -->
+    <record id="view_move_form_o14_layout" model="ir.ui.view">
+        <field name="name">account.move.form.o14.layout</field>
+        <field name="model">account.move</field>
+        <field name="inherit_id" ref="account.view_move_form"/>
+        <field name="priority">120</field>
+        <field name="arch" type="xml">
+            <!-- สาขาซ้ำเหนือเลขที่เอกสาร (multi_branch_management_aagam ใส่ไว้นอกกลุ่ม) o14 ไม่มี -->
+            <xpath expr="//sheet/field[@name='branch_id']" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+
+            <!-- ===== ซ้าย: ลูกค้า / ที่อยู่จัดส่ง / การอ้างอิงการชำระเงิน / Sale Type / Objective ===== -->
+            <!-- o14 แสดงที่อยู่จัดส่งทุกคน (o18 ซ่อนไว้ให้เฉพาะกลุ่ม "ที่อยู่ลูกค้า") -->
+            <xpath expr="//group[@id='header_left_group']/field[@name='partner_shipping_id']" position="attributes">
+                <attribute name="groups"></attribute>
+                <attribute name="string">ที่อยู่จัดส่ง</attribute>
+            </xpath>
+            <xpath expr="//group[@id='header_left_group']/field[@name='partner_shipping_id']" position="after">
+                <xpath expr="//group[@id='header_right_group']/field[@name='payment_reference']" position="move"/>
+                <xpath expr="//group[@id='header_right_group']/field[@name='pfb_so_type']" position="move"/>
+                <xpath expr="//group[@id='header_right_group']/field[@name='pfb_objective_id']" position="move"/>
+            </xpath>
+            <xpath expr="//group[@id='header_left_group']/field[@name='payment_reference']" position="attributes">
+                <attribute name="string">การอ้างอิงการชำระเงิน</attribute>
+                <attribute name="invisible">move_type not in ('out_invoice', 'out_refund', 'in_invoice', 'in_refund', 'out_receipt', 'in_receipt')</attribute>
+            </xpath>
+            <xpath expr="//group[@id='header_left_group']/field[@name='pfb_so_type']" position="attributes">
+                <attribute name="string">Sale Type</attribute>
+            </xpath>
+            <xpath expr="//group[@id='header_left_group']/field[@name='pfb_objective_id']" position="attributes">
+                <attribute name="string">Objective</attribute>
+            </xpath>
+
+            <!-- ===== ขวา: ต่อจากวันกำหนดจ่าย / สมุดรายวัน ตามลำดับ o14 ===== -->
+            <xpath expr="//group[@id='header_right_group']/div[@name='journal_div']" position="after">
+                <xpath expr="//group[@id='header_right_group']/field[@name='branch_id']" position="move"/>
+                <xpath expr="//group[@id='header_right_group']/field[@name='head_office_branch_id']" position="move"/>
+                <field name="invoice_origin" string="Source Document" readonly="state != 'draft'"/>
+                <field name="is_from_reservation" string="มาจากใบเสนอราคาแบบจอง" widget="boolean_toggle"
+                       readonly="1" invisible="not is_from_reservation"/>
+                <xpath expr="//group[@id='header_right_group']/field[@name='contact_type']" position="move"/>
+                <xpath expr="//group[@id='header_right_group']/field[@name='sales_contact_id']" position="move"/>
+                <field name="payment_id" string="การชำระเงิน" readonly="1"/>
+                <field name="start_date"/>
+                <field name="end_date"/>
+                <field name="document_type" widget="selection"/>
+                <xpath expr="//group[@id='header_right_group']/field[@name='reason_code_id']" position="move"/>
+                <field name="debt_payment_type" readonly="1"/>
+                <xpath expr="//group[@id='header_right_group']/field[@name='billing_status']" position="move"/>
+                <xpath expr="//group[@id='header_right_group']/field[@name='billing_channel']" position="move"/>
+                <xpath expr="//group[@id='header_right_group']/field[@name='billing_evidence_filename']" position="move"/>
+                <xpath expr="//group[@id='header_right_group']/field[@name='billing_evidence']" position="move"/>
+            </xpath>
+            <xpath expr="//group[@id='header_right_group']/field[@name='branch_id']" position="attributes">
+                <attribute name="string">Branch</attribute>
+            </xpath>
+            <!-- Sales ที่ติดต่อ ซ้ำสองช่อง: เหลือ sales_contact_id (ชื่อฟิลด์เดียวกับ o14 และรายงานค่าคอมใช้)
+                 sales_contact ของ pfb_npd_all_customs ค่าตรงกันทุกใบ -->
+            <xpath expr="//group[@id='header_right_group']/field[@name='sales_contact']" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+        </field>
+    </record>
+</odoo>

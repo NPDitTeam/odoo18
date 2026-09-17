@@ -9,10 +9,12 @@ _logger = logging.getLogger(__name__)
 class AccountMove(models.Model):
     _inherit = 'account.move'
 
+    # ค่าตาม o14 (npd_print_select_account) และต้องตรงกับ sale.order.debt_payment_type
+    # เพราะ _prepare_invoice คัดลอกค่าจากใบสั่งขายมาใส่ (เดิมเป็น เงินสด/โอน/เช็ค ทำให้ออกใบแจ้งหนี้พัง)
     debt_payment_type = fields.Selection([
-        ('cash', 'เงินสด'),
-        ('transfer', 'โอนเงิน'),
-        ('cheque', 'เช็ค'),
+        ('rental', 'รับชำระหนี้ค่าเช่า'),
+        ('lost', 'รับชำระหนี้ค่าปรับหาย'),
+        ('damaged', 'รับชำระหนี้ค่าปรับชำรุด'),
     ], string='ประเภทการรับชำระหนี้')
 
     contact_type = fields.Selection([
