@@ -1,4 +1,21 @@
+import pytz
+
 from odoo import models, fields, api
+
+THAI_MONTHS = {
+    1: 'มกราคม', 2: 'กุมภาพันธ์', 3: 'มีนาคม', 4: 'เมษายน',
+    5: 'พฤษภาคม', 6: 'มิถุนายน', 7: 'กรกฎาคม', 8: 'สิงหาคม',
+    9: 'กันยายน', 10: 'ตุลาคม', 11: 'พฤศจิกายน', 12: 'ธันวาคม',
+}
+
+
+def _thai_long_date(value):
+    """'17 กันยายน 2569' แบบหัวเอกสาร o14 (datetime แปลงเป็นเวลาไทยก่อน)"""
+    if not value:
+        return ''
+    if hasattr(value, 'hour'):
+        value = pytz.utc.localize(value).astimezone(pytz.timezone('Asia/Bangkok'))
+    return '%s %s %s' % (value.strftime('%d'), THAI_MONTHS[value.month], value.year + 543)
 
 
 # --- แปลงจำนวนเงินเป็นตัวอักษรภาษาไทย (pure-Python ไม่พึ่ง lib bahttext) ---
@@ -87,13 +104,12 @@ class SaleOrder(models.Model):
                 for line in rec.order_line
             )
 
+    # ค่าเช่าต่อวัน = amount_total / pfb_date_of_rent (o14 ทั้งใบเสนอราคาและใบกำกับการเช่า)
+    # ฟิลด์นี้ประกาศซ้ำในใบกำกับการเช่า Jasper -> สูตรต้องเหมือนกันทั้งสองโมดูล
     @api.depends('amount_total', 'pfb_date_of_rent')
     def _compute_jasper_rental_per_day(self):
         for rec in self:
-            if rec.pfb_date_of_rent:
-                rec.jasper_rental_per_day = rec.amount_total / rec.pfb_date_of_rent
-            else:
-                rec.jasper_rental_per_day = 0.0
+            rec.jasper_rental_per_day = (rec.amount_total or 0.0) / (rec.pfb_date_of_rent or 1)
 
     @api.depends('amount_total', 'pfb_amount')
     def _compute_jasper_grand_total(self):
@@ -156,32 +172,96 @@ class SaleOrder(models.Model):
     # เลือกบัญชีรับเงินตาม company_registry (ID บริษัท) ของบริษัทที่กำลังเลือกอยู่
     # (odoo18 เป็น single-DB หลายบริษัท จึงเช็คจาก company_registry แทนชื่อ DB แบบ odoo14)
     # 1=นภดล กรุงเทพ, 2=นภดล อินเตอร์เทรดดิ้ง, 3=นภดล เอส กรุ๊ป, 4=เอ็นพีดี สตีลเทค, 5=เอ็นพีดี โลจิสติกส์
+    # ข้อความคัดลอกจากใบเสนอราคาเช่าสินค้า o14 (server) ตรงตัว
+    _JASPER_BANK_TRANSPORT = ('ค่าขนส่ง.สินค้า โอนเงินเข้าบัญชี : บช.บริษัท เอ็นพีดี โลจิสติกส์ จำกัด '
+                              'ธนาคารไทยพาณิชย์ เลขที่บัญชี 439-044811-6')
     _JASPER_BANK_BY_REGISTRY = {
         '1': (
             'ค่าประกันสินค้า โอนเงินเข้าบัญชี บช.บริษัท นภดล กรุงเทพ จำกัด กสิกรไทย เลขที่บัญชี 025-290298-8\n'
-            'ค่าเช่าสินค้า โอนเงินเข้าบัญชี บช.บริษัท นภดล กรุงเทพ จำกัด ธนาคารไทยพาณิชย์ เลขที่บัญชี 186-224773-9\n'
-            'ค่าขนส่งสินค้า โอนเงินเข้าบัญชี บช.บริษัท เอ็นพีดี โลจิสติกส์ จำกัด ธนาคารไทยพาณิชย์ เลขที่บัญชี 439-044811-6'
+            'ค่าเช่าสินค้า โอนเงินเข้าบัญชี : บช.บริษัท นภดล กรุงเทพ จำกัด ธนาคารไทยพาณิชย์ เลขที่บัญชี 186-224773-9\n'
+            + _JASPER_BANK_TRANSPORT
         ),
         '2': (
             'ค่าประกันสินค้า โอนเงินเข้าบัญชี บช.บริษัท นภดล อินเตอร์เทรดดิ้ง จำกัด กสิกรไทย เลขที่บัญชี 033-885651-2\n'
-            'ค่าเช่าสินค้า โอนเงินเข้าบัญชี บช.บริษัท นภดล อินเตอร์เทรดดิ้ง จำกัด ธนาคารไทยพาณิชย์ เลขที่บัญชี 408-546107-1\n'
-            'ค่าขนส่งสินค้า โอนเงินเข้าบัญชี บช.บริษัท เอ็นพีดี โลจิสติกส์ จำกัด ธนาคารไทยพาณิชย์ เลขที่บัญชี 439-044811-6'
+            'ค่าเช่าสินค้า โอนเงินเข้าบัญชี : บช.บริษัท นภดล อินเตอร์เทรดดิ้ง จำกัด ธนาคารไทยพาณิชย์ เลขที่บัญชี 408-546107-1\n'
+            + _JASPER_BANK_TRANSPORT
         ),
         '3': (
-            'ค่าประกันสินค้า โอนเงินเข้าบัญชี บช.บริษัท นภดล เอส กรุ๊ป จำกัด กสิกรไทย เลขที่บัญชี 020-893777-4\n'
-            'ค่าเช่าสินค้า โอนเงินเข้าบัญชี บช.บริษัท นภดล เอส กรุ๊ป จำกัด ธนาคารไทยพาณิชย์ เลขที่บัญชี 186-222160-2\n'
-            'ค่าขนส่งสินค้า โอนเงินเข้าบัญชี บช.บริษัท เอ็นพีดี โลจิสติกส์ จำกัด ธนาคารไทยพาณิชย์ เลขที่บัญชี 439-044811-6'
+            'ค่าประกันสินค้า โอนเงินเข้าบัญชี บช.บริษัท นภดล เอส กรุ๊ป จํากัด กสิกรไทย เลขที่บัญชี 020-893777-4\n'
+            'ค่าเช่าสินค้า โอนเงินเข้าบัญชี : บช.บริษัท นภดล เอส กรุ๊ป จํากัด ธนาคารไทยพาณิชย์ เลขที่บัญชี 186-222160-2\n'
+            + _JASPER_BANK_TRANSPORT
         ),
         '4': (
             'ค่าประกันสินค้า โอนเงินเข้าบัญชี บช.บริษัท เอ็นพีดี สตีลเทค จำกัด กสิกรไทย เลขที่บัญชี 035-1-39757-8\n'
-            'ค่าเช่าสินค้า โอนเงินเข้าบัญชี บช.บริษัท เอ็นพีดี สตีลเทค จำกัด ธนาคารไทยพาณิชย์ เลขที่บัญชี 408-582058-4\n'
-            'ค่าขนส่งสินค้า โอนเงินเข้าบัญชี บช.บริษัท เอ็นพีดี โลจิสติกส์ จำกัด ธนาคารไทยพาณิชย์ เลขที่บัญชี 439-044811-6'
+            'ค่าเช่าสินค้า โอนเงินเข้าบัญชี : บช.บริษัท เอ็นพีดี สตีลเทค จำกัด ธนาคารไทยพาณิชย์ เลขที่บัญชี 408-582058-4\n'
+            + _JASPER_BANK_TRANSPORT
         ),
         '5': (
             'ค่าประกันสินค้า โอนเงินเข้าบัญชี บช.บริษัท เอ็นพีดี โลจิสติกส์ จำกัด กสิกรไทย เลขที่บัญชี 117-1-78329-8\n'
-            'ค่าขนส่งสินค้า โอนเงินเข้าบัญชี บช.บริษัท เอ็นพีดี โลจิสติกส์ จำกัด ธนาคารไทยพาณิชย์ เลขที่บัญชี 439-044811-6'
+            + _JASPER_BANK_TRANSPORT
         ),
     }
+
+    # --- ส่วนที่ปรับตามใบเสนอราคาเช่าสินค้า o14 (server) ---
+    jasper_rq_date_order_thai = fields.Char(
+        string='Quotation Date (Thai)',
+        compute='_compute_jasper_rq_values',
+    )
+    jasper_rq_company_address = fields.Char(
+        string='Quotation Company Address',
+        compute='_compute_jasper_rq_values',
+    )
+    jasper_rq_vat_line = fields.Char(
+        string='Quotation VAT Line',
+        compute='_compute_jasper_rq_values',
+    )
+    jasper_rq_shipping_cost = fields.Float(
+        string='Quotation Shipping Cost',
+        compute='_compute_jasper_rq_values',
+    )
+    jasper_rq_line_count = fields.Integer(
+        string='Quotation Line Count',
+        compute='_compute_jasper_rq_values',
+    )
+
+    @staticmethod
+    def _jasper_rq_join_address(parts):
+        """ต่อที่อยู่โดยข้ามส่วนที่มีอยู่ในข้อความแล้ว (เหมือนใบแจ้งหนี้/ใบวางบิล Jasper)"""
+        text = ''
+        for part in parts:
+            part = (part or '').strip()
+            if not part:
+                continue
+            core = part[2:] if part.startswith('จ.') else part
+            if core in text:
+                continue
+            text = ('%s %s' % (text, part)).strip()
+        return text
+
+    @api.depends_context('allowed_company_ids')
+    @api.depends('date_order', 'order_line', 'shipping_cost', 'shipping_cost_m', 'use_special_delivery_zero')
+    def _compute_jasper_rq_values(self):
+        company = self.env.company
+        address = self._jasper_rq_join_address([
+            company.street, company.street2, company.city,
+            company.state_id.name if company.state_id else '', company.zip])
+        head_office = '' if company.parent_id else '(สำนักงานใหญ่)'
+        # o14 ฐาน NPD_S_Group_New_V2 / NPD_Bangkok_New ไม่แสดงเลขผู้เสียภาษี (แสดงแค่สำนักงานใหญ่)
+        if any(token in (company.name or '') for token in ('กรุ๊ป', 'กรุงเทพ')):
+            vat_line = head_office
+        else:
+            vat_line = ('เลขที่ผู้เสียภาษี : %s %s' % (company.vat or '', head_office)).strip()
+        for rec in self:
+            rec.jasper_rq_date_order_thai = _thai_long_date(rec.date_order)
+            rec.jasper_rq_company_address = address
+            rec.jasper_rq_vat_line = vat_line
+            rec.jasper_rq_line_count = len(rec.order_line)
+            # ค่าขนส่ง: ค่าขนส่งพิเศษ (shipping_cost_m) ถ้ามี ไม่งั้นค่าขนส่งปกติ ตามเงื่อนไข o14
+            special = rec.shipping_cost_m or 0.0
+            if rec.use_special_delivery_zero:
+                rec.jasper_rq_shipping_cost = 0.0 if special == 0 else (rec.shipping_cost or 0.0)
+            else:
+                rec.jasper_rq_shipping_cost = special if special > 0 else (rec.shipping_cost or 0.0)
 
     @api.depends_context('allowed_company_ids')
     def _compute_jasper_bank_info(self):
@@ -210,6 +290,17 @@ class SaleOrderLine(models.Model):
         string='Insurance Total',
         compute='_compute_jasper_insurance_total',
     )
+    # ชื่อสินค้าแบบ o14 (product_template_id.name) — ประกาศเหมือนกันในใบกำกับการเช่า Jasper
+    jasper_product_name = fields.Char(
+        string='Product Name',
+        compute='_compute_jasper_product_name',
+    )
+
+    @api.depends('product_template_id', 'product_id', 'name')
+    def _compute_jasper_product_name(self):
+        for line in self:
+            line.jasper_product_name = (line.product_template_id.name
+                                        or line.product_id.name or line.name or '')
 
     @api.depends('name')
     def _compute_jasper_product_fields(self):

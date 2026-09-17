@@ -1,3 +1,5 @@
+import pytz
+
 from odoo import models, fields, api
 
 THAI_MONTHS = {
@@ -10,6 +12,9 @@ THAI_MONTHS = {
 def _format_thai_date(dt):
     if not dt:
         return ''
+    if hasattr(dt, 'hour'):
+        # date_order เก็บเป็น UTC -> แปลงเป็นเวลาไทย ไม่งั้นใบที่ออกก่อน 07:00 ได้วันที่ของเมื่อวาน
+        dt = pytz.utc.localize(dt).astimezone(pytz.timezone('Asia/Bangkok'))
     day = dt.strftime('%d')
     month = THAI_MONTHS.get(dt.month, '')
     year = dt.year + 543
@@ -109,6 +114,28 @@ class SaleOrder(models.Model):
         # เพิ่มบน sale.order — อ่านแบบปลอดภัยเผื่อโมดูลนั้นไม่ได้ติดตั้ง
         for rec in self:
             rec.jasper_contract_full = getattr(rec, 'rental_contract_full', '') or ''
+
+    # --- หัวเอกสาร "ใบกำกับการเช่า(เพิ่มเติม)" เมื่อเป็นเอกสารที่ 2 ขึ้นไปของสัญญาเดียวกัน (o14 server) ---
+    jasper_ri_title = fields.Char(
+        string='Rent Invoice Title',
+        compute='_compute_jasper_ri_title',
+    )
+
+    def _compute_jasper_ri_title(self):
+        for rec in self:
+            extra = hasattr(rec, '_get_rental_doc_count') and rec._get_rental_doc_count() >= 2
+            rec.jasper_ri_title = 'ใบกำกับการเช่า(เพิ่มเติม)' if extra else 'ใบกำกับการเช่า'
+
+    # จำนวนบรรทัด ใช้ขึ้นหน้าใหม่ทุก 14 รายการเหมือน o14
+    jasper_ri_line_count = fields.Integer(
+        string='Rent Invoice Line Count',
+        compute='_compute_jasper_ri_line_count',
+    )
+
+    @api.depends('order_line')
+    def _compute_jasper_ri_line_count(self):
+        for rec in self:
+            rec.jasper_ri_line_count = len(rec.order_line)
 
     # --- Sales contact ---
     jasper_sales_contact_name = fields.Char(
@@ -236,16 +263,12 @@ class SaleOrder(models.Model):
         compute='_compute_jasper_rental_per_day',
     )
 
-    # ค่าเช่าต่อวันรวม(vat) = ยอดรวมสุทธิ / จำนวนวันเช่า (end_rent_date - start_rent_date)
-    @api.depends('amount_total', 'start_rent_date', 'end_rent_date')
+    # ค่าเช่าต่อวันรวม(vat) = amount_total / pfb_date_of_rent (o14 server ก.ค. 2569)
+    # ฟิลด์นี้ประกาศซ้ำในใบเสนอราคาเช่า Jasper -> สูตรต้องเหมือนกันทั้งสองโมดูล
+    @api.depends('amount_total', 'pfb_date_of_rent')
     def _compute_jasper_rental_per_day(self):
         for rec in self:
-            days = 0
-            if rec.start_rent_date and rec.end_rent_date:
-                days = (rec.end_rent_date - rec.start_rent_date).days
-            if not days:
-                days = 1
-            rec.jasper_rental_per_day = (rec.amount_total or 0.0) / days
+            rec.jasper_rental_per_day = (rec.amount_total or 0.0) / (rec.pfb_date_of_rent or 1)
 
     # --- Grand total (rental + insurance) ---
     jasper_grand_total = fields.Float(
@@ -362,6 +385,18 @@ class SaleOrderLine(models.Model):
             else:
                 line.jasper_product_code = ''
                 line.jasper_product_desc = ''
+
+    # ชื่อสินค้าแบบ o14 (product_template_id.name) — ประกาศเหมือนกันในใบเสนอราคาเช่า Jasper
+    jasper_product_name = fields.Char(
+        string='Product Name',
+        compute='_compute_jasper_product_name',
+    )
+
+    @api.depends('product_template_id', 'product_id', 'name')
+    def _compute_jasper_product_name(self):
+        for line in self:
+            line.jasper_product_name = (line.product_template_id.name
+                                        or line.product_id.name or line.name or '')
 
     jasper_line_weight = fields.Float(
         string='Line Weight',
