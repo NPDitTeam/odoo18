@@ -155,6 +155,16 @@ class PayrollSalary(models.Model):
     expense_advance = fields.Float(string='เบิกเงินล่วงหน้า', default=0.0)
     expense_loan = fields.Float(string='เงินกู้', default=0.0)
     expense_ksl = fields.Float(string='กยศ.', default=0.0)
+    expense_welfare_fund = fields.Float(
+        string='หักเงินสงเคราะห์ลูกจ้าง', default=0.0, readonly=True,
+        help='คำนวณอัตโนมัติจากเมนู "หักเงินสงเคราะห์ลูกจ้าง" '
+             '(รายได้รวมของรอบ ค่าเริ่มต้นไม่รวมค่าคอมมิชชั่น × อัตรา)')
+    welfare_fund_rate = fields.Float(
+        string='อัตราเงินสงเคราะห์ (%)', default=0.0, readonly=True)
+    welfare_fund_base = fields.Float(
+        string='ฐานคำนวณเงินสงเคราะห์', default=0.0, readonly=True,
+        help='รายได้รวมของรอบที่ใช้คิดเงินสงเคราะห์ '
+             '(หักค่าคอมมิชชั่นออกแล้ว ถ้ารายการไม่ได้ตั้งให้รวม)')
     expense_other_manual = fields.Float(string='หักอื่นๆ (ใส่เพิ่ม)', default=0.0)
     expense_deposit_regular_total = fields.Float(
         string='หักเงินประกันรายเดือน', compute='_compute_deposit_amounts',
@@ -761,6 +771,9 @@ class PayrollSalary(models.Model):
         self.tax_monthly = tax_amount
         self.tax_annual = tax_annual
 
+        # ---------- หักเงินสงเคราะห์ลูกจ้าง ----------
+        self._compute_welfare_fund(prorated)
+
         # ---------- บรรทัดสลิป ----------
         if not self.manual_override:
             self.line_ids.unlink()
@@ -768,10 +781,28 @@ class PayrollSalary(models.Model):
                 prorated, sso_amount, tax_amount)]
         return True
 
-    def _build_lines(self, prorated_salary, sso_amount, tax_amount):
-        """บรรทัดในสลิป — ชื่อบรรทัดคงเดิมจาก Odoo 14 เพราะแอปและรายงานอ้างชื่อนี้"""
+    def _compute_welfare_fund(self, prorated_salary):
+        """หักเงินสงเคราะห์ลูกจ้างตามรายการที่ยืนยันแล้วของบริษัทพนักงาน
+
+        ฐาน = รายได้รวมของรอบ (บรรทัดรายได้ชุดเดียวกับที่ลงสลิป) ค่าเริ่มต้นหักค่าคอมมิชชั่น
+        (คอมสาขา + คอม Sale) ออกก่อน ติ๊ก "รวมค่าคอมมิชชั่นในฐานคำนวณ" ในเมนูเมื่อต้องการให้รวม
+        """
         self.ensure_one()
-        income = [
+        income = sum(amount or 0.0 for _name, amount in self._income_items(prorated_salary))
+        commission = (self.income_commission or 0.0) + (self.income_commission_sale or 0.0)
+        policy = self.env['welfare.fund.config'].sudo().get_policy_for(
+            self.employee_id, self.month, self.year)
+        rate = policy['rate']
+        base = max(income - (0.0 if policy['include_commission'] else commission), 0.0)
+        amount = round_half_up(base * rate / 100.0) if rate else 0.0
+        self.welfare_fund_rate = rate
+        self.welfare_fund_base = base if rate else 0.0
+        self.expense_welfare_fund = amount
+
+    def _income_items(self, prorated_salary):
+        """รายการรายได้ในสลิป (ชื่อ, ยอด) — ใช้ทั้งตอนสร้างบรรทัดและตอนคิดเงินสงเคราะห์"""
+        self.ensure_one()
+        return [
             ('เงินเดือน', prorated_salary),
             ('ค่าล่วงเวลา/โอที', self.ot_total_weekday),
             ('ค่าล่วงเวลา/วันหยุดนักขัตฤกษ์', self.ot_total_holiday),
@@ -788,10 +819,16 @@ class PayrollSalary(models.Model):
              (self.income_commission or 0.0) + (self.income_commission_sale or 0.0)),
             ('รายได้อื่นๆ', self.income_other),
         ]
+
+    def _build_lines(self, prorated_salary, sso_amount, tax_amount):
+        """บรรทัดในสลิป — ชื่อบรรทัดคงเดิมจาก Odoo 14 เพราะแอปและรายงานอ้างชื่อนี้"""
+        self.ensure_one()
+        income = self._income_items(prorated_salary)
         deduction = [
             ('กองทุนสำรองเลี้ยงชีพ', self.expense_provident),
             ('เบิกเงินล่วงหน้า', self.expense_advance),
             ('เงินกู้', self.expense_loan),
+            ('หักเงินสงเคราะห์ลูกจ้าง', self.expense_welfare_fund),
             ('กยศ', self.expense_ksl),
             ('หักเงินอื่นๆ', self.expense_other),
             ('หักสาย', self.deduction_late),
@@ -996,6 +1033,7 @@ class PayrollSalary(models.Model):
             {'label': 'กยศ.', 'amount': self.expense_ksl},
             {'label': 'เบิกเงินล่วงหน้า', 'amount': self.expense_advance},
             {'label': 'เงินกู้', 'amount': self.expense_loan},
+            {'label': 'หักเงินสงเคราะห์ลูกจ้าง', 'amount': self.expense_welfare_fund},
             {'label': 'หักอื่นๆ', 'amount': self.expense_other},
         ]
         return {

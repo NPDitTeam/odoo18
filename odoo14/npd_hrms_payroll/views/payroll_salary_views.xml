@@ -200,6 +200,11 @@
                                     <field name="expense_advance"/>
                                     <field name="expense_loan"/>
                                     <field name="expense_ksl"/>
+                                    <field name="expense_welfare_fund"/>
+                                    <field name="welfare_fund_rate"
+                                           invisible="not welfare_fund_rate"/>
+                                    <field name="welfare_fund_base"
+                                           invisible="not welfare_fund_rate"/>
                                 </group>
                                 <group string="หักอื่นๆ">
                                     <field name="expense_other_manual"/>

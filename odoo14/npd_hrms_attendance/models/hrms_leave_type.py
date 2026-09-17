@@ -237,12 +237,17 @@ class HrmsLeaveBalance(models.Model):
         Odoo 14 ต้อง pull "คงเหลือ" จาก PHP ก่อนทุกครั้งเพื่อไม่ให้ทับค่าที่แอปหักไป
         — ตอนนี้แอปหักที่ Odoo โดยตรงแล้ว ขั้นตอน pull จึงหายไปทั้งหมด
         """
-        today = fields.Date.context_today(self)
-        is_new_year = today.month == 1 and today.day == 1
         Employee = self.env['employee.salary'].sudo()
         updated = 0
 
         for company in self.env['res.company'].sudo().search([]):
+            # cron รันด้วยผู้ใช้ระบบที่ไม่ได้ตั้งเขตเวลา context_today จึงได้วันที่แบบ UTC
+            # รอบตี 2 ไทยของวันที่ 1 ม.ค. ยังเป็น 31 ธ.ค. ของ UTC → รีเซ็ตปีใหม่ช้าไปหนึ่งวัน
+            # (เจอจริงบน Odoo 14) ยึดเขตเวลาของบริษัท ไม่มีค่อยใช้เวลาไทย
+            tz = company.partner_id.tz or 'Asia/Bangkok'
+            local_self = self.with_context(tz=tz)
+            today = fields.Date.context_today(local_self)
+            is_new_year = today.month == 1 and today.day == 1
             cutoff = company.hrms_cutoff_start_day or 25
             if today.day >= cutoff:
                 cyc_year, cyc_month = today.year, today.month
@@ -263,7 +268,7 @@ class HrmsLeaveBalance(models.Model):
             ])
             for employee in employees:
                 try:
-                    self._sync_employee(
+                    local_self._sync_employee(
                         employee, year=today.year, reset_remaining=is_new_year)
                     updated += 1
                 except Exception as exc:
@@ -271,8 +276,7 @@ class HrmsLeaveBalance(models.Model):
                     _logger.warning(
                         'อัปเดตสิทธิ์การลาล้มเหลว emp=%s: %s',
                         employee.employee_code, exc)
-        _logger.info(
-            'Leave entitlement cron: อัปเดต %s คน (new_year=%s)', updated, is_new_year)
+        _logger.info('Leave entitlement cron: อัปเดต %s คน', updated)
         return True
 
     # ------------------------------------------------------------------

@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ===== รายการหักเงินสงเคราะห์ลูกจ้าง ===== -->
+    <record id="view_welfare_fund_config_list" model="ir.ui.view">
+        <field name="name">welfare.fund.config.list</field>
+        <field name="model">welfare.fund.config</field>
+        <field name="arch" type="xml">
+            <list string="หักเงินสงเคราะห์ลูกจ้าง"
+                  decoration-muted="state == 'draft'"
+                  decoration-success="state == 'confirmed'">
+                <field name="company_id" groups="base.group_multi_company"/>
+                <field name="start_year"/>
+                <field name="start_month"/>
+                <field name="rate"/>
+                <field name="apply_scope"/>
+                <field name="include_commission"/>
+                <field name="employee_count"/>
+                <field name="cutoff_summary"/>
+                <field name="state"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_welfare_fund_config_form" model="ir.ui.view">
+        <field name="name">welfare.fund.config.form</field>
+        <field name="model">welfare.fund.config</field>
+        <field name="arch" type="xml">
+            <form string="หักเงินสงเคราะห์ลูกจ้าง">
+                <header>
+                    <button name="action_refresh_employees" type="object"
+                            string="ดึงพนักงานที่ใช้งานอยู่" class="btn-secondary"
+                            invisible="state == 'confirmed'"/>
+                    <button name="action_confirm" type="object" string="ยืนยัน"
+                            class="btn-primary"
+                            invisible="state == 'confirmed'"
+                            confirm="ยืนยันแล้วระบบจะเริ่มหักเงินตามอัตรานี้ในรอบเงินเดือนที่กำหนด"/>
+                    <button name="action_reset_draft" type="object" string="กลับเป็นร่าง"
+                            invisible="state == 'draft'"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,confirmed"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="name" readonly="1"/></h1>
+                    </div>
+                    <div class="alert alert-info" role="alert">
+                        หักจาก <b>รายได้รวมของรอบ</b> ตามอัตราที่ตั้งไว้ เริ่มหักตั้งแต่รอบเงินเดือน
+                        ของเดือนที่ระบุเป็นต้นไป โดยปกติ<b>ไม่นำค่าคอมมิชชั่นมาคิด</b>
+                        (คอมสาขา + คอม Sale) ถ้าต้องการให้รวม ให้ติ๊ก "รวมค่าคอมมิชชั่นในฐานคำนวณ"
+                    </div>
+                    <group>
+                        <group string="อัตราและขอบเขต">
+                            <field name="company_id" groups="base.group_multi_company"
+                                   readonly="state == 'confirmed'"/>
+                            <field name="rate" readonly="state == 'confirmed'"/>
+                            <field name="apply_scope" readonly="state == 'confirmed'"/>
+                            <field name="include_commission" readonly="state == 'confirmed'"/>
+                            <field name="employee_count"/>
+                        </group>
+                        <group string="เริ่มหักรอบไหน">
+                            <field name="start_month" readonly="state == 'confirmed'"/>
+                            <field name="start_year" readonly="state == 'confirmed'"/>
+                            <field name="cutoff_start_day"/>
+                            <field name="cutoff_end_day"/>
+                            <field name="cutoff_summary"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="รายชื่อพนักงาน" name="employees">
+                            <div class="alert alert-warning" role="alert"
+                                 invisible="apply_scope == 'selected'">
+                                เลือก "หักทุกคน" ไว้ — พนักงานที่ทำเงินเดือนรอบนั้นถูกหักทุกคน
+                                ตารางนี้ใช้เมื่อต้องการยกเว้นบางคน (ติ๊ก "ไม่หักคนนี้")
+                                หรือกำหนดอัตราเฉพาะราย
+                            </div>
+                            <field name="line_ids" readonly="state == 'confirmed'">
+                                <list string="รายชื่อพนักงาน" editable="bottom">
+                                    <field name="employee_id"
+                                           options="{'no_create': True}"
+                                           domain="[('status', '=', 'active'), ('company_id', '=', parent.company_id)]"/>
+                                    <field name="employee_code"/>
+                                    <field name="firstname"/>
+                                    <field name="lastname"/>
+                                    <field name="branch_id"/>
+                                    <field name="department_id"/>
+                                    <field name="employee_status"/>
+                                    <field name="rate"/>
+                                    <field name="skip_deduction"/>
+                                    <field name="note"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="หมายเหตุ" name="note">
+                            <field name="note" nolabel="1" placeholder="เช่น มติที่ประชุมวันที่..."/>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_welfare_fund_config_search" model="ir.ui.view">
+        <field name="name">welfare.fund.config.search</field>
+        <field name="model">welfare.fund.config</field>
+        <field name="arch" type="xml">
+            <search string="ค้นหารายการหักเงินสงเคราะห์">
+                <field name="name"/>
+                <field name="start_year"/>
+                <filter name="filter_confirmed" string="ยืนยันแล้ว"
+                        domain="[('state', '=', 'confirmed')]"/>
+                <filter name="filter_draft" string="ร่าง"
+                        domain="[('state', '=', 'draft')]"/>
+                <group expand="0" string="จัดกลุ่มตาม">
+                    <filter name="group_year" string="ปี" context="{'group_by': 'start_year'}"/>
+                    <filter name="group_rate" string="อัตรา" context="{'group_by': 'rate'}"/>
+                    <filter name="group_state" string="สถานะ" context="{'group_by': 'state'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_welfare_fund_config" model="ir.actions.act_window">
+        <field name="name">หักเงินสงเคราะห์ลูกจ้าง</field>
+        <field name="res_model">welfare.fund.config</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_welfare_fund_config_search"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">ตั้งอัตราหักเงินสงเคราะห์ลูกจ้าง</p>
+            <p>
+                กำหนดอัตรา (0.25% หรือ 0.50%) เลือกว่าหักทุกคนหรือเฉพาะบางคน
+                และระบุว่าเริ่มหักรอบเงินเดือนเดือนไหน จากนั้นกดยืนยัน
+                ระบบจะหักให้อัตโนมัติทุกครั้งที่ทำเงินเดือน
+            </p>
+        </field>
+    </record>
+
+</odoo>

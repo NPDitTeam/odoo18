@@ -124,6 +124,27 @@ class HrAttendanceBranchLeave(models.Model):
                     and rec.leave_end_date < rec.leave_start_date):
                 raise ValidationError('วันที่สิ้นสุดการลาต้องไม่ก่อนวันที่เริ่มลา')
 
+    @api.constrains('leave_type_id', 'leave_start_date', 'leave_end_date')
+    def _check_saturday_leave(self):
+        """สิทธิหยุดวันเสาร์ใช้ได้ครั้งละ 1 วัน และต้องเป็นวันเสาร์เท่านั้น
+
+        Odoo 14 เคยมีใบลาที่วันสิ้นสุดถูกทิ้งไว้เป็น "วันที่กรอกใบ"
+        (เช่น 30 มี.ค.–18 เม.ย. = 20 วัน) สิทธิ์เลยถูกหักยาวทั้งช่วง
+        แอปล็อกไว้แล้ว แต่ต้องกันที่ฝั่งเซิร์ฟเวอร์ด้วย เพราะแก้จากหน้าเว็บได้
+        และแอปเวอร์ชันเก่ายังส่งมาได้
+        """
+        for rec in self:
+            if rec.leave_type_id.code != 'leave_saturday':
+                continue
+            if not rec.leave_start_date or not rec.leave_end_date:
+                continue
+            if rec.leave_start_date.weekday() != 5:
+                raise ValidationError('สิทธิหยุดวันเสาร์ต้องเลือกวันเสาร์เท่านั้น')
+            if rec.leave_end_date != rec.leave_start_date:
+                raise ValidationError(
+                    'สิทธิหยุดวันเสาร์ใช้ได้ครั้งละ 1 วัน '
+                    '(วันเริ่มต้นและวันสิ้นสุดต้องเป็นวันเดียวกัน)')
+
     @api.constrains('leave_type_id', 'attachment')
     def _check_attachment_required(self):
         for rec in self:
@@ -190,11 +211,13 @@ class HrAttendanceBranchLeave(models.Model):
 
     def write(self, vals):
         res = super().write(vals)
-        # แก้วันที่/ประเภท ขณะยังรออนุมัติ → คำนวณสิทธิ์ใหม่
+        # แก้วันที่/ประเภท ของใบที่ยังมีผล (รออนุมัติ หรืออนุมัติแล้ว) → คำนวณสิทธิ์ใหม่
+        # รวมใบที่อนุมัติแล้วด้วย: เจ้าหน้าที่มักมาแก้วันที่ผิดหลังอนุมัติไปแล้ว
+        # ถ้าไม่คิดใหม่ สิทธิ์ที่หักไว้จะค้างตามวันที่เดิม (เคยเกิดจริงบน Odoo 14)
         recalc_fields = {'leave_start_date', 'leave_end_date', 'leave_type_id'}
         if recalc_fields & set(vals) and not self.env.context.get('skip_leave_deduction'):
             for record in self:
-                if record.state == 'รออนุมัติ':
+                if record.state in OPEN_STATES:
                     record.with_context(skip_leave_deduction=True)._apply_deduction()
         return res
 

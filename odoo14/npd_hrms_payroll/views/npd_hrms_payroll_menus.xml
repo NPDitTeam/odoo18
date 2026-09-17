@@ -31,6 +31,12 @@
               action="action_work_security_deposit"
               sequence="40"/>
 
+    <menuitem id="menu_hrms_welfare_fund"
+              name="หักเงินสงเคราะห์ลูกจ้าง"
+              parent="menu_hrms_payroll_root"
+              action="action_welfare_fund_config"
+              sequence="45"/>
+
     <menuitem id="menu_pnd1_line"
               name="ภ.ง.ด.1"
               parent="menu_hrms_payroll_root"

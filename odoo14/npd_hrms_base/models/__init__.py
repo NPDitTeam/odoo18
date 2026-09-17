@@ -5,6 +5,7 @@ from . import res_config_settings
 from . import res_branch
 from . import hr_org_master
 from . import employee_salary
+from . import employee_salary_lock
 from . import employee_foreign_worker
 from . import employee_warning
 from . import hr_employee

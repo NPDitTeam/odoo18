@@ -77,6 +77,7 @@ class PayrollSalary(models.Model):
     jasper_ded_ksl = fields.Char(compute='_compute_jasper_deduction')
     jasper_ded_advance = fields.Char(compute='_compute_jasper_deduction')
     jasper_ded_loan = fields.Char(compute='_compute_jasper_deduction')
+    jasper_ded_welfare = fields.Char(compute='_compute_jasper_deduction')
     jasper_ded_other = fields.Char(compute='_compute_jasper_deduction')
     jasper_total_deduction = fields.Char(compute='_compute_jasper_deduction')
 
@@ -116,7 +117,8 @@ class PayrollSalary(models.Model):
     @api.depends('lateness_deduction', 'leave_deduction_total',
                  'deduction_absent', 'tax_monthly', 'sso_total',
                  'expense_provident', 'expense_ksl', 'expense_advance',
-                 'expense_loan', 'expense_other', 'total_deduction')
+                 'expense_loan', 'expense_welfare_fund', 'expense_other',
+                 'total_deduction')
     def _compute_jasper_deduction(self):
         for rec in self:
             rec.jasper_ded_late = _fmt(rec.lateness_deduction)
@@ -128,6 +130,7 @@ class PayrollSalary(models.Model):
             rec.jasper_ded_ksl = _fmt(rec.expense_ksl)
             rec.jasper_ded_advance = _fmt(rec.expense_advance)
             rec.jasper_ded_loan = _fmt(rec.expense_loan)
+            rec.jasper_ded_welfare = _fmt(rec.expense_welfare_fund)
             rec.jasper_ded_other = _fmt(rec.expense_other)
             rec.jasper_total_deduction = _fmt(rec.total_deduction)
 

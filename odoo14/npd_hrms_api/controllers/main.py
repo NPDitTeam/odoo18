@@ -17,7 +17,7 @@ import logging
 
 from odoo import http, fields
 from odoo.exceptions import AccessError, UserError, ValidationError
-from odoo.http import request, Response
+from odoo.http import request, content_disposition, Response
 from odoo.tools.mimetypes import guess_mimetype
 
 _logger = logging.getLogger(__name__)
@@ -836,6 +836,80 @@ class HrmsApiController(http.Controller):
                 })
             return _ok('Data fetched successfully.', records)
         return run()
+
+    # ==================================================================
+    # หนังสือรับรองหักภาษี ณ ที่จ่าย (50 ทวิ) — ต้องติดตั้งโมดูล npd_hr_wt_cert
+    # ==================================================================
+    @http.route(f'{API_ROOT}/wt_cert', type='http', auth='public',
+                methods=['GET', 'POST', 'OPTIONS'], csrf=False, cors='*')
+    def wt_cert_list(self, **kwargs):
+        """หนังสือรับรองฯ ของพนักงานที่ล็อกอินอยู่ ทุกปีที่ยืนยันแล้ว (ปีใหม่สุดก่อน)
+
+        เปิดได้เฉพาะของตัวเอง — เป็นเอกสารภาษีส่วนบุคคล ผู้อนุมัติก็ไม่ควรเห็น
+        ยังไม่ติดตั้งโมดูล 50 ทวิ = คืนรายการว่าง ให้แอปขึ้น "ไม่พบเอกสาร" ไม่ใช่ error
+        """
+        @self._guard
+        def run():
+            employee = self._current_employee(_payload())
+            if 'hr.withholding.tax.cert' not in request.env:
+                return _ok('', [])
+            certs = request.env['hr.withholding.tax.cert'].sudo().search([
+                ('employee_id', '=', employee.id),
+                ('state', '=', 'done'),
+            ], order='report_year desc, id desc')
+            return _ok('', [self._wt_cert_dict(cert) for cert in certs])
+        return run()
+
+    @http.route(f'{API_ROOT}/wt_cert/<int:cert_id>/pdf', type='http',
+                auth='public', methods=['GET'], csrf=False, cors='*')
+    def wt_cert_pdf(self, cert_id, **kwargs):
+        """ไฟล์ PDF ของหนังสือรับรองฯ — เฉพาะของตัวเองและยืนยันแล้วเท่านั้น"""
+        @self._guard
+        def run():
+            employee = self._current_employee(_payload())
+            if 'hr.withholding.tax.cert' not in request.env:
+                return _err('ยังไม่ได้ติดตั้งโมดูล 50 ทวิ', status=501)
+            cert = request.env['hr.withholding.tax.cert'].sudo().browse(cert_id)
+            # ไม่บอกว่ามีเอกสารแต่เป็นของคนอื่น — กันการไล่เดา id ของคนอื่น
+            if (not cert.exists() or cert.state != 'done'
+                    or cert.employee_id.id != employee.id):
+                return _err('ไม่พบเอกสาร', status=404)
+            report_ref = 'npd_hr_wt_cert_form.hr_wt_cert_pdf_report'
+            if not request.env.ref(report_ref, raise_if_not_found=False):
+                return _err('ยังไม่ได้ติดตั้งแบบฟอร์มพิมพ์ 50 ทวิ', status=501)
+            pdf, _report_type = request.env['ir.actions.report'].sudo()._render_qweb_pdf(
+                report_ref, res_ids=[cert.id])
+            filename = 'ทวิ50_%s_%s.pdf' % (cert.report_year or '', cert.name or cert.id)
+            return request.make_response(pdf, headers=[
+                ('Content-Type', 'application/pdf'),
+                ('Content-Disposition', content_disposition(filename)),
+            ])
+        return run()
+
+    @staticmethod
+    def _wt_cert_dict(cert):
+        """รูปแบบเดียวกับที่แอป Odoo 14 อ่านจาก JSON-RPC เดิม — แอปใช้หน้าจอเดิมได้เลย"""
+        lines = [{
+            'description': line.wt_cert_income_desc or dict(
+                line._fields['wt_cert_income_type'].selection).get(
+                    line.wt_cert_income_type, '') or '',
+            'base': line.base or 0.0,
+            'amount': line.amount or 0.0,
+        } for line in cert.wt_line]
+        return {
+            'id': cert.id,
+            'name': cert.name or '',
+            'report_year': cert.report_year or '',
+            'state': cert.state or '',
+            'company_name': cert.company_name or cert.company_id.name or '',
+            'employee_taxid': cert.employee_taxid or '',
+            'total_net_salary': cert.total_net_salary or 0.0,
+            'total_tax': cert.total_tax or 0.0,
+            # ยอดกองทุนทั้งปีตามที่พิมพ์บนหนังสือรับรองฯ (ใช้ยื่นลดหย่อนภาษี)
+            'sso_amount': cert.sso_amount or 0.0,
+            'provident_fund_amount': cert.provident_fund_amount or 0.0,
+            'lines': lines,
+        }
 
     # ==================================================================
     # Helper

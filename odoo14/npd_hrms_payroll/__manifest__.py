@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'NPD HRMS - Payroll',
-    'version': '18.0.1.0.0',
+    'version': '18.0.1.0.1',
     'summary': 'คำนวณเงินเดือน ภาษี ประกันสังคม OT และเงินประกันการทำงาน',
     'description': """
 NPD HRMS - Payroll
@@ -37,6 +37,7 @@ NPD HRMS - Payroll
         'views/pnd1_report_views.xml',
         'views/payroll_period_views.xml',
         'views/payroll_salary_views.xml',
+        'views/welfare_fund_views.xml',
         'views/other_income_views.xml',
         'views/work_security_deposit_views.xml',
         'views/employee_salary_views.xml',

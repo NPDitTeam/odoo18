@@ -117,6 +117,9 @@
 	<field name="DedLoan-jasper_ded_loan" class="java.lang.String">
 		<fieldDescription><![CDATA[DedLoan-jasper_ded_loan]]></fieldDescription>
 	</field>
+	<field name="DedWelfare-jasper_ded_welfare" class="java.lang.String">
+		<fieldDescription><![CDATA[DedWelfare-jasper_ded_welfare]]></fieldDescription>
+	</field>
 	<field name="DedOther-jasper_ded_other" class="java.lang.String">
 		<fieldDescription><![CDATA[DedOther-jasper_ded_other]]></fieldDescription>
 	</field>
@@ -449,10 +452,20 @@
 			<staticText>
 				<reportElement style="ThaiSmall" x="418" y="188" width="246" height="18"/>
 				<textElement textAlignment="Left" verticalAlignment="Middle"/>
-				<text><![CDATA[หักอื่นๆ]]></text>
+				<text><![CDATA[หักเงินสงเคราะห์ลูกจ้าง]]></text>
 			</staticText>
 			<textField isBlankWhenNull="true">
 				<reportElement style="ThaiSmall" x="663" y="188" width="130" height="18"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[$F{DedWelfare-jasper_ded_welfare}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement style="ThaiSmall" x="418" y="206" width="246" height="18"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle"/>
+				<text><![CDATA[หักอื่นๆ]]></text>
+			</staticText>
+			<textField isBlankWhenNull="true">
+				<reportElement style="ThaiSmall" x="663" y="206" width="130" height="18"/>
 				<textElement textAlignment="Right" verticalAlignment="Middle"/>
 				<textFieldExpression><![CDATA[$F{DedOther-jasper_ded_other}]]></textFieldExpression>
 			</textField>

@@ -23,3 +23,7 @@ access_pnd1_line_officer,pnd1.line officer,model_pnd1_line,npd_hrms_base.group_h
 access_pnd1_line_payroll,pnd1.line payroll,model_pnd1_line,npd_hrms_base.group_hrms_payroll,1,1,1,1
 access_employee_warning_auto_config_user,employee.warning.auto.config user,model_employee_warning_auto_config,npd_hrms_base.group_hrms_user,1,0,0,0
 access_employee_warning_auto_config_manager,employee.warning.auto.config manager,model_employee_warning_auto_config,npd_hrms_base.group_hrms_manager,1,1,1,1
+access_welfare_fund_config_payroll,welfare.fund.config payroll,model_welfare_fund_config,npd_hrms_base.group_hrms_payroll,1,1,1,0
+access_welfare_fund_config_manager,welfare.fund.config manager,model_welfare_fund_config,npd_hrms_base.group_hrms_manager,1,1,1,1
+access_welfare_fund_line_payroll,welfare.fund.line payroll,model_welfare_fund_line,npd_hrms_base.group_hrms_payroll,1,1,1,1
+access_welfare_fund_line_manager,welfare.fund.line manager,model_welfare_fund_line,npd_hrms_base.group_hrms_manager,1,1,1,1

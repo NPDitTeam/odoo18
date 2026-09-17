@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'NPD HRMS - Base',
-    'version': '18.0.1.0.2',
+    'version': '18.0.1.0.3',
     'summary': 'ข้อมูลหลักระบบบุคคล — พนักงาน สาขา แผนก ตำแหน่ง ตารางงาน วันหยุด เบี้ยเลี้ยง',
     'description': """
 NPD HRMS - Base
@@ -42,6 +42,7 @@ NPD HRMS - Base
         'views/res_branch_views.xml',
         'views/hr_org_master_views.xml',
         'views/employee_salary_views.xml',
+        'views/res_users_salary_lock_views.xml',
         'views/employee_warning_views.xml',
         'views/hr_employee_views.xml',
         'views/hr_work_schedule_views.xml',
