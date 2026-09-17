@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ฟอร์มใบแจ้งหนี้: สถานะการยกเลิก ต่อจากวันที่ใบแจ้งหนี้ (ตำแหน่งเดียวกับ o14) -->
+    <record id="view_move_form_cancel_lock" model="ir.ui.view">
+        <field name="name">account.move.form.cancel.lock</field>
+        <field name="model">account.move</field>
+        <field name="inherit_id" ref="account.view_move_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="(//group[@id='header_right_group']//field[@name='invoice_date'])[1]" position="after">
+                <field name="cancel_lock_state"
+                       widget="badge"
+                       decoration-danger="cancel_lock_state == 'locked'"
+                       decoration-success="cancel_lock_state == 'unlocked'"
+                       invisible="not cancel_lock_state"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- รายการใบแจ้งหนี้ -->
+    <record id="view_invoice_tree_cancel_lock" model="ir.ui.view">
+        <field name="name">account.move.invoice.list.cancel.lock</field>
+        <field name="model">account.move</field>
+        <field name="inherit_id" ref="account.view_invoice_tree"/>
+        <field name="arch" type="xml">
+            <!-- Odoo 18 รายการใบแจ้งหนี้ไม่มีคอลัมน์ state แล้ว ใช้ status_in_payment แทน -->
+            <xpath expr="//field[@name='status_in_payment']" position="after">
+                <field name="cancel_lock_state"
+                       widget="badge"
+                       optional="hide"
+                       decoration-danger="cancel_lock_state == 'locked'"
+                       decoration-success="cancel_lock_state == 'unlocked'"/>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_account_invoice_filter_cancel_lock" model="ir.ui.view">
+        <field name="name">account.move.select.cancel.lock</field>
+        <field name="model">account.move</field>
+        <field name="inherit_id" ref="account.view_account_invoice_filter"/>
+        <field name="arch" type="xml">
+            <xpath expr="//filter[@name='cancel']" position="after">
+                <separator/>
+                <filter string="ไม่สามารถยกเลิกได้" name="cancel_locked"
+                        domain="[('cancel_lock_state', '=', 'locked')]"/>
+                <filter string="ยกเลิกได้" name="cancel_unlocked"
+                        domain="[('cancel_lock_state', '=', 'unlocked')]"/>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>

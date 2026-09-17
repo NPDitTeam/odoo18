@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ฟอร์มใบรับชำระ: สถานะการยกเลิก ต่อจากวันที่
+         ช่องวันที่ที่แสดงจริงถูกย้ายมาไว้กลุ่มขวาโดย account_payment_invoice (priority 50)
+         จึงสืบวิวเดียวกันด้วย priority สูงกว่าให้ต่อท้ายได้ -->
+    <record id="view_account_payment_form_cancel_lock" model="ir.ui.view">
+        <field name="name">account.payment.form.cancel.lock</field>
+        <field name="model">account.payment</field>
+        <field name="inherit_id" ref="l10n_th_account_tax.view_account_payment_form"/>
+        <field name="priority">60</field>
+        <field name="arch" type="xml">
+            <xpath expr="//group[@name='group2']/field[@name='date']" position="after">
+                <field name="cancel_lock_state"
+                       widget="badge"
+                       decoration-danger="cancel_lock_state == 'locked'"
+                       decoration-success="cancel_lock_state == 'unlocked'"
+                       invisible="not cancel_lock_state"/>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_account_payment_tree_cancel_lock" model="ir.ui.view">
+        <field name="name">account.payment.list.cancel.lock</field>
+        <field name="model">account.payment</field>
+        <field name="inherit_id" ref="account.view_account_payment_tree"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='state']" position="after">
+                <field name="cancel_lock_state"
+                       widget="badge"
+                       optional="hide"
+                       decoration-danger="cancel_lock_state == 'locked'"
+                       decoration-success="cancel_lock_state == 'unlocked'"/>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_account_payment_search_cancel_lock" model="ir.ui.view">
+        <field name="name">account.payment.search.cancel.lock</field>
+        <field name="model">account.payment</field>
+        <field name="inherit_id" ref="account.view_account_payment_search"/>
+        <field name="arch" type="xml">
+            <xpath expr="//filter[@name='state_in_process']" position="after">
+                <separator/>
+                <filter string="ไม่สามารถยกเลิกได้" name="cancel_locked"
+                        domain="[('cancel_lock_state', '=', 'locked')]"/>
+                <filter string="ยกเลิกได้" name="cancel_unlocked"
+                        domain="[('cancel_lock_state', '=', 'unlocked')]"/>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ผู้ใช้ในกลุ่มนี้ยกเลิก / รีเซ็ตเป็นแบบร่าง เอกสารของเดือนก่อนหน้าได้ ไม่สนเงื่อนไข -->
+    <record id="group_cancel_lock_bypass" model="res.groups">
+        <field name="name">Cancel Period Lock - ยกเลิกเอกสารย้อนหลังได้ (ฝ่ายการเงิน)</field>
+        <field name="category_id" ref="base.module_category_accounting"/>
+        <field name="comment">ยกเลิก / รีเซ็ตเป็นแบบร่าง ใบแจ้งหนี้และใบรับชำระของเดือนก่อนหน้าได้ โดยไม่สนสถานะ "ไม่สามารถยกเลิกได้ โปรดติดต่อฝ่ายการเงิน"</field>
+    </record>
+</odoo>

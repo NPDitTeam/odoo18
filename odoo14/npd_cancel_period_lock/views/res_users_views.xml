@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- res.users form - toggle สิทธิ์ฝ่ายการเงินในแท็บ Preferences (Odoo 18 ชื่อแท็บ preferences) -->
+    <record id="view_users_form_cancel_lock" model="ir.ui.view">
+        <field name="name">res.users.form.cancel.lock</field>
+        <field name="model">res.users</field>
+        <field name="inherit_id" ref="base.view_users_form"/>
+        <field name="priority">99</field>
+        <field name="arch" type="xml">
+            <xpath expr="//page[@name='preferences']" position="inside">
+                <group string="สิทธิ์ยกเลิกเอกสารเดือนก่อนหน้า" name="cancel_lock_grp">
+                    <field name="allow_cancel_locked_period"
+                           widget="boolean_toggle"/>
+                </group>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>
