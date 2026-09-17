@@ -91,14 +91,9 @@
 		<variableExpression><![CDATA[Boolean.TRUE]]></variableExpression>
 		<initialValueExpression><![CDATA[0]]></initialValueExpression>
 	</variable>
+	<!-- ผู้ใช้ขอเอากรอบรอบหน้าออก (17 ก.ย. 2569) — ต่างจาก o14 และใบแจ้งหนี้ค่าปรับ/ค่าเช่าส่วนต่างที่ยังมีกรอบ -->
 	<background>
-		<band height="822" splitType="Stretch">
-			<!-- กรอบรอบหน้าแบบ o14 (ตารางโครงหน้า border="1") -->
-			<rectangle>
-				<reportElement mode="Transparent" x="0" y="0" width="565" height="822" uuid="d8c2b000-0000-4000-8000-000000000101"/>
-				<graphicElement><pen lineWidth="1.0"/></graphicElement>
-			</rectangle>
-		</band>
+		<band splitType="Stretch"/>
 	</background>
 	<pageHeader>
 		<band height="196" splitType="Stretch">
