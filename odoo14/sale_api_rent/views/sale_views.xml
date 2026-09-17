@@ -28,9 +28,11 @@
                        readonly="1"/>
             </xpath>
 
-            <!-- ฟิลด์ในรายการสินค้า -->
+            <!-- ฟิลด์ในรายการสินค้า
+                 ไม่ใส่ pfb_quantity (Quantity Rent) ซ้ำ: pfb_npd_all_customs ใส่คอลัมน์นี้ไว้แล้ว
+                 o14 สองโมดูลนี้อยู่คนละฐาน (sale_api_rent = โลจิสติกส์, all_customs = บริษัทเช่า)
+                 จึงไม่เคยซ้ำ พอ o18 รวมฐานเดียวคอลัมน์เลยขึ้น 2 อัน -->
             <xpath expr="//field[@name='order_line']/list//field[@name='name']" position="after">
-                <field name="pfb_quantity"/>
                 <field name="is_renew_green_house_line" column_invisible="1"/>
                 <field name="total_weight"
                        readonly="not is_renew_green_house_line"/>
