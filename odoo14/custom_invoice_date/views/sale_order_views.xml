@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Inherit Sale Order Form View -->
+    <record id="view_order_form_inherit_reservation" model="ir.ui.view">
+        <field name="name">sale.order.form.inherit.reservation</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_order_form"/>
+        <field name="arch" type="xml">
+            <!-- o14 วางต่อจาก //sheet/group (กลุ่มหัวเอกสาร) = group sale_header ของ o18 -->
+            <xpath expr="//group[@name='sale_header']" position="after">
+                <group string="ข้อมูลการจอง">
+                    <!-- ช่องภาษีหัก ณ ที่จ่ายใช้กับลูกค้านิติบุคคลเท่านั้น
+                         ลูกค้าบุคคลธรรมดาไม่มีการหัก ณ ที่จ่าย จึงซ่อนไปเลย -->
+                    <field name="partner_company_type" invisible="1"/>
+                    <field name="use_wht_billing_sheet"
+                           string="ใช้ภาษีหัก ณ ที่จ่ายใบแจ้งหนี้/ใบวางบิล หัก 5%"
+                           invisible="partner_company_type != 'company'"/>
+                    <field name="is_reservation_quotation" string="ใบเสนอราคาแบบจอง"/>
+                </group>
+            </xpath>
+        </field>
+    </record>
+</odoo>

@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_users_form_inherit_invoice_date" model="ir.ui.view">
+        <field name="name">res.users.form.inherit.invoice.date</field>
+        <field name="model">res.users</field>
+        <field name="inherit_id" ref="base.view_users_form"/>
+        <field name="arch" type="xml">
+            <!-- เพิ่ม tab ใหม่ในหน้าผู้ใช้ -->
+            <xpath expr="//notebook" position="inside">
+                <page string="Invoice Settings" name="invoice_tab">
+                    <group col="2">
+                        <separator string="การตั้งค่า Invoice" colspan="2"/>
+                        <field name="allow_edit_invoice_date" string="อนุญาตให้แก้ไขวันที่ Invoice"/>
+                        <div colspan="2">
+                            <p>เมื่อเปิดใช้งาน ผู้ใช้นี้จะสามารถแก้ไขวันที่ Invoice ในเอกสาร Invoice ได้</p>
+                        </div>
+                    </group>
+                </page>
+            </xpath>
+        </field>
+    </record>
+</odoo>

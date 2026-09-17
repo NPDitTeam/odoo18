@@ -60,19 +60,7 @@ def _money(value):
 class SaleOrder(models.Model):
     _inherit = 'sale.order'
 
-    # o14 ช่องนี้อยู่ในโมดูล custom_invoice_date ซึ่ง o18 ยังไม่ได้พอร์ต จึงประกาศไว้ที่นี่
-    partner_company_type = fields.Selection(
-        related='partner_id.company_type',
-        string='ประเภทลูกค้า',
-        readonly=True)
-    use_wht_billing_sheet = fields.Boolean(
-        string='ใช้ภาษีหัก ณ ที่จ่ายใบแจ้งหนี้/ใบวางบิล หัก 5%',
-        default=False,
-        copy=False,
-        help='ถ้าติ๊ก: ใบแจ้งหนี้/ใบวางบิล จะหักภาษี ณ ที่จ่าย 5% ของยอดค่าเช่าก่อนภาษีมูลค่าเพิ่ม '
-             '(ไม่รวมค่าประกัน) ออกจากจำนวนเงินทั้งสิ้น จำนวนเงินตัวอักษร และยอดในคิวอาร์ '
-             'พร้อมแสดงข้อมูลภาษีหัก ณ ที่จ่ายท้ายเอกสาร\n'
-             'ถ้าไม่ติ๊ก: แสดงยอดเต็ม ไม่หักภาษี ณ ที่จ่าย')
+    # ช่องติ๊ก use_wht_billing_sheet อยู่ในโมดูล custom_invoice_date (เหมือน o14)
 
     # ------------------------------------------------------------------
     # ฟิลด์สำหรับ Jasper (ไม่เก็บลงฐาน) — ขึ้นต้น jasper_bs_ กันชนกับรายงาน Jasper ตัวอื่นบน sale.order

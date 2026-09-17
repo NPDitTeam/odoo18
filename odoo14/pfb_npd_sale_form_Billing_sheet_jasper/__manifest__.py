@@ -20,10 +20,11 @@
         'multi_branch_management_aagam',
         # จำนวนเงินเป็นตัวอักษรไทย (เครื่อง o18 ไม่มีไลบรารี bahttext)
         'l10n_th_amount_to_text',
+        # ช่องติ๊ก "ใช้ภาษีหัก ณ ที่จ่ายใบแจ้งหนี้/ใบวางบิล หัก 5%" (use_wht_billing_sheet)
+        'custom_invoice_date',
     ],
     'data': [
         'views/res_company_views.xml',
-        'views/sale_order_views.xml',
         'data/report_data.xml',
     ],
     'installable': True,

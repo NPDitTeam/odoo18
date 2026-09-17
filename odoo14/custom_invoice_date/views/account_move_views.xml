@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Inherit Account Move Form View -->
+    <record id="view_move_form_inherit_invoice_date" model="ir.ui.view">
+        <field name="name">account.move.form.inherit.invoice.date</field>
+        <field name="model">account.move</field>
+        <field name="inherit_id" ref="account.view_move_form"/>
+        <field name="priority">99</field>
+        <field name="arch" type="xml">
+            <!-- เพิ่มฟิลด์ที่ซ่อนไว้สำหรับใช้ในการคำนวณ -->
+            <xpath expr="//sheet" position="before">
+                <field name="can_edit_invoice_date" invisible="1"/>
+                <field name="is_from_reservation" invisible="1"/>
+            </xpath>
+
+            <!-- แสดงข้อความเตือนด้านบนของฟอร์ม -->
+            <xpath expr="//sheet" position="before">
+                <div class="alert alert-warning text-center" role="alert"
+                     invisible="not is_from_reservation or invoice_date"
+                     style="margin: 10px;">
+                    <strong>⚠️ คำเตือน:</strong> เอกสารนี้มาจากใบเสนอราคาแบบจอง ส่วนกลางต้องระบุวันที่ Invoice ก่อนจึงจะสามารถยืนยันเอกสารได้
+                </div>
+            </xpath>
+
+            <!-- วันที่ Invoice: แก้ไม่ได้ถ้าผู้ใช้ไม่มีสิทธิและเอกสารมาจากใบสั่ง / บังคับกรอกถ้ามาจากใบจอง
+                 o18 มีช่องนี้ 2 ตัว (ลูกค้า / ผู้ขาย) ต้องคงเงื่อนไขเดิม state != 'draft' ไว้ด้วย
+                 (o14 xpath เจอช่องเดียวซึ่งใช้ทั้งใบแจ้งหนี้และบิลผู้ขาย จึงใส่ทั้งสองตัวเหมือนกัน) -->
+            <xpath expr="//group[@id='header_right_group']/field[@name='invoice_date'][1]" position="attributes">
+                <attribute name="readonly">state != 'draft' or (not can_edit_invoice_date and invoice_origin)</attribute>
+                <attribute name="required">is_from_reservation</attribute>
+            </xpath>
+            <xpath expr="//group[@id='header_right_group']/field[@name='invoice_date'][2]" position="attributes">
+                <attribute name="readonly">state != 'draft' or (not can_edit_invoice_date and invoice_origin)</attribute>
+            </xpath>
+
+            <!-- แสดงสถานะใบเสนอราคาแบบจอง (readonly เสมอ ไม่ให้แก้ไข) -->
+            <xpath expr="//group[@name='sale_info_group']/field[@name='invoice_origin']" position="after">
+                <field name="is_from_reservation"
+                       string="มาจากใบเสนอราคาแบบจอง"
+                       readonly="1"
+                       invisible="not is_from_reservation"
+                       widget="boolean_toggle"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Inherit Account Move List View -->
+    <record id="view_invoice_tree_inherit_reservation" model="ir.ui.view">
+        <field name="name">account.move.list.inherit.reservation</field>
+        <field name="model">account.move</field>
+        <field name="inherit_id" ref="account.view_invoice_tree"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='amount_residual_signed']" position="before">
+                <field name="is_from_reservation" optional="show" string="จากใบจอง" widget="boolean"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>
