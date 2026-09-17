@@ -1,0 +1,73 @@
+<?xml version="1.0"?>
+<odoo>
+    <!-- ใบแจ้งหนี้ 3 ใบ พิมพ์จากหน้าใบแจ้งหนี้ (เมนูพิมพ์) ตาม o14 pfb_npd_account_billing_sheets
+         report_name ห้ามมี "/" เพราะถูกใช้เป็น URL path segment -->
+    <record id="jasper_billing_sheet_lost_report" model="ir.actions.report">
+        <field name="name">ใบแจ้งหนี้ค่าปรับหาย</field>
+        <field name="model">account.move</field>
+        <field name="report_type">jasper</field>
+        <field name="file">pfb_npd_account_billing_sheets_jasper/report/billing_sheet_lost.jrxml</field>
+        <field name="attachment_use">False</field>
+        <field name="report_name">ใบแจ้งหนี้ค่าปรับหาย</field>
+        <field name="jasper_report">True</field>
+        <field name="jasper_output">pdf</field>
+        <field name="model_id" ref="account.model_account_move"/>
+        <field name="binding_model_id" ref="account.model_account_move"/>
+        <field name="binding_type">report</field>
+        <field name="print_report_name">'Billing Note (ค่าปรับหาย) - %s' % (object.name)</field>
+    </record>
+    <record id="jasper_billing_sheet_lost_file" model="ir.actions.report.xml.file">
+        <field name="default">True</field>
+        <field name="filename">billing_sheet_lost.jrxml</field>
+        <field name="report_id" ref="jasper_billing_sheet_lost_report"/>
+        <field name="file" type="base64" file="pfb_npd_account_billing_sheets_jasper/report/billing_sheet_lost.jrxml"/>
+    </record>
+
+    <record id="jasper_billing_sheet_damaged_report" model="ir.actions.report">
+        <field name="name">ใบแจ้งหนี้ค่าปรับชำรุด</field>
+        <field name="model">account.move</field>
+        <field name="report_type">jasper</field>
+        <field name="file">pfb_npd_account_billing_sheets_jasper/report/billing_sheet_damaged.jrxml</field>
+        <field name="attachment_use">False</field>
+        <field name="report_name">ใบแจ้งหนี้ค่าปรับชำรุด</field>
+        <field name="jasper_report">True</field>
+        <field name="jasper_output">pdf</field>
+        <field name="model_id" ref="account.model_account_move"/>
+        <field name="binding_model_id" ref="account.model_account_move"/>
+        <field name="binding_type">report</field>
+        <field name="print_report_name">'Billing Note (ค่าปรับชำรุด) - %s' % (object.name)</field>
+    </record>
+    <record id="jasper_billing_sheet_damaged_file" model="ir.actions.report.xml.file">
+        <field name="default">True</field>
+        <field name="filename">billing_sheet_damaged.jrxml</field>
+        <field name="report_id" ref="jasper_billing_sheet_damaged_report"/>
+        <field name="file" type="base64" file="pfb_npd_account_billing_sheets_jasper/report/billing_sheet_damaged.jrxml"/>
+    </record>
+
+    <record id="jasper_billing_sheet_diff_report" model="ir.actions.report">
+        <field name="name">ใบแจ้งหนี้ค่าเช่าส่วนต่าง</field>
+        <field name="model">account.move</field>
+        <field name="report_type">jasper</field>
+        <field name="file">pfb_npd_account_billing_sheets_jasper/report/billing_sheet_diff.jrxml</field>
+        <field name="attachment_use">False</field>
+        <!-- ชื่อภายในต้องไม่ซ้ำ pfb_npd_rental_difference_jasper (ใช้ชื่อ "ใบแจ้งหนี้ค่าเช่าส่วนต่าง")
+             jasper_reports หาไฟล์แม่แบบจาก report_name ถ้าซ้ำจะพิมพ์ได้แบบฟอร์มของอีกตัว -->
+        <field name="report_name">ใบแจ้งหนี้ค่าเช่าส่วนต่าง-ใบวางบิล</field>
+        <field name="jasper_report">True</field>
+        <field name="jasper_output">pdf</field>
+        <field name="model_id" ref="account.model_account_move"/>
+        <field name="binding_model_id" ref="account.model_account_move"/>
+        <field name="binding_type">report</field>
+        <field name="print_report_name">'Billing Note (ค่าเช่าส่วนต่าง) - %s' % (object.name)</field>
+    </record>
+    <record id="jasper_billing_sheet_diff_file" model="ir.actions.report.xml.file">
+        <field name="default">True</field>
+        <field name="filename">billing_sheet_diff.jrxml</field>
+        <field name="report_id" ref="jasper_billing_sheet_diff_report"/>
+        <field name="file" type="base64" file="pfb_npd_account_billing_sheets_jasper/report/billing_sheet_diff.jrxml"/>
+    </record>
+
+    <!-- เอาใบแจ้งหนี้ค่าเช่าส่วนต่างแบบเก่า (pfb_npd_rental_difference_jasper) ออกจากเมนูพิมพ์
+         o14 เลิกใช้แล้ว (pfb_npd_rental_difference_qweb ถอนออกทุกฐาน) เหลือแต่ตัวในโมดูลนี้ -->
+    <function model="ir.actions.report" name="npd_abs_hide_retired_reports"/>
+</odoo>
