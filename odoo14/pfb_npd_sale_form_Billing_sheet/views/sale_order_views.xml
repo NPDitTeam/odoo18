@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ช่องติ๊กหักภาษี ณ ที่จ่าย 5% บนใบแจ้งหนี้/ใบวางบิล
+         o14 อยู่ในโมดูล custom_invoice_date (กลุ่ม "ข้อมูลการจอง") ซึ่ง o18 ยังไม่ได้พอร์ต
+         ใช้กับลูกค้านิติบุคคลเท่านั้น บุคคลธรรมดาไม่มีการหัก ณ ที่จ่ายจึงซ่อนไป -->
+    <record id="view_order_form_billing_sheet_wht" model="ir.ui.view">
+        <field name="name">sale.order.form.billing.sheet.wht</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_order_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//group[@name='sale_header']" position="after">
+                <field name="partner_company_type" invisible="1"/>
+                <group string="ใบแจ้งหนี้/ใบวางบิล" invisible="partner_company_type != 'company'">
+                    <field name="use_wht_billing_sheet"/>
+                </group>
+            </xpath>
+        </field>
+    </record>
+</odoo>
