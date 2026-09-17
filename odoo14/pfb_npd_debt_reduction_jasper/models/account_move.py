@@ -108,11 +108,10 @@ class AccountMove(models.Model):
 
     @api.depends('company_id.name')
     def _compute_jasper_dr_company_name_display(self):
+        # o14 พิมพ์ doc.company_id.name ตรง ๆ — เดิมต่อท้าย "(สำนักงานใหญ่)" เอง
+        # ทำให้บริษัทที่ชื่อมีคำนี้อยู่แล้ว (อินเตอร์เทรดดิ้ง) ขึ้นซ้ำสองครั้ง
         for rec in self:
-            name = rec.company_id.name or ''
-            rec.jasper_dr_company_name_display = (
-                '{} (สำนักงานใหญ่)'.format(name) if name else ''
-            )
+            rec.jasper_dr_company_name_display = rec.company_id.name or ''
 
     @api.depends(
         'company_id.street', 'company_id.street2',
@@ -211,12 +210,15 @@ class AccountMove(models.Model):
             from bahttext import bahttext
         except ImportError:
             bahttext = None
+        thb = self.env.ref('base.THB', raise_if_not_found=False)
         for rec in self:
             amount = rec.amount_untaxed or 0.0
             if bahttext:
                 rec.jasper_dr_baht_text = bahttext(amount)
             else:
-                rec.jasper_dr_baht_text = '{:,.2f}'.format(amount)
+                # เครื่อง o18 ไม่มี bahttext (เดิม fallback เป็นตัวเลข "403.74") -> ใช้ l10n_th_amount_to_text
+                currency = rec.currency_id or thb
+                rec.jasper_dr_baht_text = currency.with_context(lang='th_TH').amount_to_text(amount)
 
     @api.depends('narration')
     def _compute_jasper_dr_narration_clean(self):

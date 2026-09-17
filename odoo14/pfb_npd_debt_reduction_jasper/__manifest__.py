@@ -16,6 +16,8 @@
         'account',
         'jasper_reports',
         'multi_branch_management_aagam',
+        # จำนวนเงินเป็นตัวอักษรไทย (เครื่อง o18 ไม่มีไลบรารี bahttext)
+        'l10n_th_amount_to_text',
     ],
     'data': [
         'data/report_data.xml',
