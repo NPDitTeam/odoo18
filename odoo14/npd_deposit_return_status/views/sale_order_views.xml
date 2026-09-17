@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- List View: สถานะคืนเงินประกัน ต่อจากคอลัมน์ "วันเกิน"
+         (ฟอร์มมีช่องนี้อยู่แล้วใน pfb_npd_add_date_quatation_order ของ o18 จึงไม่ใส่ซ้ำ) -->
+    <record id="view_order_tree_deposit_return_status" model="ir.ui.view">
+        <field name="name">sale.order.list.deposit.return.status</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_order_tree"/>
+        <field name="priority">999</field>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='rent_days_overdue']" position="after">
+                <field name="deposit_return_status" readonly="1"
+                       decoration-danger="deposit_return_status == 'not_returned'"
+                       decoration-warning="deposit_return_status == 'no_voucher'"
+                       decoration-info="deposit_return_status == 'waiting_finance'"
+                       decoration-success="deposit_return_status == 'done'"
+                       widget="badge" optional="show"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Search View: ตัวกรองสถานะคืนเงินประกัน -->
+    <record id="view_sale_order_filter_deposit_return_status" model="ir.ui.view">
+        <field name="name">sale.order.search.deposit.return.status</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.sale_order_view_search_inherit_sale"/>
+        <field name="priority">999</field>
+        <field name="arch" type="xml">
+            <xpath expr="//search" position="inside">
+                <separator/>
+                <filter string="ลูกค้ายังไม่คืนสินค้า" name="filter_not_returned"
+                        domain="[('deposit_return_status', '=', 'not_returned')]"/>
+                <filter string="สาขายังไม่สร้างการคืนเงินประกัน" name="filter_no_voucher"
+                        domain="[('deposit_return_status', '=', 'no_voucher')]"/>
+                <filter string="รอคืนเงินประกันจากการเงิน" name="filter_waiting_finance"
+                        domain="[('deposit_return_status', '=', 'waiting_finance')]"/>
+                <filter string="คืนเงินประกันเสร็จสิ้น" name="filter_done"
+                        domain="[('deposit_return_status', '=', 'done')]"/>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>

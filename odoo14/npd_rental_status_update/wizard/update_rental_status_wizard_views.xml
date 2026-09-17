@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Wizard Form View -->
+    <record id="view_update_rental_status_wizard_form" model="ir.ui.view">
+        <field name="name">update.rental.status.wizard.form</field>
+        <field name="model">update.rental.status.wizard</field>
+        <field name="arch" type="xml">
+            <form string="อัพเดทสถานะการเช่า">
+                <group>
+                    <field name="order_ids" widget="many2many_tags" readonly="1"/>
+                    <field name="is_admin_user" invisible="1"/>
+                    <field name="new_status" invisible="not is_admin_user"/>
+                </group>
+                <div class="alert alert-info" role="alert" invisible="is_admin_user">
+                    <strong>หมายเหตุ:</strong> ระบบจะอัพเดทสถานะเป็น "ปิดบิล" สำหรับรายการที่มีสถานะ "ครบกำหนด" หรือ "เกินกำหนด" เท่านั้น
+                </div>
+                <footer>
+                    <button name="action_update_status" string="อัพเดทสถานะ" type="object" class="btn-primary"/>
+                    <button string="ยกเลิก" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <!-- Server Action สำหรับเมนู ⚙ ในหน้ารายการใบสั่งขาย -->
+    <record id="action_update_rental_status_done" model="ir.actions.server">
+        <field name="name">ปิดบิล</field>
+        <field name="model_id" ref="sale.model_sale_order"/>
+        <field name="binding_model_id" ref="sale.model_sale_order"/>
+        <field name="binding_view_types">list</field>
+        <field name="state">code</field>
+        <field name="code">
+action = {
+    'name': 'ปิดบิล',
+    'type': 'ir.actions.act_window',
+    'res_model': 'update.rental.status.wizard',
+    'view_mode': 'form',
+    'target': 'new',
+    'context': {
+        'active_ids': records.ids,
+        'default_order_ids': [(6, 0, records.ids)],
+    }
+}
+        </field>
+    </record>
+</odoo>
