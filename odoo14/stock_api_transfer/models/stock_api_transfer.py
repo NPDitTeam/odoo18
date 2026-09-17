@@ -23,6 +23,11 @@ class StockAPITransfer(models.Model):
     note = fields.Text(string="หมายเหตุ")
 
     # ต้นทาง/ปลายทาง = บริษัท + คลังจริงใน DB เดียวกัน (แทน database_selection เดิมที่เป็น DB แยก)
+    # จำกัดให้เลือกได้เฉพาะบริษัทที่ผู้ใช้เป็นสมาชิก เพราะฟอร์มส่งบริษัทที่เลือกเข้า
+    # context (allowed_company_ids) เพื่อให้ค้นคลังข้ามบริษัทได้ ถ้าไม่ใช่สมาชิกจะถูกปฏิเสธ
+    user_company_ids = fields.Many2many(
+        "res.company", string="บริษัทที่ผู้ใช้เข้าถึงได้",
+        compute="_compute_user_company_ids")
     source_company_id = fields.Many2one("res.company", string="บริษัทต้นทาง", required=True)
     source_location_id = fields.Many2one("stock.location", string="คลังต้นทาง")
     dest_company_id = fields.Many2one(
@@ -52,6 +57,12 @@ class StockAPITransfer(models.Model):
     # ------------------------------------------------------------------
     # Helpers
     # ------------------------------------------------------------------
+    @api.depends_context('uid')
+    def _compute_user_company_ids(self):
+        companies = self.env.user.company_ids
+        for rec in self:
+            rec.user_company_ids = companies
+
     def _get_source_qty(self, product, location):
         """คงเหลือจริงของสินค้าที่คลัง (อ่านจาก stock.quant)"""
         if not product or not location:
@@ -142,9 +153,14 @@ class StockAPITransfer(models.Model):
     # ------------------------------------------------------------------
     def _move_quant(self, product, location, qty):
         """ปรับสต๊อกที่ location (qty > 0 = เติม, qty < 0 = ตัด) ผ่าน API มาตรฐานของ stock.quant
-        ใช้ with_company ตามบริษัทของคลัง เพื่อให้ quant ผูกบริษัทถูกต้องเวลาโอนข้ามบริษัท"""
+        ใช้ with_company ตามบริษัทของคลัง เพื่อให้ quant ผูกบริษัทถูกต้องเวลาโอนข้ามบริษัท
+
+        ต้องอ่านคลังแบบ sudo เพราะกฎบริษัทของ Odoo ให้เห็นเฉพาะคลังของบริษัทที่
+        "ติ๊กเลือกใช้งาน" อยู่ตอนนั้น การโยกข้ามบริษัทจึงอ่านคลังอีกฝั่งไม่ได้
+        (งานนี้คุมสิทธิด้วยกลุ่มผู้อนุมัติของโมดูลนี้อยู่แล้ว)"""
         if not product or not location or not qty:
             return
+        location = location.sudo()
         company = location.company_id or self.env.company
         self.env['stock.quant'].with_company(company).sudo()._update_available_quantity(
             product, location, qty)
@@ -186,8 +202,8 @@ class StockAPITransfer(models.Model):
             })
             _logger.info("📦 โอน %s: %s -%.2f → %s +%.2f",
                          line.product_id.display_name,
-                         self.source_location_id.display_name, line.request_qty,
-                         self.location_id.display_name, line.request_qty)
+                         self.source_location_id.sudo().display_name, line.request_qty,
+                         self.location_id.sudo().display_name, line.request_qty)
 
         self.write({'state': 'confirmed'})
 
@@ -208,8 +224,8 @@ class StockAPITransfer(models.Model):
             })
             _logger.info("🔄 ยกเลิกโอน %s: คืน %s +%.2f / ตัด %s -%.2f",
                          line.product_id.display_name,
-                         self.source_location_id.display_name, line.request_qty,
-                         self.location_id.display_name, line.request_qty)
+                         self.source_location_id.sudo().display_name, line.request_qty,
+                         self.location_id.sudo().display_name, line.request_qty)
 
         self.write({'state': 'draft'})
 

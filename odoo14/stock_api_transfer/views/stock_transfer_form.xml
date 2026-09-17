@@ -36,20 +36,28 @@
                     </group>
 
                     <group string="ต้นทาง / ปลายทาง" col="4">
+                        <field name="user_company_ids" invisible="1"/>
                         <field name="source_company_id" required="1"
+                               domain="[('id','in',user_company_ids)]"
                                readonly="state in ('waiting_approval','approved','confirmed')"/>
+                        <!-- context allowed_company_ids: กฎบริษัทของ Odoo จะโชว์เฉพาะคลังของบริษัท
+                             ที่ "ติ๊กเลือกใช้งาน" อยู่ตอนนั้น การโยกข้ามบริษัทจึงเห็นคลังต้นทางเป็น
+                             "ไม่มีบันทึก" ตลอด ใส่บริษัทที่เลือกไว้ในช่องนี้ลง context เพื่อให้ค้นเจอ -->
                         <field name="source_location_id" required="1"
                                invisible="not source_company_id"
                                readonly="state in ('waiting_approval','approved','confirmed')"
                                domain="[('usage','=','internal'),('company_id','in',[source_company_id, False])]"
+                               context="{'allowed_company_ids': [source_company_id] if source_company_id else []}"
                                options="{'no_create': True}"/>
 
                         <field name="dest_company_id" required="1"
+                               domain="[('id','in',user_company_ids)]"
                                readonly="state in ('waiting_approval','approved','confirmed')"/>
                         <field name="location_id" string="คลังปลายทาง" required="1"
                                invisible="not dest_company_id"
                                readonly="state in ('waiting_approval','approved','confirmed')"
                                domain="[('usage','=','internal'),('company_id','in',[dest_company_id, False])]"
+                               context="{'allowed_company_ids': [dest_company_id] if dest_company_id else []}"
                                options="{'no_create': True}"/>
 
                         <field name="product_ids" widget="many2many_tags" required="1"
