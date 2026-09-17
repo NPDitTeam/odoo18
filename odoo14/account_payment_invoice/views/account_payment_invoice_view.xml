@@ -62,13 +62,15 @@
                        readonly="state == 'paid'"
                        required="not is_payment_multi"
                        options="{'no_create': True}"/>
-                <field name="cheque_id" string="เช็ค" invisible="is_payment_multi"/>
+                <!-- ซ่อนตามที่ผู้ใช้ขอ (เช็คระบุรายบรรทัดในตารางการชำระเงินแทน) -->
+                <field name="cheque_id" string="เช็ค" invisible="1"/>
                 <field name="cash_status" string="สถานะเงินสด"/>
                 <field name="overpaid_refund_status" string="สถานะคืนเงินโอนเกิน"/>
                 <field name="wtax_refund_status" string="สถานะคืนหัก ณ ที่จ่าย"/>
                 <field name="rental_difference_status" string="สถานะโอนคืนค่าเช่าส่วนต่าง"/>
                 <field name="pfb_date_of_rent" string="Day of Rent"/>
-                <field name="pfb_objective_id" string="วัตถุประสงค์"/>
+                <!-- ซ่อนตามที่ผู้ใช้ขอ -->
+                <field name="pfb_objective_id" string="วัตถุประสงค์" invisible="1"/>
             </xpath>
             <!-- o14 ไม่แสดงจำนวนเงิน/วันที่ในคอลัมน์ซ้าย: วันที่อยู่ขวาบน ยอดชำระอยู่ท้ายตารางใบแจ้งหนี้ -->
             <xpath expr="//group[@name='group1']/label[@for='amount']" position="attributes">
@@ -92,6 +94,11 @@
             </xpath>
             <xpath expr="//group[@name='group2']/field[@name='journal_id']" position="after">
                 <xpath expr="//field[@name='branch_id']" position="move"/>
+            </xpath>
+            <!-- ซ่อน "บัญชีธนาคารของบริษัท" (partner_bank_id ตัวสุดท้ายในกลุ่มขวา = ตัวที่แสดงตอนรับเงิน)
+                 ตามที่ผู้ใช้ขอ ส่วนบัญชีธนาคารของลูกค้า/ผู้จำหน่ายแสดงเฉพาะตอนจ่ายเงินอยู่แล้ว -->
+            <xpath expr="//group[@name='group2']/field[@name='partner_bank_id'][last()]" position="attributes">
+                <attribute name="invisible">1</attribute>
             </xpath>
             <xpath expr="//group[@name='group2']/field[@name='partner_bank_id'][last()]" position="after">
                 <field name="move_id" string="รายการบันทึกบัญชี" readonly="1" invisible="not move_id"/>

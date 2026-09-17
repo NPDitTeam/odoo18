@@ -6,7 +6,9 @@
     'website': '',
     'category': 'Sales',
     'depends': ['sale_management', 'sale_stock', 'product', 'account',
-                'npd_npd_all_customs', 'sale_invoice_plan', 'sale_order_line_menu'],
+                'npd_npd_all_customs', 'sale_invoice_plan', 'sale_order_line_menu',
+                # ปุ่ม Add Debit Note บนฟอร์มใบแจ้งหนี้ (views/account_move.xml)
+                'account_debit_note'],
     'data': [
         'security/ir.model.access.csv',
         'security/invoice_journal_config_rules.xml',

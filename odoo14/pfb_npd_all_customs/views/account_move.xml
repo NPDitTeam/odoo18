@@ -33,4 +33,21 @@
             </xpath>
         </field>
     </record>
+
+    <!-- ปุ่ม "Add Debit Note" บนหัวฟอร์มใบแจ้งหนี้แบบ o14
+         Odoo 18 ย้ายการสร้างใบเพิ่มหนี้ไปไว้เฉพาะเมนู ⚙ ในหน้ารายการ (binding_view_types=list)
+         ปุ่มบนฟอร์มจึงหายไป — ใส่กลับด้วยเงื่อนไขเดียวกับ o14: ใบที่ลงบัญชีแล้ว, เป็นใบแจ้งหนี้/ใบลดหนี้,
+         และไม่ใช่ใบเพิ่มหนี้เอง (debit_origin_id มีอยู่ในฟอร์มแล้วจาก account_debit_note) -->
+    <record id="view_move_form_add_debit_note" model="ir.ui.view">
+        <field name="name">account.move.form.add.debit.note</field>
+        <field name="model">account.move</field>
+        <field name="inherit_id" ref="account.view_move_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//header/button[@name='action_reverse']" position="after">
+                <button name="%(account_debit_note.action_view_account_move_debit)d" string="Add Debit Note"
+                        type="action" groups="account.group_account_invoice"
+                        invisible="debit_origin_id or move_type not in ('out_invoice', 'in_invoice', 'out_refund', 'in_refund') or state != 'posted'"/>
+            </xpath>
+        </field>
+    </record>
 </odoo>
