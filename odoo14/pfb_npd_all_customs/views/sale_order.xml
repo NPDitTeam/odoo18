@@ -229,4 +229,57 @@
 
         </field>
     </record>
+
+    <!-- ใบเสนอราคาเช่า / ใบกำกับการเช่า (ฟอร์มใบสั่งขายตัวเดียวกัน)
+         1) เพิ่มสินค้าได้ต่อเมื่อเลือก "รายการราคา" แล้ว — กันราคาผิดเพราะไม่มีรายการราคาให้คิด
+         2) ชื่อคอลัมน์ในรายการสินค้าให้ตรงกับที่ผู้ใช้เห็นบน Odoo 14
+            (ดึงชื่อจริงจากหน้าจอ o14 ฐาน NPD_S_Group_New_V2 เมนูใบเสนอราคาเช่า)
+         วางไว้ record แยกท้ายไฟล์ เพื่อให้ใช้หลังวิวด้านบนที่ replace product_uom_qty ไปแล้ว -->
+    <record id="view_order_form_rent_o14_labels" model="ir.ui.view">
+        <field name="name">sale.order.form.rent.o14.labels</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_order_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='order_line']" position="attributes">
+                <attribute name="readonly">state == 'cancel' or locked or not pricelist_id</attribute>
+            </xpath>
+            <xpath expr="//notebook" position="before">
+                <div class="alert alert-warning mb-2" role="alert"
+                     invisible="pricelist_id or state not in ('draft', 'sent')">
+                    กรุณาเลือก <strong>รายการราคา</strong> ก่อน จึงจะเพิ่มสินค้าได้
+                </div>
+            </xpath>
+
+            <xpath expr="//field[@name='order_line']/list/field[@name='name']" position="attributes">
+                <attribute name="string">รายละเอียด</attribute>
+            </xpath>
+            <xpath expr="//field[@name='order_line']/list/field[@name='pfb_date_of_rent']" position="attributes">
+                <attribute name="string">จำนวนวันที่เช่า</attribute>
+            </xpath>
+            <xpath expr="//field[@name='order_line']/list/field[@name='pfb_quantity']" position="attributes">
+                <attribute name="string">จำนวนสินค้า</attribute>
+            </xpath>
+            <xpath expr="//field[@name='order_line']/list/field[@name='product_uom_qty']" position="attributes">
+                <attribute name="string">จำนวนสินค้ารวม</attribute>
+            </xpath>
+            <xpath expr="//field[@name='order_line']/list/field[@name='qty_delivered']" position="attributes">
+                <attribute name="string">ส่งมอบแล้ว</attribute>
+            </xpath>
+            <xpath expr="//field[@name='order_line']/list/field[@name='pfb_insurance_price']" position="attributes">
+                <attribute name="string">ค่าประกัน</attribute>
+            </xpath>
+            <xpath expr="//field[@name='order_line']/list/field[@name='discount_type_selection']" position="attributes">
+                <attribute name="string">ประเภทส่วนลด</attribute>
+            </xpath>
+            <!-- คอลัมน์ยอดหลัก (Odoo แสดงตัวใดตัวหนึ่งตามการตั้งค่าราคารวม/ไม่รวมภาษีของบริษัท)
+                 ตัวหลักคือตัวที่ไม่มี optional (ตัวเสริม "Tax Incl./Excl." มี optional="hide")
+                 Odoo 18 ห้ามใช้ @string เป็นตัวเลือกใน xpath -->
+            <xpath expr="//field[@name='order_line']/list/field[@name='price_subtotal'][not(@optional)]" position="attributes">
+                <attribute name="string">รวม</attribute>
+            </xpath>
+            <xpath expr="//field[@name='order_line']/list/field[@name='price_total'][not(@optional)]" position="attributes">
+                <attribute name="string">รวม</attribute>
+            </xpath>
+        </field>
+    </record>
 </odoo>
