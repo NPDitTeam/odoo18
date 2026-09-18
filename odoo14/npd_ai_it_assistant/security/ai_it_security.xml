@@ -14,6 +14,19 @@
             <field name="users" eval="[(4, ref('base.user_root')), (4, ref('base.user_admin'))]"/>
         </record>
 
+        <!--
+            สิทธิ์เห็นหัวข้อ "ช่วยปิดงบ"
+            เป็นกลุ่มอิสระ ไม่ implied กับ group_ai_it_manager โดยตั้งใจ —
+            ถ้าสองกลุ่มในหมวดเดียวกันมีลำดับชั้นกัน Odoo จะเปลี่ยนหน้าผู้ใช้จาก
+            "ติ๊กถูก" เป็น "ดรอปดาวน์เลือกอันเดียว" ซึ่งจะติ๊กสองสิทธิ์ให้คนเดียวไม่ได้
+        -->
+        <record id="group_ai_it_closing" model="res.groups">
+            <field name="name">ใช้หัวข้อช่วยปิดงบ (AI-IT)</field>
+            <field name="category_id" ref="module_category_npd_ai_it"/>
+            <field name="comment">ติ๊กช่องนี้ให้เฉพาะผู้ที่อนุญาตให้ดูข้อมูลปิดงบ
+                คนที่ไม่ได้ติ๊กจะไม่เห็นหัวข้อ "ช่วยปิดงบ" ในแท็บตัวช่วย AI-IT</field>
+        </record>
+
         <!-- พนักงานเห็นเฉพาะบทสนทนาของตัวเอง -->
         <record id="rule_ai_it_session_own" model="ir.rule">
             <field name="name">ตัวช่วย AI-IT : เห็นเฉพาะบทสนทนาของตัวเอง</field>

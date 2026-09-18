@@ -43,6 +43,7 @@ TOPIC_START_STATE = {
     'rental_status_fix': 'ask_rental_doc',
     'vat_round_fix': 'ask_vat_doc',
     'expense_check': 'ask_expense',
+    'closing_help': 'ask_closing',
 }
 
 # ไอคอนประจำหัวข้อ ใช้เป็นจุดสังเกตหัวเรื่องในแชท
@@ -53,6 +54,7 @@ TOPIC_ICONS = {
     'rental_status_fix': '🔄',
     'vat_round_fix': '🧮',
     'expense_check': '🔎',
+    'closing_help': '📗',
 }
 
 # หัวข้อ 5 — คำที่พนักงานใช้เลือกวิธีปัดเศษ VAT
@@ -250,6 +252,7 @@ class NpdAiItSession(models.Model):
         ('ask_rental_doc', 'รอเลขที่ใบสั่งขาย'),
         ('confirm_status', 'รอยืนยันการแก้สถานะการเช่า'),
         ('ask_expense', 'รอคำถามเรื่องค่าใช้จ่าย'),
+        ('ask_closing', 'รอคำถามเรื่องปิดงบ'),
         ('ask_vat_doc', 'รอใบแจ้งหนี้ที่จะแก้การปัดเศษ VAT'),
         ('ask_vat_mode', 'รอเลือกวิธีปัดเศษ VAT'),
         ('confirm_vat', 'รอยืนยันการแก้การปัดเศษ VAT'),
@@ -550,6 +553,30 @@ class NpdAiItSession(models.Model):
                 ),
             ))
             return
+        if topic.code == 'closing_help':
+            Closing = self.env['npd.ai.it.closing']
+            year = Closing.default_year()
+            self._post_bot(_block(
+                heading,
+                _rows(
+                    'ถามเรื่อง<b>การปิดงบ</b>ได้ทุกอย่างครับ ผมตรวจจากข้อมูลจริงในระบบให้',
+                    _hint('บอกได้ว่าปีไหนปิดงบสมบูรณ์แล้วหรือยัง ติดที่รายการไหน '
+                          'ต้องแก้เท่าไหร่ และเมนูที่ต้องไปทำอยู่ตรงไหน'),
+                ),
+                _rows(
+                    _hint('ตัวอย่างคำถาม'),
+                    _indent('• ปี %s ปิดงบได้หรือยัง ติดอะไรบ้าง' % year),
+                    _indent('• แต่ละปีปิดงบครบไหม'),
+                    _indent('• ขั้นตอนปิดงบมีอะไรบ้าง ต้องดูเมนูไหนก่อน'),
+                    _indent('• เมนูงบทดลองอยู่ตรงไหน'),
+                    _indent('• Hard Lock Date ต่างจาก Lock Date ยังไง'),
+                ),
+                _rows(
+                    _hint('ตรวจตามบริษัทที่เลือกอยู่ ถ้าจะดูบริษัทอื่นให้สลับบริษัทก่อน'),
+                    _hint('อยากได้เป็นไฟล์ พิมพ์ว่า <b>"ขอเป็นไฟล์ Excel"</b> ผมแนบไฟล์ให้ในแชท'),
+                ),
+            ))
+            return
         self._post_bot(_block(
             heading,
             'หัวข้อนี้ยังไม่เปิดให้บริการ กรุณาแจ้งฝ่าย IT โดยตรงไปก่อน',
@@ -706,6 +733,9 @@ class NpdAiItSession(models.Model):
             return
         if code == 'expense_check':
             self._handle_expense_check(text)
+            return
+        if code == 'closing_help':
+            self._handle_closing_help(text)
             return
 
         self._post_bot('หัวข้อนี้ยังไม่เปิดให้บริการ กรุณาแจ้งฝ่าย IT โดยตรงไปก่อน')
@@ -2335,6 +2365,68 @@ class NpdAiItSession(models.Model):
         self._post_bot(_block(*body), commands=False, attachments=attachments)
         self._log_history('expense_check', html2plaintext(
             'คำถาม: %s<br/>โมเดล: %s' % (question[:150], plan.get('model') or '-')))
+
+    # ==================================================================
+    # หัวข้อที่ 7 : ช่วยปิดงบ (ถาม-ตอบ + ตรวจสถานะ ไม่มีการแก้ข้อมูล)
+    # ==================================================================
+    def _handle_closing_help(self, text):
+        """ทุกข้อความคือคำถามเรื่องปิดงบ ตอบแล้วรอถามต่อได้เรื่อย ๆ
+
+        ไม่มีขั้นยืนยัน เพราะหัวข้อนี้อ่านข้อมูลอย่างเดียว ไม่แก้เอกสารใด ๆ
+        """
+        self.ensure_one()
+        question = (text or '').strip()
+        if not question:
+            self._post_bot('พิมพ์คำถามเรื่องปิดงบได้เลยครับ')
+            return
+
+        Closing = self.env['npd.ai.it.closing']
+        data = self._get_data()
+        history = data.get('closing_history') or []
+
+        # "ขอเป็นไฟล์ Excel" เฉย ๆ -> ใช้ปีของคำถามล่าสุด ไม่ต้องถามซ้ำ
+        want_excel = Closing.wants_excel(question)
+        years_override = None
+        if want_excel and history:
+            asked = Closing.parse_years(question)
+            if not asked:
+                years_override = (history[-1] or {}).get('years')
+
+        blocks, meta, error = Closing.answer(question, history=history[-2:],
+                                             years=years_override)
+        if error:
+            self._post_bot(_block(
+                _rows(_title('ยังตอบคำถามนี้ไม่ได้', '🤔'), html_escape(error)),
+                _hint('ลองถามให้เจาะจงขึ้น เช่น ระบุปี หรือชื่อเมนูที่หาไม่เจอ'),
+            ))
+            return
+
+        years = years_override or meta.get('years') or [Closing.default_year()]
+        history.append({'q': question[:200], 'years': years, 'kind': meta.get('kind')})
+        data['closing_history'] = history[-3:]
+        self._set_data(data)
+
+        body = [_rows(block) for block in blocks]
+
+        attachments = []
+        if want_excel:
+            filename, content, rows = Closing.build_excel(years)
+            if content:
+                attachments.append((filename, content))
+                body.append(_rows(
+                    _title('แนบไฟล์ Excel ให้แล้ว %s แถว' % '{:,}'.format(rows), '📎'),
+                    _hint('ชีตแรกคือเช็คลิสต์ ชีตถัดไปคือรายการที่ต้องไล่แก้')))
+            else:
+                body.append(_hint('สร้างไฟล์ Excel ไม่สำเร็จ (ไม่มีไลบรารี xlsxwriter) '
+                                  'กรุณาแจ้งฝ่าย IT'))
+        else:
+            body.append(_hint('อยากได้เป็นไฟล์ Excel พิมพ์ว่า "ขอเป็นไฟล์ Excel" ได้เลย'))
+
+        body.append(_hint('ถามต่อได้เลยครับ หรือพิมพ์ "เริ่มใหม่" เพื่อเปลี่ยนหัวข้อ'))
+        self._post_bot(_block(*body), commands=False, attachments=attachments)
+        self._log_history('closing_help', html2plaintext(
+            'คำถาม: %s<br/>ปี: %s' % (question[:150],
+                                       ', '.join(str(y) for y in years))))
 
     # ------------------------------------------------------------------
     # การอ่านข้อความของพนักงาน (regex ก่อน แล้วค่อยให้ AI ช่วยถ้าอ่านไม่ออก)

@@ -56,5 +56,15 @@
             <field name="active" eval="True"/>
         </record>
 
+        <!-- หัวข้อที่ 7 — ช่วยปิดงบ (เห็นเฉพาะคนที่ถูกติ๊กสิทธิ์ไว้) -->
+        <record id="topic_closing_help" model="npd.ai.it.topic">
+            <field name="name">ช่วยปิดงบ</field>
+            <field name="code">closing_help</field>
+            <field name="sequence">7</field>
+            <field name="description">ตรวจว่าปีไหนปิดงบสมบูรณ์แล้วหรือยัง ติดที่รายการไหน ต้องแก้เท่าไหร่ และเมนูอยู่ตรงไหน</field>
+            <field name="active" eval="True"/>
+            <field name="group_ids" eval="[(6, 0, [ref('group_ai_it_closing')])]"/>
+        </record>
+
     </data>
 </odoo>

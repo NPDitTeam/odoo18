@@ -7,6 +7,7 @@ from . import ai_it_picking_fix
 from . import ai_it_rental_fix
 from . import ai_it_vat_fix
 from . import ai_it_expense_check
+from . import ai_it_closing_help
 from . import ai_it_history
 from . import ai_it_session
 from . import discuss_channel

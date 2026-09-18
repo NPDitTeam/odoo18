@@ -60,5 +60,55 @@ def grant_system_cancel_right(env):
                      ', '.join(values))
 
 
+# ผู้ใช้ที่ได้รับอนุญาตให้เห็นหัวข้อ "ช่วยปิดงบ" ตั้งแต่ต้น (ตามที่ผู้ใช้ระบุ)
+# เทียบด้วย login แบบไม่สนตัวพิมพ์ใหญ่-เล็ก และ "ข้ามคนที่ไม่มีในฐานนั้น" ให้เอง
+# หลังจากนี้ผู้ดูแลเพิ่ม/ถอนสิทธิ์เองได้ที่หน้าผู้ใช้
+CLOSING_HELP_LOGINS = (
+    'Mayurada_center',
+    'Articha_center',
+    'sattaya_center',
+    'Patchareeda',
+    'User04',
+    'User004',
+    'Npd_admin',
+)
+
+
+def grant_closing_help_users(env):
+    """ติ๊กสิทธิ์ "ใช้หัวข้อช่วยปิดงบ" ให้ผู้ใช้ชุดตั้งต้น (idempotent)
+
+    ไม่ถอนสิทธิ์ของใครออก — ถ้าผู้ดูแลติ๊กเพิ่มให้คนอื่นไว้ การอัปเดตโมดูล
+    รอบถัดไปต้องไม่ไปลบทิ้ง
+    """
+    group = env.ref('npd_ai_it_assistant.group_ai_it_closing', raise_if_not_found=False)
+    if not group:
+        return
+
+    Users = env['res.users'].sudo().with_context(active_test=False)
+    users = Users.search([('login', 'in', list(CLOSING_HELP_LOGINS))])
+    found_logins = {user.login.lower() for user in users}
+    # login ในฐานจริงอาจพิมพ์ต่างตัวใหญ่-เล็ก จึงค้นซ้ำแบบ ilike เฉพาะที่ยังไม่เจอ
+    for login in CLOSING_HELP_LOGINS:
+        if login.lower() in found_logins:
+            continue
+        extra = Users.search([('login', '=ilike', login)], limit=1)
+        if extra:
+            users |= extra
+            found_logins.add(extra.login.lower())
+
+    missing = [login for login in CLOSING_HELP_LOGINS
+               if login.lower() not in found_logins]
+    if missing:
+        _logger.info('ตัวช่วย AI-IT: ฐานนี้ไม่มีผู้ใช้ %s จึงข้ามการให้สิทธิ์ปิดงบ',
+                     ', '.join(missing))
+
+    to_add = users - group.users
+    if to_add:
+        group.sudo().write({'users': [(4, user.id) for user in to_add]})
+        _logger.info('ตัวช่วย AI-IT: ให้สิทธิ์หัวข้อช่วยปิดงบแก่ %s',
+                     ', '.join(to_add.mapped('login')))
+
+
 def post_init_hook(env):
     grant_system_cancel_right(env)
+    grant_closing_help_users(env)

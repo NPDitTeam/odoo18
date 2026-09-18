@@ -9,7 +9,8 @@ from odoo import api, fields, models
 
 # code ของหัวข้อที่มี handler พร้อมใช้งานแล้ว
 IMPLEMENTED_CODES = ('stock_not_enough', 'invoice_date_fix', 'return_date_fix',
-                     'rental_status_fix', 'vat_round_fix', 'expense_check')
+                     'rental_status_fix', 'vat_round_fix', 'expense_check',
+                     'closing_help')
 
 
 class NpdAiItTopic(models.Model):
