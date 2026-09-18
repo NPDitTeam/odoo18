@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_stock_quant_form_editable_npd" model="ir.ui.view">
+        <field name="name">stock.quant.form.editable.npd</field>
+        <field name="model">stock.quant</field>
+        <field name="inherit_id" ref="stock.view_stock_quant_form_editable"/>
+        <field name="arch" type="xml">
+            <!-- ต้นฉบับของ Odoo ตั้ง create/edit/delete = false ทำให้ฟอร์มล็อกทุกช่อง -->
+            <xpath expr="//form" position="attributes">
+                <attribute name="create">1</attribute>
+                <attribute name="edit">1</attribute>
+            </xpath>
+
+            <!-- Odoo ห้ามส่ง company_id ตอนสร้าง quant ในโหมดปรับสต็อก
+                 (_get_inventory_fields_create) ถ้าแก้ได้จะเจอ "Quant's creation is restricted"
+                 ตั้งเป็นอ่านอย่างเดียว ค่าจะมาจากคลังที่เลือกเอง -->
+            <xpath expr="//field[@name='company_id'][@groups='base.group_multi_company']" position="attributes">
+                <attribute name="readonly">1</attribute>
+            </xpath>
+
+            <!-- ช่องกรอกจำนวนที่นับได้ บันทึกแล้วปรับปริมาณในมือทันที (inverse _set_inventory_quantity) -->
+            <xpath expr="//label[@for='available_quantity']" position="before">
+                <label for="inventory_quantity_auto_apply" string="จำนวนปริมาณ (กรอกเพื่อปรับสต็อก)"/>
+                <div class="o_row">
+                    <field name="inventory_quantity_auto_apply" readonly="0"/>
+                    <field name="product_uom_id" groups="uom.group_uom" options="{'no_open': True}"/>
+                </div>
+            </xpath>
+        </field>
+    </record>
+</odoo>
