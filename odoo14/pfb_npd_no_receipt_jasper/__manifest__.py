@@ -1,5 +1,5 @@
 {
-    'name': 'ใบเสร็จรับเงิน (ยังไม่ได้รับเงิน) (Jasper)',
+    'name': 'ใบกำกับภาษี/ใบเสร็จรับเงิน (ขาย) (Jasper)',
     'version': '18.0.1.0.0',
     'summary': 'Jasper Report for Receipt - Not Yet Received (Pre-Receipt)',
     'description': """
