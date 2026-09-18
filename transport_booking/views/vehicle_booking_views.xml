@@ -12,6 +12,12 @@
                       decoration-warning="state=='in_progress'"
                       decoration-success="state=='done'">
                     <field name="name"/>
+                    <field name="so_number" string="เลขเอกสาร SO" optional="show"/>
+                    <field name="trip_direction" string="สถานะเที่ยววิ่ง" widget="badge"
+                           decoration-info="trip_direction=='deliver'"
+                           decoration-warning="trip_direction=='pickup'"
+                           decoration-success="trip_direction=='round'"
+                           optional="show"/>
                     <field name="branch_id"/>
 		    <field name="delivery_type"/>
                     <field name="booking_date"/>
@@ -112,6 +118,8 @@
         <field name="transport_order_id"
                options="{'no_create': True, 'no_create_edit': True}"
                readonly="state != 'draft'"/>
+        <field name="so_number" readonly="1"/>
+        <field name="trip_direction" readonly="1"/>
 
         <field name="booking_date" readonly="state != 'draft'"/>
         <field name="partner_id" readonly="1"/>

@@ -12,6 +12,12 @@
                   edit="true"
                   delete="true">
                 <field name="name" string="เลขที่"/>
+                <field name="so_number" string="เลขเอกสาร SO" optional="show"/>
+                <field name="trip_direction" string="สถานะเที่ยววิ่ง" widget="badge"
+                       decoration-info="trip_direction=='deliver'"
+                       decoration-warning="trip_direction=='pickup'"
+                       decoration-success="trip_direction=='round'"
+                       optional="show"/>
                 <field name="branch_id" string="สาขา" optional="show"/>
                 <field name="delivery_type" string="ประเภทการจัดส่ง" optional="show"/>
                 <field name="date_order" string="วันที่" optional="show"/>
@@ -64,6 +70,8 @@
 
                     <group>
                         <group string="ข้อมูลหลัก">
+                            <field name="so_number" readonly="1"/>
+                            <field name="trip_direction" readonly="1"/>
                             <field name="is_renew_green_house" readonly="1"/>
                             <field name="odoo14_id" readonly="1"/>
                             <field name="branch_id"/>
@@ -275,6 +283,7 @@
             <search string="ค้นหา">
                 <!-- Search Fields -->
                 <field name="name" string="เลขที่" filter_domain="[('name', 'ilike', self)]"/>
+                <field name="so_number" string="เลขเอกสาร SO" filter_domain="[('so_number', 'ilike', self)]"/>
                 <field name="branch_id" string="สาขา"/>
                 <field name="partner_id" string="ลูกค้า"/>
                 <field name="delivery_employee_name" string="พนักงานส่งของ"/>
@@ -301,7 +310,14 @@
                 <filter string="ผิดพลาด" name="error" domain="[('sync_status', '=', 'error')]"/>
 
                 <!-- Group By -->
+                <separator/>
+                <filter string="ไปส่ง" name="dir_deliver" domain="[('trip_direction', '=', 'deliver')]"/>
+                <filter string="ไปรับ" name="dir_pickup" domain="[('trip_direction', '=', 'pickup')]"/>
+                <filter string="ไปกลับ" name="dir_round" domain="[('trip_direction', '=', 'round')]"/>
+
                 <group expand="0" string="Group By">
+                    <filter string="เลขเอกสาร SO" name="group_so_number" context="{'group_by': 'so_number'}"/>
+                    <filter string="สถานะเที่ยววิ่ง" name="group_trip_direction" context="{'group_by': 'trip_direction'}"/>
                     <filter string="สาขา" name="group_branch" context="{'group_by': 'branch_id'}"/>
                     <filter string="ลูกค้า" name="group_partner" context="{'group_by': 'partner_id'}"/>
                     <filter string="สถานะ" name="group_state" context="{'group_by': 'state'}"/>

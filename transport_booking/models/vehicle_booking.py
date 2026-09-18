@@ -95,6 +95,22 @@ class VehicleBooking(models.Model):
                                      store=True,
                                      readonly=True)
 
+    # เลขเอกสาร SO ต้นทาง + สถานะเที่ยววิ่ง (ไปส่ง/ไปรับ/ไปกลับ) ดึงจากใบขนส่งที่ผูกไว้
+    so_number = fields.Char('เลขเอกสาร SO',
+                            related='transport_order_id.so_number',
+                            store=True,
+                            readonly=True)
+    trip_direction = fields.Selection(
+        string='สถานะเที่ยววิ่ง',
+        selection=[
+            ('deliver', 'ไปส่ง'),
+            ('pickup', 'ไปรับ'),
+            ('round', 'ไปกลับ'),
+        ],
+        related='transport_order_id.trip_direction',
+        store=True,
+        readonly=True)
+
     # รายการสินค้าจากคำสั่งขนส่ง
     order_line_ids = fields.One2many(
         'transport.order.line',

@@ -129,6 +129,21 @@ class TransportOrder(models.Model):
     # บิลต่ออายุจากบ้านเขียว
     is_renew_green_house = fields.Boolean('บิลต่ออายุจากบ้านเขียว', default=False, readonly=True)
 
+    # เลขเอกสาร SO ต้นทาง (ฟิลด์ so_number ของใบขนส่งฝั่ง Odoo 14)
+    # งานขนส่งหนึ่งงานมีได้หลายใบที่อ้างเลข SO เดียวกัน (ใบไปส่ง + ใบไปรับ)
+    so_number = fields.Char('เลขเอกสาร SO', readonly=True, index=True)
+
+    # สถานะเที่ยววิ่ง — คิดจากใบขนส่ง 'ทุกใบ' ที่ใช้เลขเอกสาร SO เดียวกัน
+    #   ใบเดียว + จัดส่งไปยังลูกค้า = ไปส่ง
+    #   ใบเดียว + จัดส่งมายังสาขา   = ไปรับ
+    #   เลข SO เดียวกันมีทั้งสองแบบ = ไปกลับ
+    trip_direction = fields.Selection([
+        ('deliver', 'ไปส่ง'),
+        ('pickup', 'ไปรับ'),
+        ('round', 'ไปกลับ'),
+    ], string='สถานะเที่ยววิ่ง', compute='_compute_trip_direction',
+        store=True, index=True, readonly=True)
+
     # รายการสินค้า
     order_line_ids = fields.One2many('transport.order.line', 'order_id', string='รายการสินค้า', readonly=True)
     order_lines_count = fields.Integer('จำนวนรายการ', compute='_compute_order_lines_count')
@@ -197,7 +212,56 @@ class TransportOrder(models.Model):
             else:
                 # กรณีสร้างด้วยมือ ให้ generate sequence ใหม่
                 vals['name'] = self.env['ir.sequence'].next_by_code('transport.order') or 'New'
-        return super().create(vals_list)
+        orders = super().create(vals_list)
+        # ใบที่เพิ่งเข้ามาอาจทำให้ใบคู่ (เลข SO เดียวกัน) เปลี่ยนเป็น 'ไปกลับ'
+        orders._recompute_trip_direction_siblings(orders.mapped('so_number'))
+        return orders
+
+    def write(self, vals):
+        old_so_numbers = self.mapped('so_number') if 'so_number' in vals else []
+        res = super().write(vals)
+        if 'so_number' in vals or 'delivery_type' in vals:
+            self._recompute_trip_direction_siblings(list(old_so_numbers) + self.mapped('so_number'))
+        return res
+
+    def _recompute_trip_direction_siblings(self, so_numbers):
+        """สั่งคำนวณสถานะเที่ยววิ่งใหม่ให้ใบอื่นที่ใช้เลขเอกสาร SO เดียวกัน
+        (ไม่งั้นใบเก่าจะค้างเป็น 'ไปส่ง' ทั้งที่ใบคู่ 'ไปรับ' เข้ามาแล้ว)"""
+        so_numbers = {s for s in so_numbers if s}
+        if not so_numbers:
+            return
+        siblings = self.sudo().with_context(transport_sync_all_branches=True).search(
+            [('so_number', 'in', list(so_numbers))])
+        if siblings:
+            self.env.add_to_compute(self._fields['trip_direction'], siblings)
+
+    @api.depends('so_number', 'delivery_type')
+    def _compute_trip_direction(self):
+        """ไปส่ง = จัดส่งไปยังลูกค้า / ไปรับ = จัดส่งมายังสาขา
+        ถ้าเลขเอกสาร SO เดียวกันมีทั้งสองแบบ = ไปกลับ"""
+        types_by_so = {}
+        so_numbers = [s for s in set(self.mapped('so_number')) if s]
+        if so_numbers:
+            # อ่านข้ามสาขาเสมอ ไม่งั้นใบคู่ที่อยู่คนละสาขาจะถูก _search กรองทิ้ง
+            rows = self.sudo().with_context(transport_sync_all_branches=True)._read_group(
+                [('so_number', 'in', so_numbers)],
+                groupby=['so_number', 'delivery_type'],
+            )
+            for so_number, delivery_type in rows:
+                types_by_so.setdefault(so_number, set()).add(delivery_type)
+
+        for record in self:
+            types = set(types_by_so.get(record.so_number, ())) if record.so_number else set()
+            types.add(record.delivery_type)  # ค่าล่าสุดของตัวเอง (เผื่อยังไม่ได้บันทึกลงฐาน)
+            types.discard(False)
+            if {'customer', 'branch'}.issubset(types):
+                record.trip_direction = 'round'
+            elif 'branch' in types:
+                record.trip_direction = 'pickup'
+            elif 'customer' in types:
+                record.trip_direction = 'deliver'
+            else:
+                record.trip_direction = False
 
     @api.depends('order_line_ids')
     def _compute_order_lines_count(self):
@@ -651,6 +715,7 @@ class TransportOrder(models.Model):
         # เตรียมข้อมูล order
         order_vals = {
             'name': order_data['name'],  # ✅ ใช้เลขเอกสารจาก Odoo 14 โดยตรง (ไม่ต้อง default)
+            'so_number': order_data.get('so_number'),  # เลขเอกสาร SO ต้นทางจาก Odoo 14
             'odoo14_id': order_data['id'],
             'branch_id': branch_id,
             'branch_name_o14': branch_name_o14,
@@ -782,6 +847,7 @@ class TransportOrder(models.Model):
 
         # ✅ เตรียมข้อมูลสำหรับ update (ไม่ update name เพราะเป็น key)
         update_vals = {
+            'so_number': order_data.get('so_number'),  # เลขเอกสาร SO ต้นทางจาก Odoo 14
             'odoo14_id': order_data['id'],
             'branch_id': branch_id,
             'branch_name_o14': branch_name_o14,
