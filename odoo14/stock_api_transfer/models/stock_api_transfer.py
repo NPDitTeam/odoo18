@@ -13,6 +13,20 @@ import logging
 _logger = logging.getLogger(__name__)
 
 
+def _quant_on_hand(env, product, location):
+    """คงเหลือจริงของสินค้าที่คลัง (รวมคลังย่อย) อ่านจาก stock.quant
+
+    ต้องใช้ sudo เพราะกฎบริษัทของ Odoo ให้เห็นเฉพาะคลังของบริษัทที่ "ติ๊กเลือกใช้งาน"
+    อยู่ตอนนั้น การโยกข้ามบริษัทจึงอ่านสต๊อกอีกฝั่งไม่ได้"""
+    if not product or not location:
+        return 0.0
+    quants = env['stock.quant'].sudo().search([
+        ('product_id', '=', product.id),
+        ('location_id', 'child_of', location.id),
+    ])
+    return sum(quants.mapped('quantity'))
+
+
 class StockAPITransfer(models.Model):
     _name = "stock.api.transfer"
     _description = "Stock Transfer (Internal, multi-company)"
@@ -63,13 +77,7 @@ class StockAPITransfer(models.Model):
     # ------------------------------------------------------------------
     def _get_source_qty(self, product, location):
         """คงเหลือจริงของสินค้าที่คลัง (อ่านจาก stock.quant)"""
-        if not product or not location:
-            return 0.0
-        quants = self.env['stock.quant'].sudo().search([
-            ('product_id', '=', product.id),
-            ('location_id', '=', location.id),
-        ])
-        return sum(quants.mapped('quantity'))
+        return _quant_on_hand(self.env, product, location)
 
     @api.onchange('source_company_id')
     def _onchange_source_company(self):
@@ -80,17 +88,15 @@ class StockAPITransfer(models.Model):
 
     @api.onchange('source_location_id', 'product_ids', 'location_id')
     def _onchange_build_lines(self):
-        """สร้างรายการจากสินค้าที่เลือก + อ่านคงเหลือจริงที่คลังต้นทาง"""
+        """สร้างรายการจากสินค้าที่เลือก (คงเหลือคำนวณสดในบรรทัด ไม่เก็บค่าไว้)"""
         self.line_ids = [(5, 0, 0)]
         if not self.source_location_id or not self.product_ids:
             return
         vals = []
         for product in self.product_ids:
-            qty = self._get_source_qty(product, self.source_location_id)
             vals.append((0, 0, {
                 'product_id': product.id,
                 'source_location_id': self.source_location_id.id,
-                'available_qty': qty,
                 'request_qty': 0.0,
                 'status': 'รอดำเนินการ',
             }))
@@ -194,10 +200,7 @@ class StockAPITransfer(models.Model):
         for line in lines:
             self._move_quant(line.product_id, self.source_location_id, -line.request_qty)
             self._move_quant(line.product_id, self.location_id, line.request_qty)
-            line.write({
-                'status': 'สำเร็จ',
-                'available_qty': self._get_source_qty(line.product_id, self.source_location_id),
-            })
+            line.write({'status': 'สำเร็จ'})
             _logger.info("📦 โอน %s: %s -%.2f → %s +%.2f",
                          line.product_id.display_name,
                          self.source_location_id.sudo().display_name, line.request_qty,
@@ -216,10 +219,7 @@ class StockAPITransfer(models.Model):
         for line in self.line_ids.filtered(lambda l: l.request_qty > 0):
             self._move_quant(line.product_id, self.location_id, -line.request_qty)
             self._move_quant(line.product_id, self.source_location_id, line.request_qty)
-            line.write({
-                'status': 'รอดำเนินการ',
-                'available_qty': self._get_source_qty(line.product_id, self.source_location_id),
-            })
+            line.write({'status': 'รอดำเนินการ'})
             _logger.info("🔄 ยกเลิกโอน %s: คืน %s +%.2f / ตัด %s -%.2f",
                          line.product_id.display_name,
                          self.source_location_id.sudo().display_name, line.request_qty,
@@ -240,6 +240,12 @@ class StockAPITransferLine(models.Model):
     destination_location_id = fields.Many2one(
         "stock.location", string="คลังปลายทาง",
         related="transfer_id.location_id", store=True, readonly=True, ondelete='set null')
-    available_qty = fields.Float(string="คงเหลือ")
+    # คงเหลือคำนวณสดทุกครั้งที่เปิดดู (เดิมเก็บค่าไว้ตอนสร้างบรรทัด ถ้าเพิ่มสต๊อกทีหลังจะค้างเป็น 0)
+    available_qty = fields.Float(string="คงเหลือ", compute="_compute_available_qty")
     request_qty = fields.Float(string="จำนวนขอตัด")
     status = fields.Char(string="สถานะ", readonly=True, default="รอดำเนินการ")
+
+    @api.depends('product_id', 'source_location_id')
+    def _compute_available_qty(self):
+        for line in self:
+            line.available_qty = _quant_on_hand(line.env, line.product_id, line.source_location_id)

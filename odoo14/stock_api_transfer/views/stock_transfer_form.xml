@@ -77,7 +77,8 @@
                                     <field name="default_code" readonly="1" force_save="1"/>
                                     <field name="source_location_id" readonly="1" force_save="1"/>
                                     <field name="destination_location_id" string="คลังปลายทาง" readonly="1" force_save="1"/>
-                                    <field name="available_qty" readonly="1" force_save="1"/>
+                                    <!-- คงเหลือเป็นฟิลด์คำนวณสด ห้ามใส่ force_save (ไม่มีที่เก็บค่า) -->
+                                    <field name="available_qty" readonly="1"/>
                                     <field name="request_qty" required="1"/>
                                     <field name="status" readonly="1" force_save="1"/>
                                 </list>
