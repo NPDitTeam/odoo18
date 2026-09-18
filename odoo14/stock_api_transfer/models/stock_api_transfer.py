@@ -25,14 +25,18 @@ class StockAPITransfer(models.Model):
     # ต้นทาง/ปลายทาง = บริษัท + คลังจริงใน DB เดียวกัน (แทน database_selection เดิมที่เป็น DB แยก)
     # จำกัดให้เลือกได้เฉพาะบริษัทที่ผู้ใช้เป็นสมาชิก เพราะฟอร์มส่งบริษัทที่เลือกเข้า
     # context (allowed_company_ids) เพื่อให้ค้นคลังข้ามบริษัทได้ ถ้าไม่ใช่สมาชิกจะถูกปฏิเสธ
-    user_company_ids = fields.Many2many(
-        "res.company", string="บริษัทที่ผู้ใช้เข้าถึงได้",
-        compute="_compute_user_company_ids")
-    source_company_id = fields.Many2one("res.company", string="บริษัทต้นทาง", required=True)
+    #
+    # โดเมนต้องประกาศฝั่ง Python (คำนวณตอน fields_get) ห้ามอ้างฟิลด์ช่วยในวิว
+    # เพราะฟิลด์ compute ที่ไม่มี depends จะไม่ถูกส่งกลับมาใน onchange ของเอกสารใหม่
+    # → หน้าจอได้ค่าว่าง → domain กลายเป็น [('id','in',[])] → ช่องบริษัทไม่มีตัวเลือกเลย
+    source_company_id = fields.Many2one(
+        "res.company", string="บริษัทต้นทาง", required=True,
+        domain=lambda self: [('id', 'in', self.env.user.company_ids.ids)])
     source_location_id = fields.Many2one("stock.location", string="คลังต้นทาง")
     dest_company_id = fields.Many2one(
         "res.company", string="บริษัทปลายทาง", required=True,
-        default=lambda self: self.env.company)
+        default=lambda self: self.env.company,
+        domain=lambda self: [('id', 'in', self.env.user.company_ids.ids)])
     # ปลายทาง — คงชื่อฟิลด์เดิม location_id ไว้ (line.destination_location_id related มาที่ฟิลด์นี้)
     location_id = fields.Many2one("stock.location", string="คลังปลายทาง")
 
@@ -57,12 +61,6 @@ class StockAPITransfer(models.Model):
     # ------------------------------------------------------------------
     # Helpers
     # ------------------------------------------------------------------
-    @api.depends_context('uid')
-    def _compute_user_company_ids(self):
-        companies = self.env.user.company_ids
-        for rec in self:
-            rec.user_company_ids = companies
-
     def _get_source_qty(self, product, location):
         """คงเหลือจริงของสินค้าที่คลัง (อ่านจาก stock.quant)"""
         if not product or not location:

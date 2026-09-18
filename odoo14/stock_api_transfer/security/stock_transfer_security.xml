@@ -14,5 +14,21 @@
             <field name="category_id" ref="module_category_stock_transfer_approval"/>
             <field name="comment">ผู้ใช้ในกลุ่มนี้สามารถอนุมัติหรือตีกลับคำขอโยกสินค้าได้</field>
         </record>
+
+        <!-- กฎบริษัทมาตรฐานของ Odoo ให้ "อ่าน" res.company ได้เฉพาะบริษัทที่ติ๊กใช้งานอยู่
+             (company_ids ในกฎ = env.companies) การโยกสต๊อกข้ามบริษัทจึงเลือกบริษัทต้นทาง
+             อื่นไม่ได้ และเปิดเอกสารเก่าก็อ่านชื่อบริษัทไม่ได้
+             เพิ่มกฎ "อ่านอย่างเดียว" ให้เห็นทุกบริษัทที่ผู้ใช้เป็นสมาชิกอยู่แล้ว
+             (กฎของกลุ่มเป็น OR กัน — สิทธิเขียน/สร้าง/ลบ ไม่เปลี่ยน) -->
+        <record id="res_company_rule_member_read" model="ir.rule">
+            <field name="name">res.company: อ่านบริษัทที่ผู้ใช้เป็นสมาชิกได้ (โยกสต๊อกข้ามบริษัท)</field>
+            <field name="model_id" ref="base.model_res_company"/>
+            <field name="domain_force">[('id','in', user.company_ids.ids)]</field>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="False"/>
+            <field name="perm_create" eval="False"/>
+            <field name="perm_unlink" eval="False"/>
+            <field name="groups" eval="[(4, ref('base.group_user'))]"/>
+        </record>
     </data>
 </odoo>

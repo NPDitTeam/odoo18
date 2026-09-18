@@ -36,9 +36,8 @@
                     </group>
 
                     <group string="ต้นทาง / ปลายทาง" col="4">
-                        <field name="user_company_ids" invisible="1"/>
+                        <!-- ไม่ต้องใส่ domain ที่นี่ — ประกาศไว้ฝั่ง Python แล้ว (เฉพาะบริษัทที่ผู้ใช้เป็นสมาชิก) -->
                         <field name="source_company_id" required="1"
-                               domain="[('id','in',user_company_ids)]"
                                readonly="state in ('waiting_approval','approved','confirmed')"/>
                         <!-- context allowed_company_ids: กฎบริษัทของ Odoo จะโชว์เฉพาะคลังของบริษัท
                              ที่ "ติ๊กเลือกใช้งาน" อยู่ตอนนั้น การโยกข้ามบริษัทจึงเห็นคลังต้นทางเป็น
@@ -51,7 +50,6 @@
                                options="{'no_create': True}"/>
 
                         <field name="dest_company_id" required="1"
-                               domain="[('id','in',user_company_ids)]"
                                readonly="state in ('waiting_approval','approved','confirmed')"/>
                         <field name="location_id" string="คลังปลายทาง" required="1"
                                invisible="not dest_company_id"
