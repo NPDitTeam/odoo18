@@ -133,63 +133,63 @@
 				</graphicElement>
 			</line>
 			<staticText>
-				<reportElement style="Thai" x="5" y="82" width="55" height="17" uuid="d2e3f4a5-0001-0001-0001-000000000012"/>
+				<reportElement style="Thai" x="5" y="82" width="55" height="19" uuid="d2e3f4a5-0001-0001-0001-000000000012"/>
 				<textElement verticalAlignment="Middle">
 					<font fontName="Sarabun" size="13"/>
 				</textElement>
 				<text><![CDATA[ชื่อลูกค้า :]]></text>
 			</staticText>
 			<textField isBlankWhenNull="true">
-				<reportElement style="Thai" x="60" y="82" width="305" height="17" uuid="d2e3f4a5-0001-0001-0001-000000000013"/>
+				<reportElement style="Thai" x="60" y="82" width="305" height="19" uuid="d2e3f4a5-0001-0001-0001-000000000013"/>
 				<textElement verticalAlignment="Middle">
 					<font fontName="Sarabun" size="13"/>
 				</textElement>
 				<textFieldExpression><![CDATA[$F{Partner_Name-partner_id}]]></textFieldExpression>
 			</textField>
 			<staticText>
-				<reportElement style="Thai" x="5" y="99" width="55" height="17" uuid="d2e3f4a5-0001-0001-0001-000000000014"/>
+				<reportElement style="Thai" x="5" y="99" width="55" height="19" uuid="d2e3f4a5-0001-0001-0001-000000000014"/>
 				<textElement verticalAlignment="Middle">
 					<font fontName="Sarabun" size="13"/>
 				</textElement>
 				<text><![CDATA[ที่อยู่ :]]></text>
 			</staticText>
 			<textField isBlankWhenNull="true">
-				<reportElement style="Thai" x="60" y="99" width="350" height="17" uuid="d2e3f4a5-0001-0001-0001-000000000015"/>
+				<reportElement style="Thai" x="60" y="99" width="350" height="19" uuid="d2e3f4a5-0001-0001-0001-000000000015"/>
 				<textElement verticalAlignment="Middle">
 					<font fontName="Sarabun" size="12"/>
 				</textElement>
 				<textFieldExpression><![CDATA[$F{Partner_Address-jasper_partner_full_address}]]></textFieldExpression>
 			</textField>
 			<textField isBlankWhenNull="true">
-				<reportElement style="Thai" x="5" y="116" width="360" height="17" uuid="d2e3f4a5-0001-0001-0001-000000000016"/>
+				<reportElement style="Thai" x="5" y="116" width="360" height="19" uuid="d2e3f4a5-0001-0001-0001-000000000016"/>
 				<textElement verticalAlignment="Middle">
 					<font fontName="Sarabun" size="13"/>
 				</textElement>
 				<textFieldExpression><![CDATA["เลขประจำตัวผู้เสียภาษี " + ($F{Partner_VAT-jasper_rcp_partner_vat} == null ? "" : $F{Partner_VAT-jasper_rcp_partner_vat})]]></textFieldExpression>
 			</textField>
 			<staticText>
-				<reportElement style="Thai" x="375" y="82" width="65" height="17" uuid="d2e3f4a5-0001-0001-0001-000000000017"/>
+				<reportElement style="Thai" x="375" y="82" width="65" height="19" uuid="d2e3f4a5-0001-0001-0001-000000000017"/>
 				<textElement verticalAlignment="Middle">
 					<font fontName="Sarabun" size="13"/>
 				</textElement>
 				<text><![CDATA[เลขที่ / NO.]]></text>
 			</staticText>
 			<textField isBlankWhenNull="true">
-				<reportElement style="Thai" x="428" y="82" width="140" height="17" uuid="d2e3f4a5-0001-0001-0001-000000000018"/>
+				<reportElement style="Thai" x="428" y="82" width="140" height="19" uuid="d2e3f4a5-0001-0001-0001-000000000018"/>
 				<textElement verticalAlignment="Middle">
 					<font fontName="Sarabun" size="13"/>
 				</textElement>
 				<textFieldExpression><![CDATA[$F{Payment_Name-name}]]></textFieldExpression>
 			</textField>
 			<staticText>
-				<reportElement style="Thai" x="375" y="99" width="75" height="17" uuid="d2e3f4a5-0001-0001-0001-000000000019"/>
+				<reportElement style="Thai" x="375" y="99" width="75" height="19" uuid="d2e3f4a5-0001-0001-0001-000000000019"/>
 				<textElement verticalAlignment="Middle">
 					<font fontName="Sarabun" size="13"/>
 				</textElement>
 				<text><![CDATA[วันที่ / DATE]]></text>
 			</staticText>
 			<textField isBlankWhenNull="true">
-				<reportElement style="Thai" x="428" y="99" width="140" height="17" uuid="d2e3f4a5-0001-0001-0001-000000000020"/>
+				<reportElement style="Thai" x="428" y="99" width="140" height="19" uuid="d2e3f4a5-0001-0001-0001-000000000020"/>
 				<textElement verticalAlignment="Middle">
 					<font fontName="Sarabun" size="13"/>
 				</textElement>
