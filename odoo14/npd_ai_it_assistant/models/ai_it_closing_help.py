@@ -414,6 +414,34 @@ class NpdAiItClosing(models.AbstractModel):
             'columns': [], 'rows': [],
         }
 
+    def _check_has_data(self, year, dfrom, dto):
+        u"""มีรายการบัญชีในงวดนี้หรือยัง
+
+        เฉพาะของ o18: ระบบนี้เป็นปลายทางการยกข้อมูลจาก o14 หลายบริษัทจึงยัง
+        ไม่มีเอกสารบัญชีสักใบ ถ้าไม่ตรวจข้อนี้ ตัวตรวจที่เหลือจะขึ้นเขียวหมด
+        (ไม่มีใบร่าง เดบิต=เครดิต=0 กระทบยอดครบ) แล้วคนอ่านจะเข้าใจผิดว่า
+        "เกือบพร้อมปิดงบแล้ว" ทั้งที่ยังไม่มีอะไรให้ปิดเลย
+        """
+        check = self._blank('has_data', u'มีรายการบัญชีในงวดนี้', u'Journal Entries',
+                            u'Invoicing > Accounting > Journal Entries')
+        Move = self.env['account.move'].sudo()
+        domain = [('company_id', '=', self._company().id),
+                  ('date', '>=', dfrom), ('date', '<=', dto),
+                  ('state', '=', 'posted')]
+        count = Move.search_count(domain)
+        check['count'] = count
+        if count:
+            check['found'] = u'ลงบันทึกแล้ว %s ใบ' % '{:,}'.format(count)
+            check['need'] = u'—'
+            return check
+        check['status'] = 'block'
+        check['found'] = u'ยังไม่มีรายการลงบันทึกในงวดนี้เลยสักใบ'
+        check['need'] = u'ต้องมีข้อมูลบัญชีของปีนี้ก่อน จึงจะปิดงบได้'
+        check['fix'] = (u'ถ้าเป็นบริษัทที่ยังใช้งานอยู่บน Odoo 14 แปลว่ายังไม่ได้ยกข้อมูล'
+                        u'มาที่ระบบนี้ ให้ปิดงบปีนี้ที่ Odoo 14 ไปก่อน '
+                        u'ส่วนที่นี่รอจนกว่าจะยกข้อมูลเสร็จ')
+        return check
+
     def _check_draft_moves(self, year, dfrom, dto):
         check = self._blank('draft_moves', u'ใบค้างร่างในปี', u'Journal Entries',
                             u'Invoicing > Accounting > Journal Entries')
@@ -780,6 +808,7 @@ class NpdAiItClosing(models.AbstractModel):
         """
         dfrom, dto = self.fiscal_window(year)
         checkers = [
+            self._check_has_data,
             self._check_draft_moves, self._check_balance, self._check_unreconciled,
             self._check_assets, self._check_month_gaps, self._check_result,
             self._check_unaffected_earnings, self._check_date_range,

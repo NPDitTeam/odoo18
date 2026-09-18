@@ -2,7 +2,7 @@
 {
     'name': 'NPD - ตัวช่วย AI-IT (AI-IT Assistant)',
     # พอร์ตจาก o14 14.0.1.9.0
-    'version': '18.0.1.3.0',
+    'version': '18.0.1.4.0',
     'category': 'Productivity/Discuss',
     'summary': 'แท็บ "ตัวช่วย AI-IT" ในกล่องสนทนา ให้พนักงานแจ้งปัญหาเป็นหัวข้อ แล้วให้ AI แก้ให้',
     'description': """
