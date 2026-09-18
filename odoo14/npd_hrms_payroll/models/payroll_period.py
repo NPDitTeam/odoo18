@@ -188,6 +188,7 @@ class PayrollPeriod(models.Model):
         """คำนวณใหม่ทั้งรอบ — ใช้เมื่อแก้ข้อมูลลงเวลา/ใบลาย้อนหลัง"""
         for rec in self:
             rec.salary_ids.action_recalculate()
+            rec._sync_pnd1_safe()
             rec._sync_welfare_report_safe()
         return True
 
@@ -248,6 +249,16 @@ class PayrollPeriod(models.Model):
             except Exception:
                 _logger.exception('[PND1] สร้างข้อมูลของรอบ %s ไม่สำเร็จ',
                                   rec.display_name)
+        # ตามเก็บสลิปที่แก้หลังอนุมัติ/ทำนอกรอบ ของทุกเดือนที่ทำเงินเดือนด้วยระบบแล้ว
+        self._reconcile_pnd1_safe()
+        return True
+
+    def _reconcile_pnd1_safe(self):
+        try:
+            with self.env.cr.savepoint():
+                self.env['pnd1.line'].reconcile_system_lines()
+        except Exception:
+            _logger.exception('[PND1] ตามเก็บข้อมูลไม่สำเร็จ')
         return True
 
     def action_mark_paid(self):

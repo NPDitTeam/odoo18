@@ -12,7 +12,10 @@
 โมเดลนี้เป็นฐานของหนังสือรับรองหัก ณ ที่จ่าย (50 ทวิ) ซึ่งดึงยอดเงินได้และภาษี
 ทั้งปีจากที่นี่
 """
+import calendar
 import logging
+import re
+from datetime import date
 
 from odoo import api, fields, models
 
@@ -46,6 +49,185 @@ class Pnd1Line(models.Model):
         'payroll.period', string='รอบทำเงินเดือน', ondelete='cascade')
 
     @api.model
+    def _normalize_pay_date(self, value):
+        """วันที่ที่พิมพ์ปี พ.ศ. ลงช่องวันที่ของ Excel (เช่น 2569-01-28) → ปี ค.ศ.
+
+        ถ้าไม่แปลง ระบบจะมองเป็นปีอนาคต เรียงลำดับและกรองตามปีผิดทั้งรายงาน
+        """
+        d = fields.Date.to_date(value)
+        if not d or d.year < 2500:
+            return value
+        year = d.year - 543
+        return date(year, d.month, min(d.day, calendar.monthrange(year, d.month)[1]))
+
+    @api.model
+    def _normalize_taxid(self, taxid):
+        """เลขบัตรสำหรับจับคู่: เอาเฉพาะตัวเลขแล้วตัด 0 นำหน้า
+
+        Excel ตัด 00 หน้าเลขบัตรต่างด้าวทิ้งเมื่อช่องนั้นเป็นตัวเลข
+        """
+        return re.sub(r'\D', '', taxid or '').lstrip('0')
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        for vals in vals_list:
+            if vals.get('pay_date'):
+                vals['pay_date'] = self._normalize_pay_date(vals['pay_date'])
+        return super().create(vals_list)
+
+    def write(self, vals):
+        if vals.get('pay_date'):
+            vals['pay_date'] = self._normalize_pay_date(vals['pay_date'])
+        return super().write(vals)
+
+    @api.model
+    def _system_pay_date(self, payroll):
+        """วันที่ของแถวรายงาน — ใช้วันจ่ายของสลิปถ้าตรงเดือน/ปีของสลิปนั้น
+
+        สลิปที่ทำนอกรอบมักติดวันจ่าย default เป็นเดือนที่กดสร้าง ถ้าใช้ตามนั้น
+        ยอดจะไปโผล่ผิดเดือน จึงถอยไปใช้วันที่ 28 ของเดือนสลิปแทน
+        """
+        pay = payroll.payment_date
+        try:
+            year, month = int(payroll.year), int(payroll.month)
+        except (TypeError, ValueError):
+            return pay
+        if pay and pay.year == year and pay.month == month:
+            return pay
+        return date(year, month, min(28, calendar.monthrange(year, month)[1]))
+
+    @api.model
+    def _prepare_system_vals(self, payroll, company):
+        emp = payroll.employee_id
+        prefix = dict(emp._fields['prefix_th'].selection).get(
+            emp.prefix_th, '') if emp.prefix_th else ''
+        full_name = ('%s%s %s' % (prefix, emp.firstname or '',
+                                  emp.lastname or '')).strip()
+        return {
+            'company_id': company.id,
+            'id_card_number': emp.id_card_number or '',
+            'full_name': full_name,
+            'pay_date': self._system_pay_date(payroll),
+            # ฝ่ายบัญชี: เงินได้ใน ภ.ง.ด.1 = รายรับ (รวมรายได้ก่อนหักรายการหัก)
+            'income': payroll.total_gross or 0.0,
+            'tax': payroll.tax_monthly or 0.0,
+            'source_type': 'system',
+            'employee_id': emp.id,
+            'payroll_id': payroll.id,
+            'period_id': payroll.period_id.id or False,
+        }
+
+    @api.model
+    def _managed_months(self):
+        """เดือนที่ทำเงินเดือนด้วยระบบแล้ว — เดือนก่อนหน้านั้นยึดข้อมูลที่นำเข้าจาก excel
+
+        สลิปที่ทำไว้ตอนทดลองระบบก่อนเริ่มใช้จริงจะได้ไม่ไปทับตัวเลขที่ยื่นภาษีไปแล้ว
+        """
+        return {
+            (p.year, p.month)
+            for p in self.env['payroll.period'].search(
+                [('state', 'not in', ('draft', 'cancelled'))])
+        }
+
+    @api.model
+    def _sync_payrolls(self, payrolls, months=None):
+        """ทำให้แถว ภ.ง.ด.1 (system) ตรงกับสลิปที่ส่งมา
+
+        * มีแถวอยู่แล้ว → อัปเดตเงินได้/ภาษี โดยคงบริษัทเดิมของเดือนนั้น
+        * ยังไม่มีแถว → สร้างให้ (บริษัท = สังกัดปัจจุบัน) แล้วลบแถว excel ที่ซ้ำ
+
+        คืนค่า dict จำนวนที่อัปเดต/สร้าง/ลบ
+        """
+        result = {'updated': 0, 'created': 0, 'excel_removed': 0}
+        if months is None:
+            months = self._managed_months()
+        payrolls = payrolls.filtered(
+            lambda p: p.employee_id and (p.year, p.month) in months)
+        if not payrolls:
+            return result
+
+        line_by_payroll = {}
+        for line in self.search([('source_type', '=', 'system'),
+                                 ('payroll_id', 'in', payrolls.ids)]):
+            line_by_payroll.setdefault(line.payroll_id.id, line)
+
+        new_vals = []
+        for payroll in payrolls:
+            income = payroll.total_gross or 0.0
+            tax = payroll.tax_monthly or 0.0
+            line = line_by_payroll.get(payroll.id)
+            if line:
+                if (abs((line.income or 0.0) - income) > 0.005
+                        or abs((line.tax or 0.0) - tax) > 0.005):
+                    line.write({'income': income, 'tax': tax})
+                    result['updated'] += 1
+            else:
+                company = payroll.employee_id.company_id or payroll.company_id
+                if company:
+                    new_vals.append(self._prepare_system_vals(payroll, company))
+
+        if new_vals:
+            created = self.create(new_vals)
+            result['created'] = len(created)
+            result['excel_removed'] = self._remove_excel_overlaps(created)
+        return result
+
+    @api.model
+    def _sync_payrolls_safe(self, payrolls):
+        """เรียกตอนบันทึกสลิป — รายงานล้มต้องไม่ทำให้บันทึกเงินเดือนล้มตาม"""
+        try:
+            with self.env.cr.savepoint():
+                self._sync_payrolls(payrolls)
+        except Exception:
+            _logger.exception('[PND1] อัปเดตรายงานตอนบันทึกสลิปไม่สำเร็จ')
+
+    @api.model
+    def reconcile_system_lines(self):
+        """ตามเก็บสลิปที่แก้หลังอนุมัติ หรือทำนอกรอบ ให้รายงานตรงเสมอ
+
+        รอบถูกดึงเข้ารายงานตอนอนุมัติครั้งเดียว ถ้ามีการแก้ยอดทีหลังหรือเพิ่มสลิป
+        นอกรอบ รายงานจะค้างเป็นยอดเก่าโดยไม่มีใครรู้
+        """
+        result = {'updated': 0, 'created': 0, 'excel_removed': 0}
+        months = self._managed_months()
+        if not months:
+            return result
+        domain = ['|'] * (len(months) - 1)
+        for year, month in sorted(months):
+            domain += ['&', ('year', '=', year), ('month', '=', month)]
+        payrolls = self.env['payroll.salary'].search(domain)
+        result = self._sync_payrolls(payrolls, months)
+        if any(result.values()):
+            _logger.info('[PND1] ตามเก็บ: อัปเดต %(updated)d สร้าง %(created)d '
+                         'ลบแถว excel ที่ซ้ำ %(excel_removed)d', result)
+        return result
+
+    @api.model
+    def _remove_excel_overlaps(self, system_lines):
+        """ลบแถว excel ที่ซ้ำกับแถวระบบ (คนเดียวกัน บริษัทเดียวกัน เดือนเดียวกัน)"""
+        to_remove = self.browse()
+        for line in system_lines:
+            taxid = self._normalize_taxid(line.id_card_number)
+            if not line.pay_date or not taxid:
+                continue
+            year, month = line.pay_date.year, line.pay_date.month
+            last_day = calendar.monthrange(year, month)[1]
+            candidates = self.search([
+                ('source_type', '=', 'excel'),
+                ('company_id', '=', line.company_id.id),
+                '|',
+                '&', ('pay_date', '>=', date(year, month, 1)),
+                     ('pay_date', '<=', date(year, month, last_day)),
+                '&', ('pay_date', '>=', date(year + 543, month, 1)),
+                     ('pay_date', '<=', date(year + 543, month, last_day)),
+            ])
+            to_remove |= candidates.filtered(
+                lambda l: self._normalize_taxid(l.id_card_number) == taxid)
+        count = len(to_remove)
+        to_remove.unlink()
+        return count
+
+    @api.model
     def sync_from_period(self, period):
         """สร้าง/อัปเดตบรรทัด ภ.ง.ด.1 ประเภท 'system' จากสลิปในรอบนี้
 
@@ -57,10 +239,17 @@ class Pnd1Line(models.Model):
         period = period or self
         created = 0
         for prd in period:
-            self.search([
+            # จำบริษัทเดิมของแต่ละสลิปไว้ก่อนลบ — พนักงานที่ย้ายบริษัทภายหลัง
+            # ต้องไม่ถูกย้ายยอดของเดือนเก่าตามไปด้วย ไม่งั้น 50 ทวิ ของทั้งสองบริษัทผิด
+            existing = self.search([
                 ('period_id', '=', prd.id),
                 ('source_type', '=', 'system'),
-            ]).unlink()
+            ])
+            company_by_payroll = {
+                line.payroll_id.id: line.company_id
+                for line in existing if line.payroll_id
+            }
+            existing.unlink()
 
             vals_list = []
             skipped = []
@@ -68,27 +257,15 @@ class Pnd1Line(models.Model):
                 emp = payroll.employee_id
                 if not emp:
                     continue
-                company = emp.company_id or payroll.company_id
+                company = (company_by_payroll.get(payroll.id)
+                           or emp.company_id or payroll.company_id)
                 if not company:
                     # บริษัทเป็นช่องบังคับ — ไม่มีแล้วแถวนี้จะไม่โผล่ในรายงานของใครเลย
                     skipped.append(emp.display_name)
                     continue
-                prefix = dict(emp._fields['prefix_th'].selection).get(
-                    emp.prefix_th, '') if emp.prefix_th else ''
-                full_name = ('%s%s %s' % (prefix, emp.firstname or '',
-                                          emp.lastname or '')).strip()
-                vals_list.append({
-                    'company_id': company.id,
-                    'id_card_number': emp.id_card_number or '',
-                    'full_name': full_name,
-                    'pay_date': payroll.payment_date,
-                    'income': payroll.net_salary or 0.0,
-                    'tax': payroll.tax_monthly or 0.0,
-                    'source_type': 'system',
-                    'employee_id': emp.id,
-                    'payroll_id': payroll.id,
-                    'period_id': prd.id,
-                })
+                vals = self._prepare_system_vals(payroll, company)
+                vals['period_id'] = prd.id
+                vals_list.append(vals)
             if vals_list:
                 self.create(vals_list)
                 created += len(vals_list)
@@ -166,3 +343,25 @@ class Pnd1Line(models.Model):
         ]
         lines = self.sudo().search(domain)
         return sum(lines.mapped('income')), sum(lines.mapped('tax'))
+
+
+class PayrollSalaryPnd1(models.Model):
+    """ให้รายงาน ภ.ง.ด.1 ตามทันทุกครั้งที่สลิปถูกแก้
+
+    เดิมรายงานถูกสร้างตอนอนุมัติรอบครั้งเดียว การแก้ยอดทีหลังจึงไม่สะท้อนในรายงาน
+    และไม่มีสัญญาณอะไรบอกว่าตัวเลขสองฝั่งไม่ตรงกันแล้ว
+    """
+    _inherit = 'payroll.salary'
+
+    # ฟิลด์ที่กระทบยอดในรายงาน (line_ids → รายรับเปลี่ยนตามบรรทัดในสลิป)
+    PND1_WATCH_FIELDS = {
+        'line_ids', 'total_gross', 'net_salary', 'tax_monthly',
+        'payment_date', 'employee_id', 'year', 'month', 'period_id',
+    }
+
+    def write(self, vals):
+        res = super().write(vals)
+        if (res and not self.env.context.get('skip_pnd1_sync')
+                and set(vals) & self.PND1_WATCH_FIELDS):
+            self.env['pnd1.line']._sync_payrolls_safe(self)
+        return res
