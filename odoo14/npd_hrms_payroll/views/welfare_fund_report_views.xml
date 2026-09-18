@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_welfare_fund_report_list" model="ir.ui.view">
+        <field name="name">welfare.fund.report.list</field>
+        <field name="model">welfare.fund.report</field>
+        <field name="arch" type="xml">
+            <list string="รายงานหักเงินสงเคราะห์ลูกจ้าง" create="false">
+                <field name="year"/>
+                <field name="month"/>
+                <field name="company_id"/>
+                <field name="employee_count"/>
+                <field name="total_wage" sum="รวมค่าจ้าง"/>
+                <field name="total_welfare" sum="รวมเงินสงเคราะห์"/>
+                <field name="submit_date"/>
+                <field name="generated_at"/>
+                <field name="file_name" column_invisible="1"/>
+                <field name="file_data" filename="file_name" widget="binary"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_welfare_fund_report_form" model="ir.ui.view">
+        <field name="name">welfare.fund.report.form</field>
+        <field name="model">welfare.fund.report</field>
+        <field name="arch" type="xml">
+            <form string="รายงานหักเงินสงเคราะห์ลูกจ้าง">
+                <header>
+                    <button name="action_refresh_lines" type="object"
+                            string="ดึงรายชื่อใหม่จากรอบเงินเดือน" class="btn-secondary"
+                            confirm="ข้อมูลที่แก้เองในตาราง (เช่น สาเหตุที่ออกจากงาน) จะถูกเขียนทับ"/>
+                    <button name="action_export_excel" type="object"
+                            string="ออกไฟล์ Excel" class="btn-primary"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="name" readonly="1"/></h1>
+                    </div>
+                    <div class="alert alert-info" role="alert">
+                        ไฟล์ Excel ออกตามแบบฟอร์มของกองทุนสงเคราะห์ลูกจ้าง (11 คอลัมน์)
+                        ระบบสร้างรายงานนี้ให้อัตโนมัติเมื่อคำนวณ/อนุมัติรอบเงินเดือน
+                        โดยเอาเฉพาะคนที่ถูกหักเงินสงเคราะห์ในรอบนั้น
+                    </div>
+                    <group>
+                        <group string="รอบที่ส่ง">
+                            <field name="month" readonly="1"/>
+                            <field name="year" readonly="1"/>
+                            <field name="company_id" readonly="1"/>
+                            <field name="period_id" readonly="1"/>
+                            <field name="submit_date"/>
+                        </group>
+                        <group string="ยอดรวม">
+                            <field name="employee_count"/>
+                            <field name="total_wage"/>
+                            <field name="total_welfare"/>
+                            <field name="file_name" invisible="1"/>
+                            <field name="file_data" filename="file_name"/>
+                            <field name="generated_at"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="รายชื่อพนักงาน" name="employees">
+                            <field name="line_ids">
+                                <list string="รายชื่อพนักงาน" editable="bottom" create="false">
+                                    <field name="employee_code" readonly="1"/>
+                                    <field name="prefix"/>
+                                    <field name="firstname"/>
+                                    <field name="lastname"/>
+                                    <field name="age"/>
+                                    <field name="nationality"/>
+                                    <field name="id_number"/>
+                                    <field name="wage_type"/>
+                                    <field name="wage"/>
+                                    <field name="start_date"/>
+                                    <field name="end_date"/>
+                                    <field name="resign_reason"/>
+                                    <field name="welfare_base" readonly="1"/>
+                                    <field name="welfare_amount" readonly="1" sum="รวม"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="หมายเหตุ" name="note">
+                            <field name="note" nolabel="1"/>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_welfare_fund_report_search" model="ir.ui.view">
+        <field name="name">welfare.fund.report.search</field>
+        <field name="model">welfare.fund.report</field>
+        <field name="arch" type="xml">
+            <search string="ค้นหารายงานหักเงินสงเคราะห์">
+                <field name="name"/>
+                <field name="year"/>
+                <field name="company_id"/>
+                <group expand="0" string="จัดกลุ่มตาม">
+                    <filter name="group_year" string="ปี" context="{'group_by': 'year'}"/>
+                    <filter name="group_month" string="เดือน" context="{'group_by': 'month'}"/>
+                    <filter name="group_company" string="สังกัด" context="{'group_by': 'company_id'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_welfare_fund_report" model="ir.actions.act_window">
+        <field name="name">รายงานหักเงินสงเคราะห์ลูกจ้าง</field>
+        <field name="res_model">welfare.fund.report</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_welfare_fund_report_search"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">ยังไม่มีรายงาน</p>
+            <p>
+                รายงานจะถูกสร้างอัตโนมัติเมื่อคำนวณ/อนุมัติรอบเงินเดือนของเดือนที่เริ่มหักเงินสงเคราะห์
+                (ตั้งเดือนเริ่มหักได้ที่เมนู "หักเงินสงเคราะห์ลูกจ้าง")
+            </p>
+        </field>
+    </record>
+
+</odoo>

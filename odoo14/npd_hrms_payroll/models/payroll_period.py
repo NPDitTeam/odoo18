@@ -188,6 +188,26 @@ class PayrollPeriod(models.Model):
         """คำนวณใหม่ทั้งรอบ — ใช้เมื่อแก้ข้อมูลลงเวลา/ใบลาย้อนหลัง"""
         for rec in self:
             rec.salary_ids.action_recalculate()
+            rec._sync_welfare_report_safe()
+        return True
+
+    def _sync_welfare_report_safe(self):
+        """สร้าง/อัพเดตรายงานหักเงินสงเคราะห์ลูกจ้างของรอบนี้ (แยกไฟล์ตามสังกัด)
+
+        ครอบด้วย savepoint แบบเดียวกับ ภ.ง.ด.1 — รายงานปลายทางล้มต้องไม่ทำให้
+        การคำนวณ/อนุมัติรอบเงินเดือนล้มตาม และรันซ้ำได้เสมอ
+        รอบที่ยังไม่ถึงเดือนเริ่มหักจะไม่มีใครถูกหัก จึงไม่มีรายงานถูกสร้าง
+        """
+        for rec in self:
+            try:
+                with rec.env.cr.savepoint():
+                    made = rec.env['welfare.fund.report'].generate_for_period(rec)
+                if made:
+                    _logger.info('[WELFARE-REPORT] รอบ %s: สร้าง/อัพเดตรายงาน %s สังกัด',
+                                 rec.display_name, made)
+            except Exception:
+                _logger.exception('[WELFARE-REPORT] สร้างรายงานของรอบ %s ไม่สำเร็จ',
+                                  rec.display_name)
         return True
 
     def action_approve(self):
@@ -211,6 +231,7 @@ class PayrollPeriod(models.Model):
                     'จึงยืนยันไม่ได้ (%s)', rec.display_name, len(incomplete),
                     ', '.join(incomplete.mapped('employee_code')))
             rec._sync_pnd1_safe()
+            rec._sync_welfare_report_safe()
         return True
 
     def _sync_pnd1_safe(self):
