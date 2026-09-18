@@ -44,11 +44,14 @@ class SaleOrder(models.Model):
         lines = []
         for picking in self.picking_ids.filtered(lambda p: p.state in ['draft', 'waiting', 'confirmed']):
             for move in picking.move_ids_without_package:
-                sol = self.order_line.filtered(lambda l: l.product_id.id == move.product_id.id)
-                if sol and sol.pfb_quantity > 0:
+                sols = self.order_line.filtered(lambda l: l.product_id.id == move.product_id.id)
+                # รวมจำนวนของทุกบรรทัดที่เป็นสินค้าตัวเดียวกัน (เดิมอ่าน sol.pfb_quantity
+                # ตรง ๆ ซึ่งจะพังถ้ามีสินค้าตัวเดียวกันหลายบรรทัด)
+                qty = sum(sol._sc_cut_qty() for sol in sols)
+                if qty > 0:
                     lines.append((0, 0, {
                         'product_id': move.product_id.id,
-                        'quantity': sol.pfb_quantity,
+                        'quantity': qty,
                         'location_name': picking.location_id.display_name,
                     }))
         # เปิด Wizard และส่งข้อมูลลงไปเลย
@@ -79,3 +82,33 @@ class SaleOrder(models.Model):
                 'default_mode': 'return',
             }
         }
+
+
+class SaleOrderLine(models.Model):
+    _inherit = 'sale.order.line'
+
+    def _sc_cut_qty(self):
+        """จำนวนที่ต้องตัดสต๊อกของบรรทัดนี้ (ใช้ร่วมกันทั้งปุ่มตัดสต๊อกและ wizard)
+
+        แยกตามประเภทใบ (pfb_so_type ของ pfb_npd_add_date_quatation_order)
+        - 'rent' ฝั่งเช่า: จำนวนอยู่ที่ pfb_quantity (Quantity Rent) ซึ่งบังคับให้ > 0
+        - 'sale' ฝั่งขาย: ไม่มีการกรอก pfb_quantity (เป็น 0) -> ใช้จำนวนที่ขายจริง
+          product_uom_qty ทำให้ปุ่ม 'ตัดสต๊อก Auto' ใช้กับใบขายได้ ไม่ขึ้น wizard เปล่า ๆ
+        """
+        self.ensure_one()
+        rent_qty = float(self.pfb_quantity or 0.0) if 'pfb_quantity' in self._fields else 0.0
+        if self._sc_is_rent_line():
+            return rent_qty
+        sale_qty = float(self.product_uom_qty or 0.0)
+        # เผื่อใบที่ไม่ได้ระบุประเภทแต่กรอกจำนวนเช่าไว้ ยังยึดจำนวนเช่าเหมือนเดิม
+        return sale_qty or rent_qty
+
+    def _sc_is_rent_line(self):
+        """บรรทัดนี้เป็นการเช่าหรือไม่ — ยึดประเภทใบเป็นหลัก ถ้าไม่มีฟิลด์ประเภทให้ดูจำนวนเช่า"""
+        self.ensure_one()
+        order = self.order_id
+        if 'pfb_so_type' in order._fields and order.pfb_so_type:
+            return order.pfb_so_type == 'rent'
+        if 'pfb_quantity' not in self._fields:
+            return False
+        return float(self.pfb_quantity or 0.0) > 0

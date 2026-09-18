@@ -107,16 +107,17 @@ class StockCutConfirmWizard(models.TransientModel):
             return res
 
         # ----------------- โหมดตัดสต๊อก: เตรียมไลน์จาก SO -----------------
+        # _sc_cut_qty(): ฝั่งเช่าใช้ pfb_quantity / ฝั่งขายใช้ product_uom_qty
         base_lines = []
         for so_line in order.order_line.filtered(
                 lambda l: not l.display_type
                           and l.product_id
                           and l.product_id.type == 'consu'
-                          and (l.pfb_quantity or 0) > 0
+                          and l._sc_cut_qty() > 0
         ):
             base_lines.append((0, 0, {
                 'product_id': so_line.product_id.id,
-                'quantity': so_line.pfb_quantity,
+                'quantity': so_line._sc_cut_qty(),
                 'location_name': location_name,
                 'odoo_stock_qty': self._get_odoo_stock_qty(so_line.product_id, location),
             }))
@@ -376,16 +377,20 @@ class StockCutConfirmWizard(models.TransientModel):
             lambda l: not l.display_type
                       and l.product_id
                       and l.product_id.type == 'consu'
-                      and (l.pfb_quantity or 0) > 0
+                      and l._sc_cut_qty() > 0
         )
         cut_items = {}
         for sol in so_lines:
-            cut_items[sol.product_id.id] = {
+            item = cut_items.setdefault(sol.product_id.id, {
                 'product': sol.product_id,
-                'quantity': sol.pfb_quantity,
-            }
+                'quantity': 0.0,
+            })
+            item['quantity'] += sol._sc_cut_qty()
         if not cut_items:
-            raise UserError("❌ ไม่พบสินค้าที่ต้องตัดสต๊อก (ตรวจจำนวน pfb_quantity ในใบสั่งขาย)")
+            raise UserError(
+                "❌ ไม่พบสินค้าที่ต้องตัดสต๊อก\n\n"
+                "ฝั่งเช่า: ตรวจช่องจำนวนเช่า (pfb_quantity) ในบรรทัดสินค้า\n"
+                "ฝั่งขาย: ตรวจว่ามีบรรทัดสินค้าที่เป็นสินค้าคงคลังและจำนวนมากกว่า 0")
         _dbg(f"📊 cut_items from SO: {[(v['product'].display_name, v['quantity']) for v in cut_items.values()]}")
 
         # 📌 บันทึกสต๊อกคงเหลือใน Odoo ก่อนตัด (ต่อสินค้า) ไว้ตรวจ/เตือนกรณีสต๊อกไม่พอ
