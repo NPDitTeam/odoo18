@@ -1,0 +1,66 @@
+<?xml version="1.0"?>
+<odoo>
+    <!-- 3 แบบฟอร์มในเมนูพิมพ์ของหน้ารับชำระ (report_name ห้ามมี "/" และต้องไม่ซ้ำรายงานอื่นในฐานข้อมูล) -->
+    <record id="jasper_receipt_deposit_report" model="ir.actions.report">
+        <field name="name">ใบเสร็จรับเงิน (ค่าประกัน)</field>
+        <field name="model">account.payment</field>
+        <field name="report_type">jasper</field>
+        <field name="file">pfb_npd_payment_penalty_receipt_jasper/report/receipt_deposit.jrxml</field>
+        <field name="attachment_use">False</field>
+        <field name="report_name">ใบเสร็จรับเงิน ค่าประกัน</field>
+        <field name="jasper_report">True</field>
+        <field name="jasper_output">pdf</field>
+        <field name="model_id" ref="account.model_account_payment"/>
+        <field name="binding_model_id" ref="account.model_account_payment"/>
+        <field name="binding_type">report</field>
+        <field name="print_report_name">'ใบเสร็จรับเงิน ค่าประกัน - %s' % (object.name)</field>
+    </record>
+    <record id="jasper_receipt_deposit_file" model="ir.actions.report.xml.file">
+        <field name="default">True</field>
+        <field name="filename">receipt_deposit.jrxml</field>
+        <field name="report_id" ref="jasper_receipt_deposit_report"/>
+        <field name="file" type="base64" file="pfb_npd_payment_penalty_receipt_jasper/report/receipt_deposit.jrxml"/>
+    </record>
+
+    <record id="jasper_receipt_damaged_report" model="ir.actions.report">
+        <field name="name">ใบเสร็จรับเงิน (ค่าปรับชำรุด)</field>
+        <field name="model">account.payment</field>
+        <field name="report_type">jasper</field>
+        <field name="file">pfb_npd_payment_penalty_receipt_jasper/report/receipt_damaged.jrxml</field>
+        <field name="attachment_use">False</field>
+        <field name="report_name">ใบเสร็จรับเงิน ค่าปรับชำรุด</field>
+        <field name="jasper_report">True</field>
+        <field name="jasper_output">pdf</field>
+        <field name="model_id" ref="account.model_account_payment"/>
+        <field name="binding_model_id" ref="account.model_account_payment"/>
+        <field name="binding_type">report</field>
+        <field name="print_report_name">'ใบเสร็จรับเงิน ค่าปรับชำรุด - %s' % (object.name)</field>
+    </record>
+    <record id="jasper_receipt_damaged_file" model="ir.actions.report.xml.file">
+        <field name="default">True</field>
+        <field name="filename">receipt_damaged.jrxml</field>
+        <field name="report_id" ref="jasper_receipt_damaged_report"/>
+        <field name="file" type="base64" file="pfb_npd_payment_penalty_receipt_jasper/report/receipt_damaged.jrxml"/>
+    </record>
+
+    <record id="jasper_receipt_lost_report" model="ir.actions.report">
+        <field name="name">ใบกำกับภาษี/ใบเสร็จรับเงิน (ค่าปรับหาย)</field>
+        <field name="model">account.payment</field>
+        <field name="report_type">jasper</field>
+        <field name="file">pfb_npd_payment_penalty_receipt_jasper/report/receipt_lost.jrxml</field>
+        <field name="attachment_use">False</field>
+        <field name="report_name">ใบกำกับภาษี-ใบเสร็จรับเงิน ค่าปรับหาย</field>
+        <field name="jasper_report">True</field>
+        <field name="jasper_output">pdf</field>
+        <field name="model_id" ref="account.model_account_payment"/>
+        <field name="binding_model_id" ref="account.model_account_payment"/>
+        <field name="binding_type">report</field>
+        <field name="print_report_name">'ใบกำกับภาษี-ใบเสร็จรับเงิน ค่าปรับหาย - %s' % (object.name)</field>
+    </record>
+    <record id="jasper_receipt_lost_file" model="ir.actions.report.xml.file">
+        <field name="default">True</field>
+        <field name="filename">receipt_lost.jrxml</field>
+        <field name="report_id" ref="jasper_receipt_lost_report"/>
+        <field name="file" type="base64" file="pfb_npd_payment_penalty_receipt_jasper/report/receipt_lost.jrxml"/>
+    </record>
+</odoo>
