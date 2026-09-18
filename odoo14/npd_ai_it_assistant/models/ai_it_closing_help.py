@@ -12,9 +12,11 @@ u"""ช่วยปิดงบ (Odoo 18) -- ผู้ช่วยค้นห�
 ต่างจากฝั่ง Odoo 14 ตรงไหน (สำคัญ อย่าลอกข้ามเวอร์ชัน)
   - ไม่มี account.account.user_type_id แล้ว ใช้ account_account.account_type
     (selection) แทน และ internal_group เป็นฟิลด์คำนวณ ไม่ได้ store จึงใช้ใน SQL ไม่ได้
-  - ไม่มีโมดูล account_fiscal_year / account_fiscal_year_closing บน o18
-    การ "ปิดงบ" จึงจบที่การล็อกวันที่ ไม่ได้ออกใบปิดบัญชีเหมือน o14
-    -> ตัวตรวจ "การล็อกวันที่" จึงเป็นตัวชี้ขาดว่าปิดงบสมบูรณ์หรือยัง
+  - ไม่มี account.fiscal.year (Odoo ถอดออกจาก core ตั้งแต่ v17) ใช้ date.range แทน
+  - ใบปิดบัญชีสิ้นปีใช้ account_fiscal_year_closing เวอร์ชัน 18 ของ OCA
+    (ติดตั้งเพิ่มเมื่อ 18 ก.ย. 2569 ตอนนั้น o18 ยังไม่มี) เมนูเหมือน o14 ทุกจุด
+    ต่างกันที่ o18 ยกยอดกำไรข้ามปีให้เองผ่านบัญชี equity_unaffected อยู่แล้ว
+    ใบปิดบัญชีจึงเป็น "เอกสารตามระเบียบ" ไม่ใช่สิ่งที่ทำให้งบดุลถูก
   - res.company ไม่มี period_lock_date แล้ว มี fiscalyear_lock_date /
     tax_lock_date / hard_lock_date (hard_lock_date ย้อนกลับไม่ได้)
   - ir.ui.menu กรองเมนูที่มองไม่เห็นใน search_fetch() ไม่ใช่ search()
@@ -124,11 +126,17 @@ CLOSING_STEPS = [
              'what': u'สรุปค่าเสื่อมทั้งปี ใช้คู่กับ ค่าเสื่อมราคารายเดือน '
                      u'และ สรุปค่าเสื่อมตามหมวด ไว้แนบงบ',
              'pass': u'ยอดตรงกับที่ลงบัญชี'},
+            {'name': u'ค้างรับ-ค้างจ่าย / รับ-จ่ายล่วงหน้า',
+             'find': u'Cut-off',
+             'path': u'Invoicing > Accounting > Cut-offs',
+             'what': u'Accrued Revenue (รายได้ค้างรับ) · Accrued Expense (ค่าใช้จ่ายค้างจ่าย) · '
+                     u'Prepaid Revenue (รายได้รับล่วงหน้า) · Prepaid Expense (จ่ายล่วงหน้า)',
+             'pass': u'ลงครบตามที่บัญชีคุมไว้'},
             {'name': u'รายการปรับปรุงสิ้นปีอื่น ๆ',
              'find': u'Journal Entries',
              'path': u'Invoicing > Accounting > Journal Entries',
-             'what': u'กดสร้างใบใหม่ในสมุดรายวันทั่วไป — ค้างรับ-ค้างจ่าย · '
-                     u'รับ-จ่ายล่วงหน้า · ปรับสินค้าคงเหลือให้ตรงที่นับจริง · '
+             'what': u'กดสร้างใบใหม่ในสมุดรายวันทั่วไป — '
+                     u'ปรับสินค้าคงเหลือให้ตรงที่นับจริง · '
                      u'ผลต่างอัตราแลกเปลี่ยน · ค่าเผื่อหนี้สงสัยจะสูญ · '
                      u'ภาษีเงินได้นิติบุคคล (ลงเป็นรายการสุดท้าย)',
              'pass': u'ลงครบและ Post แล้ว'},
@@ -172,17 +180,30 @@ CLOSING_STEPS = [
     {
         'order': 4,
         'key': 'close',
-        'title': u'ปิดงบจริง = ล็อกวันที่',
-        'goal': u'ล็อกไม่ให้ใครแก้ย้อนหลัง',
-        'why': u'Odoo 18 ไม่มีใบปิดบัญชีแบบ o14 แล้ว ระบบยกยอดงบดุลข้ามปีให้เอง '
-               u'ผ่านบัญชีกำไร(ขาดทุน)ที่ยังไม่ได้จัดสรร การปิดงบจึงจบที่การล็อกวันที่',
+        'title': u'ปิดงบจริง และล็อก',
+        'goal': u'ออกใบปิดบัญชี แล้วล็อกไม่ให้ใครแก้ย้อนหลัง',
+        'why': u'จบรอบ — ยอดงบดุลข้ามปี Odoo 18 ยกให้เองผ่านบัญชีกำไร(ขาดทุน)'
+               u'ที่ยังไม่ได้จัดสรรอยู่แล้ว ใบปิดบัญชีจึงเป็นเอกสารตามระเบียบ '
+               u'ไม่ใช่สิ่งที่ทำให้งบดุลถูก แต่ถ้าจะทำ ต้องทำก่อนล็อก',
         'items': [
-            {'name': u'4.1 ตรวจความต่อเนื่องของเลขที่เอกสาร',
+            {'name': u'4.1 ตั้งแม่แบบใบปิดบัญชี',
+             'find': u'Closing templates',
+             'path': u'Invoicing > Configuration > Fiscal Year Closing > Closing templates',
+             'what': u'ใส่ Moves configuration + Account mappings (อย่างน้อยบรรทัด '
+                     u'Loss & Profit: Source 4%,5%,6% -> Destination บัญชีกำไร(ขาดทุน))',
+             'pass': u'มี Account mappings ครบ ไม่งั้นกด Calculate แล้วระบบจะเงียบ ไม่สร้างอะไรเลย'},
+            {'name': u'4.2 สร้างรายการปิดงบ',
+             'find': u'Fiscal year closings',
+             'path': u'Invoicing > Accounting > Fiscal year closings',
+             'what': u'ใส่ Year -> เลือก Closing template -> Calculate -> กดปุ่ม Moves '
+                     u'เทียบกับงบที่พิมพ์ไว้ -> ถ้าตรงจึง Post',
+             'pass': u'สถานะเป็น Posted (ก่อน Post ยังถอยกลับได้)'},
+            {'name': u'4.3 ตรวจความต่อเนื่องของเลขที่เอกสาร',
              'find': u'Secure Entries',
              'path': u'Invoicing > Accounting > Secure Entries',
              'what': u'ดูว่ารายการในงวดถูกผูกลำดับเรียบร้อย ไม่มีช่องโหว่',
              'pass': u'ไม่มีรายการค้างที่ยังไม่ถูกผูกลำดับ'},
-            {'name': u'4.2 ล็อกวันที่',
+            {'name': u'4.4 ล็อกวันที่',
              'find': u'Settings',
              'path': u'Invoicing > Configuration > Settings (หัวข้อ Fiscal Periods / Lock Dates)',
              'what': u'Lock Date = วันสิ้นงวด · Tax Lock Date = วันสิ้นงวดภาษีที่ยื่นแล้ว '
@@ -193,6 +214,13 @@ CLOSING_STEPS = [
 ]
 
 PITFALLS = [
+    (u'กด Calculate แล้วเงียบ ไม่มีอะไรเกิดขึ้น',
+     u'แม่แบบใบปิดบัญชีไม่ได้ใส่ Account mappings',
+     u'กลับไปใส่ mapping ที่ Closing templates — ถ้าไม่ใส่ ระบบจะไม่สร้างรายการ '
+     u'และไม่ขึ้น error ด้วย จะนึกว่าทำสำเร็จแล้ว'),
+    (u'กด Calculate แล้วขึ้นกรอบแดงยาว',
+     u'มีใบร่างค้างในปีที่จะปิด',
+     u'กลับไปเคลียร์ใบค้างร่างให้เหลือ 0 (ขั้นที่ 1)'),
     (u'หาเมนูปิดงบไม่เจอ',
      u'สิทธิ์ผู้ใช้ไม่พอ เมนูบัญชีครึ่งหนึ่งจะไม่ขึ้นเลย',
      u'ให้ IT เพิ่มสิทธิ์บัญชีระดับผู้ดูแล (Billing Administrator / Accountant)'),
@@ -310,7 +338,7 @@ class NpdAiItClosing(models.AbstractModel):
         # ผู้ใช้เปิดหน้าจอภาษาไทย แต่ชื่อเมนูจริงเป็นอังกฤษ (Trial Balance)
         # ถ้าค้นภาษาเดียวจะไม่เจอ จึงต้องค้นทั้งภาษาผู้ใช้และอังกฤษแล้วรวมกัน
         base = Menu.sudo().with_context(**{'ir.ui.menu.full_list': True})
-        candidates = Menu.browse()
+        candidates = base.browse()
         for lang in (self.env.lang or 'en_US', 'en_US'):
             try:
                 found = base.with_context(lang=lang).search(
@@ -655,12 +683,76 @@ class NpdAiItClosing(models.AbstractModel):
         check['fix'] = u'แจ้ง IT ให้ตั้งรายงาน MIS ของบริษัทนี้ (ตั้งได้จากโมดูลตั้งค่าปิดงบไทย)'
         return check
 
+    def _check_closing_template(self, year, dfrom, dto):
+        u"""แม่แบบใบปิดบัญชี -- ไม่มี mapping = กด Calculate แล้วระบบเงียบ"""
+        check = self._blank('closing_template', u'แม่แบบใบปิดบัญชี', u'Closing templates',
+                            u'Invoicing > Configuration > Fiscal Year Closing > Closing templates')
+        if 'account.fiscalyear.closing.template' not in self.env:
+            check['status'] = 'skip'
+            check['found'] = u'ฐานนี้ไม่ได้ติดตั้งโมดูลใบปิดบัญชี'
+            return check
+        templates = self.env['account.fiscalyear.closing.template'].sudo().search([])
+        if not templates:
+            check['status'] = 'block'
+            check['found'] = u'ยังไม่มีแม่แบบใบปิดบัญชีเลย'
+            check['need'] = u'ต้องมีอย่างน้อย 1 แม่แบบ ที่มี Account mappings'
+            check['fix'] = (u'สร้างแม่แบบ แล้วใส่บรรทัด Loss & Profit '
+                            u'Source 4%,5%,6% -> Destination บัญชีกำไร(ขาดทุน)')
+            return check
+        usable = [t.name or u'(ไม่มีชื่อ)' for t in templates
+                  if any(c.mapping_ids for c in t.move_config_ids)]
+        if usable:
+            check['found'] = u'ใช้ได้ %s แม่แบบ (%s)' % (len(usable), u' · '.join(usable[:3]))
+            check['need'] = u'—'
+            return check
+        check['status'] = 'block'
+        check['found'] = u'มี %s แม่แบบ แต่ยังไม่ได้ใส่ Account mappings เลย' % len(templates)
+        check['need'] = u'ต้องใส่ mapping อย่างน้อย 1 บรรทัด'
+        check['fix'] = (u'ถ้าไม่ใส่ mapping ตอนกด Calculate ระบบจะเงียบ ไม่สร้างรายการ '
+                        u'และไม่ขึ้น error ด้วย')
+        return check
+
+    def _check_closing_entry(self, year, dfrom, dto):
+        u"""ใบปิดบัญชีของปีนั้น
+
+        หมายเหตุทางบัญชี: o18 ยกยอดงบดุลข้ามปีให้เองผ่านบัญชีกำไร(ขาดทุน)
+        ที่ยังไม่ได้จัดสรร ใบปิดบัญชีจึงเป็นเอกสารตามระเบียบ ไม่ใช่สิ่งที่ทำให้งบดุลถูก
+        """
+        check = self._blank('closing_entry', u'ใบปิดบัญชีของปีนี้', u'Fiscal year closings',
+                            u'Invoicing > Accounting > Fiscal year closings')
+        if 'account.fiscalyear.closing' not in self.env:
+            check['status'] = 'skip'
+            check['found'] = u'ฐานนี้ไม่ได้ติดตั้งโมดูลใบปิดบัญชี'
+            return check
+        Closing = self.env['account.fiscalyear.closing'].sudo()
+        record = Closing.search([('company_id', '=', self._company().id),
+                                 ('year', '=', year)], limit=1)
+        if not record:
+            check['status'] = 'block'
+            check['found'] = u'ยังไม่ได้สร้างใบปิดบัญชีของปี %s' % year
+            check['need'] = u'ต้องมี 1 ใบ และสถานะต้องเป็น Posted'
+            check['fix'] = (u'กดสร้าง ใส่ Year = %s เลือกแม่แบบ แล้วกด Calculate ก่อน Post '
+                            u'(งบดุลข้ามปีถูกอยู่แล้วแม้ยังไม่ออกใบนี้)' % year)
+            return check
+        state = record.state or u''
+        labels = dict(Closing._fields['state'].selection or [])
+        check['found'] = u'%s — สถานะ %s' % (record.name or record.year,
+                                             labels.get(state, state))
+        if state == 'posted':
+            check['need'] = u'—'
+            return check
+        check['status'] = 'block'
+        check['need'] = u'ต้องกด Post ให้สถานะเป็น Posted'
+        check['fix'] = (u'กด Calculate แล้วเปิดปุ่ม Moves ตรวจตัวเลขกับงบที่พิมพ์ไว้ '
+                        u'ถ้าตรงจึงกด Post (ก่อน Post ยังถอยกลับได้)')
+        return check
+
     def _check_lock_dates(self, year, dfrom, dto):
-        u"""บน o18 การล็อกวันที่ = การปิดงบ ตัวนี้จึงเป็นตัวชี้ขาด
+        u"""ขั้นสุดท้ายของการปิดงบ -- ทำหลังออกใบปิดบัญชีแล้ว
 
         o18 ไม่มี period_lock_date แล้ว และเพิ่ม hard_lock_date ที่ย้อนกลับไม่ได้
         """
-        check = self._blank('lock_dates', u'การล็อกวันที่ (= การปิดงบของ o18)',
+        check = self._blank('lock_dates', u'การล็อกวันที่',
                             u'Settings',
                             u'Invoicing > Configuration > Settings (Fiscal Periods / Lock Dates)')
         company = self._company()
@@ -675,8 +767,8 @@ class NpdAiItClosing(models.AbstractModel):
                             u'(ยกเว้น Hard Lock Date ที่ย้อนกลับไม่ได้)')
             return check
         check['status'] = 'block'
-        check['need'] = u'ต้องตั้ง Lock Date = %s จึงถือว่าปิดงบปีนี้แล้ว' % _thai_date(dto)
-        check['fix'] = (u'ทำขั้นที่ 1–3 ให้ครบก่อน แล้วค่อยตั้ง Lock Date '
+        check['need'] = u'ต้องตั้ง Lock Date = %s เป็นขั้นสุดท้ายของการปิดงบ' % _thai_date(dto)
+        check['fix'] = (u'ทำขั้นที่ 1–3 และออกใบปิดบัญชีให้เสร็จก่อน แล้วค่อยตั้ง Lock Date '
                         u'ส่วน Hard Lock Date ใส่เมื่อส่งงบแล้วเท่านั้น เพราะย้อนกลับไม่ได้')
         return check
 
@@ -691,7 +783,8 @@ class NpdAiItClosing(models.AbstractModel):
             self._check_draft_moves, self._check_balance, self._check_unreconciled,
             self._check_assets, self._check_month_gaps, self._check_result,
             self._check_unaffected_earnings, self._check_date_range,
-            self._check_mis_reports, self._check_lock_dates,
+            self._check_mis_reports, self._check_closing_template,
+            self._check_closing_entry, self._check_lock_dates,
         ]
         results = []
         for checker in checkers:
@@ -710,8 +803,10 @@ class NpdAiItClosing(models.AbstractModel):
     def verdict(self, year, checks=None):
         u"""ฟันธงว่าปีนั้นปิดงบสมบูรณ์แล้วหรือยัง
 
-        o18 ไม่มีใบปิดบัญชี "ปิดงบสมบูรณ์" จึงหมายถึง
-        ไม่มีรายการติดค้าง และล็อกวันที่ครอบถึงวันสิ้นงวดแล้ว
+        "ปิดงบสมบูรณ์" = ไม่มีรายการระดับ block ค้างอยู่เลย ซึ่งรวมถึง
+        ใบปิดบัญชีที่ Post แล้ว และล็อกวันที่ครอบถึงวันสิ้นงวด
+        ฐานไหนไม่ได้ติดตั้งโมดูลใบปิดบัญชี ตัวตรวจนั้นจะเป็น skip
+        เกณฑ์จึงเหลือแค่ "ไม่มีรายการติด + ล็อกวันที่แล้ว" โดยอัตโนมัติ
         """
         checks = checks if checks is not None else self.run_checks(year)
         blocking = [c for c in checks if c['status'] == 'block']
@@ -1002,9 +1097,11 @@ class NpdAiItClosing(models.AbstractModel):
             parts.append(u'\n'.join(lines))
         parts.append(u'อาการที่เจอบ่อย:\n' + u'\n'.join(
             u'  - %s => สาเหตุ: %s => แก้: %s' % row for row in PITFALLS))
-        parts.append(u'ข้อควรรู้ของ Odoo 18: ไม่มีใบปิดบัญชี/แม่แบบใบปิดแบบ Odoo 14 แล้ว '
-                     u'ระบบยกยอดงบดุลข้ามปีให้เองผ่านบัญชีกำไร(ขาดทุน)ที่ยังไม่ได้จัดสรร '
-                     u'การปิดงบจึงจบที่การล็อกวันที่ และ Hard Lock Date ย้อนกลับไม่ได้')
+        parts.append(u'ข้อควรรู้ของ Odoo 18: มีใบปิดบัญชีและแม่แบบใบปิดเหมือน o14 แล้ว '
+                     u'(ติดตั้งโมดูล OCA เพิ่มเมื่อ 18 ก.ย. 2569) แต่ต่างจาก o14 ตรงที่ '
+                     u'Odoo 18 ยกยอดงบดุลข้ามปีให้เองผ่านบัญชีกำไร(ขาดทุน)ที่ยังไม่ได้จัดสรร '
+                     u'ใบปิดบัญชีจึงเป็นเอกสารตามระเบียบ ไม่ใช่สิ่งที่ทำให้งบดุลถูก '
+                     u'และ Hard Lock Date ย้อนกลับไม่ได้ ใส่เมื่อส่งงบแล้วเท่านั้น')
         return u'\n\n'.join(parts)
 
     @api.model
