@@ -11,6 +11,15 @@
                   create="true"
                   edit="true"
                   delete="true">
+                <!-- ปุ่มซิงค์อยู่บนหน้ารายการ กดแล้วไม่สร้างเอกสารใหม่
+                     (ถ้าอยู่บนฟอร์มเอกสารใหม่ Odoo จะบันทึกใบ TR- ขึ้นมาก่อน
+                      แล้วการซิงค์ลบใบนั้นทิ้ง ผู้ใช้จะเจอ "การเข้าถึงผิดพลาด") -->
+                <header>
+                    <button name="action_sync_recent_from_odoo14" type="object"
+                            string="ซิงค์วันนี้" class="btn-primary"/>
+                    <button name="action_sync_from_odoo14" type="object"
+                            string="ซิงค์ทั้งหมด" class="btn-secondary"/>
+                </header>
                 <field name="name" string="เลขที่"/>
                 <field name="so_number" string="เลขเอกสาร SO" optional="show"/>
                 <field name="trip_direction" string="สถานะเที่ยววิ่ง" widget="badge"
@@ -51,14 +60,18 @@
         <field name="arch" type="xml">
             <form string="คำสั่งขนส่ง">
                 <header>
+                    <!-- ซ่อนบนเอกสารที่ยังไม่บันทึก: การกดปุ่มบนฟอร์มใหม่จะบังคับบันทึกใบ TR-
+                         ซึ่งการซิงค์จะลบทิ้งทันที ทำให้หน้าจอฟ้อง "การเข้าถึงผิดพลาด" -->
                     <button name="action_sync_recent_from_odoo14"
                             string="ซิงค์วันนี้"
                             type="object"
-                            class="btn-primary"/>
+                            class="btn-primary"
+                            invisible="not id"/>
                     <button name="action_sync_from_odoo14"
                             string="ซิงค์ทั้งหมด"
                             type="object"
-                            class="btn-secondary"/>
+                            class="btn-secondary"
+                            invisible="not id"/>
                     <field name="state" widget="statusbar" statusbar_visible="draft,sent,sale,done"/>
                 </header>
                 <sheet>

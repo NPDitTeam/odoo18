@@ -20,6 +20,21 @@
             </field>
         </record>
 
+        <!-- ปุ่มซิงค์แบบไม่ต้องเปิดเอกสาร (กดจากเมนูได้เลย ไม่สร้างใบ TR- ค้าง) -->
+        <record id="action_sync_transport_today" model="ir.actions.server">
+            <field name="name">ซิงค์ข้อมูลขนส่งวันนี้</field>
+            <field name="model_id" ref="model_transport_order"/>
+            <field name="state">code</field>
+            <field name="code">action = model.action_sync_recent_from_odoo14()</field>
+        </record>
+
+        <record id="action_sync_transport_all" model="ir.actions.server">
+            <field name="name">ซิงค์ข้อมูลขนส่งทั้งหมด</field>
+            <field name="model_id" ref="model_transport_order"/>
+            <field name="state">code</field>
+            <field name="code">action = model.action_sync_from_odoo14()</field>
+        </record>
+
         <!-- Main Menu -->
         <menuitem id="menu_transport_root"
                   name="ขนส่ง"
@@ -32,5 +47,17 @@
                   parent="menu_transport_root"
                   action="action_transport_order"
                   sequence="10"/>
+
+        <menuitem id="menu_transport_sync_today"
+                  name="ซิงค์ข้อมูลวันนี้"
+                  parent="menu_transport_root"
+                  action="action_sync_transport_today"
+                  sequence="20"/>
+
+        <menuitem id="menu_transport_sync_all"
+                  name="ซิงค์ข้อมูลทั้งหมด"
+                  parent="menu_transport_root"
+                  action="action_sync_transport_all"
+                  sequence="30"/>
     </data>
 </odoo>

@@ -285,7 +285,9 @@ class TransportOrder(models.Model):
             pass
         elif not user.show_all_branches and user.branch_id:
             # เพิ่ม domain สำหรับกรองเฉพาะ branch ของ user
-            branch_domain = [('branch_id', '=', user.branch_id.id)]
+            # รวมใบที่ยังไม่มีสาขาด้วย (ใบที่เพิ่งสร้างเองยังไม่ทันลงสาขา)
+            # ไม่งั้นผู้ใช้จะอ่านใบของตัวเองไม่ได้ แล้วเจอ "การเข้าถึงผิดพลาด"
+            branch_domain = ['|', ('branch_id', '=', user.branch_id.id), ('branch_id', '=', False)]
             domain = domain + branch_domain if domain else branch_domain
             _logger.debug(f"🔍 Filtering by branch: {user.branch_id.name}")
         else:
