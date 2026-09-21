@@ -32,11 +32,12 @@
                        readonly="state in ['sale', 'done', 'cancel']"/>
             </xpath>
 
-            <!-- งานเช่า: บริษัทต้นทางถูกตั้งจาก popup จึงล็อกไว้ตามเดิม
-                 งานโยกระหว่างสาขา: ต้องเลือกบริษัทต้นทางเองก่อน จึงปลดล็อกเฉพาะกรณีนี้ -->
+            <!-- บริษัทต้นทาง = แหล่งที่จะไปดึงข้อมูล ต้องเลือกเองได้ทุกงาน (เหมือน o14)
+                 ล็อกเฉพาะใบที่ยืนยันแล้ว และงาน "ส่งรถไปช่วยอีกสาขา" ที่ไม่ต้องอ้างเอกสาร
+                 (popup "ดึงข้อมูลการเช่า" ยังเติมค่าให้ได้เหมือนเดิม) -->
             <xpath expr="//field[@name='source_company_id']" position="attributes">
-                <attribute name="readonly">shipment_purpose != 'branch_transfer' or state in ['sale', 'done', 'cancel']</attribute>
-                <attribute name="required">shipment_purpose == 'branch_transfer' and is_npd_logistics_company</attribute>
+                <attribute name="readonly">state in ['sale', 'done', 'cancel'] or shipment_purpose == 'help_branch'</attribute>
+                <attribute name="required">is_npd_logistics_company and shipment_purpose in ['to_customer', 'from_customer', 'branch_transfer']</attribute>
                 <attribute name="options">{'no_create': True, 'no_open': True}</attribute>
             </xpath>
 
