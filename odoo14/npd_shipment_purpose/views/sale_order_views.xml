@@ -8,6 +8,12 @@
         <field name="priority">200</field>
         <field name="arch" type="xml">
 
+            <!-- ปุ่ม "ดึงข้อมูลการเช่า" (ของ sale_api_rent) ใช้กับงานเช่าเท่านั้น
+                 งานโยกระหว่างสาขา/ส่งรถไปช่วยสาขา ให้ซ่อนไว้ กันพนักงานกดผิด -->
+            <xpath expr="//button[@name='action_fetch_rental_data']" position="attributes">
+                <attribute name="invisible">not is_npd_logistics_company or shipment_purpose in ['branch_transfer', 'help_branch']</attribute>
+            </xpath>
+
             <!-- ประเภทการจัดส่งสินค้า: วางไว้ "ก่อน" ดึงข้อมูลการเช่าจาก บ.อื่น + เลขเอกสาร SO -->
             <xpath expr="//field[@name='source_company_id']" position="before">
                 <!-- งานขนส่งเป็นของบริษัท เอ็นพีดี โลจิสติกส์ เท่านั้น บริษัทอื่นไม่ต้องเห็น/ไม่บังคับ -->
@@ -20,7 +26,9 @@
             <!-- โยกสินค้าระหว่างสาขา: ใช้เลขใบโยกแทนเลขเอกสาร SO
                  กรองเฉพาะใบยืนยันแล้วของบริษัทต้นทางที่เลือก และตัดใบที่ถูกใช้ไปแล้วออก -->
             <xpath expr="//field[@name='so_number']" position="attributes">
-                <attribute name="invisible">shipment_purpose == 'branch_transfer'</attribute>
+                <!-- คงเงื่อนไขเดิมของ sale_api_rent (เฉพาะบริษัทโลจิสติกส์) ไว้ด้วย
+                     ไม่งั้นบริษัทอื่นจะเห็นช่องเลขเอกสาร SO โผล่ขึ้นมา -->
+                <attribute name="invisible">not is_npd_logistics_company or shipment_purpose == 'branch_transfer'</attribute>
             </xpath>
 
             <xpath expr="//field[@name='so_number']" position="after">
