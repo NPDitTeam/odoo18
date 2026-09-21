@@ -33,7 +33,8 @@
                     <field name="refund_amount" string="เงินที่ต้องคืน" sum="รวมเงินที่ต้องคืน"/>
                     <field name="refund_status" widget="badge"
                            decoration-info="refund_status == 'deducting'"
-                           decoration-warning="refund_status == 'pending'"
+                           decoration-warning="refund_status == 'holding'"
+                           decoration-danger="refund_status == 'pending'"
                            decoration-success="refund_status == 'refunded'"/>
                     <field name="manual_refunded_date" string="วันที่คืน" optional="show"/>
                     <field name="refund_payroll_id" optional="hide"/>
@@ -59,9 +60,10 @@
 
                     <separator/>
                     <filter string="รอหัก (ยังหักไม่ครบ)" name="f_deducting" domain="[('refund_status', '=', 'deducting')]"/>
-                    <filter string="รอคืนเงิน" name="f_pending" domain="[('refund_status', '=', 'pending')]"/>
+                    <filter string="รอคืน (หักครบ ยังทำงานอยู่)" name="f_holding" domain="[('refund_status', '=', 'holding')]"/>
+                    <filter string="รอคืนเงิน (ลาออกแล้ว ต้องจ่ายคืน)" name="f_pending" domain="[('refund_status', '=', 'pending')]"/>
                     <filter string="คืนเงินแล้ว" name="f_refunded" domain="[('refund_status', '=', 'refunded')]"/>
-                    <filter string="ไม่ต้องคืน" name="f_none" domain="[('refund_status', '=', 'none')]"/>
+                    <filter string="ไม่ต้องคืน (ยกเว้นไม่หัก)" name="f_none" domain="[('refund_status', '=', 'none')]"/>
 
                     <separator/>
                     <filter string="หักครบแล้ว" name="f_completed"
