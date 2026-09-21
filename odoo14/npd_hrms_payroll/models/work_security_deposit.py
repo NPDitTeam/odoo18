@@ -158,6 +158,139 @@ class WorkSecurityDeposit(models.Model):
         return result
 
 
+    def mark_cycle_deducted(self, payroll):
+        """ยืนยันสลิปแล้ว -> ตั้งงวดของรอบนั้นเป็น "หักแล้ว" + ผูกสลิป
+
+        ไม่มีจุดไหนในระบบตั้งธงนี้มาก่อน ทำให้ยอดหักสะสมและเงินที่ต้องคืนเป็น 0 เสมอ
+        """
+        payroll.ensure_one()
+        date_from, date_to = payroll._cycle_window()
+        if not date_from or not payroll.employee_id:
+            return 0
+        payments = self.env['work.security.deposit.line.payment'].sudo().search([
+            ('employee_id', '=', payroll.employee_id.id),
+            ('deposit_state', '=', 'confirmed'),
+            ('payment_date', '>=', date_from),
+            ('payment_date', '<=', date_to),
+            ('is_deducted', '=', False),
+        ])
+        if payments:
+            payments.write({'is_deducted': True, 'payroll_id': payroll.id})
+            _logger.info('[DEPOSIT] สลิป %s: ตั้ง "หักแล้ว" %d งวด',
+                         payroll.display_name, len(payments))
+        # ใบที่คืนเงินในรอบนี้ -> ผูกสลิปที่คืน จะได้ไม่ค้างสถานะ "รอคืน"
+        employee = payroll.employee_id
+        if employee.resign_date and date_from <= employee.resign_date <= date_to:
+            lines = self.env['work.security.deposit.line'].sudo().search([
+                ('employee_id', '=', employee.id),
+                ('deposit_id.state', '=', 'confirmed'),
+                ('work_status', '=', 'resigned'),
+                ('refund_payroll_id', '=', False),
+            ])
+            if lines:
+                lines.write({'refund_payroll_id': payroll.id})
+        return len(payments)
+
+    def unmark_cycle_deducted(self, payroll):
+        """กลับสลิปเป็นร่าง -> ถอนธงของงวดที่ผูกกับสลิปนั้น"""
+        payroll.ensure_one()
+        payments = self.env['work.security.deposit.line.payment'].sudo().search([
+            ('payroll_id', '=', payroll.id),
+        ])
+        if payments:
+            payments.write({'is_deducted': False, 'payroll_id': False})
+        lines = self.env['work.security.deposit.line'].sudo().search([
+            ('refund_payroll_id', '=', payroll.id),
+        ])
+        if lines:
+            lines.write({'refund_payroll_id': False})
+        return len(payments)
+
+    @api.model
+    def _reconcile_deducted_payments(self, deposits=None):
+        """กระทบยอด: งวดที่เลยกำหนดแล้วและมีสลิป "ยืนยันแล้ว" ของรอบนั้นอยู่จริง
+        แต่ยังไม่ถูกตั้งธง -> ตั้งให้ถูกต้อง (กันยอดเงินคืนขาดไปเป็นเดือน)"""
+        Payment = self.env['work.security.deposit.line.payment'].sudo()
+        Payroll = self.env['payroll.salary'].sudo()
+        today = fields.Date.context_today(self)
+        domain = [
+            ('payment_type', '=', 'regular'),
+            ('is_deducted', '=', False),
+            ('payment_date', '<=', today),
+            ('deposit_state', '=', 'confirmed'),
+        ]
+        if deposits:
+            domain.append(('line_id.deposit_id', 'in', deposits.ids))
+        fixed = 0
+        for payment in Payment.search(domain):
+            employee = payment.employee_id
+            if not employee:
+                continue
+            d = payment.payment_date
+            # รอบตัด 25–24: งวดวันที่ <= 24 เข้ารอบเดือนเดียวกัน, > 24 เข้ารอบถัดไป
+            month, year = (d.month, d.year) if d.day <= 24 else (
+                (1, d.year + 1) if d.month == 12 else (d.month + 1, d.year))
+            payroll = Payroll.search([
+                ('employee_id', '=', employee.id),
+                ('month', '=', month),
+                ('year', '=', str(year)),
+                ('state', '=', 'done'),
+            ], limit=1)
+            if not payroll:
+                continue
+            payment.write({'is_deducted': True, 'payroll_id': payroll.id})
+            fixed += 1
+        if fixed:
+            _logger.info('[DEPOSIT] กระทบยอดกับสลิป: ปรับ %d งวด', fixed)
+        return fixed
+
+    def action_reconcile_deducted_payments(self):
+        fixed = self._reconcile_deducted_payments(deposits=self)
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'title': 'กระทบยอดกับสลิปเงินเดือน',
+                'message': 'ตั้งงวดที่หักไปแล้วให้ถูกต้อง %d งวด' % fixed,
+                'type': 'success' if fixed else 'info',
+                'sticky': False,
+            },
+        }
+
+    def action_mark_historical_old_employees(self):
+        """พนักงานที่หักครบไปก่อนเริ่มใช้ระบบ (ทุกงวดอยู่ในอดีต) -> ตั้ง "หักแล้ว"
+        ไม่ผูกสลิป เพราะไม่มีสลิปในระบบ แต่ต้องนับเป็นเงินที่ต้องคืน"""
+        self.ensure_one()
+        today = fields.Date.context_today(self)
+        marked = 0
+        for line in self.line_ids:
+            if line.work_status != 'working' or line.skip_deduction:
+                continue
+            payments = line.payment_ids.filtered(lambda p: p.payment_type == 'regular')
+            if not payments:
+                continue
+            if not all(p.payment_date and p.payment_date <= today for p in payments):
+                continue
+            todo = payments.filtered(lambda p: not p.is_deducted)
+            if todo:
+                todo.write({'is_deducted': True})
+                marked += len(todo)
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'title': 'ตั้งเป็นหักครบแล้ว (พนักงานเก่า)',
+                'message': 'ตั้ง %d งวด เป็น "หักแล้ว"' % marked,
+                'type': 'success' if marked else 'info',
+                'sticky': False,
+            },
+        }
+
+    @api.model
+    def _cron_reconcile_deducted_payments(self):
+        return self._reconcile_deducted_payments()
+
+
 class WorkSecurityDepositLine(models.Model):
     _name = 'work.security.deposit.line'
     _description = 'เงินประกันการทำงาน (รายบุคคล)'

@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    กระทบยอด "งวดหักเงินประกัน" กับสลิปเงินเดือนที่ยืนยันแล้ว — รันทุกวัน
+    กันเคสงวดไม่ถูกตั้งเป็น "หักแล้ว" ทั้งที่สลิปหักเงินไปแล้วจริง
+    (ทำให้เงินที่ต้องคืนตอนลาออกขาดไปเป็นเดือน)
+-->
+<odoo>
+    <data noupdate="1">
+        <record id="ir_cron_security_deposit_reconcile" model="ir.cron">
+            <field name="name">กระทบยอดงวดเงินประกันกับสลิปเงินเดือน (รายวัน)</field>
+            <field name="model_id" ref="model_work_security_deposit"/>
+            <field name="state">code</field>
+            <field name="code">model._cron_reconcile_deducted_payments()</field>
+            <field name="interval_number">1</field>
+            <field name="interval_type">days</field>
+            <field name="active" eval="True"/>
+        </record>
+    </data>
+</odoo>

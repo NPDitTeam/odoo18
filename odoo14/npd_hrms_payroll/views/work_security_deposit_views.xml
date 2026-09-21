@@ -24,6 +24,17 @@
         <field name="arch" type="xml">
             <form string="เงินประกันการทำงาน">
                 <header>
+                    <button name="action_reconcile_deducted_payments"
+                            string="กระทบยอดกับสลิปเงินเดือน"
+                            type="object"
+                            class="btn-secondary"
+                            help="งวดที่เลยกำหนดแล้วและมีสลิปยืนยันของรอบนั้นอยู่จริง แต่ยังไม่ถูกตั้งเป็น 'หักแล้ว' ระบบจะตั้งให้ถูกต้อง"/>
+                    <button name="action_mark_historical_old_employees"
+                            string="ตั้งเป็นหักครบแล้ว (พนักงานเก่า)"
+                            type="object"
+                            class="btn-secondary"
+                            confirm="ใช้กับพนักงานที่หักครบไปก่อนเริ่มใช้ระบบ (ทุกงวดอยู่ในอดีต) — ระบบจะตั้งงวดเหล่านั้นเป็น 'หักแล้ว' เพื่อให้ยอดเงินที่ต้องคืนถูกต้อง"
+                            help="ตั้งงวดที่อยู่ในอดีตทั้งหมดของพนักงานที่ยังทำงานอยู่ เป็น 'หักแล้ว'"/>
                     <button name="action_pull_employees" type="object"
                             string="ดึงพนักงานในสาขา" class="btn-primary"
                             invisible="state != 'draft'"/>

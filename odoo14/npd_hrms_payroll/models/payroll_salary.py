@@ -950,13 +950,20 @@ class PayrollSalary(models.Model):
         return records
 
     def action_confirm(self):
+        Deposit = self.env['work.security.deposit'].sudo()
         for rec in self:
             if not rec.line_ids:
                 raise UserError('ยังไม่มีรายละเอียดเงินเดือน — กดคำนวณใหม่ก่อน')
             rec.state = 'done'
+            # ยืนยันสลิปแล้ว = เงินประกันของรอบนี้ถูกหักจริง -> ตั้งธงให้งวดนั้น
+            # (ไม่งั้นยอดหักสะสมและเงินที่ต้องคืนตอนลาออกจะเป็น 0 ตลอด)
+            Deposit.mark_cycle_deducted(rec)
         return True
 
     def action_reset_draft(self):
+        Deposit = self.env['work.security.deposit'].sudo()
+        for rec in self:
+            Deposit.unmark_cycle_deducted(rec)
         self.write({'state': 'draft'})
         return True
 
