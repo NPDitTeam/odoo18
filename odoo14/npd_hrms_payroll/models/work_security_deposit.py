@@ -366,6 +366,7 @@ class WorkSecurityDepositLine(models.Model):
     resign_date = fields.Date(string='วันที่ออกจากงาน')
     refund_status = fields.Selection([
         ('none', 'ไม่ต้องคืน'),
+        ('deducting', 'รอหัก'),
         ('pending', 'รอคืนเงิน'),
         ('refunded', 'คืนแล้ว'),
     ], string='สถานะการคืนเงิน', compute='_compute_refund_status', store=True)
@@ -420,15 +421,33 @@ class WorkSecurityDepositLine(models.Model):
             rec.refund_amount = rec.deducted_amount
 
     @api.depends('work_status', 'manual_refunded', 'refund_payroll_id',
-                 'deducted_amount')
+                 'deducted_amount', 'skip_deduction', 'outstanding_amount',
+                 'deduction_months', 'months_deducted')
     def _compute_refund_status(self):
         for rec in self:
-            if rec.work_status != 'resigned' or rec.deducted_amount <= 0:
+            if rec.work_status == 'working':
+                # ยังทำงานอยู่ = ยังไม่ถึงคิวคืนเงิน แต่ต้องแยกให้เห็นว่า
+                # "ยังหักไม่ครบ" (รอหัก) กับ "หักครบแล้ว" (ไม่ต้องคืน)
+                if rec.skip_deduction:
+                    rec.refund_status = 'none'
+                elif rec._sd_has_remaining_installment():
+                    rec.refund_status = 'deducting'
+                else:
+                    rec.refund_status = 'none'
+            elif rec.work_status != 'resigned' or rec.deducted_amount <= 0:
                 rec.refund_status = 'none'
             elif rec.manual_refunded or rec.refund_payroll_id:
                 rec.refund_status = 'refunded'
             else:
                 rec.refund_status = 'pending'
+
+    def _sd_has_remaining_installment(self):
+        """ยังมีงวดที่ต้องหักเหลืออยู่ไหม (ดูทั้งยอดคงค้างและจำนวนงวด)"""
+        self.ensure_one()
+        if (self.outstanding_amount or 0.0) > 0:
+            return True
+        return bool(self.deduction_months
+                    and (self.months_deducted or 0) < self.deduction_months)
 
     # ------------------------------------------------------------------
     def action_generate_schedule(self):
