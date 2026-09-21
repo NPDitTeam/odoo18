@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <!-- ===================== List ===================== -->
+        <record id="view_list_rental_return_tracking" model="ir.ui.view">
+            <field name="name">dev.rental.return.tracking.list</field>
+            <field name="model">dev.rental.return.tracking</field>
+            <field name="arch" type="xml">
+                <list string="ตัดสต๊อกที่ยังไม่คืน" create="false" edit="false" delete="false"
+                      decoration-danger="return_state == 'not_returned'"
+                      decoration-warning="return_state == 'partial'">
+                    <field name="company_id" optional="show" groups="base.group_multi_company"/>
+                    <field name="branch_id"/>
+                    <field name="product_code"/>
+                    <field name="product_name"/>
+                    <field name="partner_id" optional="show"/>
+                    <field name="picking_id"/>
+                    <field name="sale_id" optional="show"/>
+                    <field name="cut_date" optional="show"/>
+                    <field name="start_rent_date" optional="hide"/>
+                    <field name="end_rent_date" optional="show"/>
+                    <field name="qty_cut" sum="รวมจำนวนที่ตัด"/>
+                    <field name="qty_returned" sum="รวมจำนวนที่คืนแล้ว"/>
+                    <field name="qty_outstanding" sum="รวมค้างคืน"/>
+                    <field name="uom_name" optional="show"/>
+                    <field name="return_state"/>
+                </list>
+            </field>
+        </record>
+
+        <!-- ===================== Search ===================== -->
+        <record id="view_search_rental_return_tracking" model="ir.ui.view">
+            <field name="name">dev.rental.return.tracking.search</field>
+            <field name="model">dev.rental.return.tracking</field>
+            <field name="arch" type="xml">
+                <search string="ค้นหาการตัดสต๊อกที่ยังไม่คืน">
+                    <field name="product_id"/>
+                    <field name="product_code"/>
+                    <field name="product_name"/>
+                    <field name="branch_id"/>
+                    <field name="partner_id"/>
+                    <field name="picking_id"/>
+                    <field name="sale_id"/>
+                    <separator/>
+                    <filter string="ยังคืนไม่ครบ (ค้างคืน)" name="outstanding"
+                            domain="[('qty_outstanding', '>', 0)]"/>
+                    <filter string="ยังไม่คืนเลย" name="not_returned"
+                            domain="[('return_state', '=', 'not_returned')]"/>
+                    <filter string="คืนบางส่วน" name="partial"
+                            domain="[('return_state', '=', 'partial')]"/>
+                    <filter string="คืนครบแล้ว" name="returned"
+                            domain="[('return_state', '=', 'returned')]"/>
+                    <separator/>
+                    <filter string="เกินกำหนดคืนแล้ว" name="overdue"
+                            domain="[('qty_outstanding', '>', 0), ('end_rent_date', '&lt;', context_today().strftime('%Y-%m-%d'))]"/>
+                    <separator/>
+                    <group expand="0" string="จัดกลุ่มตาม">
+                        <filter string="บริษัท" name="group_by_company"
+                                context="{'group_by': 'company_id'}"
+                                groups="base.group_multi_company"/>
+                        <filter string="สาขา" name="group_by_branch"
+                                context="{'group_by': 'branch_id'}"/>
+                        <filter string="สินค้า" name="group_by_product"
+                                context="{'group_by': 'product_id'}"/>
+                        <filter string="ลูกค้า" name="group_by_partner"
+                                context="{'group_by': 'partner_id'}"/>
+                        <filter string="สถานะการคืน" name="group_by_state"
+                                context="{'group_by': 'return_state'}"/>
+                    </group>
+                </search>
+            </field>
+        </record>
+
+        <!-- ===================== Pivot ===================== -->
+        <record id="view_pivot_rental_return_tracking" model="ir.ui.view">
+            <field name="name">dev.rental.return.tracking.pivot</field>
+            <field name="model">dev.rental.return.tracking</field>
+            <field name="arch" type="xml">
+                <pivot string="วิเคราะห์ค้างคืน">
+                    <field name="branch_id" type="row"/>
+                    <field name="product_id" type="row"/>
+                    <field name="qty_cut" type="measure"/>
+                    <field name="qty_returned" type="measure"/>
+                    <field name="qty_outstanding" type="measure"/>
+                </pivot>
+            </field>
+        </record>
+
+        <!-- ===================== Window action ===================== -->
+        <record id="action_rental_return_tracking" model="ir.actions.act_window">
+            <field name="name">ตัดสต๊อกที่ยังไม่คืน</field>
+            <field name="res_model">dev.rental.return.tracking</field>
+            <field name="view_mode">list,pivot</field>
+            <field name="search_view_id" ref="view_search_rental_return_tracking"/>
+            <field name="context">{'search_default_outstanding': 1, 'search_default_group_by_branch': 1}</field>
+            <field name="help" type="html">
+                <p class="o_view_nocontent_smiling_face">ไม่พบรายการตัดสต๊อกที่ค้างคืน</p>
+                <p>ทุกใบตัดสต๊อก (ใบส่งออกของบิลเช่า) ถูกคืนครบแล้ว</p>
+            </field>
+        </record>
+
+        <!-- ===================== Menu (ใต้โมดูลสินค้าคงคลัง) ===================== -->
+        <menuitem id="menu_rental_return_tracking"
+                  name="ตรวจสอบตัดสต๊อกค้างคืน"
+                  parent="stock.menu_stock_root"
+                  action="action_rental_return_tracking"
+                  sequence="91"/>
+    </data>
+</odoo>

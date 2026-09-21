@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ปุ่ม "อัพเดท" บนหัวใบแจ้งหนี้
+         ดึงรายการแตกหักเสียหาย/สินค้าหาย จากใบส่ง-ใบคืน มาลงเป็นบรรทัดในใบ
+         ซ่อนเมื่อลงบัญชีแล้ว และแสดงเฉพาะใบขาย (ไม่ขึ้นที่บิลผู้ขาย) -->
+    <record id="view_move_form_npd_update_penalty" model="ir.ui.view">
+        <field name="name">account.move.form.npd.update.penalty</field>
+        <field name="model">account.move</field>
+        <field name="inherit_id" ref="account.view_move_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//header" position="inside">
+                <button name="action_update_fields"
+                        string="อัพเดท"
+                        type="object"
+                        class="oe_highlight"
+                        invisible="state != 'draft' or move_type not in ('out_invoice', 'out_refund')"
+                        help="ดึงรายการแตกหักเสียหาย/สินค้าหาย ของเอกสารต้นทาง มาลงเป็นรายการสินค้าในใบนี้ ตามประเภทสินค้าที่เลือก"/>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>
