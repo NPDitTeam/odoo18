@@ -1,15 +1,16 @@
 # -*- coding: utf-8 -*-
 """ประเภทการจัดส่งสินค้า + หมายเหตุ (ให้ AI ตรวจ) บนใบสั่งขาย — ฝั่ง Odoo 18
 
-ตัวเดียวกับโมดูล npd_shipment_purpose ของ Odoo 14 แต่ปรับให้เข้ากับ o18
-* o18 ใช้ source_company_id (บริษัทต้นทางในฐานเดียวกัน) แทน database_selection ของ o14
-* วิว o18 ใช้ readonly/required/invisible ตรง ๆ ไม่ใช่ attrs
-* ใบโยกสินค้า (stock.api.transfer) อยู่ฐานเดียวกัน จับคู่ด้วย source_company_id
+ต่างจากฝั่ง o14 ตรงที่ o18 รวมทุกบริษัทไว้ฐานเดียว
+* "ดึงข้อมูลการเช่าจาก บ.อื่น" = source_company_id (บริษัท) ไม่ใช่ชื่อฐานข้อมูล
+* ใบโยกสินค้า (stock.api.transfer) อยู่ฐานเดียวกัน จึง "เลือกจากรายการ" ได้เลย
+  โดยกรองตามบริษัทต้นทางที่เลือก และเอาเฉพาะใบที่ยืนยันแล้ว
+* งานขนส่งเป็นของบริษัท เอ็นพีดี โลจิสติกส์ เท่านั้น บริษัทอื่นไม่ถูกบังคับอะไร
 """
 import logging
 
 from odoo import api, fields, models, _
-from odoo.exceptions import ValidationError
+from odoo.exceptions import UserError, ValidationError
 
 _logger = logging.getLogger(__name__)
 
@@ -34,16 +35,6 @@ PURPOSE_TO_DELIVERY_TYPE = {
 class SaleOrder(models.Model):
     _inherit = 'sale.order'
 
-    # ทั้งหมดนี้เป็นงานของฝ่ายขนส่ง จึงบังคับเฉพาะใบของบริษัท เอ็นพีดี โลจิสติกส์
-    # (ใช้ธงเดียวกับปุ่ม "ดึงข้อมูลการเช่า" / "ส่งไปยังระบบขนส่ง")
-    def _sp_is_logistics(self):
-        self.ensure_one()
-        if 'is_npd_logistics_company' in self._fields:
-            return bool(self.is_npd_logistics_company)
-        if 'tr_is_npd_logistics' in self._fields:
-            return bool(self.tr_is_npd_logistics)
-        return True
-
     shipment_purpose = fields.Selection(
         selection=[
             ('to_customer', 'จัดส่งสินค้าไปยังลูกค้า'),
@@ -64,12 +55,20 @@ class SaleOrder(models.Model):
         ondelete={'branch_transfer': 'set default', 'help_branch': 'set default'},
     )
 
-    # เป็นช่อง "กรอกเอง" เหมือนฝั่ง o14 เพราะใบโยกอาจถูกสร้างไว้คนละบริษัท/คนละฐาน
-    transfer_ref = fields.Char(
+    # ---------------- ใบโยกสินค้า ----------------
+    # o18 อยู่ฐานเดียวกันทุกบริษัท จึงเลือกจากรายการได้ (วิวกรองด้วยบริษัทต้นทางที่เลือก)
+    transfer_ref_id = fields.Many2one(
+        'stock.api.transfer',
         string='เลขโยกสินค้า',
         copy=False,
         index=True,
-        help='กรอกเลขใบโยกสินค้าที่สถานะ "ยืนยันแล้ว" — เลขเดิมใช้ซ้ำกับใบสั่งขายอื่นไม่ได้',
+        help='เลือกใบโยกที่สถานะ "ยืนยันแล้ว" ของบริษัทต้นทางที่เลือกไว้ '
+             '— ใบเดิมใช้ซ้ำกับใบสั่งขายอื่นไม่ได้',
+    )
+    # เก็บเป็นข้อความด้วย เพื่อส่งต่อไปงานขนส่ง (payload ใช้ชื่อ transfer_ref)
+    transfer_ref = fields.Char(
+        string='เลขโยกสินค้า (ข้อความ)',
+        compute='_compute_transfer_ref', store=True, index=True, copy=False,
     )
     transfer_product_summary = fields.Text(
         string='สินค้าที่โยก', compute='_compute_transfer_product_summary',
@@ -84,19 +83,25 @@ class SaleOrder(models.Model):
     shipment_note_ai_feedback = fields.Text(string='ความเห็นของ AI', readonly=True, copy=False)
 
     # ------------------------------------------------------------------
-    def _get_local_transfer(self):
-        """ใบโยกในฐานนี้ที่ตรงกับเลขที่กรอก (ถ้าอยู่คนละที่จะค้นไม่เจอ = ปกติ)"""
+    # งานขนส่งเป็นของบริษัท เอ็นพีดี โลจิสติกส์ จึงบังคับเฉพาะใบของบริษัทนั้น
+    # ------------------------------------------------------------------
+    def _sp_is_logistics(self):
         self.ensure_one()
-        if not self.transfer_ref:
-            return self.env['stock.api.transfer']
-        return self.env['stock.api.transfer'].sudo().search(
-            [('name', '=', self.transfer_ref.strip())], limit=1)
+        if 'is_npd_logistics_company' in self._fields:
+            return bool(self.is_npd_logistics_company)
+        if 'tr_is_npd_logistics' in self._fields:
+            return bool(self.tr_is_npd_logistics)
+        return True
 
-    @api.depends('transfer_ref')
+    @api.depends('transfer_ref_id')
+    def _compute_transfer_ref(self):
+        for order in self:
+            order.transfer_ref = order.transfer_ref_id.name or False
+
+    @api.depends('transfer_ref_id')
     def _compute_transfer_product_summary(self):
         for order in self:
-            transfer = order._get_local_transfer()
-            lines = transfer.line_ids if transfer else False
+            lines = order.transfer_ref_id.sudo().line_ids if order.transfer_ref_id else False
             if not lines:
                 order.transfer_product_summary = ''
                 continue
@@ -115,34 +120,82 @@ class SaleOrder(models.Model):
             order.delivery_type = PURPOSE_TO_DELIVERY_TYPE.get(purpose, order.delivery_type)
             if purpose in PURPOSE_NO_REF:
                 order.so_number = False
-                order.transfer_ref = False
+                order.transfer_ref_id = False
                 if 'source_company_id' in order._fields:
                     order.source_company_id = False
             elif purpose == 'branch_transfer':
-                order.so_number = (order.transfer_ref or '').strip() or False
+                order.so_number = order.transfer_ref_id.name or False
             else:
-                order.transfer_ref = False
+                order.transfer_ref_id = False
 
-    @api.onchange('transfer_ref')
-    def _onchange_transfer_ref(self):
+    @api.onchange('source_company_id')
+    def _onchange_source_company_transfer(self):
+        """เปลี่ยนบริษัทต้นทาง -> ใบโยกที่เลือกไว้เดิมอาจคนละบริษัท ให้ล้างทิ้ง"""
+        for order in self:
+            transfer = order.transfer_ref_id
+            if transfer and transfer.source_company_id != order.source_company_id:
+                order.transfer_ref_id = False
+                if order.shipment_purpose == 'branch_transfer':
+                    order.so_number = False
+
+    @api.onchange('transfer_ref_id')
+    def _onchange_transfer_ref_id(self):
         for order in self:
             if order.shipment_purpose == 'branch_transfer':
-                order.so_number = (order.transfer_ref or '').strip() or False
+                order.so_number = order.transfer_ref_id.name or False
 
     def _sync_shipment_purpose_fields(self, vals):
+        # เลือก/เปลี่ยนใบโยก -> เลขเอกสาร SO (ที่ซ่อนไว้) เดินตามเลขใบโยกเสมอ
+        if 'transfer_ref_id' in vals:
+            transfer = self.env['stock.api.transfer'].sudo().browse(vals['transfer_ref_id']) \
+                if vals['transfer_ref_id'] else False
+            purposes = set(self.mapped('shipment_purpose')) | {vals.get('shipment_purpose')}
+            if 'branch_transfer' in purposes:
+                vals = dict(vals)
+                vals['so_number'] = transfer.name if transfer else False
+
         purpose = vals.get('shipment_purpose')
         if not purpose:
             return vals
         vals = dict(vals)
         vals['delivery_type'] = PURPOSE_TO_DELIVERY_TYPE.get(purpose, vals.get('delivery_type'))
         if purpose in PURPOSE_NO_REF:
-            vals.update({'so_number': False, 'transfer_ref': False})
+            vals.update({'so_number': False, 'transfer_ref_id': False})
             if 'source_company_id' in self._fields:
                 vals['source_company_id'] = False
         return vals
 
     # ------------------------------------------------------------------
-    @api.constrains('shipment_purpose', 'so_number', 'transfer_ref')
+    def action_fetch_transfer_data(self):
+        """ปุ่ม "ดึงข้อมูลใบโยก" — คัดลอกสินค้าในใบโยกมาเป็นรายการสินค้าของใบสั่งขาย
+        (o18 อยู่ฐานเดียวกัน จึงอ่านตรงได้ ไม่ต้องเรียก API ข้ามฐานเหมือน o14)"""
+        self.ensure_one()
+        if self.shipment_purpose != 'branch_transfer':
+            raise UserError(_('ปุ่มนี้ใช้กับประเภท "โยกสินค้าจากสาขา ไปสาขา" เท่านั้น'))
+        if not self.transfer_ref_id:
+            raise UserError(_('กรุณาเลือก "เลขโยกสินค้า" ก่อน'))
+
+        transfer = self.transfer_ref_id.sudo()
+        lines = transfer.line_ids
+        if not lines:
+            raise UserError(_('❌ ใบโยกสินค้า %s ไม่มีรายการสินค้า') % transfer.name)
+
+        if self.order_line:
+            self.order_line.unlink()
+        for line in lines:
+            self.env['sale.order.line'].create({
+                'order_id': self.id,
+                'product_id': line.product_id.id,
+                'name': line.product_id.display_name,
+                'product_uom_qty': line.request_qty or 0.0,
+            })
+        self.so_number = transfer.name
+        _logger.info('📦 ดึงใบโยก %s (%s) ได้ %s รายการ',
+                     transfer.name, transfer.source_company_id.name, len(lines))
+        return True
+
+    # ------------------------------------------------------------------
+    @api.constrains('shipment_purpose', 'so_number', 'transfer_ref_id')
     def _check_shipment_purpose_refs(self):
         for order in self:
             if not order._sp_is_logistics():
@@ -150,10 +203,11 @@ class SaleOrder(models.Model):
             purpose = order.shipment_purpose
             if not purpose:
                 continue
-            source_company = order.source_company_id if 'source_company_id' in order._fields else False
+            has_source = 'source_company_id' in order._fields
+            source_company = order.source_company_id if has_source else False
             if purpose in PURPOSE_NEED_SO:
                 missing = []
-                if 'source_company_id' in order._fields and not source_company:
+                if has_source and not source_company:
                     missing.append('ดึงข้อมูลการเช่าจาก บ.อื่น')
                 if not order.so_number:
                     missing.append('เลขเอกสาร SO')
@@ -162,33 +216,43 @@ class SaleOrder(models.Model):
                         'ประเภทการจัดส่งสินค้า "%s" ต้องระบุ: %s'
                     ) % (PURPOSE_LABELS[purpose], ' และ '.join(missing)))
             elif purpose == 'branch_transfer':
-                if not (order.transfer_ref or '').strip():
+                if has_source and not source_company:
                     raise ValidationError(_(
-                        'ประเภทการจัดส่งสินค้า "%s" ต้องกรอกเลขโยกสินค้า '
-                        '(ใบที่สถานะ "ยืนยันแล้ว")'
+                        'ประเภทการจัดส่งสินค้า "%s" ต้องเลือก "ดึงข้อมูลการเช่าจาก บ.อื่น" ก่อน '
+                        'เพราะเลขใบโยกสินค้าอิงตามบริษัทต้นทางนั้น'
                     ) % PURPOSE_LABELS[purpose])
-                transfer = order._get_local_transfer()
-                if transfer and transfer.state != 'confirmed':
+                if not order.transfer_ref_id:
+                    raise ValidationError(_(
+                        'ประเภทการจัดส่งสินค้า "%s" ต้องเลือกเลขโยกสินค้า '
+                        '(เฉพาะใบที่สถานะ "ยืนยันแล้ว")'
+                    ) % PURPOSE_LABELS[purpose])
+                transfer = order.transfer_ref_id.sudo()
+                if transfer.state != 'confirmed':
                     raise ValidationError(_(
                         'ใบโยกสินค้า %s ยังไม่อยู่สถานะ "ยืนยันแล้ว"'
                     ) % transfer.name)
+                if has_source and transfer.source_company_id != source_company:
+                    raise ValidationError(_(
+                        'ใบโยกสินค้า %s เป็นของบริษัท %s แต่ใบสั่งขายเลือกบริษัทต้นทางเป็น %s'
+                    ) % (transfer.name,
+                         transfer.source_company_id.name or '-',
+                         source_company.name or '-'))
 
-    @api.constrains('transfer_ref')
+    @api.constrains('transfer_ref_id')
     def _check_transfer_ref_unique(self):
-        """เลขโยกสินค้าหนึ่งเลข ใช้ได้กับใบสั่งขายเดียวเท่านั้น"""
-        for order in self:
-            ref = (order.transfer_ref or '').strip()
-            if not ref or not order._sp_is_logistics():
+        """ใบโยกหนึ่งใบ ใช้ได้กับใบสั่งขายเดียวเท่านั้น"""
+        for order in self.filtered('transfer_ref_id'):
+            if not order._sp_is_logistics():
                 continue
             other = self.sudo().search([
                 ('id', '!=', order.id),
-                ('transfer_ref', '=ilike', ref),
+                ('transfer_ref_id', '=', order.transfer_ref_id.id),
                 ('state', '!=', 'cancel'),
             ], limit=1)
             if other:
                 raise ValidationError(_(
                     'เลขโยกสินค้า %s ถูกใช้ไปแล้วในใบสั่งขาย %s'
-                ) % (ref, other.name))
+                ) % (order.transfer_ref_id.name, other.name))
 
     def action_confirm(self):
         for order in self:
@@ -266,7 +330,7 @@ class SaleOrder(models.Model):
             'ความหมายของแต่ละประเภท\n'
             '- จัดส่งสินค้าไปยังลูกค้า: เอาของจากสาขาไปส่งให้ลูกค้า\n'
             '- รับสินค้าจากลูกค้ามายังสาขา: ไปรับของคืนจากลูกค้ากลับเข้าสาขา\n'
-            '- โยกสินค้าจากสาขา ไปสาขา: ย้ายของระหว่างสาขาของบริษัทเอง ไม่เกี่ยวกับลูกค้า\n'
+            '- โยกสินค้าจากสาขา ไปสาขา: ย้ายของระหว่างสาขา/บริษัทในเครือเอง ไม่เกี่ยวกับลูกค้า\n'
             '- ส่งรถไปช่วยขนส่งอีกสาขา: ให้ยืมรถ/คนขับไปช่วยงานของสาขาอื่น\n\n'
             'ประเภทที่เลือก: %s\n'
             'หมายเหตุของพนักงาน: %s\n\n'

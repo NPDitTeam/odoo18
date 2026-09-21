@@ -14,6 +14,15 @@
                 <attribute name="invisible">not is_npd_logistics_company or shipment_purpose in ['branch_transfer', 'help_branch']</attribute>
             </xpath>
 
+            <!-- ปุ่มดึงสินค้าจากใบโยก (o18 อยู่ฐานเดียวกัน อ่านตรงได้เลย) -->
+            <xpath expr="//button[@name='action_fetch_rental_data']" position="after">
+                <button name="action_fetch_transfer_data" type="object"
+                        class="oe_stat_button"
+                        icon="fa-exchange"
+                        string="ดึงข้อมูลใบโยก"
+                        invisible="not is_npd_logistics_company or shipment_purpose != 'branch_transfer' or not transfer_ref_id"/>
+            </xpath>
+
             <!-- ประเภทการจัดส่งสินค้า: วางไว้ "ก่อน" ดึงข้อมูลการเช่าจาก บ.อื่น + เลขเอกสาร SO -->
             <xpath expr="//field[@name='source_company_id']" position="before">
                 <!-- งานขนส่งเป็นของบริษัท เอ็นพีดี โลจิสติกส์ เท่านั้น บริษัทอื่นไม่ต้องเห็น/ไม่บังคับ -->
@@ -23,17 +32,25 @@
                        readonly="state in ['sale', 'done', 'cancel']"/>
             </xpath>
 
-            <!-- โยกสินค้าระหว่างสาขา: ใช้เลขใบโยกแทนเลขเอกสาร SO
-                 กรองเฉพาะใบยืนยันแล้วของบริษัทต้นทางที่เลือก และตัดใบที่ถูกใช้ไปแล้วออก -->
+            <!-- งานเช่า: บริษัทต้นทางถูกตั้งจาก popup จึงล็อกไว้ตามเดิม
+                 งานโยกระหว่างสาขา: ต้องเลือกบริษัทต้นทางเองก่อน จึงปลดล็อกเฉพาะกรณีนี้ -->
+            <xpath expr="//field[@name='source_company_id']" position="attributes">
+                <attribute name="readonly">shipment_purpose != 'branch_transfer' or state in ['sale', 'done', 'cancel']</attribute>
+                <attribute name="required">shipment_purpose == 'branch_transfer' and is_npd_logistics_company</attribute>
+                <attribute name="options">{'no_create': True, 'no_open': True}</attribute>
+            </xpath>
+
+            <!-- งานโยกใช้ "เลขโยกสินค้า" แทน จึงซ่อนช่องเลขเอกสาร SO กันสับสน
+                 (ระบบยังเติมเลขใบโยกลงช่องนี้เบื้องหลัง เพื่อส่งต่อไปงานขนส่ง) -->
             <xpath expr="//field[@name='so_number']" position="attributes">
-                <!-- คงเงื่อนไขเดิมของ sale_api_rent (เฉพาะบริษัทโลจิสติกส์) ไว้ด้วย
-                     ไม่งั้นบริษัทอื่นจะเห็นช่องเลขเอกสาร SO โผล่ขึ้นมา -->
                 <attribute name="invisible">not is_npd_logistics_company or shipment_purpose == 'branch_transfer'</attribute>
             </xpath>
 
+            <!-- เลขโยกสินค้า: เลือกจากใบโยกในระบบ กรองตามบริษัทต้นทาง + เฉพาะใบที่ยืนยันแล้ว -->
             <xpath expr="//field[@name='so_number']" position="after">
-                <field name="transfer_ref"
-                       placeholder="กรอกเลขใบโยกสินค้าที่ยืนยันแล้ว"
+                <field name="transfer_ref_id"
+                       options="{'no_create': True}"
+                       domain="[('state', '=', 'confirmed'), ('source_company_id', '=', source_company_id)]"
                        invisible="shipment_purpose != 'branch_transfer' or not is_npd_logistics_company"
                        required="shipment_purpose == 'branch_transfer' and is_npd_logistics_company"
                        readonly="state in ['sale', 'done', 'cancel']"/>
