@@ -70,6 +70,10 @@ class SaleOrder(models.Model):
                 'shipping_cost': _g(order, 'shipping_cost'),
                 'shipping_cost_m': _g(order, 'shipping_cost_m'),
                 'delivery_type': _g(order, 'delivery_type'),
+                # ประเภทการจัดส่งสินค้า + หมายเหตุ (โมดูล npd_shipment_purpose)
+                'shipment_purpose': _g(order, 'shipment_purpose'),
+                'shipment_note': _g(order, 'shipment_note'),
+                'transfer_ref': order.transfer_ref_id.name if _g(order, 'transfer_ref_id') else None,
                 'trip_allowance': _g(order, 'trip_allowance'),
                 'daily_allowance': _g(order, 'daily_allowance'),
                 'use_special_delivery_zero': _g(order, 'use_special_delivery_zero'),

@@ -18,8 +18,10 @@
                            decoration-warning="trip_direction=='pickup'"
                            decoration-success="trip_direction=='round'"
                            optional="show"/>
+                    <field name="shipment_purpose" string="ประเภทการจัดส่งสินค้า" optional="show"/>
                     <field name="branch_id"/>
 		    <field name="delivery_type"/>
+                    <field name="shipment_note" string="หมายเหตุ" optional="show"/>
                     <field name="booking_date"/>
                     <field name="transport_order_id"/>
                     <field name="partner_id"/>
@@ -120,6 +122,8 @@
                readonly="state != 'draft'"/>
         <field name="so_number" readonly="1"/>
         <field name="trip_direction" readonly="1"/>
+        <field name="shipment_purpose" readonly="1"/>
+        <field name="shipment_note" readonly="1"/>
 
         <field name="booking_date" readonly="state != 'draft'"/>
         <field name="partner_id" readonly="1"/>

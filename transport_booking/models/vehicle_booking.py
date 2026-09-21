@@ -83,12 +83,31 @@ class VehicleBooking(models.Model):
         selection=[
             ('customer', 'จัดส่งไปยังลูกค้า'),
             ('branch', 'จัดส่งมายังสาขา'),
+            # ตามประเภทการจัดส่งสินค้าฝั่ง Odoo 14
+            ('branch_transfer', 'โยกสินค้าจากสาขา ไปสาขา'),
+            ('help_branch', 'ส่งรถไปช่วยขนส่งอีกสาขา'),
         ],
         default='customer',
         related='transport_order_id.delivery_type',
         required=True,
         tracking=True, readonly=True
     )
+
+    # ประเภทการจัดส่งสินค้า + หมายเหตุ ดึงจากใบขนส่งที่ผูกไว้
+    shipment_purpose = fields.Selection(
+        string='ประเภทการจัดส่งสินค้า',
+        selection=[
+            ('to_customer', 'จัดส่งสินค้าไปยังลูกค้า'),
+            ('from_customer', 'รับสินค้าจากลูกค้ามายังสาขา'),
+            ('branch_transfer', 'โยกสินค้าจากสาขา ไปสาขา'),
+            ('help_branch', 'ส่งรถไปช่วยขนส่งอีกสาขา'),
+        ],
+        related='transport_order_id.shipment_purpose',
+        store=True, readonly=True)
+    shipment_note = fields.Text(
+        'หมายเหตุ (จาก Odoo 14)',
+        related='transport_order_id.shipment_note',
+        store=True, readonly=True)
 
     license_plate_name = fields.Char('ทะเบียนรถ (จาก Order)',
                                      related='transport_order_id.license_plate_name',

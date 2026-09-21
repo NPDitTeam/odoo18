@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <record id="view_order_form_shipment_purpose" model="ir.ui.view">
+        <field name="name">sale.order.form.shipment.purpose</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_order_form"/>
+        <!-- ต้องมาหลัง sale_api_rent (so_number) และ pfb_npd_add_date_quatation_order (debt_payment_type) -->
+        <field name="priority">200</field>
+        <field name="arch" type="xml">
+
+            <!-- ประเภทการจัดส่งสินค้า: วางไว้ "ก่อน" ดึงข้อมูลการเช่าจาก บ.อื่น + เลขเอกสาร SO -->
+            <xpath expr="//field[@name='source_company_id']" position="before">
+                <field name="used_transfer_ids" invisible="1"/>
+                <field name="shipment_purpose" required="1"
+                       readonly="state in ['sale', 'done', 'cancel']"/>
+            </xpath>
+
+            <!-- โยกสินค้าระหว่างสาขา: ใช้เลขใบโยกแทนเลขเอกสาร SO
+                 กรองเฉพาะใบยืนยันแล้วของบริษัทต้นทางที่เลือก และตัดใบที่ถูกใช้ไปแล้วออก -->
+            <xpath expr="//field[@name='so_number']" position="after">
+                <field name="transfer_ref_id"
+                       options="{'no_create': True}"
+                       domain="[('state', '=', 'confirmed'),
+                                ('id', 'not in', used_transfer_ids)]"
+                       invisible="shipment_purpose != 'branch_transfer'"
+                       required="shipment_purpose == 'branch_transfer'"
+                       readonly="state in ['sale', 'done', 'cancel']"/>
+                <field name="transfer_product_summary" readonly="1"
+                       invisible="shipment_purpose != 'branch_transfer' or not transfer_ref_id"/>
+            </xpath>
+
+            <!-- หมายเหตุ: ต่อจากช่อง "ประเภทการรับชำระหนี้" -->
+            <xpath expr="//field[@name='debt_payment_type']" position="after">
+                <field name="shipment_note" required="1"
+                       placeholder="อธิบายงานขนส่งครั้งนี้ให้ตรงกับประเภทการจัดส่งสินค้าที่เลือก"
+                       readonly="state in ['sale', 'done', 'cancel']"/>
+                <field name="shipment_note_ai_state" readonly="1"
+                       invisible="not shipment_note_ai_state"/>
+                <field name="shipment_note_ai_feedback" readonly="1"
+                       invisible="not shipment_note_ai_feedback"/>
+            </xpath>
+
+            <!-- ประเภทการจัดส่ง (ช่องเดิม) เดินตามประเภทการจัดส่งสินค้า ล็อกไม่ให้แก้เอง -->
+            <xpath expr="//field[@name='delivery_type']" position="attributes">
+                <attribute name="readonly">1</attribute>
+                <attribute name="force_save">1</attribute>
+                <attribute name="help">ตั้งค่าอัตโนมัติจาก "ประเภทการจัดส่งสินค้า" ด้านบน</attribute>
+            </xpath>
+        </field>
+    </record>
+</odoo>

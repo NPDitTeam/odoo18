@@ -52,11 +52,26 @@ class TransportOrder(models.Model):
         selection=[
             ('customer', 'จัดส่งไปยังลูกค้า'),
             ('branch', 'จัดส่งมายังสาขา'),
+            # 2 ค่านี้มาจาก "ประเภทการจัดส่งสินค้า" ฝั่ง Odoo 14 (npd_shipment_purpose)
+            ('branch_transfer', 'โยกสินค้าจากสาขา ไปสาขา'),
+            ('help_branch', 'ส่งรถไปช่วยขนส่งอีกสาขา'),
         ],
         default='customer',
         required=True,
         tracking=True
     )
+
+    # ประเภทการจัดส่งสินค้า + หมายเหตุ ที่พนักงานระบุไว้ฝั่ง Odoo 14
+    shipment_purpose = fields.Selection(
+        string='ประเภทการจัดส่งสินค้า',
+        selection=[
+            ('to_customer', 'จัดส่งสินค้าไปยังลูกค้า'),
+            ('from_customer', 'รับสินค้าจากลูกค้ามายังสาขา'),
+            ('branch_transfer', 'โยกสินค้าจากสาขา ไปสาขา'),
+            ('help_branch', 'ส่งรถไปช่วยขนส่งอีกสาขา'),
+        ],
+        readonly=True, index=True)
+    shipment_note = fields.Text('หมายเหตุ (จาก Odoo 14)', readonly=True)
     pickup_location = fields.Text('สถานที่รับสินค้า', readonly=True)
     destination = fields.Text('ปลายทาง', readonly=True)
     vehicle_type_id = fields.Integer('Vehicle Type ID (Odoo14)', readonly=True)
@@ -740,6 +755,8 @@ class TransportOrder(models.Model):
             'shipping_cost_raw': basic.get('shipping_cost_raw', 0.0),
             'shipping_cost': basic.get('shipping_cost', 0.0),
             'delivery_type': basic.get('delivery_type'),
+            'shipment_purpose': basic.get('shipment_purpose'),
+            'shipment_note': basic.get('shipment_note'),
             'use_special_delivery_zero': basic.get('use_special_delivery_zero', 0.0),
             'shipping_cost_m': basic.get('shipping_cost_m', 0.0),
 
@@ -872,6 +889,8 @@ class TransportOrder(models.Model):
             'shipping_cost_raw': basic.get('shipping_cost_raw', 0.0),
             'shipping_cost': basic.get('shipping_cost', 0.0),
             'delivery_type': basic.get('delivery_type'),
+            'shipment_purpose': basic.get('shipment_purpose'),
+            'shipment_note': basic.get('shipment_note'),
             'use_special_delivery_zero': basic.get('use_special_delivery_zero', 0.0),
             'shipping_cost_m': basic.get('shipping_cost_m', 0.0),
 
