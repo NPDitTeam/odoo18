@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    ซิงก์สถานะ "ออกจากงาน" จากทะเบียนพนักงาน → รายการเงินประกันการทำงาน (รายวัน)
+
+      1) ใครมีวันที่ลาออกแล้ว แต่รายการยังค้าง "ทำงานอยู่" → ปรับให้ตรงอัตโนมัติ
+      2) ใคร "ไม่ใช้งาน" แต่ยังไม่มีวันที่ลาออก → เขียน log เตือน (ระบบเดาวันให้ไม่ได้)
+         ดูรายชื่อที่ รายงานเงินประกันการทำงาน → ตัวกรอง "สถานะไม่ตรงกับทะเบียนพนักงาน"
+-->
+<odoo>
+    <data noupdate="1">
+        <record id="ir_cron_employee_resign_sync" model="ir.cron">
+            <field name="name">ซิงก์สถานะออกจากงาน → เงินประกันการทำงาน (รายวัน)</field>
+            <field name="model_id" ref="npd_hrms_base.model_employee_salary"/>
+            <field name="state">code</field>
+            <field name="code">model._cron_sync_deposit_work_status()</field>
+            <field name="interval_number">1</field>
+            <field name="interval_type">days</field>
+            <field name="active" eval="True"/>
+        </record>
+    </data>
+</odoo>

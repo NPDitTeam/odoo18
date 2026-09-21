@@ -12,6 +12,7 @@
             <field name="arch" type="xml">
                 <list string="รายงานเงินประกันการทำงาน"
                       create="false" edit="false" delete="false"
+                      decoration-warning="status_mismatch == True"
                       decoration-danger="work_status == 'resigned' and refund_status == 'pending'"
                       decoration-success="refund_status == 'refunded'">
                     <field name="deposit_branch_id"/>
@@ -25,6 +26,8 @@
                     <field name="outstanding_amount" sum="รวมคงค้าง"/>
                     <field name="deposit_progress"/>
                     <field name="work_permit_total" string="ค่า Work Permit" sum="รวม Work Permit" optional="hide"/>
+                    <field name="employee_status" optional="show"/>
+                    <field name="status_mismatch" optional="show"/>
                     <field name="work_status"/>
                     <field name="resign_date" optional="show"/>
                     <field name="refund_amount" string="เงินที่ต้องคืน" sum="รวมเงินที่ต้องคืน"/>
@@ -64,6 +67,11 @@
                     <filter string="ยังหักไม่ครบ" name="f_in_progress" domain="[('outstanding_amount', '&gt;', 0)]"/>
                     <filter string="ยังไม่เริ่มหัก" name="f_not_started" domain="[('deducted_amount', '&lt;=', 0)]"/>
                     <filter string="ไม่หักเงินประกัน" name="f_skip" domain="[('skip_deduction', '=', True)]"/>
+
+                    <separator/>
+                    <filter string="สถานะไม่ตรงกับทะเบียนพนักงาน (ลืมใส่วันที่ลาออก)"
+                            name="f_mismatch"
+                            domain="[('status_mismatch', '=', True)]"/>
 
                     <group expand="1" string="จัดกลุ่มตาม">
                         <filter string="สาขา" name="g_branch" context="{'group_by': 'deposit_branch_id'}"/>

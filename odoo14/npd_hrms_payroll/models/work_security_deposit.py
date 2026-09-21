@@ -318,6 +318,21 @@ class WorkSecurityDepositLine(models.Model):
     employee_status = fields.Selection(
         related='employee_id.status', store=True, readonly=True)
 
+    status_mismatch = fields.Boolean(
+        string='สถานะไม่ตรงกับทะเบียนพนักงาน',
+        compute='_compute_status_mismatch', store=True,
+        help='ทะเบียนพนักงานขึ้น "ไม่ใช้งาน" แต่รายการนี้ยังเป็น "ทำงานอยู่" '
+             'มักเกิดจากลืมใส่ "วันที่ออกจากงาน" ในหน้าข้อมูลพนักงาน '
+             '— ต้องใส่ก่อน ระบบจึงจะคิดเงินประกันที่ต้องคืนได้',
+    )
+
+    @api.depends('employee_status', 'work_status', 'employee_id.resign_date')
+    def _compute_status_mismatch(self):
+        for rec in self:
+            rec.status_mismatch = bool(
+                rec.employee_status == 'inactive' and rec.work_status == 'working'
+            )
+
     start_work_date = fields.Date(string='วันที่เริ่มงาน', required=True)
     total_amount = fields.Float(string='วงเงินประกัน (บาท)', required=True, default=5000.0)
     deduction_months = fields.Integer(string='จำนวนงวด', default=3, required=True)
@@ -475,3 +490,99 @@ class WorkSecurityDepositLinePayment(models.Model):
         help='ระบบติ๊กให้เมื่อยอดนี้เข้าสลิปเงินเดือนที่ยืนยันแล้ว')
     payroll_id = fields.Many2one(
         'payroll.salary', string='สลิปที่หัก', readonly=True, ondelete='set null')
+
+
+class EmployeeSalaryDepositSync(models.Model):
+    """ทะเบียนพนักงานเป็นแหล่งความจริงของ "วันที่ออกจากงาน"
+
+    เดิม o18 ต้องกดปุ่ม "ทำเครื่องหมายว่าลาออก" ที่รายการเงินประกันเอง
+    ถ้าฝ่ายบุคคลปิดสถานะพนักงานอย่างเดียว รายการเงินประกันจะค้างเป็น "ทำงานอยู่"
+    และยอดที่ต้องคืนจะไม่ขึ้น (อาการเดียวกับที่เจอใน o14 36 คน)
+    """
+    _inherit = 'employee.salary'
+
+    @api.onchange('status')
+    def _onchange_status_require_resign_date(self):
+        if self.status == 'inactive' and not self.resign_date:
+            return {'warning': {
+                'title': 'ต้องระบุวันที่ออกจากงาน',
+                'message': 'สถานะ "ไม่ใช้งาน" ต้องกรอก "วันที่ออกจากงาน" ด้วยทุกครั้ง\n'
+                           'เพราะระบบใช้วันที่นี้คำนวณเงินประกันการทำงานที่ต้องคืน '
+                           '(ถ้าไม่ใส่ รายการเงินประกันจะค้างเป็น "ทำงานอยู่" และไม่ขึ้นยอดต้องคืน)',
+            }}
+
+    @api.constrains('status', 'resign_date')
+    def _check_inactive_requires_resign_date(self):
+        """กันลืม: ปิดสถานะพนักงานโดยไม่ใส่วันที่ลาออกไม่ได้"""
+        if self.env.context.get('skip_resign_date_check'):
+            return
+        for emp in self:
+            if emp.status == 'inactive' and not emp.resign_date:
+                raise ValidationError(
+                    'พนักงาน %s %s (รหัส %s): เปลี่ยนสถานะเป็น "ไม่ใช้งาน" '
+                    'ต้องระบุ "วันที่ออกจากงาน" ด้วย\n\n'
+                    'วันที่ลาออกเป็นตัวกำหนดสูตรคืนเงินประกันการทำงาน '
+                    'ถ้าไม่ใส่ ระบบจะไม่รู้ว่าต้องคืนเงินประกันเมื่อไหร่และเท่าไหร่'
+                    % (emp.firstname or '', emp.lastname or '', emp.employee_code or '-')
+                )
+
+    def _sync_deposit_work_status(self):
+        """ดันสถานะ/วันที่ลาออกจากทะเบียนพนักงานลงรายการเงินประกัน
+
+        - มีวันที่ลาออก → รายการเป็น "ออกจากงาน" + วันที่ตรงกัน และหยุดหักงวดที่ยังไม่ถึงกำหนด
+        - ยกเลิกลาออก (ล้างวันที่ + สถานะกลับมา "ใช้งาน") → คืนเป็น "ทำงานอยู่"
+        """
+        Line = self.env['work.security.deposit.line'].sudo()
+        for emp in self:
+            lines = Line.search([('employee_id', '=', emp.id)])
+            for line in lines:
+                if emp.resign_date:
+                    if line.work_status != 'resigned' or line.resign_date != emp.resign_date:
+                        line.write({
+                            'work_status': 'resigned',
+                            'resign_date': emp.resign_date,
+                        })
+                        # งวดที่ยังไม่ถูกหักจริงและเลยวันลาออกไปแล้ว ไม่ต้องหักต่อ
+                        line.payment_ids.filtered(
+                            lambda p: not p.is_deducted
+                            and p.payment_date and p.payment_date > emp.resign_date
+                        ).unlink()
+                elif emp.status == 'active' and line.work_status == 'resigned':
+                    line.write({'work_status': 'working', 'resign_date': False})
+
+    def write(self, vals):
+        res = super().write(vals)
+        if 'resign_date' in vals or 'status' in vals:
+            self._sync_deposit_work_status()
+        return res
+
+    @api.model
+    def _cron_sync_deposit_work_status(self):
+        """ไล่เทียบทะเบียนพนักงานกับรายการเงินประกันทุกวัน กันข้อมูลสองหน้าจอเพี้ยน"""
+        Line = self.env['work.security.deposit.line'].sudo()
+        todo = Line.search([
+            ('work_status', '=', 'working'),
+            ('employee_id.resign_date', '!=', False),
+        ])
+        fixed = 0
+        for line in todo:
+            line.write({
+                'work_status': 'resigned',
+                'resign_date': line.employee_id.resign_date,
+            })
+            fixed += 1
+        missing = Line.search([
+            ('work_status', '=', 'working'),
+            ('employee_status', '=', 'inactive'),
+            ('employee_id.resign_date', '=', False),
+        ])
+        if fixed:
+            _logger.info('[RESIGN-SYNC] ปรับรายการเงินประกันเป็น "ออกจากงาน" %d รายการ', fixed)
+        if missing:
+            _logger.warning(
+                '[RESIGN-SYNC] พนักงาน %d คน สถานะ "ไม่ใช้งาน" แต่ไม่มีวันที่ลาออก '
+                '— ยังคิดเงินประกันที่ต้องคืนไม่ได้: %s',
+                len(missing),
+                ', '.join('%s %s (%s)' % (l.firstname or '', l.lastname or '',
+                                          l.employee_code or '-') for l in missing[:50]))
+        return fixed

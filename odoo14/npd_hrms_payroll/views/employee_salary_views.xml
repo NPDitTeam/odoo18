@@ -8,6 +8,13 @@
         <field name="model">employee.salary</field>
         <field name="inherit_id" ref="npd_hrms_base.view_employee_salary_form"/>
         <field name="arch" type="xml">
+            <!-- ปิดสถานะพนักงาน = ต้องมีวันที่ออกจากงานเสมอ
+                 วันที่นี้คือตัวคุมสูตรคืนเงินประกันการทำงาน ถ้าไม่ใส่ รายการเงินประกัน
+                 จะค้างเป็น "ทำงานอยู่" และยอดที่ต้องคืนไม่ขึ้น -->
+            <xpath expr="//field[@name='resign_date']" position="attributes">
+                <attribute name="required">status == 'inactive'</attribute>
+            </xpath>
+
             <xpath expr="//page[@name='payroll']" position="after">
                 <page string="กติกาเงินเดือนเฉพาะบุคคล" name="payroll_special"
                       groups="npd_hrms_base.group_hrms_payroll">

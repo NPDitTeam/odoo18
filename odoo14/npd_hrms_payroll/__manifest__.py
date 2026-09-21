@@ -33,6 +33,7 @@ NPD HRMS - Payroll
         'security/payroll_security.xml',
         'data/payroll_policy_data.xml',
         'data/security_deposit_reconcile_cron.xml',
+        'data/employee_resign_sync_cron.xml',
         'views/payroll_policy_views.xml',
         'views/lateness_rule_views.xml',
         'views/pnd1_report_views.xml',
