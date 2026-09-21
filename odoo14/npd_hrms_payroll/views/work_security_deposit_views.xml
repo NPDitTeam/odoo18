@@ -66,7 +66,8 @@
                     <notebook>
                         <page string="รายการพนักงาน" name="lines">
                             <field name="line_ids">
-                                <list decoration-warning="refund_status == 'pending'"
+                                <list limit="500"
+                                      decoration-warning="refund_status == 'pending'"
                                       decoration-muted="skip_deduction">
                                     <field name="employee_code"/>
                                     <field name="firstname"/>

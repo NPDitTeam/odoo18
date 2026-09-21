@@ -372,6 +372,29 @@ class WorkSecurityDepositLine(models.Model):
                 rec.total_amount / rec.deduction_months
                 if rec.deduction_months else 0.0)
 
+    # ---- ฟิลด์สำหรับรายงาน (คำนวณจากงวดโดยตรง อัปเดตเองทุกครั้งที่ข้อมูลเปลี่ยน)
+    deposit_branch_id = fields.Many2one(
+        # o18 ใช้ res.branch (multi_branch_management_aagam) ไม่ใช่ hr.branch.custom แบบ o14
+        'res.branch', string='สาขา', related='deposit_id.branch_id',
+        store=True, readonly=True, index=True,
+    )
+    outstanding_amount = fields.Float(
+        string='คงเหลือที่ต้องหัก (บาท)',
+        compute='_compute_outstanding_amount', store=True,
+        help='วงเงินประกันที่ยังไม่ถูกหักจริง = วงเงินประกัน − ที่หักไปแล้ว',
+    )
+    deposit_progress = fields.Char(
+        string='ความคืบหน้า', compute='_compute_outstanding_amount', store=True,
+    )
+
+    @api.depends('total_amount', 'deducted_amount', 'deduction_months', 'months_deducted')
+    def _compute_outstanding_amount(self):
+        for rec in self:
+            remain = (rec.total_amount or 0.0) - (rec.deducted_amount or 0.0)
+            rec.outstanding_amount = remain if remain > 0 else 0.0
+            rec.deposit_progress = '%d/%d งวด' % (rec.months_deducted or 0,
+                                                  rec.deduction_months or 0)
+
     @api.depends('payment_ids.amount', 'payment_ids.is_deducted')
     def _compute_deducted(self):
         for rec in self:

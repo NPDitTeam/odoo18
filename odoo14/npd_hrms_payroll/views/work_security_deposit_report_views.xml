@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    รายงานเงินประกันการทำงาน — รวมทุกสาขาในหน้าเดียว
+    อ่านจาก work.security.deposit.line โดยตรง (ไม่ได้คัดลอกข้อมูล)
+    แก้อะไรที่เมนู "เงินประกันการทำงาน" รายงานนี้เปลี่ยนตามทันที
+-->
+<odoo>
+    <data>
+        <record id="view_work_security_deposit_report_list" model="ir.ui.view">
+            <field name="name">work.security.deposit.line.report.list</field>
+            <field name="model">work.security.deposit.line</field>
+            <field name="arch" type="xml">
+                <list string="รายงานเงินประกันการทำงาน"
+                      create="false" edit="false" delete="false"
+                      decoration-danger="work_status == 'resigned' and refund_status == 'pending'"
+                      decoration-success="refund_status == 'refunded'">
+                    <field name="deposit_branch_id"/>
+                    <field name="employee_code"/>
+                    <field name="firstname"/>
+                    <field name="lastname"/>
+                    <field name="employee_department_id" optional="show"/>
+                    <field name="start_work_date"/>
+                    <field name="total_amount" sum="รวมวงเงินประกัน"/>
+                    <field name="deducted_amount" string="หักไปแล้ว (บาท)" sum="รวมที่หักแล้ว"/>
+                    <field name="outstanding_amount" sum="รวมคงค้าง"/>
+                    <field name="deposit_progress"/>
+                    <field name="work_permit_total" string="ค่า Work Permit" sum="รวม Work Permit" optional="hide"/>
+                    <field name="work_status"/>
+                    <field name="resign_date" optional="show"/>
+                    <field name="refund_amount" string="เงินที่ต้องคืน" sum="รวมเงินที่ต้องคืน"/>
+                    <field name="refund_status" widget="badge"
+                           decoration-warning="refund_status == 'pending'"
+                           decoration-success="refund_status == 'refunded'"/>
+                    <field name="manual_refunded_date" string="วันที่คืน" optional="show"/>
+                    <field name="refund_payroll_id" optional="hide"/>
+                    <field name="skip_deduction" optional="hide"/>
+                </list>
+            </field>
+        </record>
+
+        <record id="view_work_security_deposit_report_search" model="ir.ui.view">
+            <field name="name">work.security.deposit.line.report.search</field>
+            <field name="model">work.security.deposit.line</field>
+            <field name="arch" type="xml">
+                <search string="ค้นหารายงานเงินประกัน">
+                    <field name="employee_code" string="รหัสพนักงาน"/>
+                    <field name="firstname" string="ชื่อ"/>
+                    <field name="lastname" string="นามสกุล"/>
+                    <field name="deposit_branch_id" string="สาขา"/>
+                    <field name="employee_department_id" string="แผนก"/>
+
+                    <separator/>
+                    <filter string="ยังทำงานอยู่" name="f_working" domain="[('work_status', '=', 'working')]"/>
+                    <filter string="ออกจากงาน" name="f_resigned" domain="[('work_status', '=', 'resigned')]"/>
+
+                    <separator/>
+                    <filter string="รอคืนเงิน" name="f_pending" domain="[('refund_status', '=', 'pending')]"/>
+                    <filter string="คืนเงินแล้ว" name="f_refunded" domain="[('refund_status', '=', 'refunded')]"/>
+                    <filter string="ไม่ต้องคืน" name="f_none" domain="[('refund_status', '=', 'none')]"/>
+
+                    <separator/>
+                    <filter string="หักครบแล้ว" name="f_completed"
+                            domain="[('outstanding_amount', '&lt;=', 0), ('deducted_amount', '&gt;', 0)]"/>
+                    <filter string="ยังหักไม่ครบ" name="f_in_progress" domain="[('outstanding_amount', '&gt;', 0)]"/>
+                    <filter string="ยังไม่เริ่มหัก" name="f_not_started" domain="[('deducted_amount', '&lt;=', 0)]"/>
+                    <filter string="ไม่หักเงินประกัน" name="f_skip" domain="[('skip_deduction', '=', True)]"/>
+
+                    <group expand="1" string="จัดกลุ่มตาม">
+                        <filter string="สาขา" name="g_branch" context="{'group_by': 'deposit_branch_id'}"/>
+                        <filter string="แผนก" name="g_department" context="{'group_by': 'employee_department_id'}"/>
+                        <filter string="สถานะการทำงาน" name="g_work_status" context="{'group_by': 'work_status'}"/>
+                        <filter string="สถานะการคืนเงิน" name="g_refund_status" context="{'group_by': 'refund_status'}"/>
+                        <filter string="เดือนที่เริ่มงาน" name="g_start" context="{'group_by': 'start_work_date:month'}"/>
+                    </group>
+                </search>
+            </field>
+        </record>
+
+        <record id="view_work_security_deposit_report_pivot" model="ir.ui.view">
+            <field name="name">work.security.deposit.line.report.pivot</field>
+            <field name="model">work.security.deposit.line</field>
+            <field name="arch" type="xml">
+                <pivot string="สรุปเงินประกันการทำงาน">
+                    <field name="deposit_branch_id" type="row"/>
+                    <field name="refund_status" type="col"/>
+                    <field name="deducted_amount" type="measure"/>
+                    <field name="outstanding_amount" type="measure"/>
+                </pivot>
+            </field>
+        </record>
+
+        <record id="action_work_security_deposit_report" model="ir.actions.act_window">
+            <field name="name">รายงานเงินประกันการทำงาน</field>
+            <field name="res_model">work.security.deposit.line</field>
+            <field name="view_mode">list,pivot,form</field>
+            <field name="search_view_id" ref="view_work_security_deposit_report_search"/>
+            <field name="context">{'search_default_g_branch': 1}</field>
+            <field name="help" type="html">
+                <p class="o_view_nocontent_smiling_face">ยังไม่มีข้อมูลเงินประกันการทำงาน</p>
+                <p>รายงานนี้ดึงจากเมนู "เงินประกันการทำงาน" ทุกสาขาโดยตรง แก้ข้อมูลที่เมนูนั้นแล้วรายงานเปลี่ยนตามทันที</p>
+            </field>
+        </record>
+
+        <record id="action_work_security_deposit_report_list_view" model="ir.actions.act_window.view">
+            <field name="sequence">1</field>
+            <field name="view_mode">list</field>
+            <field name="view_id" ref="view_work_security_deposit_report_list"/>
+            <field name="act_window_id" ref="action_work_security_deposit_report"/>
+        </record>
+
+        <record id="action_work_security_deposit_report_pivot_view" model="ir.actions.act_window.view">
+            <field name="sequence">2</field>
+            <field name="view_mode">pivot</field>
+            <field name="view_id" ref="view_work_security_deposit_report_pivot"/>
+            <field name="act_window_id" ref="action_work_security_deposit_report"/>
+        </record>
+    </data>
+</odoo>

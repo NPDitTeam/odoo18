@@ -42,6 +42,7 @@ NPD HRMS - Payroll
         'views/welfare_fund_report_views.xml',
         'views/other_income_views.xml',
         'views/work_security_deposit_views.xml',
+        'views/work_security_deposit_report_views.xml',
         'views/employee_salary_views.xml',
         'views/employee_warning_auto_views.xml',
         'views/npd_hrms_payroll_menus.xml',
