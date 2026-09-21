@@ -10,7 +10,6 @@
 
             <!-- ประเภทการจัดส่งสินค้า: วางไว้ "ก่อน" ดึงข้อมูลการเช่าจาก บ.อื่น + เลขเอกสาร SO -->
             <xpath expr="//field[@name='source_company_id']" position="before">
-                <field name="used_transfer_ids" invisible="1"/>
                 <!-- งานขนส่งเป็นของบริษัท เอ็นพีดี โลจิสติกส์ เท่านั้น บริษัทอื่นไม่ต้องเห็น/ไม่บังคับ -->
                 <field name="shipment_purpose"
                        invisible="not is_npd_logistics_company"
@@ -20,16 +19,18 @@
 
             <!-- โยกสินค้าระหว่างสาขา: ใช้เลขใบโยกแทนเลขเอกสาร SO
                  กรองเฉพาะใบยืนยันแล้วของบริษัทต้นทางที่เลือก และตัดใบที่ถูกใช้ไปแล้วออก -->
+            <xpath expr="//field[@name='so_number']" position="attributes">
+                <attribute name="invisible">shipment_purpose == 'branch_transfer'</attribute>
+            </xpath>
+
             <xpath expr="//field[@name='so_number']" position="after">
-                <field name="transfer_ref_id"
-                       options="{'no_create': True}"
-                       domain="[('state', '=', 'confirmed'),
-                                ('id', 'not in', used_transfer_ids)]"
+                <field name="transfer_ref"
+                       placeholder="กรอกเลขใบโยกสินค้าที่ยืนยันแล้ว"
                        invisible="shipment_purpose != 'branch_transfer' or not is_npd_logistics_company"
                        required="shipment_purpose == 'branch_transfer' and is_npd_logistics_company"
                        readonly="state in ['sale', 'done', 'cancel']"/>
                 <field name="transfer_product_summary" readonly="1"
-                       invisible="shipment_purpose != 'branch_transfer' or not transfer_ref_id"/>
+                       invisible="shipment_purpose != 'branch_transfer' or not transfer_product_summary"/>
             </xpath>
 
             <!-- หมายเหตุ: ต่อจากช่อง "ประเภทการรับชำระหนี้" -->

@@ -64,17 +64,12 @@ class SaleOrder(models.Model):
         ondelete={'branch_transfer': 'set default', 'help_branch': 'set default'},
     )
 
-    transfer_ref_id = fields.Many2one(
-        'stock.api.transfer',
+    # เป็นช่อง "กรอกเอง" เหมือนฝั่ง o14 เพราะใบโยกอาจถูกสร้างไว้คนละบริษัท/คนละฐาน
+    transfer_ref = fields.Char(
         string='เลขโยกสินค้า',
         copy=False,
         index=True,
-        help='เลือกได้เฉพาะใบโยกที่ "ยืนยันแล้ว" ของบริษัทต้นทางที่เลือกไว้ และยังไม่ถูกใบสั่งขายอื่นใช้',
-    )
-    used_transfer_ids = fields.Many2many(
-        'stock.api.transfer',
-        string='ใบโยกที่ถูกใช้ไปแล้ว',
-        compute='_compute_used_transfer_ids',
+        help='กรอกเลขใบโยกสินค้าที่สถานะ "ยืนยันแล้ว" — เลขเดิมใช้ซ้ำกับใบสั่งขายอื่นไม่ได้',
     )
     transfer_product_summary = fields.Text(
         string='สินค้าที่โยก', compute='_compute_transfer_product_summary',
@@ -89,20 +84,19 @@ class SaleOrder(models.Model):
     shipment_note_ai_feedback = fields.Text(string='ความเห็นของ AI', readonly=True, copy=False)
 
     # ------------------------------------------------------------------
-    @api.depends('transfer_ref_id')
-    def _compute_used_transfer_ids(self):
-        used = self.sudo().search([
-            ('transfer_ref_id', '!=', False),
-            ('state', '!=', 'cancel'),
-        ])
-        for order in self:
-            others = used.filtered(lambda o, cur=order: o.id != cur.id and o._origin.id != cur._origin.id)
-            order.used_transfer_ids = others.mapped('transfer_ref_id')
+    def _get_local_transfer(self):
+        """ใบโยกในฐานนี้ที่ตรงกับเลขที่กรอก (ถ้าอยู่คนละที่จะค้นไม่เจอ = ปกติ)"""
+        self.ensure_one()
+        if not self.transfer_ref:
+            return self.env['stock.api.transfer']
+        return self.env['stock.api.transfer'].sudo().search(
+            [('name', '=', self.transfer_ref.strip())], limit=1)
 
-    @api.depends('transfer_ref_id')
+    @api.depends('transfer_ref')
     def _compute_transfer_product_summary(self):
         for order in self:
-            lines = order.transfer_ref_id.line_ids if order.transfer_ref_id else False
+            transfer = order._get_local_transfer()
+            lines = transfer.line_ids if transfer else False
             if not lines:
                 order.transfer_product_summary = ''
                 continue
@@ -121,19 +115,19 @@ class SaleOrder(models.Model):
             order.delivery_type = PURPOSE_TO_DELIVERY_TYPE.get(purpose, order.delivery_type)
             if purpose in PURPOSE_NO_REF:
                 order.so_number = False
-                order.transfer_ref_id = False
+                order.transfer_ref = False
                 if 'source_company_id' in order._fields:
                     order.source_company_id = False
             elif purpose == 'branch_transfer':
-                order.so_number = order.transfer_ref_id.name or False
+                order.so_number = (order.transfer_ref or '').strip() or False
             else:
-                order.transfer_ref_id = False
+                order.transfer_ref = False
 
-    @api.onchange('transfer_ref_id')
-    def _onchange_transfer_ref_id(self):
+    @api.onchange('transfer_ref')
+    def _onchange_transfer_ref(self):
         for order in self:
             if order.shipment_purpose == 'branch_transfer':
-                order.so_number = order.transfer_ref_id.name or False
+                order.so_number = (order.transfer_ref or '').strip() or False
 
     def _sync_shipment_purpose_fields(self, vals):
         purpose = vals.get('shipment_purpose')
@@ -142,13 +136,13 @@ class SaleOrder(models.Model):
         vals = dict(vals)
         vals['delivery_type'] = PURPOSE_TO_DELIVERY_TYPE.get(purpose, vals.get('delivery_type'))
         if purpose in PURPOSE_NO_REF:
-            vals.update({'so_number': False, 'transfer_ref_id': False})
+            vals.update({'so_number': False, 'transfer_ref': False})
             if 'source_company_id' in self._fields:
                 vals['source_company_id'] = False
         return vals
 
     # ------------------------------------------------------------------
-    @api.constrains('shipment_purpose', 'so_number', 'transfer_ref_id')
+    @api.constrains('shipment_purpose', 'so_number', 'transfer_ref')
     def _check_shipment_purpose_refs(self):
         for order in self:
             if not order._sp_is_logistics():
@@ -168,31 +162,33 @@ class SaleOrder(models.Model):
                         'ประเภทการจัดส่งสินค้า "%s" ต้องระบุ: %s'
                     ) % (PURPOSE_LABELS[purpose], ' และ '.join(missing)))
             elif purpose == 'branch_transfer':
-                if not order.transfer_ref_id:
+                if not (order.transfer_ref or '').strip():
                     raise ValidationError(_(
-                        'ประเภทการจัดส่งสินค้า "%s" ต้องเลือกเลขโยกสินค้า '
-                        '(เฉพาะใบที่สถานะ "ยืนยันแล้ว")'
+                        'ประเภทการจัดส่งสินค้า "%s" ต้องกรอกเลขโยกสินค้า '
+                        '(ใบที่สถานะ "ยืนยันแล้ว")'
                     ) % PURPOSE_LABELS[purpose])
-                if order.transfer_ref_id.state != 'confirmed':
+                transfer = order._get_local_transfer()
+                if transfer and transfer.state != 'confirmed':
                     raise ValidationError(_(
                         'ใบโยกสินค้า %s ยังไม่อยู่สถานะ "ยืนยันแล้ว"'
-                    ) % order.transfer_ref_id.name)
+                    ) % transfer.name)
 
-    @api.constrains('transfer_ref_id')
+    @api.constrains('transfer_ref')
     def _check_transfer_ref_unique(self):
-        """เลขโยกสินค้าหนึ่งใบ ใช้ได้กับใบสั่งขายเดียวเท่านั้น"""
-        for order in self.filtered('transfer_ref_id'):
-            if not order._sp_is_logistics():
+        """เลขโยกสินค้าหนึ่งเลข ใช้ได้กับใบสั่งขายเดียวเท่านั้น"""
+        for order in self:
+            ref = (order.transfer_ref or '').strip()
+            if not ref or not order._sp_is_logistics():
                 continue
             other = self.sudo().search([
                 ('id', '!=', order.id),
-                ('transfer_ref_id', '=', order.transfer_ref_id.id),
+                ('transfer_ref', '=ilike', ref),
                 ('state', '!=', 'cancel'),
             ], limit=1)
             if other:
                 raise ValidationError(_(
                     'เลขโยกสินค้า %s ถูกใช้ไปแล้วในใบสั่งขาย %s'
-                ) % (order.transfer_ref_id.name, other.name))
+                ) % (ref, other.name))
 
     def action_confirm(self):
         for order in self:
