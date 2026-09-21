@@ -11,7 +11,10 @@
             <!-- ประเภทการจัดส่งสินค้า: วางไว้ "ก่อน" ดึงข้อมูลการเช่าจาก บ.อื่น + เลขเอกสาร SO -->
             <xpath expr="//field[@name='source_company_id']" position="before">
                 <field name="used_transfer_ids" invisible="1"/>
-                <field name="shipment_purpose" required="1"
+                <!-- งานขนส่งเป็นของบริษัท เอ็นพีดี โลจิสติกส์ เท่านั้น บริษัทอื่นไม่ต้องเห็น/ไม่บังคับ -->
+                <field name="shipment_purpose"
+                       invisible="not is_npd_logistics_company"
+                       required="is_npd_logistics_company"
                        readonly="state in ['sale', 'done', 'cancel']"/>
             </xpath>
 
@@ -22,8 +25,8 @@
                        options="{'no_create': True}"
                        domain="[('state', '=', 'confirmed'),
                                 ('id', 'not in', used_transfer_ids)]"
-                       invisible="shipment_purpose != 'branch_transfer'"
-                       required="shipment_purpose == 'branch_transfer'"
+                       invisible="shipment_purpose != 'branch_transfer' or not is_npd_logistics_company"
+                       required="shipment_purpose == 'branch_transfer' and is_npd_logistics_company"
                        readonly="state in ['sale', 'done', 'cancel']"/>
                 <field name="transfer_product_summary" readonly="1"
                        invisible="shipment_purpose != 'branch_transfer' or not transfer_ref_id"/>
@@ -31,7 +34,9 @@
 
             <!-- หมายเหตุ: ต่อจากช่อง "ประเภทการรับชำระหนี้" -->
             <xpath expr="//field[@name='debt_payment_type']" position="after">
-                <field name="shipment_note" required="1"
+                <field name="shipment_note"
+                       invisible="not is_npd_logistics_company"
+                       required="is_npd_logistics_company"
                        placeholder="อธิบายงานขนส่งครั้งนี้ให้ตรงกับประเภทการจัดส่งสินค้าที่เลือก"
                        readonly="state in ['sale', 'done', 'cancel']"/>
                 <field name="shipment_note_ai_state" readonly="1"

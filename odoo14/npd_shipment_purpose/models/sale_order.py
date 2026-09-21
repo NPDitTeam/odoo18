@@ -34,6 +34,16 @@ PURPOSE_TO_DELIVERY_TYPE = {
 class SaleOrder(models.Model):
     _inherit = 'sale.order'
 
+    # ทั้งหมดนี้เป็นงานของฝ่ายขนส่ง จึงบังคับเฉพาะใบของบริษัท เอ็นพีดี โลจิสติกส์
+    # (ใช้ธงเดียวกับปุ่ม "ดึงข้อมูลการเช่า" / "ส่งไปยังระบบขนส่ง")
+    def _sp_is_logistics(self):
+        self.ensure_one()
+        if 'is_npd_logistics_company' in self._fields:
+            return bool(self.is_npd_logistics_company)
+        if 'tr_is_npd_logistics' in self._fields:
+            return bool(self.tr_is_npd_logistics)
+        return True
+
     shipment_purpose = fields.Selection(
         selection=[
             ('to_customer', 'จัดส่งสินค้าไปยังลูกค้า'),
@@ -141,6 +151,8 @@ class SaleOrder(models.Model):
     @api.constrains('shipment_purpose', 'so_number', 'transfer_ref_id')
     def _check_shipment_purpose_refs(self):
         for order in self:
+            if not order._sp_is_logistics():
+                continue
             purpose = order.shipment_purpose
             if not purpose:
                 continue
@@ -170,6 +182,8 @@ class SaleOrder(models.Model):
     def _check_transfer_ref_unique(self):
         """เลขโยกสินค้าหนึ่งใบ ใช้ได้กับใบสั่งขายเดียวเท่านั้น"""
         for order in self.filtered('transfer_ref_id'):
+            if not order._sp_is_logistics():
+                continue
             other = self.sudo().search([
                 ('id', '!=', order.id),
                 ('transfer_ref_id', '=', order.transfer_ref_id.id),
@@ -182,6 +196,8 @@ class SaleOrder(models.Model):
 
     def action_confirm(self):
         for order in self:
+            if not order._sp_is_logistics():
+                continue
             if not order.shipment_purpose:
                 raise ValidationError(_('กรุณาเลือก "ประเภทการจัดส่งสินค้า" ก่อนยืนยันใบสั่งขาย'))
             if not (order.shipment_note or '').strip():
@@ -208,6 +224,8 @@ class SaleOrder(models.Model):
         ถ้า AI ใช้งานไม่ได้จะไม่บล็อก (งานขนส่งต้องเดินต่อได้)"""
         gemini = self.env['npd.ai.it.gemini']
         for order in self:
+            if not order._sp_is_logistics():
+                continue
             purpose = order.shipment_purpose
             note = (order.shipment_note or '').strip()
             if not purpose or not note:
