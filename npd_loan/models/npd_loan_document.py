@@ -1,5 +1,10 @@
 # -*- coding: utf-8 -*-
-from odoo import models, fields
+import mimetypes
+
+from odoo import api, models, fields
+
+# นามสกุลที่ถือว่าเป็น "รูป" แสดงตัวอย่างได้ (เอกสารอื่น เช่น PDF ให้ดาวน์โหลดตามเดิม)
+IMAGE_EXTENSIONS = ('.png', '.jpg', '.jpeg', '.gif', '.bmp', '.webp')
 
 class NpdLoanDocument(models.Model):
     _name = 'npd.loan.document'
@@ -28,3 +33,30 @@ class NpdLoanDocument(models.Model):
     upload_date = fields.Date(string='วันที่อัพโหลด', default=fields.Date.today)
     uploaded_by = fields.Many2one('res.users', string='ผู้อัพโหลด', 
                                    default=lambda self: self.env.user)
+
+    is_image = fields.Boolean(
+        string='เป็นไฟล์รูป', compute='_compute_is_image', store=True,
+        help='ดูจากนามสกุลไฟล์ ใช้ตัดสินว่าจะแสดงรูปตัวอย่างให้หรือไม่')
+    image_preview = fields.Binary(
+        string='รูป', compute='_compute_image_preview',
+        help='รูปตัวอย่างของไฟล์แนบ (เฉพาะไฟล์รูป) คลิกที่รูปเพื่อดูขนาดเต็ม')
+
+    @api.depends('attachment_name')
+    def _compute_is_image(self):
+        for rec in self:
+            name = (rec.attachment_name or '').lower()
+            if name:
+                rec.is_image = name.endswith(IMAGE_EXTENSIONS)
+                continue
+            # ไม่มีชื่อไฟล์ (นำเข้าข้อมูลเก่า) -> เดาจาก mimetype ของชื่อที่มี
+            mimetype = mimetypes.guess_type(rec.name or '')[0] or ''
+            rec.is_image = mimetype.startswith('image/')
+
+    @api.depends('attachment', 'is_image')
+    def _compute_image_preview(self):
+        """คืนไฟล์เดิมเมื่อเป็นรูป — ไม่เก็บซ้ำ จึงไม่กินพื้นที่เพิ่ม
+
+        ไฟล์ที่ไม่ใช่รูป (PDF/Excel) คืน False เพื่อให้ช่องรูปว่างแทนรูปเสีย
+        """
+        for rec in self:
+            rec.image_preview = rec.attachment if rec.is_image else False
