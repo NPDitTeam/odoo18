@@ -72,6 +72,25 @@ class AccountMove(models.Model):
     jasper_dr_reference_invoice = fields.Char(
         compute='_compute_jasper_dr_reference_invoice',
     )
+    # ลงวันที่ของใบรับชำระที่อ้างอิงจริง (ไม่ใช่วันที่ของใบลดหนี้เอง)
+    jasper_dr_reference_date_thai = fields.Char(
+        compute='_compute_jasper_dr_reference_date_thai',
+    )
+
+    # ---- รายการสินค้า: พิมพ์บรรทัดเดียวให้เหมือนใบกำกับภาษี/ใบเสร็จรับเงิน ----
+    jasper_dr_line_description = fields.Char(
+        compute='_compute_jasper_dr_line',
+    )
+
+    # ---- หมายเหตุที่ผู้ใช้กรอกเอง (ช่อง "เหตุผลในการลดหนี้") ----
+    debt_reduction_note = fields.Text(
+        string='หมายเหตุ',
+        copy=False,
+        help='หมายเหตุที่จะแสดงในช่อง "เหตุผลในการลดหนี้" บนแบบฟอร์มใบลดหนี้',
+    )
+    jasper_dr_note_text = fields.Char(
+        compute='_compute_jasper_dr_note_text',
+    )
 
     # ---- Amounts derived from credit note ----
     jasper_dr_amount_original = fields.Float(
@@ -186,6 +205,58 @@ class AccountMove(models.Model):
             if not text:
                 text = 'ไม่พบข้อมูลการรับชำระ'
             rec.jasper_dr_reference_invoice = text
+
+    def get_reference_payments_debt_reduction(self):
+        """ใบรับชำระ (CUST.IN) ที่ใบกำกับภาษีต้นทางของใบลดหนี้อ้างอิงอยู่"""
+        self.ensure_one()
+        if not self.reversed_entry_id:
+            return self.env['account.payment']
+        try:
+            return self.reversed_entry_id._get_reconciled_payments().filtered(
+                lambda p: p.state == 'posted'
+            )
+        except Exception as e:      # กันเคสข้อมูลเก่า/โมดูลบัญชีเปลี่ยน API
+            _logger.warning('reversed_entry_id payments lookup failed: %s', e)
+            return self.env['account.payment']
+
+    @api.depends('reversed_entry_id', 'invoice_date')
+    def _compute_jasper_dr_reference_date_thai(self):
+        """ลงวันที่ = วันที่ของใบรับชำระที่อ้างอิง ถ้าไม่พบจึงใช้วันที่ของใบลดหนี้
+
+        เดิมใช้ invoice_date ของใบลดหนี้เอง ทำให้วันที่ไม่ตรงกับเลข CUST.IN
+        ที่พิมพ์คู่กันในบรรทัดเดียวกัน
+        """
+        for rec in self:
+            dates = []
+            for payment_date in rec.get_reference_payments_debt_reduction().mapped('date'):
+                if payment_date and payment_date not in dates:
+                    dates.append(payment_date)
+            if not dates and rec.invoice_date:
+                dates = [rec.invoice_date]
+            rec.jasper_dr_reference_date_thai = ', '.join(
+                _format_thai_date_short(d) for d in dates
+            )
+
+    @api.depends('amount_untaxed')
+    def _compute_jasper_dr_line(self):
+        """ใบลดหนี้พิมพ์รายการเดียว ไม่ไล่ทีละบรรทัดสินค้า
+
+        ทีมบัญชีปรับที่ Odoo 14 ให้เหมือนใบกำกับภาษี/ใบเสร็จรับเงิน
+        (เดิมโชว์ IRAA-0302, IRAA-0303 ... ทีละแถว)
+        """
+        for rec in self:
+            rec.jasper_dr_line_description = 'ค่าเช่าเครื่องมือก่อสร้าง'
+
+    @api.depends('debt_reduction_note')
+    def _compute_jasper_dr_note_text(self):
+        """ช่อง "เหตุผลในการลดหนี้" อ่านจากแถบหมายเหตุของเอกสาร
+
+        ไม่ fallback ไป narration เพราะ narration เก็บข้อความเงื่อนไขมาตรฐาน
+        (ห้ามตัด ห้ามเชื่อม / ราคาไม่รวมค่าขนส่ง ...) แล้วไปโผล่ผิดช่อง
+        ใบเก่าที่ยังไม่กรอกหมายเหตุจึงพิมพ์ช่องนี้ว่าง — ตั้งใจให้เป็นแบบนั้น
+        """
+        for rec in self:
+            rec.jasper_dr_note_text = (rec.debt_reduction_note or '').strip()
 
     @api.depends(
         'reversed_entry_id.amount_total',

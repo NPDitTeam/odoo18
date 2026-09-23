@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<odoo>
+    <!-- แถบ "หมายเหตุ" สำหรับใบลดหนี้ — ข้อความในช่องนี้จะไปขึ้นที่
+         "เหตุผลในการลดหนี้" บนแบบฟอร์มใบลดหนี้
+         (แยกจาก narration ซึ่งเก็บข้อความเงื่อนไขมาตรฐานของใบกำกับภาษี) -->
+    <record id="view_move_form_debt_reduction_note" model="ir.ui.view">
+        <field name="name">account.move.form.debt.reduction.note</field>
+        <field name="model">account.move</field>
+        <field name="inherit_id" ref="account.view_move_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//notebook" position="inside">
+                <page id="debt_reduction_note_tab"
+                      string="หมายเหตุ"
+                      name="debt_reduction_note_tab"
+                      invisible="move_type not in ('out_refund', 'in_refund')">
+                    <group>
+                        <field name="debt_reduction_note"
+                               nolabel="1"
+                               placeholder="ระบุหมายเหตุ / เหตุผลในการลดหนี้ ที่ต้องการให้แสดงบนแบบฟอร์มใบลดหนี้..."/>
+                    </group>
+                </page>
+            </xpath>
+        </field>
+    </record>
+</odoo>

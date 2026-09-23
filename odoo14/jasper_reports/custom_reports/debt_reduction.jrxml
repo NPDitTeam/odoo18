@@ -63,6 +63,15 @@
 	<field name="BahtText-jasper_dr_baht_text" class="java.lang.String">
 		<fieldDescription><![CDATA[BahtText-jasper_dr_baht_text]]></fieldDescription>
 	</field>
+	<field name="ReferenceDateThai-jasper_dr_reference_date_thai" class="java.lang.String">
+		<fieldDescription><![CDATA[ReferenceDateThai-jasper_dr_reference_date_thai]]></fieldDescription>
+	</field>
+	<field name="LineDescription-jasper_dr_line_description" class="java.lang.String">
+		<fieldDescription><![CDATA[LineDescription-jasper_dr_line_description]]></fieldDescription>
+	</field>
+	<field name="NoteText-jasper_dr_note_text" class="java.lang.String">
+		<fieldDescription><![CDATA[NoteText-jasper_dr_note_text]]></fieldDescription>
+	</field>
 	<field name="Narration-jasper_dr_narration_clean" class="java.lang.String">
 		<fieldDescription><![CDATA[Narration-jasper_dr_narration_clean]]></fieldDescription>
 	</field>
@@ -206,7 +215,7 @@
 				<textElement verticalAlignment="Middle">
 					<font fontName="Sarabun" size="12"/>
 				</textElement>
-				<textFieldExpression><![CDATA["อ้างอิงใบกำกับภาษีเลขที่ " + ($F{ReferenceInvoice-jasper_dr_reference_invoice} == null ? "" : $F{ReferenceInvoice-jasper_dr_reference_invoice}) + "       ลงวันที่ " + ($F{InvoiceDateThai-jasper_dr_invoice_date_thai} == null ? "" : $F{InvoiceDateThai-jasper_dr_invoice_date_thai})]]></textFieldExpression>
+				<textFieldExpression><![CDATA["อ้างอิงใบกำกับภาษีเลขที่ " + ($F{ReferenceInvoice-jasper_dr_reference_invoice} == null ? "" : $F{ReferenceInvoice-jasper_dr_reference_invoice}) + "       ลงวันที่ " + ($F{ReferenceDateThai-jasper_dr_reference_date_thai} == null ? "" : $F{ReferenceDateThai-jasper_dr_reference_date_thai})]]></textFieldExpression>
 			</textField>
 			<rectangle>
 				<reportElement mode="Transparent" x="0" y="78" width="565" height="22" uuid="f4a5b6c7-0002-0001-0001-000000000030"/>
@@ -251,7 +260,10 @@
 	</pageHeader>
 	<detail>
 		<band height="20" splitType="Stretch">
-			<printWhenExpression><![CDATA[$F{LineName-name} != null && !$F{LineName-name}.isEmpty()]]></printWhenExpression>
+			<!-- พิมพ์แถวเดียว: ทีมบัญชีปรับที่ o14 ให้ใบลดหนี้สรุปเป็นรายการเดียว
+			     (เดิมวนทุกบรรทัดสินค้า) เงื่อนไข rowNumber == 1 กันกรณี dataset
+			     ส่งมาหลายแถวตามจำนวนบรรทัดสินค้า -->
+			<printWhenExpression><![CDATA[$V{rowNumber} == 1]]></printWhenExpression>
 			<textField>
 				<reportElement style="Thai" x="0" y="0" width="50" height="18" uuid="f4a5b6c7-0003-0001-0001-000000000001"/>
 				<textElement textAlignment="Center" verticalAlignment="Middle">
@@ -264,21 +276,15 @@
 				<textElement textAlignment="Left" verticalAlignment="Middle">
 					<font fontName="Sarabun" size="12"/>
 				</textElement>
-				<textFieldExpression><![CDATA[$F{LineName-name}]]></textFieldExpression>
+				<textFieldExpression><![CDATA[$F{LineDescription-jasper_dr_line_description}]]></textFieldExpression>
 			</textField>
 			<textField isBlankWhenNull="true">
 				<reportElement style="Thai" x="383" y="0" width="180" height="18" uuid="f4a5b6c7-0003-0001-0001-000000000003"/>
 				<textElement textAlignment="Right" verticalAlignment="Middle">
 					<font fontName="Sarabun" size="12"/>
 				</textElement>
-				<textFieldExpression><![CDATA[$F{LinePriceSubtotal-price_subtotal} != null && !$F{LinePriceSubtotal-price_subtotal}.isEmpty() ? String.format("%,.2f", Double.parseDouble($F{LinePriceSubtotal-price_subtotal})) : "0.00"]]></textFieldExpression>
+				<textFieldExpression><![CDATA[$F{AmountUntaxed-amount_untaxed} != null && !$F{AmountUntaxed-amount_untaxed}.isEmpty() ? String.format("%,.2f", Double.parseDouble($F{AmountUntaxed-amount_untaxed})) : "0.00"]]></textFieldExpression>
 			</textField>
-			<!-- Page break every 10 lines -->
-			<break>
-				<reportElement x="0" y="19" width="565" height="1" uuid="f4a5b6c7-0003-0001-0001-000000000099">
-					<printWhenExpression><![CDATA[$V{rowNumber} % 10 == 0 && $V{rowNumber} > 0]]></printWhenExpression>
-				</reportElement>
-			</break>
 		</band>
 	</detail>
 	<lastPageFooter>
@@ -319,7 +325,7 @@
 				<textElement verticalAlignment="Top">
 					<font fontName="Sarabun" size="11"/>
 				</textElement>
-				<textFieldExpression><![CDATA[$F{Narration-jasper_dr_narration_clean}]]></textFieldExpression>
+				<textFieldExpression><![CDATA[$F{NoteText-jasper_dr_note_text}]]></textFieldExpression>
 			</textField>
 			<staticText>
 				<reportElement style="Thai" x="3" y="62" width="120" height="16" uuid="f4a5b6c7-0004-0001-0001-000000000012"/>
