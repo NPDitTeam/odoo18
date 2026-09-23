@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <t t-name="npd_scrap_buttons.RepairCountdown">
+        <span t-att-class="state.className" t-esc="state.text"/>
+    </t>
+
+</templates>

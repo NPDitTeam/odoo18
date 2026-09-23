@@ -27,11 +27,17 @@
                         type="object"
                         class="btn-primary"
                         invisible="state != 'under_repair'"/>
+                <button name="action_sold_as_is"
+                        string="ซ่อมไม่สำเร็จ / ขายตามสภาพ"
+                        type="object"
+                        class="btn-warning"
+                        confirm="ยืนยันว่าสินค้านี้ซ่อมไม่ได้แล้ว? ระบบจะย้ายของเข้าคลัง 'ขายตามสภาพ' ของสาขานี้"
+                        invisible="state not in ('pending_repair', 'under_repair')"/>
             </xpath>
 
             <!-- Statusbar เพิ่ม states ใหม่ -->
             <xpath expr="//header/field[@name='state']" position="attributes">
-                <attribute name="statusbar_visible">draft,pending_repair,under_repair,repaired,done,cancel</attribute>
+                <attribute name="statusbar_visible">draft,pending_repair,under_repair,repaired,sold_as_is,done,cancel</attribute>
             </xpath>
 
             <!-- Ribbon "ซ่อมสำเร็จ" มุมขวาบนของ sheet -->
@@ -40,12 +46,30 @@
                         title="ซ่อมสำเร็จ"
                         bg_color="text-bg-success"
                         invisible="state != 'repaired'"/>
+                <widget name="web_ribbon"
+                        title="ขายตามสภาพ"
+                        bg_color="text-bg-warning"
+                        invisible="state != 'sold_as_is'"/>
             </xpath>
 
             <!-- ระยะเวลาซ่อม แสดงต่อจาก reason code -->
             <xpath expr="//field[@name='reason_code_id']" position="after">
                 <field name="repair_duration_display"
                        invisible="not repair_duration_display"/>
+                <!-- นับถอยหลังเรียลไทม์ฝั่ง browser (ไม่ยิง RPC เพิ่ม) -->
+                <field name="repair_end_date" invisible="1"/>
+                <field name="repair_deadline"
+                       string="นับถอยหลัง"
+                       widget="npd_repair_countdown"
+                       options="{'done_field': 'repair_end_date'}"
+                       invisible="not repair_deadline"/>
+                <field name="repair_sla_state"
+                       invisible="not repair_sla_state"/>
+                <field name="repair_overdue_display"
+                       class="text-danger fw-bold"
+                       invisible="not repair_overdue_display"/>
+                <field name="sold_as_is_date"
+                       invisible="not sold_as_is_date"/>
             </xpath>
 
             <!-- Notebook สำหรับข้อมูลการซ่อม -->
@@ -176,9 +200,19 @@
         <field name="model">stock.scrap</field>
         <field name="inherit_id" ref="stock.stock_scrap_tree_view"/>
         <field name="arch" type="xml">
+            <!-- คอลัมน์ SLA (ซ่อนได้จากปุ่มเลือกคอลัมน์มุมขวาของ list) -->
+            <xpath expr="//field[@name='state']" position="before">
+                <field name="repair_end_date" column_invisible="1"/>
+                <field name="repair_deadline"
+                       string="นับถอยหลัง"
+                       widget="npd_repair_countdown"
+                       options="{'done_field': 'repair_end_date'}"
+                       optional="show"/>
+            </xpath>
+
             <xpath expr="//field[@name='state']" position="attributes">
                 <attribute name="decoration-danger">state == 'cancel'</attribute>
-                <attribute name="decoration-warning">state in ('pending_repair','under_repair')</attribute>
+                <attribute name="decoration-warning">state in ('pending_repair','under_repair','sold_as_is')</attribute>
                 <attribute name="decoration-success">state == 'repaired'</attribute>
             </xpath>
         </field>

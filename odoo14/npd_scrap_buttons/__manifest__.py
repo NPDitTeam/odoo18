@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'NPD Scrap Buttons',
-    'version': '18.0.1.1.0',
+    'version': '18.0.1.2.0',
     'summary': 'Reset / Cancel / Repair workflow for Scrap Orders',
     'description': """
         Adds to Scrap Orders:
@@ -14,13 +14,20 @@
     'author': 'NPD',
     'website': '',
     'license': 'LGPL-3',
-    'depends': ['stock', 'scrap_reason_code', 'web'],
+    'depends': ['stock', 'scrap_reason_code', 'web', 'multi_branch_management_aagam'],
     'data': [
         'security/ir.model.access.csv',
         'views/scrap_reason_code_views.xml',
+        'views/stock_location_views.xml',
         'views/stock_scrap_views.xml',
         'wizard/scrap_repair_wizard_views.xml',
     ],
+    'assets': {
+        'web.assets_backend': [
+            'npd_scrap_buttons/static/src/js/repair_countdown.js',
+            'npd_scrap_buttons/static/src/xml/repair_countdown.xml',
+        ],
+    },
     'installable': True,
     'application': False,
     'auto_install': False,

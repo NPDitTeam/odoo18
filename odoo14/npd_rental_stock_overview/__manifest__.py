@@ -22,7 +22,8 @@
     'license': 'LGPL-3',
     # branch -> multi_branch_management_aagam (ให้ res.branch + branch_id บนคลัง/บิล/ใบส่ง)
     # stock_api_transfer -> ตาราง stock_api_transfer_line ที่ SQL view อ้างถึงต้องมีก่อน
-    'depends': ['stock', 'sale_stock', 'multi_branch_management_aagam', 'stock_api_transfer'],
+    'depends': ['stock', 'sale_stock', 'multi_branch_management_aagam',
+                'stock_api_transfer', 'npd_scrap_buttons'],
     'data': [
         'security/ir.model.access.csv',
         'views/rental_stock_overview_views.xml',
