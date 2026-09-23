@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <t t-name="npd_loan.ImagePopupField">
+        <img t-if="hasImage"
+             t-att-src="src"
+             t-att-height="height"
+             t-on-click="onClick"
+             title="คลิกเพื่อดูรูปขนาดเต็ม"
+             style="max-width: 80px; object-fit: contain; cursor: zoom-in; border: 1px solid #dee2e6; border-radius: 3px;"/>
+    </t>
+
+    <t t-name="npd_loan.ImagePopupDialog">
+        <Dialog title="props.title" size="'xl'" contentClass="'text-center'">
+            <img t-att-src="props.src"
+                 class="img-fluid"
+                 style="max-height: 78vh; object-fit: contain;"/>
+            <t t-set-slot="footer">
+                <button class="btn btn-secondary" t-on-click="() => props.close()">ปิด</button>
+            </t>
+        </Dialog>
+    </t>
+
+</templates>

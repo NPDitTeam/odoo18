@@ -290,8 +290,8 @@
                                     <field name="attachment" filename="attachment_name"/>
                                     <field name="attachment_name" column_invisible="1"/>
                                     <field name="is_image" column_invisible="1"/>
-                                    <field name="image_preview" widget="image"
-                                           options="{'size': [45, 45]}"
+                                    <field name="image_preview" widget="npd_image_popup"
+                                           options="{'src_field': 'attachment', 'title_field': 'name', 'height': 45}"
                                            readonly="1" optional="show"/>
                                     <field name="upload_date"/>
                                     <field name="uploaded_by"/>
@@ -299,44 +299,6 @@
                                 </list>
                             </field>
 
-                            <separator string="รูปเอกสารแนบ (คลิกที่รูปเพื่อดูขนาดเต็ม)"
-                                       invisible="not image_document_ids"/>
-                            <field name="image_document_ids" nolabel="1" readonly="1"
-                                   invisible="not image_document_ids">
-                                <kanban>
-                                    <field name="id"/>
-                                    <field name="name"/>
-                                    <field name="document_type"/>
-                                    <templates>
-                                        <t t-name="kanban-box">
-                                            <div class="oe_kanban_card" style="padding:8px;">
-                                                <img t-attf-src="/web/image/npd.loan.document/#{record.id.raw_value}/attachment"
-                                                     data-bs-toggle="modal"
-                                                     t-attf-data-bs-target="#loan_doc_modal_#{record.id.raw_value}"
-                                                     title="คลิกเพื่อดูรูปขนาดใหญ่"
-                                                     style="width: 200px; height: 200px; object-fit: contain; border: 1px solid #dee2e6; border-radius: 4px; cursor: zoom-in;"/>
-                                                <div class="text-center mt-2" style="font-size: 11px; color: #6c757d; word-break: break-all;">
-                                                    <field name="name"/>
-                                                </div>
-                                                <div class="modal fade" t-attf-id="loan_doc_modal_#{record.id.raw_value}" role="dialog" tabindex="-1">
-                                                    <div class="modal-dialog modal-xl modal-dialog-centered" role="document">
-                                                        <div class="modal-content">
-                                                            <div class="modal-header">
-                                                                <h5 class="modal-title"><field name="name"/></h5>
-                                                                <span class="close" data-bs-dismiss="modal" aria-label="Close" style="cursor:pointer;">&#215;</span>
-                                                            </div>
-                                                            <div class="modal-body text-center">
-                                                                <img t-attf-src="/web/image/npd.loan.document/#{record.id.raw_value}/attachment"
-                                                                     style="max-width: 100%; max-height: 80vh; object-fit: contain;"/>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </t>
-                                    </templates>
-                                </kanban>
-                            </field>
                         </page>
                         <page string="ประวัติการโทร" name="call_history">
                             <field name="call_history_ids" readonly="1">

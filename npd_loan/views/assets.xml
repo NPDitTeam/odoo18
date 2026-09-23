@@ -6,4 +6,16 @@
         <field name="bundle">web.assets_backend</field>
         <field name="path">npd_loan/static/src/js/phone_call.js</field>
     </record>
+
+    <!-- widget รูปย่อในตารางเอกสารแนบ กดแล้วเด้ง popup รูปขนาดเต็ม -->
+    <record id="npd_loan_assets_image_popup_js" model="ir.asset">
+        <field name="name">npd_loan.image_popup_js</field>
+        <field name="bundle">web.assets_backend</field>
+        <field name="path">npd_loan/static/src/js/image_popup.js</field>
+    </record>
+    <record id="npd_loan_assets_image_popup_xml" model="ir.asset">
+        <field name="name">npd_loan.image_popup_xml</field>
+        <field name="bundle">web.assets_backend</field>
+        <field name="path">npd_loan/static/src/xml/image_popup.xml</field>
+    </record>
 </odoo>

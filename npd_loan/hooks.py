@@ -5,9 +5,15 @@ import logging
 _logger = logging.getLogger(__name__)
 
 
-def recalculate_carried_interest(cr, registry):
-    """คำนวณดอกค้างยกมา/ส่งต่อ สำหรับงวดเก่าที่มีอยู่แล้ว"""
-    env = api.Environment(cr, SUPERUSER_ID, {})
+def recalculate_carried_interest(env):
+    """คำนวณดอกค้างยกมา/ส่งต่อ สำหรับงวดเก่าที่มีอยู่แล้ว
+
+    Odoo 18 ส่ง env มาให้ตรง ๆ (เดิมเป็น (cr, registry) แบบ Odoo 16 ลงไป)
+    ถ้ายังใช้ลายเซ็นเดิม การติดตั้งโมดูลจะล้มทั้งฐานด้วย
+    TypeError: missing 1 required positional argument: 'registry'
+    """
+    if not isinstance(env, api.Environment):     # เผื่อถูกเรียกแบบเก่า (cr)
+        env = api.Environment(env, SUPERUSER_ID, {})
     loans = env['npd.loan'].search([('installment_ids', '!=', False)])
     _logger.info('Recalculating carried interest for %s loans...', len(loans))
     

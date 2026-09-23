@@ -169,11 +169,6 @@ class NpdLoan(models.Model):
     
     # เอกสารแนบ
     document_ids = fields.One2many('npd.loan.document', 'loan_id', string='เอกสารแนบ')
-    # ชุดเดียวกับ document_ids แต่กรองเฉพาะไฟล์รูป ไว้แสดงเป็นแกลเลอรีใต้ตาราง
-    # (แยกฟิลด์เพราะใส่ฟิลด์ชื่อเดียวกันสองที่ในฟอร์มเดียวไม่ได้)
-    image_document_ids = fields.One2many(
-        'npd.loan.document', 'loan_id', string='รูปเอกสารแนบ',
-        domain=[('is_image', '=', True)], readonly=True)
     document_count = fields.Integer(string='จำนวนเอกสาร', compute='_compute_document_count')
     
     # (sale1_id, sale2_id ย้ายไป commission_line_ids แล้ว)
