@@ -13,6 +13,7 @@
                 <field name="date_from"/>
                 <field name="date_to"/>
                 <field name="payment_date"/>
+                <field name="update_until_date" string="อัพเดทถึง" optional="show"/>
                 <field name="employee_count"/>
                 <field name="total_gross" sum="รวมรายได้"/>
                 <field name="total_deduction" sum="รวมหัก"/>
@@ -70,6 +71,8 @@
                             <field name="date_from"/>
                             <field name="date_to"/>
                             <field name="payment_date"/>
+                            <field name="update_until_day"/>
+                            <field name="update_until_date"/>
                         </group>
                     </group>
                     <group string="ยอดรวม">

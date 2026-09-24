@@ -7,7 +7,7 @@ from datetime import date
 from dateutil.relativedelta import relativedelta
 
 from odoo import models, fields, api, _
-from odoo.exceptions import UserError
+from odoo.exceptions import UserError, ValidationError
 
 _logger = logging.getLogger(__name__)
 
@@ -50,6 +50,17 @@ class PayrollPeriod(models.Model):
         string='ถึงวันที่', compute='_compute_dates', store=True)
     payment_date = fields.Date(string='วันที่จ่ายเงิน')
 
+    update_until_day = fields.Integer(
+        string='อัพเดทถึงวันที่', default=26, required=True,
+        help='ระบบจะคำนวณข้อมูลเงินเดือนของรอบนี้ใหม่ให้ทุกวัน '
+             'จนถึงวันที่นี้ของเดือนรอบ หลังจากนั้นจะหยุดอัพเดท '
+             'แก้เลขนี้ได้ทีละรอบ พอแก้แล้ววันที่อัพเดทถึงจะขยับตามเองทันที')
+    update_until_date = fields.Date(
+        string='อัพเดทถึงวันที่ (คำนวณ)', compute='_compute_update_until_date',
+        store=True, readonly=True,
+        help='วันสุดท้ายที่ระบบจะอัพเดทข้อมูลรอบนี้ คำนวณจาก เดือน/ปี ของรอบ '
+             "กับเลข 'อัพเดทถึงวันที่' เดือนที่ไม่มีวันนั้นจะเลื่อนมาวันสุดท้ายของเดือน")
+
     state = fields.Selection([
         ('draft', 'ร่าง'),
         ('computed', 'คำนวณแล้ว'),
@@ -73,6 +84,32 @@ class PayrollPeriod(models.Model):
         ('period_uniq', 'unique(month, year, company_id)',
          'มีรอบทำเงินเดือนของเดือน/ปีนี้ในบริษัทนี้อยู่แล้ว'),
     ]
+
+    @api.depends('month', 'year', 'update_until_day')
+    def _compute_update_until_date(self):
+        """วันสุดท้ายที่จะอัพเดทข้อมูลรอบนี้
+
+        เป็นฟิลด์คำนวณแบบเก็บค่า พอผู้ใช้แก้เลข 'อัพเดทถึงวันที่'
+        ระบบคำนวณวันใหม่ให้ทันทีโดยไม่ต้องกดอะไรเพิ่ม
+        เดือนที่ไม่มีวันนั้น (เช่น ก.พ. กับวันที่ 30) เลื่อนมาวันสุดท้ายของเดือน
+        """
+        for rec in self:
+            day = rec.update_until_day or 26
+            month = int(rec.month or 0)
+            year = int(rec.year or 0)
+            if not (1 <= month <= 12) or year < 1900:
+                rec.update_until_date = False
+                continue
+            last_day = calendar.monthrange(year, month)[1]
+            rec.update_until_date = date(year, month, min(max(day, 1), last_day))
+
+    @api.constrains('update_until_day')
+    def _check_update_until_day(self):
+        for rec in self:
+            if not (1 <= (rec.update_until_day or 0) <= 31):
+                raise ValidationError(
+                    'อัพเดทถึงวันที่ ต้องอยู่ระหว่าง 1 ถึง 31 (ใส่มา %s)'
+                    % rec.update_until_day)
 
     @api.depends('month', 'year')
     def _compute_display_name(self):
@@ -281,6 +318,34 @@ class PayrollPeriod(models.Model):
         for rec in self:
             rec.salary_ids.filtered(lambda s: s.state == 'done').action_reset_draft()
             rec.state = 'draft'
+        return True
+
+    @api.model
+    def _cron_daily_refresh(self):
+        """คำนวณข้อมูลเงินเดือนของรอบที่ยังไม่ถึงวันหยุดอัพเดทใหม่ทุกวัน
+
+        ตรงกับฝั่ง Odoo 14 ที่ cron ตามอัพเดท OT/สาย/ขาด/ลา ให้ทุกวัน
+        ต่างกันตรงที่นี่แตะเฉพาะรอบสถานะ 'คำนวณแล้ว' เท่านั้น
+        รอบที่อนุมัติหรือจ่ายแล้วถือว่าตัวเลขนิ่งแล้ว ระบบจะไม่ไปแก้ให้เอง
+        """
+        today = fields.Date.context_today(self)
+        periods = self.search([
+            ('state', '=', 'computed'),
+            ('update_until_date', '>=', today),
+        ])
+        if not periods:
+            _logger.info('[PAYROLL CRON] ไม่มีรอบที่ต้องอัพเดทวันนี้')
+            return True
+        for period in periods:
+            _logger.info('[PAYROLL CRON] อัพเดตข้อมูลรอบ %s (อัพเดทถึง %s)',
+                         period.display_name, period.update_until_date)
+            try:
+                with self.env.cr.savepoint():
+                    period.action_recompute()
+            except Exception as error:
+                # รอบหนึ่งพังต้องไม่ทำให้รอบอื่นไม่ได้อัพเดท
+                _logger.exception('[PAYROLL CRON] รอบ %s อัพเดตไม่สำเร็จ: %s',
+                                  period.display_name, error)
         return True
 
     def action_view_salaries(self):
