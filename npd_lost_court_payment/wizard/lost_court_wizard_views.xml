@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_lost_court_wizard_form" model="ir.ui.view">
+        <field name="name">npd.lost.court.wizard.form</field>
+        <field name="model">npd.lost.court.wizard</field>
+        <field name="arch" type="xml">
+            <form string="จ่ายค่าปรับหายตามศาล">
+                <div class="alert alert-info" role="alert">
+                    ระบุยอดที่ศาลสั่งให้จ่ายงวดนี้ ระบบจะปรับจำนวนสินค้าให้ยอดรวม
+                    <b>ใกล้ยอดนั้นที่สุดโดยไม่ต่ำกว่า</b>
+                    เศษที่เกินค่อยทำส่วนลดต่อตามปกติ
+                    ซึ่งจะน้อยกว่าเดิมมากเพราะจำนวนถูกปรับมาให้ใกล้แล้ว<br/>
+                    สินค้าที่งวดนี้ไม่ได้ใช้จะถูกตัดออกจากใบ
+                    (จำนวนเดิมถูกบันทึกไว้ในกล่องข้อความของใบแล้ว)
+                </div>
+                <group>
+                    <group>
+                        <field name="move_id" invisible="1"/>
+                        <field name="computed" invisible="1"/>
+                        <field name="move_name"/>
+                        <field name="partner_id"/>
+                        <field name="invoice_total"/>
+                    </group>
+                    <group>
+                        <field name="installment_no"/>
+                        <field name="court_amount"/>
+                        <field name="due_date"/>
+                    </group>
+                </group>
+                <group string="สินค้าในใบตอนนี้">
+                    <field name="product_summary" nolabel="1" readonly="1"/>
+                </group>
+                <group string="ผลการคำนวณ" invisible="not computed">
+                    <group>
+                        <field name="planned_amount"/>
+                        <field name="diff_amount"/>
+                    </group>
+                </group>
+                <group string="จำนวนที่จะปรับเป็น" invisible="not computed">
+                    <field name="qty_preview" nolabel="1" readonly="1"/>
+                </group>
+                <group string="หมายเหตุคำสั่งศาล">
+                    <field name="court_note" nolabel="1"
+                           placeholder="เลขคดี / วันที่ศาลสั่ง / รายละเอียดอื่น ๆ"/>
+                </group>
+                <footer>
+                    <button name="action_preview" string="คำนวณจำนวนสินค้า"
+                            type="object" class="btn-secondary"/>
+                    <button name="action_apply" string="ปรับจำนวนในใบนี้"
+                            type="object" class="btn-primary"
+                            confirm="ยืนยันปรับจำนวนสินค้าในใบนี้ตามยอดที่ศาลสั่ง"/>
+                    <button string="ยกเลิก" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+</odoo>

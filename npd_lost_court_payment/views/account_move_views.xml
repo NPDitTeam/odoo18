@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!--
+        ปุ่ม "จ่ายค่าปรับหายตามศาล"
+        ขึ้นกับใบร่างที่ประเภทสินค้า = สินค้าหาย
+        ใช้ตอนศาลสั่งให้ผ่อนเป็นงวด ระบบจะปรับจำนวนสินค้าให้เท่ายอดงวดนั้น
+
+        เกาะที่ group id="header_right_group" ของฟอร์มแกน ไม่เกาะชื่อฟิลด์
+        เพราะในฟอร์มของ Odoo 18 ฟิลด์ invoice_date โผล่สองครั้ง
+        (แยกใบขาย/ใบซื้อ) ถ้าเกาะชื่อฟิลด์จะไปโผล่ผิดที่
+    -->
+    <record id="view_move_form_lost_court" model="ir.ui.view">
+        <field name="name">account.move.form.lost.court</field>
+        <field name="model">account.move</field>
+        <field name="inherit_id" ref="account.view_move_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//header" position="inside">
+                <button name="action_open_lost_court_wizard" type="object"
+                        string="จ่ายค่าปรับหายตามศาล" class="btn-primary"
+                        invisible="state != 'draft' or not lost_court_is_lost_reason"/>
+            </xpath>
+
+            <xpath expr="//group[@id='header_right_group']" position="inside">
+                <field name="lost_court_is_lost_reason" invisible="1"/>
+                <field name="lost_court_installment_no" readonly="1"
+                       invisible="not lost_court_amount"/>
+                <field name="lost_court_amount" readonly="1"
+                       invisible="not lost_court_amount"/>
+                <field name="lost_court_diff" readonly="1"
+                       invisible="not lost_court_amount"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- คอลัมน์ในหน้ารายการใบแจ้งหนี้ (ซ่อนได้จากปุ่มเลือกคอลัมน์) -->
+    <record id="view_move_tree_lost_court" model="ir.ui.view">
+        <field name="name">account.move.list.lost.court</field>
+        <field name="model">account.move</field>
+        <field name="inherit_id" ref="account.view_invoice_tree"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='invoice_origin']" position="after">
+                <field name="lost_court_installment_no" string="งวดที่ (ศาล)"
+                       optional="hide"/>
+                <field name="lost_court_amount" string="ยอดตามศาล" optional="hide"/>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>
