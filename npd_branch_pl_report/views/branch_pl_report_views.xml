@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+
+        <!-- Wizard Form: เลือก ปี + สาขา -->
+        <record id="view_npd_branch_pl_report_form" model="ir.ui.view">
+            <field name="name">npd.branch.pl.report.form</field>
+            <field name="model">npd.branch.pl.report</field>
+            <field name="arch" type="xml">
+                <form string="งบรายรับ-รายจ่ายรายสาขา">
+                    <group>
+                        <group>
+                            <field name="year"/>
+                        </group>
+                        <group>
+                            <field name="branch_id"/>
+                        </group>
+                    </group>
+                    <footer>
+                        <button name="action_generate_report" string="ดูรายงาน"
+                                type="object" class="btn-primary"/>
+                        <button string="ยกเลิก" class="btn-secondary" special="cancel"/>
+                    </footer>
+                </form>
+            </field>
+        </record>
+
+        <!-- Tree: บัญชี x 12 เดือน + รวม -->
+        <record id="view_npd_branch_pl_report_line_list" model="ir.ui.view">
+            <field name="name">npd.branch.pl.report.line.list</field>
+            <field name="model">npd.branch.pl.report.line</field>
+            <field name="arch" type="xml">
+                <list string="งบรายรับ-รายจ่ายรายสาขา" create="false" edit="false"
+                      delete="false"
+                      decoration-bf="row_type in ('total_expense','net')"
+                      decoration-info="row_type == 'net'">
+                    <field name="row_type" invisible="1"/>
+                    <field name="name"/>
+                    <field name="m01"/>
+                    <field name="m02"/>
+                    <field name="m03"/>
+                    <field name="m04"/>
+                    <field name="m05"/>
+                    <field name="m06"/>
+                    <field name="m07"/>
+                    <field name="m08"/>
+                    <field name="m09"/>
+                    <field name="m10"/>
+                    <field name="m11"/>
+                    <field name="m12"/>
+                    <field name="total"/>
+                </list>
+            </field>
+        </record>
+
+        <!-- Action เปิด Wizard -->
+        <record id="action_npd_branch_pl_report" model="ir.actions.act_window">
+            <field name="name">งบรายรับ-รายจ่ายรายสาขา</field>
+            <field name="res_model">npd.branch.pl.report</field>
+            <field name="view_mode">form</field>
+            <field name="target">new</field>
+        </record>
+
+        <!-- Menu ใต้ บัญชี > รายงาน -->
+        <menuitem id="menu_npd_branch_pl_report"
+                  name="งบรายรับ-รายจ่ายรายสาขา"
+                  action="action_npd_branch_pl_report"
+                  parent="account.menu_finance_reports"
+                  sequence="1000"/>
+
+    </data>
+</odoo>

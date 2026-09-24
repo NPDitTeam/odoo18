@@ -1,0 +1,5 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_npd_branch_pl_report,npd.branch.pl.report,model_npd_branch_pl_report,account.group_account_user,1,1,1,1
+access_npd_branch_pl_report_line,npd.branch.pl.report.line,model_npd_branch_pl_report_line,account.group_account_user,1,1,1,1
+access_npd_branch_pl_exclusion,npd.branch.pl.exclusion,model_npd_branch_pl_exclusion,account.group_account_user,1,0,0,0
+access_npd_branch_pl_exclusion_mgr,npd.branch.pl.exclusion.manager,model_npd_branch_pl_exclusion,account.group_account_manager,1,1,1,1

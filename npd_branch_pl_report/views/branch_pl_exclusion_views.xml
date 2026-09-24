@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+
+        <record id="view_npd_branch_pl_exclusion_list" model="ir.ui.view">
+            <field name="name">npd.branch.pl.exclusion.list</field>
+            <field name="model">npd.branch.pl.exclusion</field>
+            <field name="arch" type="xml">
+                <list string="บัญชีที่ไม่แสดงในงบรายสาขา" decoration-muted="not active">
+                    <field name="branch_id"/>
+                    <field name="account_count" string="จำนวนบัญชีที่ตัดออก"/>
+                    <field name="account_ids" widget="many2many_tags"
+                           options="{'no_create': True}"/>
+                    <field name="note" optional="hide"/>
+                    <field name="active" optional="hide"/>
+                </list>
+            </field>
+        </record>
+
+        <record id="view_npd_branch_pl_exclusion_form" model="ir.ui.view">
+            <field name="name">npd.branch.pl.exclusion.form</field>
+            <field name="model">npd.branch.pl.exclusion</field>
+            <field name="arch" type="xml">
+                <form string="บัญชีที่ไม่แสดงในงบรายสาขา">
+                    <sheet>
+                        <widget name="web_ribbon" title="ปิดใช้งาน" bg_color="bg-danger"
+                                invisible="active"/>
+                        <div class="alert alert-info" role="alert">
+                            บัญชีที่เลือกไว้จะ<b>ไม่ถูกนำมาแสดง และไม่ถูกนับใน
+                            "รวมรายจ่าย" กับ "คงเหลือ"</b> ของสาขานี้<br/>
+                            สาขาที่ไม่ได้ตั้งค่าไว้ รายงานจะออกเหมือนเดิมทุกประการ
+                        </div>
+                        <group>
+                            <group>
+                                <field name="branch_id"
+                                       options="{'no_create': True}"/>
+                                <field name="account_count"/>
+                            </group>
+                            <group>
+                                <field name="active"/>
+                            </group>
+                        </group>
+                        <group string="บัญชีที่ไม่ต้องแสดง">
+                            <field name="account_ids" nolabel="1"
+                                   options="{'no_create': True}">
+                                <list string="บัญชี">
+                                    <field name="code"/>
+                                    <field name="name"/>
+                                    <field name="account_type"/>
+                                </list>
+                            </field>
+                        </group>
+                        <group string="หมายเหตุ">
+                            <field name="note" nolabel="1"
+                                   placeholder="เช่น ใครสั่งให้ตัดออก และตั้งแต่เมื่อไร"/>
+                        </group>
+                    </sheet>
+                </form>
+            </field>
+        </record>
+
+        <record id="view_npd_branch_pl_exclusion_search" model="ir.ui.view">
+            <field name="name">npd.branch.pl.exclusion.search</field>
+            <field name="model">npd.branch.pl.exclusion</field>
+            <field name="arch" type="xml">
+                <search string="ค้นหา">
+                    <field name="branch_id"/>
+                    <field name="account_ids"/>
+                    <filter string="ปิดใช้งาน" name="inactive"
+                            domain="[('active', '=', False)]"/>
+                    <group expand="0" string="จัดกลุ่มตาม">
+                        <filter string="สาขา" name="g_branch"
+                                context="{'group_by': 'branch_id'}"/>
+                    </group>
+                </search>
+            </field>
+        </record>
+
+        <record id="action_npd_branch_pl_exclusion" model="ir.actions.act_window">
+            <field name="name">ตั้งค่าบัญชีที่ไม่แสดง (งบรายสาขา)</field>
+            <field name="res_model">npd.branch.pl.exclusion</field>
+            <field name="view_mode">list,form</field>
+            <field name="help" type="html">
+                <p class="o_view_nocontent_smiling_face">
+                    ยังไม่มีสาขาไหนตั้งค่าไว้
+                </p>
+                <p>
+                    กดสร้างเพื่อเลือกสาขา แล้วระบุบัญชีที่ไม่ต้องการให้แสดงในงบ
+                    รายรับ-รายจ่ายของสาขานั้น สาขาที่ไม่ได้ตั้งค่าไว้
+                    รายงานจะออกเหมือนเดิม
+                </p>
+            </field>
+        </record>
+
+        <menuitem id="menu_npd_branch_pl_exclusion"
+                  name="ตั้งค่าบัญชีที่ไม่แสดง (งบรายสาขา)"
+                  action="action_npd_branch_pl_exclusion"
+                  parent="account.menu_finance_reports"
+                  sequence="1001"/>
+
+    </data>
+</odoo>
