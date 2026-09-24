@@ -31,3 +31,4 @@ access_welfare_fund_report_payroll,welfare.fund.report payroll,model_welfare_fun
 access_welfare_fund_report_manager,welfare.fund.report manager,model_welfare_fund_report,npd_hrms_base.group_hrms_manager,1,1,1,1
 access_welfare_fund_report_line_payroll,welfare.fund.report.line payroll,model_welfare_fund_report_line,npd_hrms_base.group_hrms_payroll,1,1,1,1
 access_welfare_fund_report_line_manager,welfare.fund.report.line manager,model_welfare_fund_report_line,npd_hrms_base.group_hrms_manager,1,1,1,1
+access_employee_suspension,employee.suspension,model_employee_suspension,base.group_user,1,1,1,1

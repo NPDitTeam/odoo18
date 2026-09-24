@@ -27,6 +27,18 @@ API_ROOT = '/api/hrms/v1'
 JSON_CT = 'application/json; charset=utf-8'
 
 
+THAI_MONTHS_ABBR = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.',
+                    'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.']
+
+
+def _thai_date(value):
+    """2026-09-18 -> '18 ก.ย. 2569' (พ.ศ.) ให้แอปแสดงได้เลย"""
+    if not value:
+        return ''
+    return '%d %s %d' % (value.day, THAI_MONTHS_ABBR[value.month - 1],
+                         value.year + 543)
+
+
 def _json(payload, status=200):
     return Response(
         json.dumps(payload, ensure_ascii=False, default=str),
@@ -378,6 +390,36 @@ class HrmsApiController(http.Controller):
     # ==================================================================
     # ลงเวลา
     # ==================================================================
+    @http.route(f'{API_ROOT}/suspension', type='http', auth='public',
+                methods=['GET', 'OPTIONS'], csrf=False, cors='*')
+    def suspension_status(self, **kwargs):
+        """สถานะพักงานของผู้ใช้ที่ล็อกอินอยู่ ณ วันนี้
+
+        แอปเรียกก่อนเข้าหน้าลงเวลา ถ้าถูกพักงานจะไม่แสดงปุ่มลงเวลา
+        คืนวันที่แบบ พ.ศ. มาด้วยเพื่อให้แอปเอาไปแสดงได้เลยโดยไม่ต้องแปลงเอง
+        """
+        @self._guard
+        def run():
+            employee = self._current_employee(_payload())
+            today = fields.Date.context_today(employee)
+            order = request.env['employee.suspension'].sudo().suspension_on(
+                employee, today)
+            if not order:
+                return _ok('', {'is_suspended': False, 'date': str(today)})
+            return _ok('', {
+                'is_suspended': True,
+                'date': str(today),
+                'date_start': str(order.date_start),
+                'date_end': str(order.date_end),
+                'date_start_display': _thai_date(order.date_start),
+                'date_end_display': _thai_date(order.date_end),
+                'day_count': order.day_count,
+                'days_remaining': max((order.date_end - today).days + 1, 0),
+                'reason': order.reason or '',
+                'note': order.note or '',
+            })
+        return run()
+
     @http.route(f'{API_ROOT}/checkin/status', type='http', auth='public',
                 methods=['GET', 'OPTIONS'], csrf=False, cors='*')
     def checkin_status(self, **kwargs):

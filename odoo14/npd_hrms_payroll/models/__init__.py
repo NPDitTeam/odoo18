@@ -12,3 +12,4 @@ from . import employee_warning_auto
 from . import welfare_fund
 from . import welfare_fund_report
 from . import pnd1_payroll_sync
+from . import employee_suspension

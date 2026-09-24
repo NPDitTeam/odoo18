@@ -185,6 +185,14 @@ class PayrollSalary(models.Model):
     lateness_deduction = fields.Float(string='ยอดหักรวม (สาย/ลา/ขาด)', readonly=True)
     leave_deduction_total = fields.Float(string='ยอดหักจากการลา', readonly=True)
 
+    # พักงาน — กรอกจริงที่แท็บ "พักงาน" ของพนักงาน ที่นี่แสดงผลอย่างเดียว
+    suspension_days = fields.Integer(string='จำนวนวันพักงาน (ในรอบนี้)', readonly=True)
+    suspension_deduction = fields.Float(string='ยอดหักพักงาน', readonly=True)
+    suspension_worked_days = fields.Integer(
+        string='วันที่ยังลงเวลาทั้งที่ถูกพักงาน', readonly=True,
+        help='ถูกพักงานแล้วแต่ยังมาลงเวลา ระบบยังหักตามคำสั่งพักงานเท่าเดิม '
+             'ตัวเลขนี้มีไว้ให้ HR ตรวจสอบ')
+
     late_checkin_minutes = fields.Float(string='รวมเวลาสาย (นาที)', readonly=True)
     early_checkout_minutes = fields.Float(string='รวมเวลาออกก่อน (นาที)', readonly=True)
     lateness_minutes = fields.Float(string='รวมเวลาสาย+ออกก่อน (นาที)', readonly=True)
@@ -734,8 +742,12 @@ class PayrollSalary(models.Model):
             self.missed_days_deduction = att['absent_deduction_total']
             self.deduction_late = att['late_deduction']
             self.deduction_leave = att['leave_deduction_total']
+            self.suspension_days = att['suspension_days']
+            self.suspension_worked_days = att['suspension_worked_days']
+            self.suspension_deduction = att['suspension_deduction']
             self.lateness_deduction = (self.deduction_late + self.deduction_leave
-                                       + self.deduction_absent)
+                                       + self.deduction_absent
+                                       + self.suspension_deduction)
             self._rebuild_deduction_lines(att)
 
         # ---------- ประกันสังคม ----------
@@ -834,6 +846,9 @@ class PayrollSalary(models.Model):
             ('หักสาย', self.deduction_late),
             ('หักลากิจ', self.deduction_leave),
             ('หักขาดงาน', self.missed_days_deduction),
+            # ต้องมีบรรทัดของตัวเอง ไม่งั้นยอดโชว์แต่ไม่ถูกหักจากเงินเดือนจริง
+            # (วันพักงานถูกถอดออกจากหักขาดงานไปแล้ว)
+            ('หักพักงาน', self.suspension_deduction),
             ('ประกันสังคม', sso_amount),
             ('ภาษีหัก ณ ที่จ่าย', tax_amount),
         ]
@@ -882,6 +897,17 @@ class PayrollSalary(models.Model):
             vals.append({
                 'date': day, 'kind': 'absent', 'detail': 'ขาดงานเต็มวัน',
                 'minutes': 0.0, 'amount': round_half_up(per_day),
+            })
+        for entry in att.get('suspension_log', []):
+            note = 'พักงาน'
+            if entry.get('still_checked_in'):
+                note = 'พักงาน (ยังลงเวลาอยู่ ถือว่าขาดงาน)'
+            elif entry.get('is_holiday'):
+                note = 'พักงาน (ตรงวันหยุด)'
+            vals.append({
+                'date': entry['date'], 'kind': 'suspension',
+                'detail': '%s — หัก %.0f%%' % (note, entry.get('percent') or 0.0),
+                'minutes': 0.0, 'amount': entry['amount'],
             })
         self.deduction_line_ids = [(0, 0, v) for v in sorted(vals, key=lambda v: v['date'])]
 
@@ -1154,6 +1180,7 @@ class PayrollDeductionLine(models.Model):
         ('early', 'ออกก่อนเวลา'),
         ('leave', 'ลา'),
         ('absent', 'ขาดงาน'),
+        ('suspension', 'พักงาน'),
     ], string='ประเภท', required=True)
     detail = fields.Char(string='รายละเอียด')
     minutes = fields.Float(string='นาที')

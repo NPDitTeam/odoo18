@@ -167,6 +167,8 @@ class PayrollAttendanceEngine(models.AbstractModel):
             'late_deduction': 0.0, 'early_deduction': 0.0,
             'absent_deduction': 0.0, 'absent_deduction_total': 0.0,
             'rate_per_day': 0.0, 'rate_per_hour': 0.0, 'rate_per_minute': 0.0,
+            'suspension_days': 0, 'suspension_worked_days': 0,
+            'suspension_deduction': 0.0, 'suspension_log': [],
         }
         if not schedule:
             _logger.warning('[LATENESS] ไม่พบตารางงานของ %s', employee.employee_code)
@@ -357,6 +359,13 @@ class PayrollAttendanceEngine(models.AbstractModel):
                         'shift_end': shift_end.strftime('%H:%M'),
                     })
 
+        # ---------- พักงาน ----------
+        # ตัดวันที่ถูกสั่งพักงานออกจากการคิดขาด/สาย/ออกก่อนเวลา/ลา ก่อนสรุปยอด
+        # ไม่งั้นวันเดียวกันจะโดนหักสองชั้น (ขาดงานเต็มวัน + พักงานอีกครึ่งวัน)
+        # แล้วคิดยอดพักงานแยกให้วันละ % ตามคำสั่ง รวมวันหยุดด้วย
+        self._apply_suspension(result, employee, date_from, date_to,
+                               per_day, holidays or [])
+
         result['missed_days'] = len(result['missed_log'])
         result['leave_deduction_total'] = round(result['leave_deduction_total'], 2)
         result['late_deduction'] = round_half_up(result['late_minutes'] * per_minute)
@@ -371,6 +380,89 @@ class PayrollAttendanceEngine(models.AbstractModel):
         return result
 
     @api.model
+    def _apply_suspension(self, result, employee, date_from, date_to,
+                          per_day, holidays):
+        """ตัดวันพักงานออกจากผลการคิดขาด/สาย/ลา แล้วคิดยอดพักงานแยก
+
+        พักงานเป็นคำสั่งของบริษัท ไม่ใช่ความผิดรายวัน จึงนับทุกวันในช่วงที่สั่ง
+        รวมวันหยุดและวันหยุดประจำสัปดาห์ด้วย และหักตาม % ที่ตั้งไว้ (ปกติ 50%)
+
+        วันไหนที่ยังมีการลงเวลาอยู่ (ถูกสั่งพักงานแล้วแต่ยังมาตอกบัตร)
+        ถือว่าขาดงานตามคำสั่งพักงาน หักเท่าเดิม และติดธงไว้ให้ HR เห็น
+        """
+        orders = self.env['employee.suspension'].suspensions_in_range(
+            employee, date_from, date_to)
+        if not orders:
+            return
+
+        percent_by_day = {}
+        for order in orders:
+            day = max(order.date_start, date_from)
+            last = min(order.date_end, date_to)
+            while day <= last:
+                percent_by_day[day] = order.deduct_percent
+                day += timedelta(days=1)
+        if not percent_by_day:
+            return
+
+        susp_iso = {d.isoformat() for d in percent_by_day}
+        holiday_iso = {
+            h.isoformat() if hasattr(h, 'isoformat') else str(h) for h in holidays}
+
+        def _keep(log, key='date'):
+            return [item for item in log if item.get(key) not in susp_iso]
+
+        leave_dates = {item.get('date') for item in result['leave_log']}
+        absent_dates = set(result['missed_log'])
+
+        result['late_log'] = _keep(result['late_log'])
+        result['early_log'] = _keep(result['early_log'])
+        result['leave_log'] = _keep(result['leave_log'])
+        result['missed_log'] = [d for d in result['missed_log'] if d not in susp_iso]
+
+        # สรุปยอดใหม่จาก log ที่เหลือ แทนการไล่ลบทีละก้อน จะได้ไม่มีโอกาสคลาดเคลื่อน
+        result['late_minutes'] = sum(i.get('minutes') or 0 for i in result['late_log'])
+        result['early_minutes'] = sum(i.get('minutes') or 0 for i in result['early_log'])
+        result['total_lateness_minutes'] = (
+            result['late_minutes'] + result['early_minutes'])
+        result['leave_deduction_total'] = sum(
+            i.get('deduction') or 0.0 for i in result['leave_log'])
+
+        schedule = self.env['hr.work.schedule'].sudo().search(
+            [('employee_id', '=', employee.id)], limit=1)
+        work_flags = []
+        if schedule:
+            work_flags = [schedule.work_mon, schedule.work_tue, schedule.work_wed,
+                          schedule.work_thu, schedule.work_fri, schedule.work_sat]
+        work_weekdays = ({i for i, on in enumerate(work_flags) if on}
+                         if work_flags else {0, 1, 2, 3, 4, 5})
+
+        total, worked = 0.0, 0
+        for day in sorted(percent_by_day):
+            percent = percent_by_day[day] or 0.0
+            amount = per_day * (percent / 100.0)
+            total += amount
+            iso = day.isoformat()
+            is_workday = day.weekday() in work_weekdays and iso not in holiday_iso
+            still_in = is_workday and iso not in absent_dates and iso not in leave_dates
+            if still_in:
+                worked += 1
+            result['suspension_log'].append({
+                'date': iso,
+                'amount': round(amount, 2),
+                'percent': percent,
+                'still_checked_in': still_in,
+                'is_holiday': iso in holiday_iso or not is_workday,
+            })
+
+        result['suspension_days'] = len(percent_by_day)
+        result['suspension_worked_days'] = worked
+        result['suspension_deduction'] = round_half_up(total)
+        _logger.info(
+            '[SUSPENSION] %s: พักงาน %d วัน หัก %.2f | ยังลงเวลา %d วัน',
+            employee.employee_code, len(percent_by_day),
+            result['suspension_deduction'], worked)
+
     def _leave_deduction(self, policy, per_day, shift_start, shift_end,
                          leave_start, leave_end):
         """เงินหักจากการลาหนึ่งใบ
