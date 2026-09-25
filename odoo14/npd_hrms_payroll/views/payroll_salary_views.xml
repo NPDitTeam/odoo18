@@ -68,16 +68,24 @@
                             <field name="company_id" groups="base.group_multi_company"/>
                         </group>
                     </group>
-                    <group>
-                        <group>
-                            <field name="total_gross" readonly="not manual_override"/>
-                            <field name="total_deduction" readonly="not manual_override"/>
-                        </group>
-                        <group>
-                            <field name="net_salary" readonly="not manual_override"
-                                   class="oe_subtotal_footer_separator"/>
-                            <field name="manual_override"/>
-                        </group>
+                    <!-- สรุปยอดท้ายสลิป เรียงลำดับและใช้ชื่อเดียวกับฝั่ง Odoo 14
+                         เดิมฝั่ง 18 โชว์แค่รวมรายได้/รวมรายจ่าย/เงินสุทธิ ส่วนค่าตัว
+                         นักแสดง เงินได้อื่นๆ และเงินเดือน ไปซ่อนอยู่ในแท็บรายได้
+                         คนทำเงินเดือนจึงไล่ตัวเลขไม่ออกว่ารวมรายได้มาจากไหน -->
+                    <group class="oe_subtotal_footer oe_right">
+                        <field name="manual_override" string="ปรับแก้ยอดรวมด้วยมือ"/>
+                        <field name="actor_content_total" widget="monetary" readonly="1"/>
+                        <field name="other_income_total" string="เงินได้อื่นๆ (รวม)"
+                               widget="monetary" readonly="1"/>
+                        <field name="base_salary" string="เงินเดือน"
+                               widget="monetary" readonly="1"/>
+                        <field name="total_gross" string="รวมรายได้"
+                               readonly="not manual_override"/>
+                        <field name="total_deduction" string="รวมรายจ่าย"
+                               readonly="not manual_override"/>
+                        <field name="net_salary" string="เงินสุทธิ"
+                               readonly="not manual_override"
+                               class="oe_subtotal_footer_separator"/>
                     </group>
 
                     <notebook>
