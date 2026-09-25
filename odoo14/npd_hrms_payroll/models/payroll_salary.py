@@ -21,7 +21,7 @@ from datetime import date
 from dateutil.relativedelta import relativedelta
 
 from odoo import models, fields, api, _
-from odoo.exceptions import UserError
+from odoo.exceptions import UserError, ValidationError
 
 from .payroll_attendance_engine import round_half_up
 
@@ -962,6 +962,43 @@ class PayrollSalary(models.Model):
             'rate': bracket.rate,
             'deduction': bracket.deduction,
         }) for bracket in policy.tax_bracket_ids]
+
+    # ── ห้ามสร้างสลิปให้คนที่ลาออกไปก่อนรอบนี้จะเริ่ม ────────────────────────
+    # เคสจริง: พนักงานลาออก 24 ส.ค. (วันสุดท้ายของรอบเดือน 8) แต่ยังถูกสร้าง
+    # สลิปรอบเดือน 9 (25 ส.ค.–24 ก.ย.) ขึ้นมา รายได้เป็นศูนย์แต่ยังหัก กยศ.
+    # และประกันสังคม ทำให้ยอดสุทธิติดลบและไปโผล่ในรายงานเงินเดือน
+    #
+    # ``payroll.period._is_eligible_employee`` กันไว้แล้ว แต่กันได้เฉพาะทาง
+    # การสร้างรอบ — กฎนี้อยู่ที่ตัวโมเดลจึงกันครบทุกทาง ทั้งสร้างมือ สร้างผ่าน
+    # API และการแก้งวด/สลับพนักงานบนสลิปที่มีอยู่แล้ว
+    #
+    # ยกเว้นสองกรณี
+    #   - ``npd_hrms_sync``  ตัวซิงก์ยกสลิปเก่าจากฝั่ง 14 มาเป็นประวัติ
+    #     ฝั่ง 14 ตัดสินไปแล้วว่าใบไหนถูกต้อง ห้ามให้ฝั่ง 18 มาตีกลับ
+    #   - ``skip_resign_cycle_check``  HR จงใจออกสลิปย้อนหลังเอง
+    @api.constrains('employee_id', 'month', 'year', 'cutoff_day')
+    def _check_resigned_before_cycle(self):
+        if self.env.context.get('skip_resign_cycle_check') \
+                or self.env.context.get('npd_hrms_sync'):
+            return
+        for rec in self:
+            employee = rec.employee_id
+            if not employee or not employee.resign_date:
+                continue
+            cycle_start, _cycle_end = rec._cycle_window()
+            if not cycle_start:
+                continue
+            if employee.resign_date < cycle_start:
+                raise ValidationError(_(
+                    'สร้างรายการเงินเดือนงวด %(month)s/%(year)s ให้ %(name)s '
+                    '(%(code)s) ไม่ได้ เพราะลาออกวันที่ %(resign)s ซึ่งก่อน'
+                    'วันเริ่มรอบ %(start)s — รอบเงินเดือนสุดท้ายของพนักงาน'
+                    'คนนี้ถูกตัดจ่ายไปแล้ว',
+                    month=rec.month, year=rec.year,
+                    name=employee.firstname or '',
+                    code=employee.employee_code or '',
+                    resign=employee.resign_date.strftime('%d/%m/%Y'),
+                    start=cycle_start.strftime('%d/%m/%Y')))
 
     @api.model_create_multi
     def create(self, vals_list):
