@@ -500,8 +500,11 @@ class HrmsApiController(http.Controller):
         @self._guard
         def run():
             employee = self._current_employee(_payload())
-            types = request.env['hrms.leave.type'].sudo().search(
-                [('company_id', '=', (employee.company_id or request.env.company).id)])
+            # ประเภทการลาใช้ร่วมกันทุกบริษัท เหมือนฝั่ง Odoo 14 ที่มีรายการเดียว
+            # เดิมกรองด้วยบริษัทของพนักงาน แต่ตอนยกข้อมูลมาประเภทการลาทั้งหมด
+            # ไปอยู่ใต้บริษัทเดียว พนักงาน 217 จาก 239 คนจึงเปิดแอปแล้วไม่เห็น
+            # ประเภทการลาเลย ยื่นใบลาไม่ได้
+            types = request.env['hrms.leave.type'].sudo().search([])
             return _ok('', [{
                 'id': leave_type.id,
                 'code': leave_type.code or '',

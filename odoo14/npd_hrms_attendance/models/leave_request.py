@@ -378,12 +378,16 @@ class HrAttendanceBranchLeave(models.Model):
         """รับได้ทั้งชื่อไทย รหัสอ้างอิง และ id — แอปเวอร์ชันต่างกันส่งไม่เหมือนกัน"""
         LeaveType = self.env['hrms.leave.type'].sudo()
         company = employee.company_id or self.env.company
-        domain_base = [('company_id', '=', company.id)]
-        if isinstance(leave_type, int):
-            record = LeaveType.browse(leave_type)
-            if record.exists():
-                return record
-        else:
+        # หาในบริษัทตัวเองก่อน ไม่เจอค่อยหาข้ามบริษัท
+        # ฝั่ง Odoo 14 มีประเภทการลาชุดเดียวใช้ร่วมกันทั้งองค์กร พอยกมาฝั่ง 18
+        # ประเภทการลาทั้งหมดไปอยู่ใต้บริษัทเดียว ถ้าบังคับให้ตรงบริษัทเป๊ะ
+        # พนักงานอีก 4 บริษัทจะยื่นใบลาไม่ได้เลย ทั้งที่แอปแสดงรายการให้เลือก
+        for domain_base in ([('company_id', '=', company.id)], []):
+            if isinstance(leave_type, int):
+                record = LeaveType.browse(leave_type)
+                if record.exists():
+                    return record
+                break
             text = str(leave_type or '').strip()
             record = LeaveType.search(domain_base + [('name', '=', text)], limit=1)
             if not record:

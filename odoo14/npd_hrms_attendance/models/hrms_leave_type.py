@@ -193,9 +193,13 @@ class HrmsLeaveBalance(models.Model):
         """
         year = year or fields.Date.context_today(self).year
         today = fields.Date.context_today(self)
+        # ประเภทการลาใช้ร่วมกันทุกบริษัทเหมือนฝั่ง Odoo 14 — บริษัทไหนยังไม่ได้
+        # ตั้งประเภทของตัวเอง ให้ใช้ชุดที่มีอยู่ ไม่งั้นพนักงานบริษัทนั้นจะไม่มี
+        # สิทธิ์การลาให้ตัดเลยสักประเภท
         company = employee.company_id or self.env.company
-        types = self.env['hrms.leave.type'].sudo().search(
-            [('company_id', '=', company.id)])
+        LeaveType = self.env['hrms.leave.type'].sudo()
+        types = LeaveType.search([('company_id', '=', company.id)]) \
+            or LeaveType.search([])
         for leave_type in types:
             balance = self._get_or_create(employee, leave_type, year)
             entitled = leave_type._entitled_days(employee.start_date, today)
@@ -210,8 +214,10 @@ class HrmsLeaveBalance(models.Model):
         """หารายการสิทธิ์จากรหัสประเภท (เช่น 'leave_vacation')"""
         year = year or fields.Date.context_today(self).year
         company = employee.company_id or self.env.company
-        leave_type = self.env['hrms.leave.type'].sudo().search([
-            ('code', '=', code), ('company_id', '=', company.id)], limit=1)
+        LeaveType = self.env['hrms.leave.type'].sudo()
+        leave_type = LeaveType.search([
+            ('code', '=', code), ('company_id', '=', company.id)], limit=1) \
+            or LeaveType.search([('code', '=', code)], limit=1)
         if not leave_type:
             return self.browse()
         return self._get_or_create(employee, leave_type, year)
@@ -222,8 +228,11 @@ class HrmsLeaveBalance(models.Model):
         if not type_name:
             return self.browse()
         company = employee.company_id or self.env.company
-        leave_type = self.env['hrms.leave.type'].sudo().search([
-            ('name', '=', type_name.strip()), ('company_id', '=', company.id)], limit=1)
+        LeaveType = self.env['hrms.leave.type'].sudo()
+        leave_type = LeaveType.search([
+            ('name', '=', type_name.strip()),
+            ('company_id', '=', company.id)], limit=1) \
+            or LeaveType.search([('name', '=', type_name.strip())], limit=1)
         if not leave_type:
             return self.browse()
         return self._get_or_create(employee, leave_type, year)

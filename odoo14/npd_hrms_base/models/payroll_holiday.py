@@ -80,6 +80,12 @@ class PayrollHoliday(models.Model):
         company_id = company_id or self.env.company.id
         template = self.sudo().search([
             ('year', '=', int(year)), ('company_id', '=', company_id)], limit=1)
+        # บริษัทที่ยังไม่ได้ตั้งวันหยุดของตัวเอง ให้ใช้ปฏิทินของปีนั้นที่มีอยู่แทน
+        # ฝั่ง Odoo 14 มีปฏิทินวันหยุดชุดเดียวใช้ร่วมกันทั้งองค์กร พอยกมาฝั่ง 18
+        # ปฏิทินไปอยู่ใต้บริษัทเดียว อีก 4 บริษัทจึงเปิดแอปแล้วไม่เห็นวันหยุดเลย
+        # พอบริษัทไหนตั้งปฏิทินของตัวเองแล้ว จะใช้ของตัวเองทันทีโดยไม่ต้องแก้โค้ด
+        if not template:
+            template = self.sudo().search([('year', '=', int(year))], limit=1)
         return [{
             'date': line.date.isoformat(),
             'name': line.name or '',

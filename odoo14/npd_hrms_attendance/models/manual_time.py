@@ -277,12 +277,15 @@ class HrManualTimeLog(models.Model):
     def _resolve_reason_type(self, employee, reason_type):
         Reason = self.env['hrms.manual.time.reason'].sudo()
         company = employee.company_id or self.env.company
-        domain = [('company_id', '=', company.id)]
-        if isinstance(reason_type, int):
-            record = Reason.browse(reason_type)
-            if record.exists():
-                return record
-        else:
+        # หาในบริษัทตัวเองก่อน ไม่เจอค่อยหาข้ามบริษัท — เหตุผลเดียวกับประเภทการลา
+        # ประเภทการเพิ่มเวลาที่ยกมาจากฝั่ง 14 อยู่ใต้บริษัทเดียว ถ้าบังคับให้ตรง
+        # บริษัทเป๊ะ พนักงานบริษัทอื่นจะขอลงเวลาย้อนหลังไม่ได้เลย
+        for domain in ([('company_id', '=', company.id)], []):
+            if isinstance(reason_type, int):
+                record = Reason.browse(reason_type)
+                if record.exists():
+                    return record
+                break
             text = str(reason_type or '').strip()
             record = Reason.search(domain + [('name', '=', text)], limit=1)
             if not record:
