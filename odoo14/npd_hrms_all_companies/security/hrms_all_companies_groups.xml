@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="0">
+
+        <!-- หมวดของตัวเองที่มีสิทธิ์เดียว เพื่อให้หน้าตั้งค่าผู้ใช้แสดงเป็นช่องติ๊ก
+             ถ้าเอาไปรวมกับหมวดที่มีหลายสิทธิ์ จะกลายเป็นรายการให้เลือกอย่างใดอย่างหนึ่ง -->
+        <record id="module_category_hrms_all_companies" model="ir.module.category">
+            <field name="name">ระบบบุคคล — ขอบเขตบริษัท</field>
+            <field name="description">กำหนดว่าผู้ใช้เห็นข้อมูลบุคคลของบริษัทไหนบ้าง</field>
+            <field name="sequence">50</field>
+        </record>
+
+        <record id="group_hrms_all_companies" model="res.groups">
+            <field name="name">เห็นข้อมูลบุคคลทุกบริษัท</field>
+            <field name="category_id" ref="module_category_hrms_all_companies"/>
+            <field name="comment">ติ๊กช่องนี้แล้วจะเห็นข้อมูลระบบบุคคลของทุกบริษัทพร้อมกัน
+โดยไม่ต้องสลับบริษัทที่มุมขวาบน ครอบคลุมข้อมูลพนักงาน การลงเวลา การลา
+สลิปเงินเดือน ค่ารักษาพยาบาล และเงินประกันการทำงาน
+
+ไม่ติ๊ก = เห็นเฉพาะบริษัทที่เปิดใช้งานอยู่ เหมือนเดิม</field>
+        </record>
+
+    </data>
+</odoo>

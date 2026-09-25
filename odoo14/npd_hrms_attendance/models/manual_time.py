@@ -46,7 +46,9 @@ class HrmsManualTimeReason(models.Model):
     active = fields.Boolean(string='ใช้งาน', default=True)
     company_id = fields.Many2one(
         'res.company', string='บริษัท', required=True,
-        default=lambda self: self.env.company)
+        default=lambda self: self.env.company,
+        help='บริษัทที่เป็นเจ้าของรายการนี้ เก็บไว้ให้รู้ว่าใครเป็นคนตั้ง\n'
+             'แต่พนักงานทุกบริษัทเลือกใช้ได้ เพราะใช้ชุดเดียวกันทั้งเครือ')
 
     requires_amount = fields.Boolean(
         string='ต้องกรอกจำนวนเงิน',

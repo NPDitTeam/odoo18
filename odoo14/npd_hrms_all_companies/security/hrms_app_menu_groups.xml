@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    ช่องติ๊กคุมว่าใครเห็นเมนูแอปไหนบ้าง
+
+    เดิมเมนู "ระบบบุคคล" ผูกกับกลุ่มพนักงาน และ "ปล่อยเช่าระบบ" ผูกกับกลุ่ม
+    ผู้ดูแลระบบ ซึ่งเป็นกลุ่มที่ใช้ทำอย่างอื่นด้วย การจะให้ใครเห็นหรือไม่เห็น
+    จึงต้องไปยุ่งกับสิทธิ์ด้านอื่นของเขาไปพร้อมกัน
+
+    ที่นี่แยกออกมาเป็นช่องติ๊กของตัวเอง ติ๊กแล้วเห็น ไม่ติ๊กก็ไม่เห็น
+    โดยไม่กระทบสิทธิ์อื่น และอยู่ในหน้าเดียวกับช่อง "เห็นข้อมูลบุคคลทุกบริษัท"
+    จะได้ตั้งค่าคนหนึ่งคนจบในที่เดียว
+-->
+<odoo>
+    <data noupdate="0">
+
+        <record id="module_category_hrms_app_menu" model="ir.module.category">
+            <field name="name">เมนูแอปที่มองเห็น</field>
+            <field name="description">กำหนดว่าผู้ใช้เห็นเมนูแอปไหนบ้างบนหน้าแรก</field>
+            <field name="sequence">51</field>
+        </record>
+
+        <record id="group_show_hrms_app" model="res.groups">
+            <field name="name">เห็นเมนู "ระบบบุคคล"</field>
+            <field name="category_id" ref="module_category_hrms_app_menu"/>
+            <field name="comment">ติ๊กแล้วจะเห็นแอป "ระบบบุคคล" บนหน้าแรก
+ไม่ติ๊กก็จะไม่เห็นแอปนี้ แต่สิทธิ์อื่นยังเหมือนเดิมทุกอย่าง</field>
+        </record>
+
+        <record id="group_show_saas_app" model="res.groups">
+            <field name="name">เห็นเมนู "ปล่อยเช่าระบบ"</field>
+            <field name="category_id" ref="module_category_hrms_app_menu"/>
+            <field name="comment">ติ๊กแล้วจะเห็นแอป "ปล่อยเช่าระบบ" บนหน้าแรก
+ไม่ติ๊กก็จะไม่เห็นแอปนี้ แต่สิทธิ์อื่นยังเหมือนเดิมทุกอย่าง</field>
+        </record>
+
+        <!-- ย้ายเมนูมาคุมด้วยช่องติ๊กข้างบนแทนกลุ่มเดิม
+             ใช้ (6,0,[...]) เพื่อแทนที่ทั้งชุด ไม่ใช่เพิ่มเข้าไป เพราะ Odoo ถือว่า
+             อยู่กลุ่มใดกลุ่มหนึ่งก็เห็นแล้ว ถ้าเหลือกลุ่มเดิมไว้ ช่องติ๊กจะไม่มีผล -->
+        <record id="npd_hrms_base.menu_npd_hrms_root" model="ir.ui.menu">
+            <field name="groups_id" eval="[(6, 0, [ref('group_show_hrms_app')])]"/>
+        </record>
+
+        <record id="npd_saas_manager.menu_saas_root" model="ir.ui.menu">
+            <field name="groups_id" eval="[(6, 0, [ref('group_show_saas_app')])]"/>
+        </record>
+
+    </data>
+</odoo>
