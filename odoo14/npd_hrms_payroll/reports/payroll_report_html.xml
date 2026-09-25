@@ -1,0 +1,179 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    รายงานเงินเดือนแบบหน้าจอ — จัดหน้าแบบเดียวกับรายงานภาษีของระบบ
+
+    วางหัวรายงานเป็นตารางสรุปงวดไว้บนสุดเหมือนรายงานภาษี เพื่อให้เห็นได้ทันที
+    ว่าแผ่นที่ถืออยู่เป็นของงวดไหนบริษัทไหน ตอนพิมพ์ออกมาแล้ววางปนกันจะได้ไม่สับสน
+
+    ตารางกว้าง 30 คอลัมน์ จึงทำเป็นหน้าเว็บไม่ใช่ PDF เพราะ PDF จะบีบจนอ่านไม่ออก
+    หน้านี้เลื่อนแนวนอนได้ และหัวตารางค้างไว้ตอนเลื่อนลง
+
+    สีและลำดับแถบ (บริษัท > สาขา > แผนก > รวมแผนก > รวมทั้งหมด) ตรงกับรายงานเดิม
+    เพื่อให้คนที่ใช้อยู่ทุกเดือนอ่านได้ทันทีโดยไม่ต้องเรียนรู้ใหม่
+-->
+<odoo>
+
+    <template id="report_payroll_html_document">
+        <t t-call="web.html_container">
+            <t t-call="web.internal_layout">
+                <div class="page">
+                    <style>
+                        .npd-print-bar { margin-bottom: 12px; }
+                        .npd-print-bar button {
+                            border: 1px solid #b7b7b7; background: #f7f7f7;
+                            padding: 4px 14px; border-radius: 3px; cursor: pointer; }
+                        .npd-head { border-collapse: collapse; margin-bottom: 14px;
+                                    font-size: 12px; width: 100%; }
+                        .npd-head th, .npd-head td {
+                            border: 1px solid #b7b7b7; padding: 4px 10px;
+                            text-align: center; }
+                        .npd-head th { background: #f2f2f2; font-weight: bold; }
+                        .npd-report-title { font-size: 16px; font-weight: bold;
+                                            margin-bottom: 8px; }
+                        .npd-payroll-wrap { overflow-x: auto; }
+                        .npd-payroll { border-collapse: collapse; font-size: 11px;
+                                       white-space: nowrap; }
+                        .npd-payroll th, .npd-payroll td {
+                            border: 1px solid #b7b7b7; padding: 3px 6px; }
+                        .npd-payroll thead th {
+                            background: #4472C4; color: #fff; text-align: center;
+                            position: sticky; top: 0; white-space: normal;
+                            min-width: 72px; }
+                        .npd-payroll .npd-seq { text-align: center; min-width: 34px; }
+                        .npd-payroll .npd-num { text-align: right; }
+                        .npd-payroll .npd-company td { background: #D9E2F3; font-weight: bold; }
+                        .npd-payroll .npd-branch  td { background: #E2EFDA; }
+                        .npd-payroll .npd-dept    td { background: #FFF2CC; }
+                        .npd-payroll .npd-sum     td { background: #FCE4D6; font-weight: bold; }
+                        .npd-payroll .npd-grand   td { background: #4472C4; color: #fff;
+                                                       font-weight: bold; }
+                        @media print { .npd-print-bar { display: none; } }
+                    </style>
+
+                    <div class="npd-print-bar">
+                        <button type="button" onclick="window.print()">🖨 พิมพ์</button>
+                    </div>
+
+                    <t t-foreach="docs" t-as="doc">
+                        <div class="npd-report-title">รายงานเงินเดือน</div>
+
+                        <!-- หัวรายงาน: บอกงวดและขอบเขตของแผ่นนี้ แบบเดียวกับรายงานภาษี -->
+                        <table class="npd-head">
+                            <tr>
+                                <th style="width: 14%;">งวด</th>
+                                <th>บริษัท</th>
+                                <th style="width: 14%;">จำนวนพนักงาน</th>
+                                <th style="width: 18%;">ออกรายงานเมื่อ</th>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <span t-out="doc.month_name"/>
+                                    <span t-out="doc.year_th"/>
+                                </td>
+                                <td t-out="doc.company_id.name or 'ทุกบริษัท'"/>
+                                <td><span t-out="doc.employee_count"/> คน</td>
+                                <td t-out="doc.generated_at"
+                                    t-options="{'widget': 'datetime'}"/>
+                            </tr>
+                        </table>
+
+                        <div class="npd-payroll-wrap">
+                            <table class="npd-payroll">
+                                <thead>
+                                    <tr>
+                                        <th class="npd-seq">#</th>
+                                        <th>รหัสพนักงาน</th>
+                                        <th>ชื่อ-นามสกุล</th>
+                                        <t t-foreach="columns" t-as="col">
+                                            <th t-out="col[1]"/>
+                                        </t>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <t t-set="running" t-value="[0]"/>
+                                    <t t-foreach="grouped[doc.id]" t-as="company_name">
+                                        <tr class="npd-company">
+                                            <td t-att-colspan="col_count">
+                                                บริษัท : <span t-out="company_name"/>
+                                            </td>
+                                        </tr>
+                                        <t t-foreach="grouped[doc.id][company_name]" t-as="branch_name">
+                                            <tr class="npd-branch">
+                                                <td t-att-colspan="col_count">
+                                                    สำนักงานสาขา : <span t-out="branch_name"/>
+                                                </td>
+                                            </tr>
+                                            <t t-foreach="grouped[doc.id][company_name][branch_name]" t-as="dept_name">
+                                                <tr class="npd-dept">
+                                                    <td t-att-colspan="col_count">
+                                                        แผนก : <span t-out="dept_name"/>
+                                                    </td>
+                                                </tr>
+                                                <t t-set="lines"
+                                                   t-value="grouped[doc.id][company_name][branch_name][dept_name]"/>
+                                                <t t-foreach="lines" t-as="line">
+                                                    <tr>
+                                                        <td class="npd-seq"
+                                                            t-out="line_index + 1"/>
+                                                        <td t-out="line.employee_code or ''"/>
+                                                        <td t-out="line.employee_name or ''"/>
+                                                        <t t-foreach="columns" t-as="col">
+                                                            <td class="npd-num"
+                                                                t-out="line[col[0]]"
+                                                                t-options="{'widget': 'float', 'precision': 2}"/>
+                                                        </t>
+                                                    </tr>
+                                                </t>
+                                                <tr class="npd-sum">
+                                                    <td colspan="3">
+                                                        รวมเป็นจำนวนแผนก
+                                                        <span t-out="len(lines)"/> คน
+                                                    </td>
+                                                    <t t-foreach="columns" t-as="col">
+                                                        <td class="npd-num"
+                                                            t-out="sum(l[col[0]] for l in lines)"
+                                                            t-options="{'widget': 'float', 'precision': 2}"/>
+                                                    </t>
+                                                </tr>
+                                            </t>
+                                        </t>
+                                    </t>
+
+                                    <tr class="npd-grand">
+                                        <td colspan="3">
+                                            รวมทั้งหมด <span t-out="doc.employee_count"/> คน
+                                        </td>
+                                        <t t-foreach="columns" t-as="col">
+                                            <td class="npd-num"
+                                                t-out="sum(l[col[0]] for l in doc.line_ids)"
+                                                t-options="{'widget': 'float', 'precision': 2}"/>
+                                        </t>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </t>
+                </div>
+            </t>
+        </t>
+    </template>
+
+    <!-- หน้าจอรายงานในระบบ — แสดงตารางพร้อมแถบเครื่องมือ ไม่เด้งแท็บใหม่
+         แบบเดียวกับรายงานภาษีที่ใช้อยู่ฝั่ง Odoo 14 -->
+    <record id="action_payroll_report_backend" model="ir.actions.client">
+        <field name="name">รายงานเงินเดือน</field>
+        <field name="tag">npd_payroll_report_backend</field>
+        <field name="context" eval="{'active_model': 'payroll.report'}"/>
+    </record>
+
+    <!-- ตัวเดียวกันแต่สำหรับสั่งพิมพ์/ดาวน์โหลดเป็นไฟล์ -->
+    <record id="action_report_payroll_html" model="ir.actions.report">
+        <field name="name">รายงานเงินเดือน</field>
+        <field name="model">payroll.report</field>
+        <field name="report_type">qweb-html</field>
+        <field name="report_name">npd_hrms_payroll.report_payroll_html_document</field>
+        <field name="report_file">npd_hrms_payroll.report_payroll_html_document</field>
+        <field name="binding_model_id" eval="False"/>
+    </record>
+
+</odoo>

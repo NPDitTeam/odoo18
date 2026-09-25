@@ -307,7 +307,31 @@
                      แทน str() เพราะ JS evaluator ไม่มี builtin str() -->
                 <filter name="filter_this_year" string="ปีนี้"
                         domain="[('year', '=', context_today().strftime('%Y'))]"/>
+                <!-- ตัวกรองที่ใช้ประจำในระบบเดิม — เปิดหน้าจอมาแล้วเห็นงวดที่กำลัง
+                     ทำอยู่ทันที ไม่ต้องไล่กรองเองทุกครั้ง
+                     month/year เป็นฟิลด์ข้อความ จึงเทียบด้วย strftime ให้ได้เลข
+                     สองหลักและสี่หลักตรงกับที่เก็บไว้ -->
+                <filter name="filter_current_next_month" string="เดือนปัจจุบันและถัดไป"
+                        domain="['|',
+                                    '&amp;', ('month', '=', context_today().strftime('%m')),
+                                             ('year', '=', context_today().strftime('%Y')),
+                                    '&amp;', ('month', '=', (context_today() + relativedelta(months=1)).strftime('%m')),
+                                             ('year', '=', (context_today() + relativedelta(months=1)).strftime('%Y'))
+                                 ]"/>
+                <separator/>
+                <filter name="filter_has_commission" string="มีค่าคอมมิชชั่นสาขา"
+                        domain="[('income_commission', '&gt;', 0)]"/>
+                <filter name="filter_has_loan" string="มีเงินกู้"
+                        domain="[('expense_loan', '&gt;', 0)]"/>
+                <filter name="filter_has_absent" string="มีขาด/ลา/สาย"
+                        domain="['|', '|', ('deduction_late', '&gt;', 0),
+                                           ('deduction_leave', '&gt;', 0),
+                                           ('missed_days_deduction', '&gt;', 0)]"/>
                 <group expand="0" string="จัดกลุ่มตาม">
+                    <filter name="group_month" string="เดือน"
+                            context="{'group_by': 'month'}"/>
+                    <filter name="group_year" string="ปี"
+                            context="{'group_by': 'year'}"/>
                     <filter name="group_period" string="รอบ"
                             context="{'group_by': 'period_id'}"/>
                     <filter name="group_branch" string="สาขา"
@@ -326,6 +350,9 @@
         <field name="res_model">payroll.salary</field>
         <field name="view_mode">list,form</field>
         <field name="search_view_id" ref="view_payroll_salary_search"/>
+        <!-- เปิดหน้าจอมาให้เห็นงวดที่กำลังทำอยู่และจัดกลุ่มตามเดือนไว้เลย
+             แบบเดียวกับระบบเดิม คนทำเงินเดือนจะได้ไม่ต้องกรองเองทุกครั้ง -->
+        <field name="context">{'search_default_filter_current_next_month': 1, 'search_default_group_month': 1}</field>
         <field name="help" type="html">
             <p class="o_view_nocontent_smiling_face">ยังไม่มีสลิปเงินเดือน</p>
             <p>สร้างผ่านเมนู "รอบทำเงินเดือน" เพื่อทำทั้งบริษัททีเดียว</p>

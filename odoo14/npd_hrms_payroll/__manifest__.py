@@ -42,6 +42,9 @@ NPD HRMS - Payroll
         'views/payroll_salary_views.xml',
         'views/welfare_fund_views.xml',
         'views/welfare_fund_report_views.xml',
+        'reports/payroll_report_html.xml',
+        'wizard/payroll_report_wizard_views.xml',
+        'views/payroll_report_views.xml',
         'views/other_income_views.xml',
         'views/work_security_deposit_views.xml',
         'views/work_security_deposit_report_views.xml',
@@ -51,6 +54,12 @@ NPD HRMS - Payroll
         'reports/employee_warning_report.xml',
         'data/employee_warning_auto_cron.xml',
     ],
+    'assets': {
+        'web.assets_backend': [
+            'npd_hrms_payroll/static/src/payroll_report/payroll_report.js',
+            'npd_hrms_payroll/static/src/payroll_report/payroll_report.xml',
+        ],
+    },
     'installable': True,
     'application': False,
     'auto_install': False,

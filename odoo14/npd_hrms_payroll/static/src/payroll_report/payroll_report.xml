@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <t t-name="npd_hrms_payroll.PayrollReportAction">
+        <Layout display="{ controlPanel: {} }" className="'o_payroll_report h-100'">
+            <t t-set-slot="layout-buttons">
+                <button type="button" class="btn btn-primary"
+                        t-on-click="onPrint">พิมพ์</button>
+                <button type="button" class="btn btn-secondary"
+                        t-on-click="onExportExcel">ส่งออก Excel</button>
+            </t>
+            <div class="o_payroll_report_content p-3 overflow-auto h-100"
+                 t-out="state.html"/>
+        </Layout>
+    </t>
+
+</templates>

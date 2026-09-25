@@ -1,0 +1,204 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ============ บรรทัดรายงาน ============ -->
+    <record id="view_payroll_report_line_list" model="ir.ui.view">
+        <field name="name">payroll.report.line.list</field>
+        <field name="model">payroll.report.line</field>
+        <field name="arch" type="xml">
+            <!-- ทุกช่องตัวเลขใส่ sum ไว้ครบ เวลาจัดกลุ่มตามแผนกจะได้ยอดรวมของ
+                 แผนกนั้นทุกคอลัมน์ และแถวล่างสุดคือยอดรวมทั้งหมด -->
+            <list string="รายงานเงินเดือน" create="false" delete="false" edit="false"
+                  default_order="company_id, branch_id, department_id, employee_code">
+                <field name="employee_code"/>
+                <field name="employee_name"/>
+                <field name="company_id" optional="hide"/>
+                <field name="branch_id" optional="hide"/>
+                <field name="department_id" optional="hide"/>
+                <field name="base_salary" sum="รวม"/>
+                <field name="income_position_allowance" sum="รวม" optional="show"/>
+                <field name="income_experience_allowance" sum="รวม" optional="show"/>
+                <field name="income_professional_allowance" sum="รวม" optional="show"/>
+                <field name="income_cost_of_living" sum="รวม" optional="show"/>
+                <field name="ot_total_weekday" sum="รวม"/>
+                <field name="ot_total_holiday" sum="รวม" optional="show"/>
+                <field name="ot_total_sunday" sum="รวม" optional="show"/>
+                <field name="income_allowance" sum="รวม"/>
+                <field name="income_food" sum="รวม" optional="show"/>
+                <field name="income_transport" sum="รวม"/>
+                <field name="income_fuel" sum="รวม" optional="show"/>
+                <field name="income_commission_total" sum="รวม"/>
+                <field name="income_other" sum="รวม" optional="show"/>
+                <field name="total_gross" sum="รวม" decoration-bf="1"/>
+                <field name="deduction_late" sum="รวม" optional="show"/>
+                <field name="deduction_leave" sum="รวม" optional="show"/>
+                <field name="missed_days_deduction" sum="รวม" optional="show"/>
+                <field name="tax_monthly" sum="รวม"/>
+                <field name="sso_total" sum="รวม"/>
+                <field name="expense_provident" sum="รวม" optional="show"/>
+                <field name="expense_advance" sum="รวม" optional="show"/>
+                <field name="expense_loan" sum="รวม" optional="show"/>
+                <field name="expense_welfare_fund" sum="รวม" optional="show"/>
+                <field name="expense_ksl" sum="รวม" optional="show"/>
+                <field name="expense_other" sum="รวม" optional="show"/>
+                <field name="total_deduction" sum="รวม" decoration-bf="1"/>
+                <field name="net_salary" sum="รวม" decoration-bf="1"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_payroll_report_line_pivot" model="ir.ui.view">
+        <field name="name">payroll.report.line.pivot</field>
+        <field name="model">payroll.report.line</field>
+        <field name="arch" type="xml">
+            <pivot string="สรุปเงินเดือน">
+                <field name="branch_id" type="row"/>
+                <field name="department_id" type="row"/>
+                <field name="total_gross" type="measure"/>
+                <field name="total_deduction" type="measure"/>
+                <field name="net_salary" type="measure"/>
+            </pivot>
+        </field>
+    </record>
+
+    <record id="view_payroll_report_line_search" model="ir.ui.view">
+        <field name="name">payroll.report.line.search</field>
+        <field name="model">payroll.report.line</field>
+        <field name="arch" type="xml">
+            <search string="ค้นหา">
+                <field name="employee_code"/>
+                <field name="employee_name"/>
+                <field name="branch_id"/>
+                <field name="department_id"/>
+                <group expand="1" string="จัดกลุ่มตาม">
+                    <filter string="บริษัท" name="group_company"
+                            context="{'group_by': 'company_id'}"/>
+                    <filter string="สาขา" name="group_branch"
+                            context="{'group_by': 'branch_id'}"/>
+                    <filter string="แผนก" name="group_department"
+                            context="{'group_by': 'department_id'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- ============ ตัวรายงาน ============ -->
+    <record id="view_payroll_report_form" model="ir.ui.view">
+        <field name="name">payroll.report.form</field>
+        <field name="model">payroll.report</field>
+        <field name="arch" type="xml">
+            <form string="รายงานเงินเดือน">
+                <header>
+                    <button name="action_refresh_lines" type="object"
+                            string="ดึงข้อมูล" class="btn-primary"/>
+                    <button name="action_open_lines" type="object"
+                            string="ดูแบบจัดกลุ่ม" class="btn-secondary"
+                            invisible="employee_count == 0"/>
+                    <button name="action_export_excel" type="object"
+                            string="ออกไฟล์ Excel" class="btn-secondary"
+                            invisible="employee_count == 0"/>
+                </header>
+                <sheet>
+                    <div class="alert alert-info" role="alert">
+                        เลือกเดือน ปี และบริษัท แล้วกด "ดึงข้อมูล"
+                        ระบบจะคัดลอกยอดจากสลิปที่คำนวณแล้วมาแสดง
+                        <br/>
+                        กด "ดูแบบจัดกลุ่ม" เพื่อดูแยกตามบริษัท สาขา แผนก
+                        พร้อมยอดรวมทุกคอลัมน์ หรือกด "ออกไฟล์ Excel"
+                        เพื่อได้ไฟล์หน้าตาเดียวกับรายงานเดิม
+                    </div>
+                    <group>
+                        <group>
+                            <field name="month"/>
+                            <field name="year"/>
+                            <field name="company_id" options="{'no_create': True}"/>
+                        </group>
+                        <group>
+                            <field name="employee_count"/>
+                            <field name="generated_at"/>
+                            <field name="file_name" invisible="not file_name"/>
+                        </group>
+                    </group>
+                    <group string="ยอดรวมทั้งหมด">
+                        <group>
+                            <field name="total_gross"/>
+                            <field name="total_deduction"/>
+                        </group>
+                        <group>
+                            <field name="total_net"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="รายชื่อพนักงาน">
+                            <field name="line_ids" readonly="1"
+                                   context="{'search_default_group_department': 1}">
+                                <list create="false" delete="false" edit="false">
+                                    <field name="employee_code"/>
+                                    <field name="employee_name"/>
+                                    <field name="branch_id" optional="show"/>
+                                    <field name="department_id" optional="show"/>
+                                    <field name="base_salary" sum="รวม"/>
+                                    <field name="total_gross" sum="รวม"/>
+                                    <field name="total_deduction" sum="รวม"/>
+                                    <field name="net_salary" sum="รวม"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_payroll_report_list" model="ir.ui.view">
+        <field name="name">payroll.report.list</field>
+        <field name="model">payroll.report</field>
+        <field name="arch" type="xml">
+            <list string="รายงานเงินเดือน">
+                <field name="month"/>
+                <field name="year"/>
+                <field name="company_id"/>
+                <field name="employee_count"/>
+                <field name="total_gross" sum="รวม"/>
+                <field name="total_deduction" sum="รวม"/>
+                <field name="total_net" sum="รวม"/>
+                <field name="generated_at"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="action_payroll_report" model="ir.actions.act_window">
+        <field name="name">รายงานเงินเดือน</field>
+        <field name="res_model">payroll.report</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">ยังไม่มีรายงาน</p>
+            <p>
+                กดสร้าง เลือกเดือน ปี และบริษัท แล้วกด "ดึงข้อมูล"
+                จะได้รายงานที่กางรายได้และรายการหักครบทุกช่อง
+                พร้อมยอดรวมรายแผนกและยอดรวมทั้งหมด
+            </p>
+        </field>
+    </record>
+
+    <record id="action_payroll_report_line" model="ir.actions.act_window">
+        <field name="name">รายละเอียดรายงานเงินเดือน</field>
+        <field name="res_model">payroll.report.line</field>
+        <field name="view_mode">list,pivot</field>
+    </record>
+
+    <!-- เมนูหลักเปิดหน้าต่างเลือกงวดก่อน แบบเดียวกับรายงานอื่นในระบบ -->
+    <menuitem id="menu_payroll_report"
+              name="รายงานเงินเดือน"
+              action="npd_hrms_payroll.action_payroll_report_wizard"
+              parent="npd_hrms_payroll.menu_hrms_payroll_root"
+              sequence="55"/>
+
+    <!-- ใบรายงานที่เคยออกไว้ เผื่อย้อนดูหรือโหลดไฟล์เดิมซ้ำ -->
+    <menuitem id="menu_payroll_report_history"
+              name="ประวัติรายงานเงินเดือน"
+              action="action_payroll_report"
+              parent="npd_hrms_payroll.menu_hrms_payroll_root"
+              sequence="56"/>
+
+</odoo>

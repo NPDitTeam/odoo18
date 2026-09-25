@@ -408,9 +408,12 @@
     <record id="action_employee_salary" model="ir.actions.act_window">
         <field name="name">พนักงาน</field>
         <field name="res_model">employee.salary</field>
-        <field name="view_mode">kanban,list,form</field>
+        <!-- เปิดเป็นรายการ ไม่ใช่การ์ด เพราะดูข้อมูลหลายคอลัมน์พร้อมกันได้ง่ายกว่า -->
+        <field name="view_mode">list,kanban,form</field>
         <field name="search_view_id" ref="view_employee_salary_search"/>
-        <field name="context">{'search_default_filter_active': 1}</field>
+        <!-- ไม่ตั้งตัวกรอง "ใช้งาน" ไว้ล่วงหน้า ให้เห็นทุกคนตั้งแต่เปิดหน้าจอ
+             รวมคนที่พ้นสภาพแล้ว ซึ่งยังต้องดูประวัติและสลิปย้อนหลังได้ -->
+        <field name="context">{}</field>
         <field name="help" type="html">
             <p class="o_view_nocontent_smiling_face">เพิ่มพนักงานคนแรก</p>
             <p>ระบบจะสร้างรหัสพนักงานให้อัตโนมัติตามนโยบายที่ตั้งไว้ในหน้าตั้งค่า</p>

@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_payroll_report_wizard_form" model="ir.ui.view">
+        <field name="name">payroll.report.wizard.form</field>
+        <field name="model">payroll.report.wizard</field>
+        <field name="arch" type="xml">
+            <form string="รายงานเงินเดือน">
+                <group>
+                    <group>
+                        <field name="company_id" options="{'no_create': True}"
+                               placeholder="เว้นว่าง = ทุกบริษัท"/>
+                        <field name="month"/>
+                    </group>
+                    <group>
+                        <field name="year"/>
+                    </group>
+                </group>
+                <footer>
+                    <button name="action_view_report" type="object"
+                            string="ดูรายงาน" class="btn-primary"/>
+                    <span class="mx-2">หรือ</span>
+                    <button name="action_export_excel" type="object"
+                            string="ส่งออก Excel" class="btn-secondary"/>
+                    <span class="mx-2">หรือ</span>
+                    <button name="action_open_lines" type="object"
+                            string="เปิดเป็นตาราง" class="btn-secondary"/>
+                    <span class="mx-2">หรือ</span>
+                    <button string="ยกเลิก" class="btn-link" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_payroll_report_wizard" model="ir.actions.act_window">
+        <field name="name">รายงานเงินเดือน</field>
+        <field name="res_model">payroll.report.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+
+</odoo>
