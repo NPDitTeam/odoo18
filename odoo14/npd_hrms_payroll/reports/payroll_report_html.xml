@@ -30,14 +30,21 @@
                         .npd-head th { background: #f2f2f2; font-weight: bold; }
                         .npd-report-title { font-size: 16px; font-weight: bold;
                                             margin-bottom: 8px; }
-                        .npd-payroll-wrap { overflow-x: auto; }
+                        /* ตารางมี 31 คอลัมน์ กว้างเกินจอเสมอ จึงต้องเลื่อนซ้าย-ขวาได้
+                           เดิมใส่แค่ overflow-x กับกล่องที่สูงเท่าความยาวตารางทั้งใบ
+                           แถบเลื่อนแนวนอนจึงไปอยู่ก้นตาราง ต้องเลื่อนลงสุดหน้าถึงจะเจอ
+                           คุมความสูงไว้เท่าจอ แถบเลื่อนทั้งสองแกนจึงอยู่ในสายตาตลอด
+                           และหัวตารางที่ติดหนึบก็ทำงานถูกต้องในกล่องนี้ */
+                        .npd-payroll-wrap {
+                            overflow: auto; max-height: calc(100vh - 290px);
+                            min-height: 300px; border: 1px solid #b7b7b7; }
                         .npd-payroll { border-collapse: collapse; font-size: 11px;
                                        white-space: nowrap; }
                         .npd-payroll th, .npd-payroll td {
                             border: 1px solid #b7b7b7; padding: 3px 6px; }
                         .npd-payroll thead th {
                             background: #4472C4; color: #fff; text-align: center;
-                            position: sticky; top: 0; white-space: normal;
+                            position: sticky; top: 0; z-index: 2; white-space: normal;
                             min-width: 72px; }
                         .npd-payroll .npd-seq { text-align: center; min-width: 34px; }
                         .npd-payroll .npd-num { text-align: right; }
@@ -47,7 +54,15 @@
                         .npd-payroll .npd-sum     td { background: #FCE4D6; font-weight: bold; }
                         .npd-payroll .npd-grand   td { background: #4472C4; color: #fff;
                                                        font-weight: bold; }
-                        @media print { .npd-print-bar { display: none; } }
+                        /* ตอนพิมพ์ต้องปล่อยให้ตารางยาวเต็มและไหลข้ามหน้าได้
+                           ไม่งั้นจะพิมพ์ออกมาได้แค่ส่วนที่มองเห็นในกล่องเลื่อน */
+                        @media print {
+                            .npd-print-bar { display: none; }
+                            .npd-payroll-wrap {
+                                overflow: visible; max-height: none;
+                                min-height: 0; border: 0; }
+                            .npd-payroll thead th { position: static; }
+                        }
                     </style>
 
                     <div class="npd-print-bar">
