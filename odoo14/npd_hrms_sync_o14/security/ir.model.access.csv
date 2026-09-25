@@ -1,0 +1,8 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_sync_config_mgr,npd.hrms.sync.config manager,model_npd_hrms_sync_config,base.group_system,1,1,1,1
+access_sync_company_map_mgr,npd.hrms.sync.company.map manager,model_npd_hrms_sync_company_map,base.group_system,1,1,1,1
+access_sync_map_mgr,npd.hrms.sync.map manager,model_npd_hrms_sync_map,base.group_system,1,1,1,1
+access_sync_log_mgr,npd.hrms.sync.log manager,model_npd_hrms_sync_log,base.group_system,1,1,1,1
+access_sync_log_line_mgr,npd.hrms.sync.log.line manager,model_npd_hrms_sync_log_line,base.group_system,1,1,1,1
+access_sync_check_mgr,npd.hrms.sync.check manager,model_npd_hrms_sync_check,base.group_system,1,1,1,1
+access_sync_check_line_mgr,npd.hrms.sync.check.line manager,model_npd_hrms_sync_check_line,base.group_system,1,1,1,1

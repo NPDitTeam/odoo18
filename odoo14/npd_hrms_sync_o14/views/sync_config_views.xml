@@ -1,0 +1,162 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_hrms_sync_config_form" model="ir.ui.view">
+        <field name="name">npd.hrms.sync.config.form</field>
+        <field name="model">npd.hrms.sync.config</field>
+        <field name="arch" type="xml">
+            <form string="ดึงข้อมูลจาก Odoo 14">
+                <header>
+                    <button name="action_test_connection" type="object"
+                            string="ทดสอบการเชื่อมต่อ" class="btn-secondary"/>
+                    <button name="action_map_companies" type="object"
+                            string="จับคู่บริษัท" class="btn-secondary"/>
+                    <button name="action_sync_now" type="object"
+                            string="ดึงข้อมูลเดี๋ยวนี้" class="btn-primary"/>
+                    <button name="action_sync_full" type="object"
+                            string="ดึงใหม่ทั้งหมด" class="btn-secondary"
+                            confirm="จะอ่านข้อมูลทุกแถวจากฝั่ง 14 ใหม่หมด ไม่สนว่าเคยดึงไปแล้ว&#10;ใช้เวลานานกว่าปกติมาก ต้องการทำต่อไหม"/>
+                    <button name="action_check_completeness" type="object"
+                            string="ตรวจความครบถ้วน" class="btn-secondary"/>
+                </header>
+                <sheet>
+                    <div class="alert alert-info" role="alert">
+                        ดึงข้อมูลทางเดียวจาก Odoo 14 มาที่ Odoo 18 เท่านั้น
+                        ไม่มีการเขียนกลับไปฝั่ง 14
+                        <br/>
+                        ระหว่างที่ยังไม่ตัดระบบ ฝั่ง 14 ยังเป็นเจ้าของข้อมูลอยู่
+                        สิ่งที่แก้ที่ฝั่ง 18 จะถูกเขียนทับในรอบถัดไป
+                    </div>
+                    <group>
+                        <group string="เชื่อมต่อไปที่">
+                            <field name="name"/>
+                            <field name="url" placeholder="https://npderp.com"/>
+                            <field name="db_name"/>
+                            <field name="active"/>
+                        </group>
+                        <group string="เข้าใช้ด้วย">
+                            <field name="username"/>
+                            <field name="password" password="True"/>
+                            <field name="uid_cache" readonly="1"/>
+                        </group>
+                    </group>
+                    <group>
+                        <group string="ขอบเขตข้อมูล">
+                            <field name="sync_from_date"/>
+                            <field name="recent_days"/>
+                            <field name="stop_after_date"/>
+                            <field name="fallback_company_id"
+                                   options="{'no_create': True}"/>
+                        </group>
+                        <group string="สถานะ">
+                            <field name="state" readonly="1"/>
+                            <field name="last_sync" readonly="1"/>
+                        </group>
+                    </group>
+                    <group string="ข้อความล่าสุด" invisible="not state_message">
+                        <field name="state_message" nolabel="1" readonly="1"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_hrms_sync_config_list" model="ir.ui.view">
+        <field name="name">npd.hrms.sync.config.list</field>
+        <field name="model">npd.hrms.sync.config</field>
+        <field name="arch" type="xml">
+            <list string="การเชื่อมต่อ Odoo 14"
+                  decoration-muted="not active"
+                  decoration-danger="state == 'error'"
+                  decoration-success="state == 'ok'">
+                <field name="name"/>
+                <field name="url"/>
+                <field name="db_name"/>
+                <field name="state"/>
+                <field name="last_sync"/>
+                <field name="active" column_invisible="1"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="action_hrms_sync_config" model="ir.actions.act_window">
+        <field name="name">ดึงข้อมูลจาก Odoo 14</field>
+        <field name="res_model">npd.hrms.sync.config</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">ตั้งค่าการเชื่อมต่อไปยัง Odoo 14</p>
+            <p>
+                ใส่ที่อยู่เซิร์ฟเวอร์ ชื่อฐาน และผู้ใช้สำหรับงานซิงก์
+                แล้วกดทดสอบการเชื่อมต่อก่อนเริ่มดึงจริง
+            </p>
+        </field>
+    </record>
+
+    <!-- จับคู่บริษัท -->
+    <record id="view_hrms_sync_company_map_list" model="ir.ui.view">
+        <field name="name">npd.hrms.sync.company.map.list</field>
+        <field name="model">npd.hrms.sync.company.map</field>
+        <field name="arch" type="xml">
+            <list string="จับคู่บริษัท" editable="bottom">
+                <field name="o14_name"/>
+                <field name="company_id"/>
+                <field name="note"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="action_hrms_sync_company_map" model="ir.actions.act_window">
+        <field name="name">จับคู่บริษัท Odoo 14 กับ Odoo 18</field>
+        <field name="res_model">npd.hrms.sync.company.map</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">ยังไม่ได้จับคู่บริษัทไว้</p>
+            <p>
+                ฝั่ง Odoo 14 เก็บบริษัทของพนักงานเป็นข้อความ ส่วนฝั่งนี้แยกข้อมูล
+                ตามบริษัทจริง จึงต้องบอกว่าชื่อไหนหมายถึงบริษัทใด
+                <br/>
+                กดปุ่ม "จับคู่บริษัท" ที่หน้าการเชื่อมต่อ ระบบจะเดาให้ก่อน
+                แล้วค่อยแก้คู่ที่เดาไม่ได้เอง
+            </p>
+        </field>
+    </record>
+
+    <!-- ตารางจับคู่ระเบียน — ไว้ตรวจย้อนว่าแถวไหนมาจากแถวไหน -->
+    <record id="view_hrms_sync_map_list" model="ir.ui.view">
+        <field name="name">npd.hrms.sync.map.list</field>
+        <field name="model">npd.hrms.sync.map</field>
+        <field name="arch" type="xml">
+            <list string="การจับคู่ระเบียน" create="false">
+                <field name="o14_model"/>
+                <field name="o14_id"/>
+                <field name="res_model"/>
+                <field name="res_id"/>
+                <field name="natural_key"/>
+                <field name="o14_write_date"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_hrms_sync_map_search" model="ir.ui.view">
+        <field name="name">npd.hrms.sync.map.search</field>
+        <field name="model">npd.hrms.sync.map</field>
+        <field name="arch" type="xml">
+            <search string="ค้นหา">
+                <field name="o14_model"/>
+                <field name="natural_key"/>
+                <group expand="0" string="จัดกลุ่มตาม">
+                    <filter string="โมเดลฝั่ง 14" name="g_model"
+                            context="{'group_by': 'o14_model'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_hrms_sync_map" model="ir.actions.act_window">
+        <field name="name">การจับคู่ระเบียน</field>
+        <field name="res_model">npd.hrms.sync.map</field>
+        <field name="view_mode">list</field>
+        <field name="context">{'search_default_g_model': 1}</field>
+    </record>
+
+</odoo>

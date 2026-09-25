@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    ดึงข้อมูลจาก Odoo 14 อัตโนมัติ
+
+    ตั้งไว้เที่ยงคืนของทุกวัน เพื่อให้ฝั่ง 18 ตามข้อมูลฝั่ง 14 ทันก่อนเริ่มงานเช้า
+    ดึงเฉพาะแถวที่ฝั่ง 14 แก้ไขตั้งแต่รอบก่อน รอบปกติจึงใช้เวลาไม่นาน
+    เลือกเที่ยงคืนเพราะเป็นช่วงที่ไม่มีคนใช้งาน การดึงจึงไม่แย่งทรัพยากรกับงานประจำวัน
+
+    พอเลย "ดึงข้อมูลถึงวันที่" ที่ตั้งไว้ในหน้าตั้งค่า งานนี้จะปิดตัวเองถาวร
+
+    ปิดไว้ก่อนตอนติดตั้ง เพราะยังไม่ได้ตั้งค่าการเชื่อมต่อ
+    ให้เปิดเองหลังทดสอบการเชื่อมต่อและจับคู่บริษัทเรียบร้อยแล้ว
+
+    เปลี่ยนความถี่ได้ที่ ตั้งค่า > เทคนิค > อัตโนมัติ > การกระทำตามกำหนดเวลา
+-->
+<odoo>
+    <data noupdate="1">
+        <record id="ir_cron_hrms_sync_o14" model="ir.cron">
+            <field name="name">ดึงข้อมูล HR จาก Odoo 14</field>
+            <field name="model_id" ref="model_npd_hrms_sync_config"/>
+            <field name="state">code</field>
+            <field name="code">model.cron_sync()</field>
+            <field name="interval_number">1</field>
+            <field name="interval_type">days</field>
+            <field name="active" eval="False"/>
+        </record>
+    </data>
+</odoo>

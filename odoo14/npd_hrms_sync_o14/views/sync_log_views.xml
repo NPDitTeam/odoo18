@@ -1,0 +1,163 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ผลการซิงก์ -->
+    <record id="view_hrms_sync_log_list" model="ir.ui.view">
+        <field name="name">npd.hrms.sync.log.list</field>
+        <field name="model">npd.hrms.sync.log</field>
+        <field name="arch" type="xml">
+            <list string="ประวัติการดึงข้อมูล" create="false"
+                  decoration-danger="state == 'failed'"
+                  decoration-warning="state == 'partial'"
+                  decoration-success="state == 'done'">
+                <field name="date_start"/>
+                <field name="mode"/>
+                <field name="fetched" sum="รวม"/>
+                <field name="created_count" sum="รวม"/>
+                <field name="updated_count" sum="รวม"/>
+                <field name="skipped_count" sum="รวม"/>
+                <field name="error_count" sum="รวม"/>
+                <field name="duration" widget="float_time" optional="show"/>
+                <field name="state"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_hrms_sync_log_form" model="ir.ui.view">
+        <field name="name">npd.hrms.sync.log.form</field>
+        <field name="model">npd.hrms.sync.log</field>
+        <field name="arch" type="xml">
+            <form string="ผลการดึงข้อมูล" create="false" edit="false">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="config_id"/>
+                            <field name="mode"/>
+                            <field name="state"/>
+                        </group>
+                        <group>
+                            <field name="date_start"/>
+                            <field name="date_end"/>
+                            <field name="duration" widget="float_time"/>
+                        </group>
+                    </group>
+                    <group string="สรุปรวม">
+                        <group>
+                            <field name="fetched"/>
+                            <field name="created_count"/>
+                            <field name="updated_count"/>
+                        </group>
+                        <group>
+                            <field name="skipped_count"/>
+                            <field name="error_count"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="รายหัวข้อ">
+                            <field name="line_ids" readonly="1">
+                                <list decoration-danger="state == 'failed'"
+                                      decoration-warning="state == 'partial'"
+                                      decoration-muted="state == 'skipped'">
+                                    <field name="sequence" column_invisible="1"/>
+                                    <field name="name"/>
+                                    <field name="o14_model" optional="hide"/>
+                                    <field name="o18_model" optional="hide"/>
+                                    <field name="fetched"/>
+                                    <field name="created_count"/>
+                                    <field name="updated_count"/>
+                                    <field name="skipped_count"/>
+                                    <field name="error_count"/>
+                                    <field name="state"/>
+                                    <field name="message" optional="show"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="สรุป">
+                            <field name="note" readonly="1"/>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_hrms_sync_log" model="ir.actions.act_window">
+        <field name="name">ประวัติการดึงข้อมูล</field>
+        <field name="res_model">npd.hrms.sync.log</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <!-- ผลการตรวจความครบถ้วน -->
+    <record id="view_hrms_sync_check_list" model="ir.ui.view">
+        <field name="name">npd.hrms.sync.check.list</field>
+        <field name="model">npd.hrms.sync.check</field>
+        <field name="arch" type="xml">
+            <list string="ผลการตรวจความครบถ้วน" create="false"
+                  decoration-danger="state == 'diff'"
+                  decoration-success="state == 'ok'">
+                <field name="date"/>
+                <field name="topic_total"/>
+                <field name="topic_diff"/>
+                <field name="state"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_hrms_sync_check_form" model="ir.ui.view">
+        <field name="name">npd.hrms.sync.check.form</field>
+        <field name="model">npd.hrms.sync.check</field>
+        <field name="arch" type="xml">
+            <form string="ผลการตรวจความครบถ้วน" create="false" edit="false">
+                <header>
+                    <button name="action_recheck" type="object"
+                            string="ตรวจใหม่" class="btn-primary"/>
+                </header>
+                <sheet>
+                    <div class="alert alert-warning" role="alert"
+                         invisible="state != 'diff'">
+                        มีหัวข้อที่ข้อมูลสองฝั่งไม่ตรงกัน ดูรายละเอียดในตารางข้างล่าง
+                        แล้วกด "ดึงใหม่ทั้งหมด" ที่หน้าการเชื่อมต่อเพื่อเก็บตก
+                    </div>
+                    <div class="alert alert-success" role="alert"
+                         invisible="state != 'ok'">
+                        ข้อมูลครบและยอดตรงกันทุกหัวข้อ
+                    </div>
+                    <group>
+                        <group>
+                            <field name="date"/>
+                            <field name="config_id"/>
+                        </group>
+                        <group>
+                            <field name="topic_total"/>
+                            <field name="topic_diff"/>
+                            <field name="state"/>
+                        </group>
+                    </group>
+                    <field name="line_ids" readonly="1">
+                        <list decoration-danger="state == 'diff'"
+                              decoration-muted="state == 'skipped'"
+                              decoration-warning="state == 'error'">
+                            <field name="sequence" column_invisible="1"/>
+                            <field name="name"/>
+                            <field name="count14"/>
+                            <field name="count18"/>
+                            <field name="count_diff"/>
+                            <field name="amount14" sum="รวม" optional="show"/>
+                            <field name="amount18" sum="รวม" optional="show"/>
+                            <field name="amount_diff" optional="show"/>
+                            <field name="state"/>
+                            <field name="message"/>
+                        </list>
+                    </field>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_hrms_sync_check" model="ir.actions.act_window">
+        <field name="name">ตรวจความครบถ้วนของข้อมูล</field>
+        <field name="res_model">npd.hrms.sync.check</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+</odoo>

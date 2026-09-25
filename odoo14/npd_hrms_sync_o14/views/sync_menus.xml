@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <menuitem id="menu_hrms_sync_root"
+              name="ดึงข้อมูลจาก Odoo 14"
+              parent="npd_hrms_base.menu_hrms_configuration"
+              sequence="900"/>
+
+    <menuitem id="menu_hrms_sync_config"
+              name="ตั้งค่าการเชื่อมต่อ"
+              action="action_hrms_sync_config"
+              parent="menu_hrms_sync_root"
+              sequence="10"/>
+
+    <menuitem id="menu_hrms_sync_company_map"
+              name="จับคู่บริษัท"
+              action="action_hrms_sync_company_map"
+              parent="menu_hrms_sync_root"
+              sequence="20"/>
+
+    <menuitem id="menu_hrms_sync_check"
+              name="ตรวจความครบถ้วน"
+              action="action_hrms_sync_check"
+              parent="menu_hrms_sync_root"
+              sequence="30"/>
+
+    <menuitem id="menu_hrms_sync_log"
+              name="ประวัติการดึงข้อมูล"
+              action="action_hrms_sync_log"
+              parent="menu_hrms_sync_root"
+              sequence="40"/>
+
+    <menuitem id="menu_hrms_sync_map"
+              name="การจับคู่ระเบียน"
+              action="action_hrms_sync_map"
+              parent="menu_hrms_sync_root"
+              sequence="50"/>
+
+</odoo>
