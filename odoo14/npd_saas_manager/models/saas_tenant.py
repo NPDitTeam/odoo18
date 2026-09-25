@@ -33,6 +33,21 @@ _logger = logging.getLogger(__name__)
 # ชื่อฐานข้อมูลที่ยอมให้ใช้ — กันทั้งอักขระที่ทำให้ SQL พังและชื่อที่ dbfilter ใช้ไม่ได้
 DB_NAME_RE = re.compile(r'^[a-zA-Z0-9][a-zA-Z0-9_-]{1,62}$')
 
+# โดเมนย่อยเข้มกว่าชื่อฐานข้อมูล เพราะต้องเอาไปตั้งเป็นชื่อโฮสต์จริง
+# ชื่อโฮสต์ตามมาตรฐานอินเทอร์เน็ตใช้ได้แค่ a-z 0-9 และขีดกลาง ห้ามขึ้นต้น
+# หรือลงท้ายด้วยขีดกลาง และไม่แยกตัวพิมพ์ใหญ่เล็ก
+#
+# ถ้าไม่บังคับตรงนี้ จะสร้างองค์กรด้วยชื่ออย่าง ABC_Company ได้สำเร็จ
+# แล้วไปพังตอนตั้ง DNS กับใบรับรอง SSL ซึ่งเป็นตอนที่แก้ยากแล้ว
+# เพราะฐานข้อมูลถูกสร้างและลูกค้าเริ่มใช้งานไปแล้ว
+SUBDOMAIN_RE = re.compile(r'^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$')
+
+# ชื่อที่จองไว้ใช้เอง ห้ามลูกค้าเอาไปใช้
+RESERVED_SUBDOMAINS = {
+    'www', 'mail', 'ftp', 'admin', 'api', 'app', 'test', 'dev', 'staging',
+    'npd', 'odoo', 'db', 'smtp', 'ns1', 'ns2', 'cdn', 'static',
+}
+
 # พารามิเตอร์สัญญาที่เขียนลงฐานข้อมูลของลูกค้า (ฝั่งนั้นอ่านด้วย npd_saas_client)
 PARAM_PREFIX = 'npd_saas.'
 
@@ -48,7 +63,13 @@ class HrmsTenant(models.Model):
         help='ชื่อ DB ของลูกค้ารายนี้ — ต้องตรงกับโดเมนย่อยถ้าใช้ dbfilter มาตรฐาน')
     subdomain = fields.Char(
         string='โดเมนย่อย',
-        help='เช่น abc จะได้ที่อยู่ https://abc.<โดเมนหลัก>')
+        help='ชื่อที่จะใช้เป็นที่อยู่เว็บของลูกค้ารายนี้\n'
+             'เช่น ใส่ abccompany จะได้ https://abccompany.npd-solution.com\n\n'
+             'ใช้ได้เฉพาะตัวอักษรภาษาอังกฤษพิมพ์เล็ก a-z ตัวเลข 0-9 และขีดกลาง\n'
+             'ห้ามใช้ตัวพิมพ์ใหญ่ ขีดล่าง เว้นวรรค จุด หรืออักขระอื่น\n'
+             'ห้ามขึ้นต้นหรือลงท้ายด้วยขีดกลาง\n\n'
+             'ถูก: abccompany, abc-company, abc2024\n'
+             'ผิด: ABC_Company, abc company, abc.company, -abc')
     is_control_plane = fields.Boolean(
         string='เป็นศูนย์ควบคุม', default=False, copy=False,
         help='ฐานข้อมูลนี้เป็นตัวจัดการเอง — ห้ามสั่งลบหรือระงับ')
@@ -144,14 +165,60 @@ class HrmsTenant(models.Model):
 
     @api.onchange('subdomain')
     def _onchange_subdomain(self):
+        """จัดรูปโดเมนย่อยให้ถูกต้องตั้งแต่ตอนพิมพ์
+
+        แก้ให้อัตโนมัติเท่าที่เดาเจตนาได้ชัด (ตัวพิมพ์ใหญ่ ช่องว่าง ขีดล่าง จุด)
+        แทนที่จะเด้งข้อความผิดพลาดใส่ทันที เพราะคนกรอกมักพิมพ์ชื่อบริษัทมาตรง ๆ
+        ส่วนที่เดาไม่ได้จะถูกกันไว้ตอนบันทึกโดยกฎด้านล่าง
+        """
         for rec in self:
             if not rec.subdomain:
                 continue
-            rec.subdomain = rec.subdomain.strip().lower()
+            cleaned = rec.subdomain.strip().lower()
+            # ขีดล่าง ช่องว่าง และจุด เป็นสิ่งที่คนพิมพ์มาบ่อยที่สุด
+            # ทั้งสามตัวใช้ในชื่อโฮสต์ไม่ได้ แต่เจตนาชัดว่าต้องการคั่นคำ
+            for bad in (' ', '_', '.'):
+                cleaned = cleaned.replace(bad, '-')
+            while '--' in cleaned:
+                cleaned = cleaned.replace('--', '-')
+            rec.subdomain = cleaned.strip('-')
+
             root = rec._root_domain()
-            rec.base_url = 'https://%s.%s' % (rec.subdomain, root)
+            if rec.subdomain:
+                rec.base_url = 'https://%s.%s' % (rec.subdomain, root)
             if not rec.db_name:
                 rec.db_name = rec.subdomain
+
+    @api.constrains('subdomain')
+    def _check_subdomain(self):
+        """กันชื่อที่เอาไปตั้ง DNS กับใบรับรอง SSL ไม่ได้
+
+        ต้องตรวจตอนบันทึกด้วย ไม่ใช่แค่ตอนพิมพ์ เพราะระเบียนที่สร้างผ่าน
+        การนำเข้าไฟล์หรือ API จะไม่ผ่าน onchange เลย
+        """
+        for rec in self:
+            if not rec.subdomain:
+                continue
+            if not SUBDOMAIN_RE.match(rec.subdomain):
+                raise UserError(
+                    'โดเมนย่อย "%s" ใช้เป็นที่อยู่เว็บไม่ได้\n\n'
+                    'ใช้ได้เฉพาะตัวอักษรพิมพ์เล็ก a-z ตัวเลข 0-9 และขีดกลาง\n'
+                    'ห้ามใช้ตัวพิมพ์ใหญ่ ขีดล่าง เว้นวรรค จุด หรืออักขระอื่น\n'
+                    'ห้ามขึ้นต้นหรือลงท้ายด้วยขีดกลาง และยาวไม่เกิน 63 ตัว\n\n'
+                    'ถูก: abccompany, abc-company, abc2024\n'
+                    'ผิด: ABC_Company, abc company, abc.company'
+                    % rec.subdomain)
+            if rec.subdomain in RESERVED_SUBDOMAINS:
+                raise UserError(
+                    'โดเมนย่อย "%s" เป็นชื่อที่ระบบจองไว้ใช้เอง '
+                    'กรุณาใช้ชื่ออื่น' % rec.subdomain)
+            other = self.sudo().search([
+                ('subdomain', '=', rec.subdomain), ('id', '!=', rec.id),
+            ], limit=1)
+            if other:
+                raise UserError(
+                    'โดเมนย่อย "%s" ถูกใช้กับองค์กร "%s" แล้ว'
+                    % (rec.subdomain, other.name or '-'))
 
     # ------------------------------------------------------------------
     # ตัวช่วย

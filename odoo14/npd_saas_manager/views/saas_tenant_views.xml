@@ -80,7 +80,7 @@
 
             <field name="base_url" position="before">
                 <field name="is_control_plane" invisible="1"/>
-                <field name="subdomain" placeholder="เช่น abc"/>
+                <field name="subdomain" placeholder="เช่น abccompany (พิมพ์เล็ก ไม่มีขีดล่าง)"/>
                 <field name="db_name" placeholder="ปกติใช้ชื่อเดียวกับโดเมนย่อย"
                        readonly="state != 'draft'"/>
             </field>
