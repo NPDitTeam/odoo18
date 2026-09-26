@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <menuitem id="menu_rental_import_root"
+              name="ยกข้อมูลจาก Odoo 14"
+              parent="sale.menu_sale_config"
+              action="action_rental_import_config"
+              sequence="90"/>
+</odoo>

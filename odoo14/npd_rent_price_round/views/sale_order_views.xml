@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_order_form_npd_rent_price_round" model="ir.ui.view">
+        <field name="name">sale.order.form.npd.rent.price.round</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_order_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='payment_term_id']" position="after">
+                <field name="can_edit_use_new_calc" invisible="1"/>
+                <field name="use_new_calc"
+                       readonly="not can_edit_use_new_calc"/>
+                <field name="use_baan_kheaw"
+                       readonly="not can_edit_use_new_calc"/>
+                <field name="vat_from_total"
+                       readonly="not can_edit_use_new_calc"/>
+            </xpath>
+            <xpath expr="//field[@name='order_line']/list/field[@name='price_unit']"
+                   position="after">
+                <field name="price_unit_no_vat" optional="show"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

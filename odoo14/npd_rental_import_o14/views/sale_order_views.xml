@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_order_form_o14_imported" model="ir.ui.view">
+        <field name="name">sale.order.form.o14.imported</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_order_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//sheet" position="before">
+                <widget name="web_ribbon" title="ยกมาจาก Odoo 14"
+                        bg_color="text-bg-info"
+                        invisible="not o14_imported"/>
+            </xpath>
+            <xpath expr="//field[@name='client_order_ref']" position="after">
+                <field name="o14_imported" invisible="1"/>
+                <field name="o14_source_db" invisible="not o14_imported"/>
+                <field name="o14_order_name" invisible="not o14_imported"/>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_order_list_o14_imported" model="ir.ui.view">
+        <field name="name">sale.order.list.o14.imported</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_order_tree"/>
+        <field name="arch" type="xml">
+            <field name="name" position="after">
+                <field name="o14_order_name" optional="hide"
+                       string="เลขใบฝั่ง 14"/>
+            </field>
+        </field>
+    </record>
+
+    <record id="view_order_search_o14_imported" model="ir.ui.view">
+        <field name="name">sale.order.search.o14.imported</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.sale_order_view_search_inherit_quotation"/>
+        <field name="arch" type="xml">
+            <filter name="my_quotation" position="after">
+                <separator/>
+                <filter string="ยกมาจาก Odoo 14" name="filter_o14_imported"
+                        domain="[('o14_imported', '=', True)]"/>
+                <filter string="สร้างบน Odoo 18" name="filter_o18_native"
+                        domain="[('o14_imported', '=', False)]"/>
+            </filter>
+        </field>
+    </record>
+</odoo>
