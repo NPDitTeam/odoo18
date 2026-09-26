@@ -310,6 +310,9 @@ class HrmsSyncEngine(models.AbstractModel):
             # commit ทีละชุด ถ้ารอบยาวแล้วหลุดกลางทาง ของที่ทำไปแล้วจะไม่หาย
             self.env.cr.commit()
 
+        if spec.get('sync_deletes'):
+            self._remove_deleted(config, spec, domain, counters, warnings)
+
         notes = []
         if skipped:
             notes.append('ยังไม่มีในฝั่ง 18 จึงข้ามไป (ต้องไปสร้างเองก่อน): '
@@ -321,6 +324,76 @@ class HrmsSyncEngine(models.AbstractModel):
         if notes:
             counters['message'] = '\n'.join(notes)
         return counters
+
+    # สัดส่วนสูงสุดที่ยอมให้ลบในรอบเดียว — เกินกว่านี้ถือว่าผิดปกติ ไม่ลบ
+    MAX_DELETE_RATIO = 0.30
+
+    def _remove_deleted(self, config, spec, domain, counters, warnings):
+        """ลบระเบียนฝั่ง 18 ที่ต้นทางฝั่ง 14 ลบไปแล้ว
+
+        ตัวซิงก์ยกข้อมูลมาทางเดียว เดิมจึงไม่เคยลบตาม ใบที่ถูกลบฝั่ง 14
+        จะค้างฝั่ง 18 ตลอดไปแล้วทำให้ยอดในรายงานเกินจริงโดยไม่มีใครรู้
+        (เคยค้างจริงสองใบ ใบหนึ่งเป็นบัญชีสาธิตยอด 30,110 บาท)
+
+        เทียบเฉพาะขอบเขตเดียวกับที่เพิ่งดึงมา ไม่ใช่ทั้งตาราง ไม่งั้นงวดเก่า
+        ที่อยู่นอกขอบเขตจะถูกเข้าใจผิดว่าถูกลบแล้วโดนลบตามไปด้วย
+
+        ลบเฉพาะใบที่ตัวซิงก์เป็นคนสร้าง (มีในตารางจับคู่) ใบที่คนฝั่ง 18
+        สร้างเองไม่ถูกแตะ
+        """
+        o14_model = spec['o14_model']
+        Target = self._writable(spec_o18_model(spec))
+        Map = self.env['npd.hrms.sync.map'].sudo()
+
+        scope = Target.search(domain)
+        if not scope:
+            return 0
+        links = Map.search([('o14_model', '=', o14_model),
+                            ('res_id', 'in', scope.ids)])
+        if not links:
+            return 0
+
+        alive = set(config.execute_kw(o14_model, 'search', [domain]))
+        if not alive:
+            # ฝั่ง 14 ตอบว่าไม่มีอะไรเลยทั้งที่ฝั่ง 18 มีอยู่ — น่าจะดึงไม่สำเร็จ
+            # มากกว่าจะเป็นการลบจริง อย่าเพิ่งลบ รอรอบหน้า
+            warnings.append('ข้ามการลบตามต้นทาง เพราะฝั่ง 14 ไม่คืนรายการใด '
+                            'ทั้งที่ฝั่ง 18 มี %d ใบในขอบเขตนี้' % len(links))
+            return 0
+
+        doomed = links.filtered(lambda link: link.o14_id not in alive)
+        if not doomed:
+            return 0
+        if len(doomed) > max(1, int(len(links) * self.MAX_DELETE_RATIO)):
+            warnings.append('ข้ามการลบตามต้นทาง เพราะจะต้องลบถึง %d จาก %d ใบ '
+                            'ซึ่งมากผิดปกติ ให้คนตรวจก่อน'
+                            % (len(doomed), len(links)))
+            return 0
+
+        removed = 0
+        for link in doomed:
+            record = Target.browse(link.res_id).exists()
+            label = link.res_id
+            try:
+                with self.env.cr.savepoint():
+                    if record:
+                        label = '%s งวด %s/%s' % (
+                            getattr(record, 'employee_code', '') or link.res_id,
+                            getattr(record, 'month', ''),
+                            getattr(record, 'year', ''))
+                        record.unlink()
+                    link.unlink()
+                removed += 1
+                warnings.append('ลบตามต้นทาง: %s (ฝั่ง 14 ลบไปแล้ว)' % label)
+            except Exception as error:
+                counters['error_count'] += 1
+                warnings.append('ลบตามต้นทางไม่สำเร็จ %s: %s'
+                                % (label, str(error)[:120]))
+        if removed:
+            self.env.cr.commit()
+            _logger.info('[HRMS-SYNC] %s: ลบตามต้นทาง %d ใบ', spec['name'], removed)
+        counters['removed_count'] = removed
+        return removed
 
     @staticmethod
     def _unchanged(row, known):
