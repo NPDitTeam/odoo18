@@ -33,6 +33,7 @@
                 <field name="deduction_late" sum="รวม" optional="show"/>
                 <field name="deduction_leave" sum="รวม" optional="show"/>
                 <field name="missed_days_deduction" sum="รวม" optional="show"/>
+                <field name="suspension_deduction" sum="รวม" optional="show"/>
                 <field name="tax_monthly" sum="รวม"/>
                 <field name="sso_total" sum="รวม"/>
                 <field name="expense_provident" sum="รวม" optional="show"/>

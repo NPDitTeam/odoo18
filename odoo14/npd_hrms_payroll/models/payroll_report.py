@@ -50,6 +50,7 @@ REPORT_COLUMNS = [
     ('deduction_late', 'สาย'),
     ('deduction_leave', 'ลากิจ'),
     ('missed_days_deduction', 'ขาดงาน'),
+    ('suspension_deduction', 'หักพักงาน'),
     ('tax_monthly', 'ภาษีหัก ณ ที่จ่าย'),
     ('sso_total', 'ประกันสังคม'),
     ('expense_provident', 'กองทุนสำรองเลี้ยงชีพ'),
@@ -398,6 +399,7 @@ class PayrollReportLine(models.Model):
     deduction_late = fields.Float(string='สาย', digits=(16, 2), aggregator='sum')
     deduction_leave = fields.Float(string='ลากิจ', digits=(16, 2), aggregator='sum')
     missed_days_deduction = fields.Float(string='ขาดงาน', digits=(16, 2), aggregator='sum')
+    suspension_deduction = fields.Float(string='หักพักงาน', digits=(16, 2), aggregator='sum')
     tax_monthly = fields.Float(string='ภาษีหัก ณ ที่จ่าย', digits=(16, 2), aggregator='sum')
     sso_total = fields.Float(string='ประกันสังคม', digits=(16, 2), aggregator='sum')
     expense_provident = fields.Float(string='กองทุนสำรองเลี้ยงชีพ', digits=(16, 2), aggregator='sum')
