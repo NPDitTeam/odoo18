@@ -36,6 +36,12 @@ SALES_REPORT_MODEL = 'npd.commission.report.sales'
 O14_UNTIL_PARAM = 'npd.hrms.commission.o14_until'
 O14_BRIDGE_MODEL = 'npd.commission.bridge'
 
+# เกณฑ์ยอดขั้นต่ำ — ลอกมาจากฝั่ง 14 ตรง ๆ ห้ามเดาเอง
+# ยอดสุทธิของสาขาต้อง "เกิน" ยอดนี้ ค่าคอมสาขาถึงจะเริ่มคิด (ส่วนของเซลล์ไม่เกี่ยว)
+BRANCH_COMMISSION_MIN = 100000.0
+# Sales สำนักงานใหญ่เท่านั้นที่มีเกณฑ์นี้ Sales สาขาคิดตามขั้นบันไดเลย
+SALES_HEADOFFICE_MIN = 100000.0
+
 
 class CommissionSource(models.AbstractModel):
     _name = 'commission.source'
@@ -169,6 +175,27 @@ class CommissionSource(models.AbstractModel):
         return target.month, target.year
 
     @api.model
+    def _prorate_resign(self, employee, amount, month, year):
+        """คนลาออกไม่ได้ค่าคอมเต็มเดือน — เทียบกับ "เดือนที่ไปเอายอดมา"
+
+        ลาออกก่อนเดือนนั้น = ไม่ได้เลย ลาออกในเดือนนั้น = ได้ตามจำนวนวันที่อยู่
+        ฝั่ง 14 หารด้วย 30 ตายตัวไม่ใช่จำนวนวันจริงของเดือน ตรงนี้ต้องเหมือนกัน
+        ไม่งั้นคนเดียวกันได้เงินไม่เท่ากันระหว่างสองระบบ
+        """
+        if not amount or not employee.resign_date:
+            return amount
+        resign = employee.resign_date
+        try:
+            target = (int(year), int(month))
+        except (TypeError, ValueError):
+            return amount
+        if (resign.year, resign.month) < target:
+            return 0.0
+        if (resign.year, resign.month) == target:
+            return (amount / 30.0) * resign.day
+        return amount
+
+    @api.model
     def _month_window(self, month, year):
         last_day = calendar.monthrange(int(year), int(month))[1]
         return (date(int(year), int(month), 1),
@@ -181,10 +208,19 @@ class CommissionSource(models.AbstractModel):
     def get_branch_commission(self, employee, month, year):
         """ค่าคอมสาขาที่พนักงานคนนี้ได้รับ
 
-        สูตร: ยอดฐานของสาขา × อัตราค่าคอมสาขา × (สัดส่วนของคนนี้ ÷ สัดส่วนรวมสาขา)
+        สูตรเดียวกับฝั่ง 14 เป๊ะ (อย่าย่อ อย่าปัดเศษเอง):
+
+            กองสาขา = ยอดสุทธิสาขา × อัตราสาขา%   (เฉพาะเมื่อยอด > 100,000)
+            กองเซลล์ = ยอดสุทธิเซลล์ "ที่ขายในสาขานี้" × อัตราเซลล์%
+            ของคนนี้ = (กองสาขา + กองเซลล์) × สัดส่วนตัวเอง ÷ สัดส่วนรวมสาขา
+            แล้ว prorate ถ้าลาออกในเดือนที่ไปเอายอดมา
+
+        สามจุดที่เคยขาดไปและทำให้ตัวเลขไม่ตรงฝั่ง 14: เกณฑ์เกินแสน,
+        ยอดเซลล์ของสาขาเดียวกันที่ต้องรวมเข้ากอง, และ prorate คนลาออก
         """
         result = {'amount': 0.0, 'base': 0.0, 'rate': 0.0,
-                  'ratio': 0.0, 'total_ratio': 0.0, 'available': False}
+                  'ratio': 0.0, 'total_ratio': 0.0, 'available': False,
+                  'sales_in_branch_base': 0.0, 'sales_in_branch_rate': 0.0}
         branch = employee.branch_id
         if not branch:
             return result
@@ -199,22 +235,61 @@ class CommissionSource(models.AbstractModel):
         company = employee.company_id or self.env.company
 
         base = self._sum_branch_base(branch, comm_month, comm_year, company)
-        if not base:
-            return result
+        sales_base = self._sum_branch_sales_base(
+            branch, comm_month, comm_year, company)
 
         Config = self.env['commission.rate.branch.sales']
-        branch_rate, _sales_rate = Config.get_rates('sale_branch', company)
+        branch_rate, sales_rate = Config.get_rates('sale_branch', company)
         BranchConfig = self.env['commission.branch.config']
         ratio = BranchConfig.get_ratio_for_employee(branch, employee)
         total_ratio = BranchConfig.get_total_ratio_for_branch(branch)
 
         result.update({'base': base, 'rate': branch_rate,
-                       'ratio': ratio, 'total_ratio': total_ratio})
+                       'ratio': ratio, 'total_ratio': total_ratio,
+                       'sales_in_branch_base': sales_base,
+                       'sales_in_branch_rate': sales_rate})
         if not total_ratio or not ratio:
             return result
-        pool = base * (branch_rate / 100.0)
-        result['amount'] = pool * (ratio / total_ratio)
+
+        branch_pool = (base * (branch_rate / 100.0)
+                       if base > BRANCH_COMMISSION_MIN else 0.0)
+        sales_pool = sales_base * (sales_rate / 100.0)
+        amount = (branch_pool + sales_pool) * (ratio / total_ratio)
+        result['amount'] = self._prorate_resign(
+            employee, amount, comm_month, comm_year)
         return result
+
+    @api.model
+    def _sum_branch_sales_base(self, branch, month, year, company):
+        """ยอดสุทธิของเซลล์ "ที่ขายให้สาขานี้" — เข้ากองเดียวกับค่าคอมสาขา
+
+        คนละตัวกับค่าคอม Sales รายบุคคล: อันนั้นกรองด้วยรหัสพนักงาน
+        อันนี้กรองด้วยสาขา แล้วเอาไปแบ่งกันทั้งสาขาตามสัดส่วน
+        """
+        if not self._report_available(SALES_REPORT_MODEL):
+            return 0.0
+        Report = self.env[SALES_REPORT_MODEL].sudo()
+        if hasattr(Report, 'get_branch_net_rental'):
+            return Report.get_branch_net_rental(
+                branch, month, year, company=company)
+
+        field_names = Report._fields
+        if 'branch_id' not in field_names:
+            _logger.warning(
+                '[COMMISSION] %s ไม่มีช่องสาขา — ยอดเซลล์ของสาขาจึงเป็น 0',
+                SALES_REPORT_MODEL)
+            return 0.0
+        records = Report.search([
+            ('branch_id', '=', branch.id),
+            ('company_id', '=', company.id),
+        ])
+        if 'month' in field_names and 'year' in field_names:
+            records = records.filtered(
+                lambda r: str(r.month) == str(month) and str(r.year) == str(year))
+        for candidate in ('net_rental', 'total_amount', 'amount'):
+            if candidate in field_names:
+                return sum(records.mapped(candidate))
+        return 0.0
 
     @api.model
     def _sum_branch_base(self, branch, month, year, company):
@@ -281,13 +356,23 @@ class CommissionSource(models.AbstractModel):
         result['available'] = True
         comm_month, comm_year = self.get_commission_period(month, year)
         base = self._sum_sales_base(employee, comm_month, comm_year, company)
+        result['base'] = base
         if not base:
             return result
 
         rate = self.env['commission.rate.config'].get_rate_for_amount(
             base, comm_type, company)
-        result.update({'base': base, 'rate': rate,
-                       'amount': base * (rate / 100.0)})
+        # Sales สำนักงานใหญ่มีเกณฑ์เพิ่ม: ยอดต้อง "เกิน" แสน ถึงจะได้
+        # ไม่ถึงเกณฑ์ให้อัตราเป็น 0 ด้วย ไม่ใช่แค่ยอดเป็น 0 — ฝั่ง 14 แสดงแบบนี้
+        if comm_type == 'sale_headoffice' and base <= SALES_HEADOFFICE_MIN:
+            _logger.info(
+                '[COMMISSION] %s Sales สนญ. ยอด %.2f ไม่เกิน %.0f → ค่าคอม 0',
+                employee.employee_code, base, SALES_HEADOFFICE_MIN)
+            return result
+
+        amount = base * (rate / 100.0)
+        result.update({'rate': rate, 'amount': self._prorate_resign(
+            employee, amount, comm_month, comm_year)})
         return result
 
     @api.model

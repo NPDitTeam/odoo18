@@ -20,6 +20,12 @@ class PayrollSalaryCommission(models.Model):
         string='ยอดฐานค่าคอมสาขา', readonly=True)
     commission_branch_rate = fields.Float(
         string='อัตราค่าคอมสาขา (%)', readonly=True)
+    commission_branch_sales_base = fields.Float(
+        string='ยอดฐานเซลล์ในสาขา', readonly=True,
+        help='ยอดสุทธิของเซลล์ที่ขายในสาขานี้ — รวมเข้ากองเดียวกับค่าคอมสาขา '
+             'แล้วแบ่งกันตามสัดส่วน คนละตัวกับค่าคอม Sales รายบุคคล')
+    commission_branch_sales_rate = fields.Float(
+        string='อัตราเซลล์ในสาขา (%)', readonly=True)
     commission_branch_ratio = fields.Float(
         string='สัดส่วนของพนักงาน', readonly=True)
     commission_branch_total_ratio = fields.Float(
@@ -111,6 +117,8 @@ class PayrollSalaryCommission(models.Model):
         self.commission_branch_rate = branch['rate']
         self.commission_branch_ratio = branch['ratio']
         self.commission_branch_total_ratio = branch['total_ratio']
+        self.commission_branch_sales_base = branch['sales_in_branch_base']
+        self.commission_branch_sales_rate = branch['sales_in_branch_rate']
 
         self.income_commission_sale = sales['amount']
         self.commission_sale_base = sales['base']
@@ -141,6 +149,8 @@ class PayrollSalaryCommission(models.Model):
         self.commission_branch_rate = 0.0
         self.commission_branch_ratio = 0.0
         self.commission_branch_total_ratio = 0.0
+        self.commission_branch_sales_base = 0.0
+        self.commission_branch_sales_rate = 0.0
         self.commission_sale_base = 0.0
         self.commission_sale_rate = 0.0
         self.commission_from_o14 = True

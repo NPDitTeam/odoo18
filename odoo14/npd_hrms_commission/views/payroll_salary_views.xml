@@ -29,6 +29,8 @@
                         <group string="ค่าคอมสาขา">
                             <field name="commission_branch_base"/>
                             <field name="commission_branch_rate"/>
+                            <field name="commission_branch_sales_base"/>
+                            <field name="commission_branch_sales_rate"/>
                             <field name="commission_branch_ratio"/>
                             <field name="commission_branch_total_ratio"/>
                             <field name="income_commission" readonly="1"/>
