@@ -46,9 +46,13 @@ class HRWithholdingTaxCert(models.Model):
     _inherit = ['mail.thread', 'mail.activity.mixin']
     _description = 'หนังสือรับรองการหักภาษี ณ ที่จ่าย (50 ทวิ)'
     _order = 'date desc, id desc'
+    # พนักงานที่ย้ายบริษัทกลางปีต้องได้หนังสือรับรองแยกตามบริษัทที่จ่ายเงินได้
+    # (เช่นรหัส 0816 ปี 2569 ได้สองใบ จากนภดลกรุงเทพและนภดลเอสกรุ๊ป)
+    # กฎเดิมผูกแค่พนักงานกับปี จึงออกใบที่สองไม่ได้ ต้องนับบริษัทเข้าไปด้วย
     _sql_constraints = [
-        ('employee_year_unique', 'UNIQUE(employee_id, report_year)',
-         'มีหนังสือรับรองของพนักงานคนนี้ในปีนี้แล้ว'),
+        ('employee_year_company_unique',
+         'UNIQUE(employee_id, report_year, company_id)',
+         'มีหนังสือรับรองของพนักงานคนนี้ ปีนี้ ของบริษัทนี้แล้ว'),
     ]
 
     name = fields.Char(string='เลขที่', readonly=True, copy=False,
