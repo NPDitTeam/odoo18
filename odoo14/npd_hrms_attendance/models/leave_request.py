@@ -133,6 +133,11 @@ class HrAttendanceBranchLeave(models.Model):
         แอปล็อกไว้แล้ว แต่ต้องกันที่ฝั่งเซิร์ฟเวอร์ด้วย เพราะแก้จากหน้าเว็บได้
         และแอปเวอร์ชันเก่ายังส่งมาได้
         """
+        # ใบเก่าที่ยกมาจากฝั่ง 14 เป็นประวัติที่อนุมัติและจ่ายเงินไปแล้ว
+        # กฎพวกนี้มีไว้กันใบใหม่ที่กรอกผิด ไม่ได้มีไว้ตีประวัติกลับ
+        # ถ้าไม่เปิดทางให้ ประวัติการลาฝั่ง 18 จะขาดหายโดยไม่มีใครรู้
+        if self.env.context.get('npd_hrms_sync'):
+            return
         for rec in self:
             if rec.leave_type_id.code != 'leave_saturday':
                 continue
@@ -147,6 +152,9 @@ class HrAttendanceBranchLeave(models.Model):
 
     @api.constrains('leave_type_id', 'attachment')
     def _check_attachment_required(self):
+        # ใบเก่าจากฝั่ง 14 ไม่ได้บังคับแนบเอกสาร ยกมาเป็นประวัติได้โดยไม่ต้องมีไฟล์
+        if self.env.context.get('npd_hrms_sync'):
+            return
         for rec in self:
             if (rec.leave_type_id.requires_attachment and not rec.attachment
                     and rec.state == 'รออนุมัติ'):

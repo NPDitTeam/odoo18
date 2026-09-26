@@ -157,6 +157,11 @@ class HrManualTimeLog(models.Model):
     # ------------------------------------------------------------------
     @api.constrains('reason_type_id', 'amount', 'attachment', 'allowance_type')
     def _check_reason_requirements(self):
+        # ใบเก่าที่ยกมาจากฝั่ง 14 เป็นประวัติที่อนุมัติและจ่ายเงินไปแล้ว
+        # ฝั่ง 14 ไม่ได้บังคับเลือกรายการค่าเบี้ยเลี้ยงหรือแนบเอกสาร
+        # กฎนี้มีไว้กันใบใหม่ ไม่ได้มีไว้ตีประวัติกลับ
+        if self.env.context.get('npd_hrms_sync'):
+            return
         for rec in self:
             if rec.state not in ('รออนุมัติ', 'อนุมัติ'):
                 continue

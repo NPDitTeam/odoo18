@@ -145,7 +145,10 @@ class HrmsLeaveBalance(models.Model):
         self.ensure_one()
         if days <= 0:
             return
-        if days > self.remaining:
+        # ใบเก่าที่ยกมาจากฝั่ง 14 อนุมัติไปแล้วตั้งแต่ตอนนั้น สิทธิ์คงเหลือฝั่ง 18
+        # เป็นยอดที่คำนวณใหม่ จึงไม่ตรงกับตอนที่ใบนั้นถูกอนุมัติจริง
+        # ถ้าบล็อกไว้ ประวัติการลาจะขาด — ยอมให้ติดลบแล้วให้ HR ไปปรับยอดเอง
+        if days > self.remaining and not self.env.context.get('npd_hrms_sync'):
             raise UserError(
                 'จำนวนวันลาเกินสิทธิ์ที่เหลืออยู่ (%d วัน)' % self.remaining)
         self.remaining -= days
