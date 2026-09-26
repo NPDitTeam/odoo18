@@ -149,9 +149,22 @@ class HrmsLeaveBalance(models.Model):
         # เป็นยอดที่คำนวณใหม่ จึงไม่ตรงกับตอนที่ใบนั้นถูกอนุมัติจริง
         # ถ้าบล็อกไว้ ประวัติการลาจะขาด — ยอมให้ติดลบแล้วให้ HR ไปปรับยอดเอง
         if days > self.remaining and not self.env.context.get('npd_hrms_sync'):
+            # คงเหลือติดลบได้ ถ้าใบเก่าที่ยกมาจากฝั่ง 14 หักเกินสิทธิ์ที่ฝั่ง 18
+            # คำนวณใหม่ให้ บอกเป็น "ใช้เกินไปแล้วกี่วัน" จะเข้าใจง่ายกว่าโชว์เลขติดลบ
+            if self.remaining < 0:
+                raise UserError(
+                    'สิทธิ์การลาประเภทนี้ใช้เกินไปแล้ว %s วัน '
+                    'ยื่นเพิ่มไม่ได้ กรุณาติดต่อฝ่ายบุคคล'
+                    % self._format_days(-self.remaining))
             raise UserError(
-                'จำนวนวันลาเกินสิทธิ์ที่เหลืออยู่ (%d วัน)' % self.remaining)
+                'จำนวนวันลาเกินสิทธิ์ที่เหลืออยู่ (เหลือ %s วัน ขอมา %s วัน)'
+                % (self._format_days(self.remaining), self._format_days(days)))
         self.remaining -= days
+
+    @staticmethod
+    def _format_days(value):
+        """แสดงจำนวนวันแบบอ่านง่าย — ครึ่งวันคงทศนิยม เต็มวันตัดออก"""
+        return ('%g' % round(float(value or 0), 2))
 
     def _revert(self, days):
         """คืนสิทธิ์ตอนยกเลิก/ไม่อนุมัติ — คืนได้ไม่เกิน total (กันคงเหลือเกินสิทธิ์)

@@ -114,10 +114,14 @@ class AllowanceManagement(models.Model):
             [('employee_code', '=', str(employee_code))], limit=1)
         if not emp or not emp.branch_id:
             return []
+        # กรองด้วย "สาขา" อย่างเดียว ไม่กรองบริษัท
+        # อัตราค่าเบี้ยเลี้ยงตั้งตามสาขา ซึ่งเป็นขอบเขตที่ใช้จริงในงาน
+        # ส่วนบริษัทเป็นผลพลอยได้จากการยกข้อมูลมาจากฝั่ง 14 ที่มีบริษัทเดียว
+        # ถ้ากรองบริษัทด้วย พนักงานสาขาเดียวกันแต่คนละบริษัทจะเบิกไม่ได้
+        # ทั้งที่อยู่สาขาเดียวกันและใช้อัตราเดียวกัน
         records = self.sudo().search([
             ('state', '=', 'อนุมัติ'),
             ('branch_ids', 'in', [emp.branch_id.id]),
-            ('company_id', '=', (emp.company_id or self.env.company).id),
         ])
         is_foreign = emp.nationality != 'ไทย'
         result = []
