@@ -6,3 +6,4 @@ access_sync_log_mgr,npd.hrms.sync.log manager,model_npd_hrms_sync_log,base.group
 access_sync_log_line_mgr,npd.hrms.sync.log.line manager,model_npd_hrms_sync_log_line,base.group_system,1,1,1,1
 access_sync_check_mgr,npd.hrms.sync.check manager,model_npd_hrms_sync_check,base.group_system,1,1,1,1
 access_sync_check_line_mgr,npd.hrms.sync.check.line manager,model_npd_hrms_sync_check_line,base.group_system,1,1,1,1
+access_sync_name_alias_mgr,npd.hrms.sync.name.alias manager,model_npd_hrms_sync_name_alias,base.group_system,1,1,1,1

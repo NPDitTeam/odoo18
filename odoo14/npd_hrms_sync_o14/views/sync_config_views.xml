@@ -159,4 +159,36 @@
         <field name="context">{'search_default_g_model': 1}</field>
     </record>
 
+    <!-- ชื่อพ้อง — ที่ให้คนยืนยันเองว่าชื่อที่สะกดต่างคือพนักงานคนไหน -->
+    <record id="view_hrms_sync_name_alias_list" model="ir.ui.view">
+        <field name="name">npd.hrms.sync.name.alias.list</field>
+        <field name="model">npd.hrms.sync.name.alias</field>
+        <field name="arch" type="xml">
+            <list string="ชื่อพ้องจากฝั่ง Odoo 14" editable="bottom">
+                <field name="o14_name"/>
+                <field name="employee_id"/>
+                <field name="employee_code"/>
+                <field name="note"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="action_hrms_sync_name_alias" model="ir.actions.act_window">
+        <field name="name">ชื่อพ้องจากฝั่ง Odoo 14</field>
+        <field name="res_model">npd.hrms.sync.name.alias</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">ยังไม่มีชื่อพ้องที่ต้องจับคู่</p>
+            <p>
+                แถวลงเวลาฝั่ง Odoo 14 จำนวนมากไม่ได้ผูกกับทะเบียนพนักงาน
+                เหลือแต่ชื่อที่พิมพ์ไว้ ระบบจับคู่จากชื่อให้อัตโนมัติ
+                แต่ชื่อที่สะกดต่างจากทะเบียนจริง ๆ ระบบจะไม่เดาให้
+                เพราะลงเวลาผิดคนกระทบเงินเดือน
+                <br/>
+                ใส่ชื่อที่ฝั่ง 14 บันทึกไว้ แล้วเลือกว่าคือพนักงานคนไหน
+                รอบดึงข้อมูลถัดไปจะยกแถวที่เคยตกมาให้ครบเอง
+            </p>
+        </field>
+    </record>
+
 </odoo>

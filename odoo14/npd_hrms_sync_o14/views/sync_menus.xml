@@ -36,4 +36,10 @@
               parent="menu_hrms_sync_root"
               sequence="50"/>
 
+    <menuitem id="menu_hrms_sync_name_alias"
+              name="ชื่อพ้อง (จับคู่ชื่อที่สะกดต่าง)"
+              action="action_hrms_sync_name_alias"
+              parent="menu_hrms_sync_root"
+              sequence="25"/>
+
 </odoo>

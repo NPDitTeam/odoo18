@@ -41,6 +41,18 @@ class SkipRow(Exception):
 # ตามมาตรฐาน Odoo จึงต้องลบออกเจ็ดชั่วโมงตอนยกมา
 THAI_UTC_OFFSET = timedelta(hours=7)
 
+# ฝั่ง 14 แยกประเภทงวดจ่ายเงินประกันไว้ห้าแบบ ฝั่ง 18 ตั้งใจเหลือสองแบบ
+# เพราะสูตรคืนเงินสนใจแค่ว่า "เป็นเงินประกันที่ต้องคืน" หรือ
+# "หักไปเป็นค่าธรรมเนียมแล้วไม่ต้องคืน" ค่าที่ไม่มีในฝั่ง 18 จึงยุบมาเป็น
+# work_permit ทั้งหมด ยอดเงินยกมาครบ เสียแค่ป้ายประเภทย่อย
+DEPOSIT_PAYMENT_TYPES = {
+    'regular': 'regular',
+    'work_permit_fee': 'work_permit',
+    'visa_fee': 'work_permit',
+    'document_service': 'work_permit',
+    'other': 'work_permit',
+}
+
 
 class HrmsSyncEngine(models.AbstractModel):
     _name = 'npd.hrms.sync.engine'
@@ -157,6 +169,20 @@ class HrmsSyncEngine(models.AbstractModel):
             self.env.cr.commit()
         _logger.info('[HRMS-SYNC] รีเฟรชรายงานเงินเดือนแล้ว %s งวด', len(periods))
 
+    @staticmethod
+    def _clean_name(raw):
+        """ล้างชื่อให้เทียบกันได้จริง
+
+        ชื่อในทะเบียนถูกพิมพ์/วางมาจากหลายที่ จึงมีอักขระที่มองไม่เห็นติดมาด้วย
+        เช่นรหัส 1322 มี zero-width space คั่นกลาง ทำให้เทียบตัวต่อตัวไม่ตรง
+        ทั้งที่คนอ่านเห็นเป็นชื่อเดียวกัน (การลงเวลา 167 แถวตกไปเพราะเรื่องนี้)
+        """
+        text = raw or ''
+        text = ''.join(ch for ch in text
+                       if not (0x200b <= ord(ch) <= 0x200f
+                               or ord(ch) in (0xfeff, 0x00ad)))
+        return ' '.join(text.replace(' ', ' ').split())
+
     def _employee_name_index(self):
         """ดัชนี "ชื่อ นามสกุล" -> id พนักงาน สำหรับจับคู่แถวที่ไม่มีลิงก์
 
@@ -170,16 +196,43 @@ class HrmsSyncEngine(models.AbstractModel):
         index, clashes = {}, set()
         for employee in self._writable('employee.salary').search_read(
                 [], ['firstname', 'lastname']):
-            name = ('%s %s' % (employee.get('firstname') or '',
-                               employee.get('lastname') or '')).strip()
-            name = ' '.join(name.split())
+            first = self._clean_name(employee.get('firstname'))
+            last = self._clean_name(employee.get('lastname'))
+            name = self._clean_name('%s %s' % (first, last))
             if not name:
                 continue
-            if name in index:
-                clashes.add(name)
-            index[name] = employee['id']
+            keys = {name}
+            # ทะเบียนบางรายกรอกชื่อซ้ำลงทั้งช่องชื่อและช่องนามสกุล
+            # (เช่น "Hlaing Myo Tun Hlaing Myo Tun") แต่ตอนลงเวลาบันทึกชื่อ
+            # ไว้ชุดเดียว จึงเก็บชื่อชุดเดียวไว้เป็นคีย์สำรองด้วย
+            if first and first == last:
+                keys.add(first)
+            for key in keys:
+                if key in index and index[key] != employee['id']:
+                    clashes.add(key)
+                index[key] = employee['id']
         for name in clashes:
             index.pop(name, None)
+
+        # เติมคีย์แบบไม่สนตัวพิมพ์ใหญ่เล็กและไม่สนช่องว่างไว้ด้วย
+        # ชื่อพม่าที่เขียนเป็นภาษาไทยเว้นวรรคไม่เหมือนกันบ่อย เช่นทะเบียนเป็น
+        # "เอมินอู" แต่ตอนลงเวลาพิมพ์ "เอ มิน อู" ซึ่งคนอ่านรู้ว่าคนเดียวกัน
+        # ชื่อที่พับแล้วชนกันเองให้ตัดทิ้ง ตามหลักเดิมคือเดาไม่ได้ก็อย่าเดา
+        folded, folded_clashes = {}, set()
+        for name, employee_id in index.items():
+            for key in (name.casefold(), name.replace(' ', '').casefold()):
+                if key in folded and folded[key] != employee_id:
+                    folded_clashes.add(key)
+                folded[key] = employee_id
+        for key in folded_clashes:
+            folded.pop(key, None)
+        for key, employee_id in folded.items():
+            index.setdefault(key, employee_id)
+
+        # ชื่อพ้องที่คนยืนยันเองมาทีหลังและทับของที่เดาอัตโนมัติได้
+        # เพราะเป็นคำตอบจากคนที่รู้จริง ไม่ใช่การเดาจากตัวสะกด
+        # (รวมถึงชื่อที่ระบบตัดทิ้งเพราะซ้ำกันหลายคน ก็ชี้ตัวได้ที่นี่)
+        index.update(self.env['npd.hrms.sync.name.alias'].as_index())
         return index
 
     def _writable(self, model_name):
@@ -300,10 +353,43 @@ class HrmsSyncEngine(models.AbstractModel):
             domain.append(('write_date', '>=',
                            fields.Datetime.to_string(cutoff)))
 
+        # สลิปเงินเดือนไม่ได้ดูวันที่แก้ไข แต่ดู "งวด" ของสลิปแทน
+        # งวดที่ปิดจ่ายไปแล้วถือว่าจบ ไม่ต้องกวาดซ้ำทุกคืน รอบแรกดึงครบไปแล้ว
+        if incremental and spec.get('current_period_only'):
+            periods = self._recent_payroll_periods(config)
+            if periods:
+                domain.extend(self._periods_domain(periods))
+
         date_field = spec.get('date_field')
         if date_field and config.sync_from_date:
             domain.append((date_field, '>=', str(config.sync_from_date)))
         return domain
+
+    @staticmethod
+    def _recent_payroll_periods(config):
+        """งวดเงินเดือนที่รอบประจำวันยังต้องตามดู
+
+        งวดเงินเดือนไม่ตรงกับเดือนปฏิทิน รอบตัดคือ 25 ถึง 24 ดังนั้นตั้งแต่
+        วันที่ 25 เป็นต้นไปถือว่าเข้างวดของเดือนถัดไปแล้ว
+        """
+        months = max(int(config.payroll_recent_months or 1), 1)
+        today = fields.Date.context_today(config)
+        month, year = today.month, today.year
+        if today.day >= 25:
+            month, year = (1, year + 1) if month == 12 else (month + 1, year)
+        periods = []
+        for _step in range(months):
+            periods.append((month, year))
+            month, year = (12, year - 1) if month == 1 else (month - 1, year)
+        return periods
+
+    @staticmethod
+    def _periods_domain(periods):
+        """โดเมน OR ของคู่ (เดือน, ปี) — ฝั่ง 14 เก็บสองช่องนี้เป็นข้อความ"""
+        parts = ['|'] * (len(periods) - 1)
+        for month, year in periods:
+            parts += ['&', ('month', '=', str(month)), ('year', '=', str(year))]
+        return parts
 
     # ==================================================================
     # หาว่าช่องไหนยกได้ตรง ๆ บ้าง
@@ -460,7 +546,28 @@ class HrmsSyncEngine(models.AbstractModel):
                 # กุญแจไม่อยู่ในค่าที่แปลงได้ แปลว่าแปลงไม่สำเร็จ อย่าเดามั่ว
                 return Target.browse()
             domain.append((key, '=', values[key] or False))
-        return Target.search(domain, limit=1)
+        candidate = Target.search(domain, limit=1)
+        if not candidate:
+            return candidate
+
+        # แถวที่กุญแจชี้มา ถูกระเบียนอื่นของฝั่ง 14 จองไว้แล้วหรือยัง
+        #
+        # กุญแจของบางหัวข้อไม่ได้แยกระเบียนได้จริง เช่นขอลงเวลาย้อนหลังใช้
+        # (พนักงาน, วันที่ทำงาน, เหตุผล) แต่คนหนึ่งยื่นซ้ำวันเดียวกันเหตุผล
+        # เดียวกันได้หลายใบ (ยื่นเข้า-ออกคนละใบ หรือโดนตีกลับแล้วยื่นใหม่)
+        # ถ้าปล่อยให้จับคู่ตามกุญแจอย่างเดียว ใบที่สองจะไปเขียนทับใบแรก
+        # แล้วข้อมูลหายไปเงียบ ๆ (เคยหายจริง 360 ใบ และใบลาอีก 121 ใบ)
+        #
+        # กุญแจยังมีประโยชน์ตอนจับคู่ครั้งแรกกับของที่ฝั่ง 18 มีอยู่ก่อนแล้ว
+        # จึงเก็บไว้ แต่ถ้าแถวนั้นมีเจ้าของแล้วให้ถือว่าไม่เจอ ไปสร้างใบใหม่แทน
+        owner = self.env['npd.hrms.sync.map'].sudo().search([
+            ('o14_model', '=', spec['o14_model']),
+            ('res_model', '=', spec_o18_model(spec)),
+            ('res_id', '=', candidate.id),
+        ], limit=1)
+        if owner and owner.o14_id != row['id']:
+            return Target.browse()
+        return candidate
 
     @staticmethod
     def _natural_key_text(spec, values):
@@ -740,8 +847,20 @@ class HrmsSyncEngine(models.AbstractModel):
 
         # แถวที่ฝั่ง 14 ไม่ได้ผูกพนักงานไว้ ให้จับคู่จากชื่อที่บันทึกไว้แทน
         if 'employee_id' in local and not values.get('employee_id'):
-            raw_name = ' '.join((row.get('username') or '').split())
-            matched = (spec.get('_name_index') or {}).get(raw_name)
+            raw_name = self._clean_name(row.get('username'))
+            index = spec.get('_name_index') or {}
+            # ชื่อฝรั่งฝั่ง 14 พิมพ์ใหญ่เล็กไม่ตรงกับทะเบียนอยู่บ่อย
+            # (เช่น "Aung ko sint" กับ "Aung Ko Sint") เทียบแบบไม่สนตัวพิมพ์
+            # จึงจับคู่ได้เพิ่มโดยไม่เสี่ยงจับผิดคน เพราะชื่อซ้ำถูกตัดจากดัชนีแล้ว
+            matched = (index.get(raw_name)
+                       or index.get(raw_name.casefold())
+                       or index.get(raw_name.replace(' ', '').casefold()))
+            # บางแถวฝั่ง 14 ใส่ "รหัสพนักงาน" ลงช่องชื่อแทนชื่อจริง
+            # เป็นตัวเลขล้วนจึงแยกออกจากชื่อคนได้ชัด ไม่ต้องเดา
+            if not matched and raw_name.isdigit():
+                by_code = self._writable('employee.salary').search(
+                    [('employee_code', '=', raw_name)], limit=1)
+                matched = by_code.id if by_code else None
             if matched:
                 values['employee_id'] = matched
             elif local['employee_id'].required:
@@ -891,6 +1010,65 @@ class HrmsSyncEngine(models.AbstractModel):
             values['leave_type_id'] = leave_type.id
             if 'leave_type_name' in local:
                 values['leave_type_name'] = name
+            if leave_type.code == 'leave_saturday':
+                values = self._fix_saturday_leave(row, values, warnings)
+        return values
+
+    @staticmethod
+    def _fix_saturday_leave(row, values, warnings):
+        """ซ่อมใบสิทธิหยุดวันเสาร์ที่ฝั่ง 14 กรอกวันสิ้นสุดเพี้ยน
+
+        สิทธิหยุดวันเสาร์คือหยุดวันเสาร์หนึ่งวัน แต่ฝั่ง 14 มีใบที่ช่องวันสิ้นสุด
+        ถูกทิ้งไว้เป็น "วันที่กรอกใบ" แทนวันที่หยุดจริง เช่นเริ่มเสาร์ 22 ส.ค.
+        แต่สิ้นสุด 25 ส.ค. (วันที่กดบันทึก) ถ้ายกมาตรง ๆ สิทธิ์จะถูกหักยาว
+        ทั้งช่วงแทนที่จะหักวันเดียว
+
+        ยึดวันเสาร์เป็นวันที่หยุดจริง แล้วบีบให้เป็นวันเดียว
+        ใบที่ไม่มีวันเสาร์อยู่เลยไม่เดาให้ ปล่อยให้ตีกลับแล้วรายงานชื่อ
+        """
+        start = values.get('leave_start_date')
+        end = values.get('leave_end_date')
+        if not start or not end or start == end:
+            return values
+        start_date = fields.Date.to_date(start)
+        end_date = fields.Date.to_date(end)
+        if not start_date or not end_date:
+            return values
+        if start_date.weekday() == 5:
+            saturday = start_date
+        elif end_date.weekday() == 5:
+            saturday = end_date
+        else:
+            return values
+        values['leave_start_date'] = saturday
+        values['leave_end_date'] = saturday
+        warnings.append(
+            'ใบลา id %s: สิทธิหยุดวันเสาร์ฝั่ง 14 ลงช่วง %s ถึง %s '
+            'ซึ่งวันสิ้นสุดเป็นวันที่กรอกใบ ไม่ใช่วันหยุดจริง '
+            'ยกมาเป็นวันเสาร์ %s วันเดียวตามความหมายของสิทธิ์'
+            % (row.get('id'), start_date.strftime('%d/%m/%Y'),
+               end_date.strftime('%d/%m/%Y'), saturday.strftime('%d/%m/%Y')))
+        return values
+
+    def _tf_deposit_payment(self, config, spec, row, values, warnings=None):
+        """งวดการจ่ายเงินประกัน — ยุบประเภทค่าธรรมเนียมให้เข้ากับฝั่ง 18
+
+        ฝั่ง 14 แยกไว้ห้าแบบ (รายเดือน / ค่าต่อใบอนุญาตทำงาน / ค่าวีซ่า /
+        ค่าทำเอกสาร / อื่นๆ) ฝั่ง 18 เหลือสองแบบตามที่สูตรคืนเงินต้องใช้จริง
+        ถ้าส่งค่าเดิมไปตรงๆ ฝั่ง 18 จะตีกลับทั้งแถว (เคยตกไป 26 งวด)
+        ยอดเงินและเดือนที่หักยกมาครบ เสียแค่ป้ายประเภทย่อย จึงแจ้งชื่อไว้
+        """
+        warnings = warnings if warnings is not None else []
+        values = self._tf_common(config, spec, row, values, warnings)
+        raw = (row.get('payment_type') or 'regular')
+        raw = raw.strip() if isinstance(raw, str) else 'regular'
+        mapped = DEPOSIT_PAYMENT_TYPES.get(raw, 'work_permit')
+        if raw != mapped:
+            warnings.append(
+                'งวดจ่าย id %s: ฝั่ง 14 เป็น "%s" ซึ่งฝั่ง 18 ไม่มี '
+                'ยกมาเป็น "Work Permit / อื่นๆ" ยอดเงินเท่าเดิม'
+                % (row.get('id'), raw))
+        values['payment_type'] = mapped
         return values
 
     def _tf_manual(self, config, spec, row, values, warnings=None):

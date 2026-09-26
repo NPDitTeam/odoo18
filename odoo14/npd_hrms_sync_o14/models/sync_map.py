@@ -108,3 +108,47 @@ class HrmsSyncMap(models.Model):
             _logger.info('[HRMS-SYNC] ล้างการจับคู่ที่ปลายทางหายไป %s แถว (%s)',
                          dropped, o14_model)
         return dropped
+
+
+class HrmsSyncNameAlias(models.Model):
+    """ชื่อที่ฝั่ง 14 บันทึกไว้ตอนลงเวลา แต่สะกดไม่ตรงกับทะเบียนพนักงาน
+
+    แถวลงเวลาฝั่ง 14 สองหมื่นกว่าแถวไม่ได้ผูกกับทะเบียนพนักงาน เหลือแต่ชื่อ
+    ที่พิมพ์ไว้ ตัวซิงก์จึงจับคู่จากชื่อให้ ซึ่งได้เกือบหมด ที่เหลือคือชื่อที่
+    สะกดต่างจริง ๆ เช่น "นัฎทินัน" กับ "นัฏทินัน" (ฎ กับ ฏ) หรือชื่อพม่าที่
+    ถอดเสียงคนละแบบ
+
+    ระบบจะไม่เดาให้เอง เพราะลงเวลาไปผิดคนกระทบเงินเดือน ที่นี่จึงเป็นที่ให้
+    คนยืนยันเองว่าชื่อไหนคือใคร แล้วรอบซิงก์ถัดไปจะยกแถวที่เคยตกมาให้ครบ
+    """
+    _name = 'npd.hrms.sync.name.alias'
+    _description = 'ชื่อพ้องจากฝั่ง Odoo 14'
+    _order = 'o14_name'
+    _rec_name = 'o14_name'
+
+    o14_name = fields.Char(
+        string='ชื่อที่บันทึกตอนลงเวลา (ฝั่ง 14)', required=True, index=True,
+        help='คัดลอกมาให้ตรงกับที่ฝั่ง 14 บันทึกไว้ '
+             'ระบบเทียบแบบไม่สนตัวพิมพ์ใหญ่เล็กและช่องว่างเกินให้แล้ว')
+    employee_id = fields.Many2one(
+        'employee.salary', string='คือพนักงานคนนี้', required=True,
+        ondelete='cascade')
+    employee_code = fields.Char(
+        related='employee_id.employee_code', string='รหัสพนักงาน', store=True)
+    note = fields.Char(string='หมายเหตุ')
+
+    _sql_constraints = [
+        ('o14_name_unique', 'UNIQUE(o14_name)',
+         'ชื่อนี้ถูกจับคู่ไว้แล้ว หนึ่งชื่อจับคู่ได้คนเดียว'),
+    ]
+
+    @api.model
+    def as_index(self):
+        """คืน dict ชื่อ -> id พนักงาน สำหรับให้ตัวซิงก์เอาไปรวมกับดัชนีชื่อ"""
+        index = {}
+        for alias in self.sudo().search_read([], ['o14_name', 'employee_id']):
+            name = ' '.join((alias['o14_name'] or '').split())
+            if name and alias['employee_id']:
+                index[name] = alias['employee_id'][0]
+                index[name.casefold()] = alias['employee_id'][0]
+        return index
