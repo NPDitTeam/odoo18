@@ -24,11 +24,17 @@ from datetime import date
 from dateutil.relativedelta import relativedelta
 
 from odoo import models, api
+from odoo.exceptions import UserError
 
 _logger = logging.getLogger(__name__)
 
 BRANCH_REPORT_MODEL = 'npd.commission.report'
 SALES_REPORT_MODEL = 'npd.commission.report.sales'
+
+# ช่วงย้ายระบบ: งวดสลิปที่ยังต้องไปเอาค่าคอมจากฝั่ง Odoo 14 (รูปแบบ 'YYYY-MM')
+# ว่าง = ไม่ต้องไปเอา คิดจากข้อมูลฝั่ง 18 อย่างเดียว
+O14_UNTIL_PARAM = 'npd.hrms.commission.o14_until'
+O14_BRIDGE_MODEL = 'npd.commission.bridge'
 
 
 class CommissionSource(models.AbstractModel):
@@ -41,6 +47,117 @@ class CommissionSource(models.AbstractModel):
         """โมดูลรายงานค่าคอมถูกติดตั้งแล้วหรือยัง"""
         return model_name in self.env
 
+    # ------------------------------------------------------------------
+    # ช่วงย้ายระบบ — ขอค่าคอมจากฝั่ง Odoo 14
+    # ------------------------------------------------------------------
+    # ค่าคอมจ่ายช้าหนึ่งเดือน สลิปเดือนแรกที่ทำบน Odoo 18 จึงต้องใช้ยอดขาย
+    # ของเดือนก่อนหน้าซึ่งยังอยู่ฝั่ง 14 ทั้งก้อน (ยอดจริงอยู่ในฐาน ERP อีก
+    # 4 ฐานที่ฝั่ง 18 ต่อไม่ถึงด้วย) งวดนั้นจึงขอตัวเลขสำเร็จรูปจากฝั่ง 14
+    # ผ่าน XML-RPC แทนที่จะคิดเอง — สูตรฝั่ง 14 มีเงื่อนไขเยอะ (ขั้นบันได,
+    # ยอดสาขาต้องเกินแสน, ยอดเซลล์ของสาขาเดียวกัน, บ้านเขียว, prorate คนลาออก)
+    # ถ้าคิดใหม่อีกชุดสองระบบจะได้ตัวเลขไม่เท่ากันโดยไม่มีใครรู้
+
+    @api.model
+    def _o14_until(self):
+        """งวดสลิปสุดท้ายที่ยังต้องไปเอาค่าคอมจากฝั่ง 14 — None = เลิกใช้แล้ว"""
+        raw = (self.env['ir.config_parameter'].sudo()
+               .get_param(O14_UNTIL_PARAM, default='') or '').strip()
+        if not raw:
+            return None
+        try:
+            year, month = raw.split('-')
+            return int(year), int(month)
+        except (ValueError, AttributeError):
+            _logger.warning(
+                '[COMMISSION] ค่า %s = %r ผิดรูปแบบ ต้องเป็น YYYY-MM',
+                O14_UNTIL_PARAM, raw)
+            return None
+
+    @api.model
+    def use_o14(self, month, year):
+        """สลิปงวดนี้ต้องไปเอาค่าคอมจากฝั่ง 14 ไหม"""
+        until = self._o14_until()
+        if not until:
+            return False
+        try:
+            return (int(year), int(month)) <= until
+        except (TypeError, ValueError):
+            return False
+
+    @api.model
+    def _o14_config(self):
+        """การเชื่อมต่อฝั่ง 14 — คืน None ถ้ายังไม่ได้ติดตั้งโมดูลซิงก์"""
+        if 'npd.hrms.sync.config' not in self.env:
+            return None
+        return self.env['npd.hrms.sync.config'].sudo().search(
+            [('active', '=', True)], limit=1)
+
+    @api.model
+    def fetch_o14_commission(self, month, year, employee_codes=None):
+        """ขอค่าคอมงวดนี้จากฝั่ง 14 — ถามครั้งเดียวต่อหนึ่ง transaction
+
+        ฝั่ง 14 ต้องเปิด psycopg2 เข้าไปอ่านฐาน ERP อีก 4 ฐานต่อหนึ่งคำขอ
+        ถ้าถามทีละคนตอนทำเงินเดือนร้อยกว่าใบจะช้ามาก จึงถามยกชุดแล้วเก็บ
+        ผลไว้กับ cursor ซึ่งมีอายุเท่ากับรอบทำเงินเดือนหนึ่งรอบพอดี
+
+        ต่อฝั่ง 14 ไม่ได้ให้ **หยุด** ไม่ใช่คืนศูนย์ — ค่าคอมเป็นเงินที่ต้อง
+        จ่ายจริง ถ้าปล่อยเป็นศูนย์เงียบ ๆ พนักงานจะได้เงินขาดโดยไม่มีใครรู้
+        """
+        cache = getattr(self.env.cr, '_npd_o14_commission', None)
+        if cache is None:
+            cache = {}
+            self.env.cr._npd_o14_commission = cache
+        known = cache.setdefault((int(month), int(year)), {})
+
+        wanted = {code for code in (employee_codes or []) if code}
+        if wanted and wanted.issubset(set(known)):
+            return known
+
+        config = self._o14_config()
+        if not config:
+            raise UserError(
+                'สลิปงวด %s/%s ตั้งไว้ให้ดึงค่าคอมจากฝั่ง Odoo 14 '
+                'แต่ยังไม่ได้ตั้งค่าการเชื่อมต่อฝั่ง 14 '
+                'ตั้งที่เมนูซิงก์ข้อมูลจาก Odoo 14 หรือล้างค่า %s '
+                'ถ้าไม่ต้องใช้แล้ว' % (month, year, O14_UNTIL_PARAM))
+
+        try:
+            result = config.execute_kw(
+                O14_BRIDGE_MODEL, 'get_commission_for_o18',
+                [sorted(wanted) or False, int(month), int(year)])
+        except Exception as error:
+            raise UserError(
+                'ขอค่าคอมงวด %s/%s จากฝั่ง Odoo 14 ไม่สำเร็จ (%s) '
+                'ยังทำเงินเดือนงวดนี้ต่อไม่ได้ เพราะค่าคอมจะกลายเป็นศูนย์'
+                % (month, year, error))
+
+        for row in (result or {}).get('rows') or []:
+            known[row.get('employee_code')] = row
+        comm = (result or {}).get('commission_period') or {}
+        _logger.info(
+            '[COMMISSION] สลิปงวด %s/%s ดึงค่าคอมของเดือน %s/%s จากฝั่ง 14 '
+            'ได้ %s คน รวม %.2f',
+            month, year, comm.get('month'), comm.get('year'),
+            (result or {}).get('count'), (result or {}).get('total') or 0.0)
+        return known
+
+    @api.model
+    def get_o14_commission(self, employee, month, year):
+        """ค่าคอมของพนักงานคนนี้จากฝั่ง 14 — รูปแบบเดียวกับตัวคิดฝั่ง 18"""
+        known = self.fetch_o14_commission(
+            month, year, [employee.employee_code])
+        row = known.get(employee.employee_code) or {}
+        if row.get('error'):
+            _logger.warning('[COMMISSION] ฝั่ง 14 คำนวณ %s ไม่ผ่าน: %s',
+                            employee.employee_code, row['error'])
+        return {
+            'branch_amount': row.get('income_commission') or 0.0,
+            'sales_amount': row.get('income_commission_sale') or 0.0,
+            'comm_type': row.get('comm_type') or 'sale_branch',
+            'found': bool(row),
+        }
+
+    # ------------------------------------------------------------------
     @api.model
     def get_commission_period(self, month, year):
         """งวดค่าคอมของสลิปเดือนนี้ = เดือนก่อนหน้า
