@@ -1142,6 +1142,11 @@ class HrmsSyncEngine(models.AbstractModel):
                 'ยกมาเป็น "Work Permit / อื่นๆ" ยอดเงินเท่าเดิม'
                 % (row.get('id'), raw))
         values['payment_type'] = mapped
+        # ฝั่ง 14 ทำเครื่องหมายว่า "หักไปแล้ว" ด้วยช่อง is_synced
+        # ฝั่ง 18 ใช้ชื่อ is_deducted คนละชื่อกันจึงไม่ถูกคัดลอกอัตโนมัติ
+        # ถ้าไม่แมปให้ ฝั่ง 18 จะเห็นทุกงวดเป็น "ยังไม่หัก" แล้วยอดที่ต้อง
+        # คืนพนักงานจะกลายเป็นศูนย์ทั้งที่หักเงินเขาไปแล้วจริง
+        values['is_deducted'] = bool(row.get('is_synced'))
         return values
 
     def _tf_manual(self, config, spec, row, values, warnings=None):

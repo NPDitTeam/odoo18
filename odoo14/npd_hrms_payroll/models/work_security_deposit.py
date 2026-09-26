@@ -404,18 +404,36 @@ class WorkSecurityDepositLine(models.Model):
         string='ความคืบหน้า', compute='_compute_outstanding_amount', store=True,
     )
 
-    @api.depends('total_amount', 'deducted_amount', 'deduction_months', 'months_deducted')
+    @api.depends('payment_ids.amount', 'payment_ids.payment_type',
+                 'deducted_amount', 'deduction_months', 'months_deducted')
     def _compute_outstanding_amount(self):
+        """เทียบกับ "ยอดที่ตั้งงวดไว้จริง" ไม่ใช่วงเงินประกันบนหัวรายการ
+
+        วงเงิน (total_amount) รวมค่า Work Permit อยู่ด้วย ถ้าเอามาลบยอดที่หัก
+        รายเดือน จะได้ยอดคงค้างบวมเกินจริงเท่ากับค่า Work Permit ทุกคน
+        ฝั่ง 14 ใช้ total_scheduled ซึ่งคือผลรวมงวดรายเดือนล้วน ๆ
+        """
         for rec in self:
-            remain = (rec.total_amount or 0.0) - (rec.deducted_amount or 0.0)
+            scheduled = sum(rec.payment_ids.filtered(
+                lambda p: p.payment_type == 'regular').mapped('amount'))
+            remain = scheduled - (rec.deducted_amount or 0.0)
             rec.outstanding_amount = remain if remain > 0 else 0.0
             rec.deposit_progress = '%d/%d งวด' % (rec.months_deducted or 0,
                                                   rec.deduction_months or 0)
 
-    @api.depends('payment_ids.amount', 'payment_ids.is_deducted')
+    @api.depends('payment_ids.amount', 'payment_ids.is_deducted',
+                 'payment_ids.payment_type')
     def _compute_deducted(self):
+        """นับเฉพาะงวดเงินประกันรายเดือน — ค่า Work Permit ไม่นับและไม่คืน
+
+        เดิมนับรวมทุกประเภท ทำให้ยอดที่ต้องคืนพนักงานสูงเกินจริงเท่ากับ
+        ค่าใบอนุญาตทำงานที่บริษัทจ่ายไปแล้วและไม่ได้คืนให้อยู่แล้ว
+        ฝั่ง 14 กรอง payment_type = 'regular' มาตลอด ตรงนี้ต้องเหมือนกัน
+        """
         for rec in self:
-            done = rec.payment_ids.filtered('is_deducted')
+            regular = rec.payment_ids.filtered(
+                lambda p: p.payment_type == 'regular')
+            done = regular.filtered('is_deducted')
             rec.deducted_amount = sum(done.mapped('amount'))
             rec.months_deducted = len(done)
             # คืนเฉพาะเงินประกันรายเดือนที่หักไปแล้ว
