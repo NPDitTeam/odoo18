@@ -53,20 +53,44 @@ class AccountJournal(models.Model):
         help='สร้างจากปุ่ม "สร้าง/อัปเดตเลขรัน" ด้านบน',
     )
     npd_payment_next_number = fields.Char(
-        string='เลขถัดไป', compute='_compute_npd_payment_next_number',
-        help='เลขที่ใบถัดไปจะได้ ถ้าออกวันนี้',
+        string='ตัวอย่างเลขที่จะได้', compute='_compute_npd_payment_next_number',
+        help='ก่อนกดสร้าง = ตัวอย่างจากค่าที่กรอกอยู่ '
+             'หลังกดสร้าง = เลขจริงที่ใบถัดไปจะได้ถ้าออกวันนี้',
     )
 
     # ------------------------------------------------------------------
-    @api.depends('npd_payment_sequence_id', 'npd_own_payment_sequence')
+    @api.depends('npd_payment_sequence_id', 'npd_own_payment_sequence',
+                 'npd_payment_prefix', 'npd_payment_daily',
+                 'npd_payment_date_format', 'npd_payment_padding')
     def _compute_npd_payment_next_number(self):
+        """โชว์ตัวอย่างตั้งแต่ยังไม่กดสร้าง จะได้เห็นหน้าตาเลขก่อนตัดสินใจ
+
+        ถ้ารอให้สร้างก่อนค่อยเห็น คนตั้งค่าต้องเดาเอาเองว่าพิมพ์แบบนี้แล้ว
+        จะออกมาหน้าตาไหน พอไม่ถูกใจก็ต้องลบ sequence ทิ้งแล้วสร้างใหม่
+        """
         for journal in self:
-            sequence = journal.npd_payment_sequence_id
-            if not journal.npd_own_payment_sequence or not sequence:
+            if not journal.npd_own_payment_sequence:
                 journal.npd_payment_next_number = False
-                continue
-            # อ่านอย่างเดียว ห้ามใช้ next_by_id เพราะจะกินเลขจริงไปหนึ่งหมายเลข
-            journal.npd_payment_next_number = journal._npd_preview_number()
+            elif journal.npd_payment_sequence_id:
+                # อ่านอย่างเดียว ห้ามใช้ next_by_id เพราะจะกินเลขจริงไปหนึ่งหมายเลข
+                journal.npd_payment_next_number = journal._npd_preview_number()
+            else:
+                journal.npd_payment_next_number = journal._npd_sample_number()
+
+    def _npd_sample_number(self):
+        """ตัวอย่างเลขจากค่าที่กรอกอยู่ ยังไม่มี sequence จริง"""
+        self.ensure_one()
+        if not self.npd_payment_prefix:
+            return _('กรอกคำนำหน้าเลขเพื่อดูตัวอย่าง')
+        number = '1'.zfill(self.npd_payment_padding or 4)
+        if not self.npd_payment_daily:
+            return _('ตัวอย่าง: %s%s') % (self.npd_payment_prefix, number)
+        try:
+            stamp = self._npd_today().strftime(
+                self.npd_payment_date_format or '%y%m%d')
+        except (ValueError, TypeError):
+            return _('รูปแบบวันที่ไม่ถูกต้อง')
+        return _('ตัวอย่าง: %s%s-%s') % (self.npd_payment_prefix, stamp, number)
 
     def _npd_preview_number(self):
         """เลขถัดไปแบบดูเฉย ๆ ไม่กินเลขจริง"""

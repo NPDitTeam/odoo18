@@ -30,8 +30,10 @@
                         </group>
                         <group string="ผลลัพธ์"
                                invisible="not npd_own_payment_sequence">
-                            <field name="npd_payment_sequence_id"/>
-                            <field name="npd_payment_next_number"/>
+                            <field name="npd_payment_next_number"
+                                   class="fw-bold text-primary"/>
+                            <field name="npd_payment_sequence_id"
+                                   invisible="not npd_payment_sequence_id"/>
                             <button name="action_npd_build_payment_sequence"
                                     type="object" class="btn-primary"
                                     string="สร้าง / อัปเดตเลขรัน"/>
@@ -44,8 +46,16 @@
                     </group>
                     <div class="alert alert-warning" role="alert"
                          invisible="not npd_own_payment_sequence or npd_payment_sequence_id">
-                        ยังไม่ได้สร้างเลขรัน — กดปุ่ม "สร้าง / อัปเดตเลขรัน"
-                        ก่อนใช้งานจริง ไม่งั้นระบบจะถอยไปใช้เลขกลางของบริษัทเหมือนเดิม
+                        ยังไม่ได้สร้างเลขรัน — ตัวเลขด้านขวาเป็นแค่ตัวอย่างจากค่าที่กรอกอยู่
+                        ยังไม่มีผลจริงจนกว่าจะกดปุ่ม "สร้าง / อัปเดตเลขรัน"
+                        ถ้าไม่กด ระบบจะใช้เลขกลางของบริษัทเหมือนเดิม
+                    </div>
+                    <div class="alert alert-secondary" role="alert"
+                         invisible="not npd_payment_sequence_id">
+                        กดสร้างแล้ว ระบบไปสร้างระเบียนใน
+                        <b>การตั้งค่า › เทคนิค › ลำดับ</b> ให้อัตโนมัติ
+                        (ระเบียนแยกต่อบริษัท เลขจึงไม่ข้ามบริษัท)
+                        พร้อมช่วงวันที่ครบทั้งปีเมื่อเลือก "เริ่มนับใหม่ทุกวัน"
                     </div>
                 </page>
             </xpath>
