@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_payment_journal_rule_list" model="ir.ui.view">
+        <field name="name">npd.payment.journal.rule.list</field>
+        <field name="model">npd.payment.journal.rule</field>
+        <field name="arch" type="xml">
+            <list editable="bottom" multi_edit="1">
+                <field name="sequence" widget="handle"/>
+                <field name="company_id"
+                       options="{'no_create': True}"/>
+                <field name="invoice_journal_id"
+                       options="{'no_create': True}"/>
+                <field name="payment_journal_id"
+                       options="{'no_create': True}"/>
+                <field name="payment_sequence_hint"/>
+                <field name="note" optional="show"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_payment_journal_rule_search" model="ir.ui.view">
+        <field name="name">npd.payment.journal.rule.search</field>
+        <field name="model">npd.payment.journal.rule</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="invoice_journal_id"/>
+                <field name="payment_journal_id"/>
+                <field name="company_id"/>
+                <group expand="0" string="จัดกลุ่ม">
+                    <filter string="บริษัท" name="group_company"
+                            context="{'group_by': 'company_id'}"/>
+                    <filter string="สมุดรายวันฝั่งรับชำระ" name="group_payment"
+                            context="{'group_by': 'payment_journal_id'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_payment_journal_rule" model="ir.actions.act_window">
+        <field name="name">กฎสมุดรายวันรับชำระ</field>
+        <field name="res_model">npd.payment.journal.rule</field>
+        <field name="view_mode">list</field>
+        <field name="context">{'search_default_group_company': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">ยังไม่มีกฎ</p>
+            <p>
+                กฎนี้ตอบคำถามเดียว — ใบแจ้งหนี้ที่อยู่ในสมุดรายวันเล่มไหน
+                พอกดชำระเงินแล้วต้องไปโผล่ที่สมุดรายวันเล่มไหน
+            </p>
+            <p>
+                กดปุ่ม <b>สร้างกฎตั้งต้น</b> เพื่อดึงค่าที่ตั้งไว้เดิมมาเป็นกฎให้อัตโนมัติ
+                แล้วค่อยเพิ่มหรือแก้เองได้ไม่จำกัด
+            </p>
+        </field>
+    </record>
+
+    <record id="action_payment_journal_rule_seed" model="ir.actions.server">
+        <field name="name">สร้างกฎตั้งต้นจากค่าเดิม</field>
+        <field name="model_id" ref="model_npd_payment_journal_rule"/>
+        <field name="binding_model_id" ref="model_npd_payment_journal_rule"/>
+        <field name="binding_view_types">list</field>
+        <field name="state">code</field>
+        <field name="code">action = model.action_seed_button()</field>
+    </record>
+
+    <menuitem id="menu_payment_journal_rule"
+              name="กฎสมุดรายวันรับชำระ"
+              parent="account.account_account_menu"
+              action="action_payment_journal_rule"
+              sequence="95"/>
+</odoo>

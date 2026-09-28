@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_account_journal_form_npd_payment_sequence" model="ir.ui.view">
+        <field name="name">account.journal.form.npd.payment.sequence</field>
+        <field name="model">account.journal</field>
+        <field name="inherit_id" ref="account.view_account_journal_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//notebook" position="inside">
+                <page string="เลขใบรับ/จ่ายชำระ" name="npd_payment_sequence"
+                      invisible="type not in ('receivable', 'payable', 'bank', 'cash', 'credit')">
+                    <div class="alert alert-info" role="alert"
+                         invisible="npd_own_payment_sequence">
+                        ตอนนี้สมุดเล่มนี้ใช้ <b>เลขกลางของบริษัท</b> ร่วมกับสมุดรับชำระเล่มอื่น
+                        (CUST.IN- สำหรับรับเงิน / SUPP.OUT- สำหรับจ่ายเงิน)
+                        ติ๊กด้านล่างถ้าต้องการให้เล่มนี้มีเลขของตัวเอง
+                    </div>
+                    <group>
+                        <group string="การตั้งค่า">
+                            <field name="npd_own_payment_sequence"/>
+                            <field name="npd_payment_prefix"
+                                   placeholder="เช่น INS.IN-"
+                                   required="npd_own_payment_sequence"
+                                   invisible="not npd_own_payment_sequence"/>
+                            <field name="npd_payment_daily"
+                                   invisible="not npd_own_payment_sequence"/>
+                            <field name="npd_payment_date_format"
+                                   invisible="not npd_own_payment_sequence or not npd_payment_daily"/>
+                            <field name="npd_payment_padding"
+                                   invisible="not npd_own_payment_sequence"/>
+                        </group>
+                        <group string="ผลลัพธ์"
+                               invisible="not npd_own_payment_sequence">
+                            <field name="npd_payment_sequence_id"/>
+                            <field name="npd_payment_next_number"/>
+                            <button name="action_npd_build_payment_sequence"
+                                    type="object" class="btn-primary"
+                                    string="สร้าง / อัปเดตเลขรัน"/>
+                        </group>
+                    </group>
+                    <div class="alert alert-warning" role="alert"
+                         invisible="not npd_own_payment_sequence or npd_payment_sequence_id">
+                        ยังไม่ได้สร้างเลขรัน — กดปุ่ม "สร้าง / อัปเดตเลขรัน"
+                        ก่อนใช้งานจริง ไม่งั้นระบบจะถอยไปใช้เลขกลางของบริษัทเหมือนเดิม
+                    </div>
+                </page>
+            </xpath>
+        </field>
+    </record>
+</odoo>

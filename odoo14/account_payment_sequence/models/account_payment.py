@@ -63,12 +63,19 @@ class AccountPayment(models.Model):
             super(AccountPayment, others)._compute_name()
 
     def get_seq_payment(self):
-        """เลขถัดไปของ customer.payment / supplier.payment ของบริษัทใบนี้ ตามวันที่ของใบ
+        """เลขถัดไปของใบรับ/จ่ายชำระใบนี้ ตามวันที่ของใบ
+
+        ลำดับการหา
+          1. เลขของสมุดรายวันเล่มนี้เอง ถ้าติ๊ก "ใช้เลขรับชำระของตัวเอง" ไว้
+          2. เลขกลางของบริษัท customer.payment / supplier.payment (ค่าเดิม)
 
         ฐานเดียวหลายบริษัท: next_by_code เลือก sequence ของบริษัทที่อยู่ใน env ก่อน
         (o14 แยกฐานละบริษัท เลขของแต่ละบริษัทจึงไม่ปนกัน)
         """
         self.ensure_one()
+        own = self.journal_id._npd_next_payment_number(sequence_date=self.date)
+        if own:
+            return own
         code = 'customer.payment' if self.payment_type == 'inbound' else 'supplier.payment'
         return self.env['ir.sequence'].with_company(self.company_id).next_by_code(
             code, sequence_date=self.date) or '/'

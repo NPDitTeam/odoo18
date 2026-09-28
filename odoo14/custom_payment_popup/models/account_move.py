@@ -8,11 +8,17 @@ class AccountMove(models.Model):
         """Open payment form pre-filled from invoice + auto search invoice"""
         self.ensure_one()
 
-        # Auto-select journal from the invoice journal
-        # จับคู่ได้ที่เมนู การขาย > การกำหนดค่า > สมุดรายวันรับชำระ
-        journal = self.env['npd.invoice.journal.config']._get_payment_journal(
+        # หาสมุดรายวันฝั่งรับชำระ สามชั้นตามลำดับ
+        # 1) กฎที่ตั้งเองได้ไม่จำกัด (เมนู กฎสมุดรายวันรับชำระ)
+        journal = self.env['npd.payment.journal.rule']._resolve(
             self.company_id, self.journal_id,
         )
+        # 2) ค่าเดิมที่ผูกกับกรณีการออกใบแจ้งหนี้ 8 กรณี
+        #    (เมนู การขาย > การกำหนดค่า > สมุดรายวันออกใบแจ้งหนี้)
+        if not journal:
+            journal = self.env['npd.invoice.journal.config']._get_payment_journal(
+                self.company_id, self.journal_id,
+            )
 
         if not journal:
             # ต้องล็อกบริษัทด้วย ไม่งั้นจะคว้าสมุดรายวันธนาคารของบริษัทอื่น
