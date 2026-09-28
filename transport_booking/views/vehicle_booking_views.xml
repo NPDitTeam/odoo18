@@ -416,12 +416,40 @@
 </page>
 
                             <page string="📋 รายการสินค้า">
+                                <div class="alert alert-info" role="alert"
+                                     invisible="product_check_state in ('done', 'no_line')">
+                                    คนขับยังตรวจนับไม่ครบ
+                                    (<field name="product_check_done" readonly="1" class="oe_inline"/>
+                                    จาก
+                                    <field name="product_check_total" readonly="1" class="oe_inline"/>
+                                    รายการ) — ยังถ่ายรูปสินค้าในแอปไม่ได้จนกว่าจะตรวจครบ
+                                </div>
+                                <div class="alert alert-warning" role="alert"
+                                     invisible="product_check_mismatch == 0">
+                                    พบรายการที่นับได้ไม่ตรงกับที่สั่ง
+                                    <field name="product_check_mismatch" readonly="1" class="oe_inline"/>
+                                    รายการ ดูคอลัมน์ผลต่าง
+                                </div>
                                 <field name="order_line_ids" nolabel="1" readonly="1">
                                     <list string="รายการสินค้า" create="0" edit="0" delete="0">
                                         <field name="product_name_o14" string="ชื่อสินค้า"/>
                                         <field name="quantity" string="จำนวน" sum="รวมจำนวน"/>
                                         <field name="uom_name" string="หน่วย"/>
                                         <field name="total_weight" string="น้ำหนัก (กก.)" sum="รวมน้ำหนัก"/>
+                                        <field name="check_state" string="ตรวจสอบจำนวนสินค้า"
+                                               decoration-success="check_state == 'correct'"
+                                               decoration-danger="check_state == 'incorrect'"
+                                               decoration-muted="check_state == 'pending'"
+                                               widget="badge"/>
+                                        <field name="checked_quantity" string="นับได้"
+                                               optional="show"/>
+                                        <field name="quantity_diff" string="ผลต่าง"
+                                               decoration-danger="quantity_diff != 0"
+                                               optional="show"/>
+                                        <field name="check_note" string="หมายเหตุการตรวจ"
+                                               optional="hide"/>
+                                        <field name="checked_at" string="เวลาที่ตรวจ"
+                                               optional="hide"/>
                                     </list>
                                 </field>
                             </page>

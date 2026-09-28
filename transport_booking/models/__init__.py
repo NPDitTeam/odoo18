@@ -7,3 +7,4 @@ from . import delivery_rating
 from . import res_users
 from . import transport_order
 from . import booking_done_wizard
+from . import booking_product_check

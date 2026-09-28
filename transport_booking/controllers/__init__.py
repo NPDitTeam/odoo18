@@ -4,3 +4,4 @@ from . import tracking_controller
 from . import vehicle_tracking_controller
 from . import rating_controller
 from . import api_controller
+from . import product_check_controller
