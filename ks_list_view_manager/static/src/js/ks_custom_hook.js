@@ -381,7 +381,14 @@ export function ksuseMagicColumnWidths(tableRef, getState) {
 
         const resizeObserver = new ResizeObserver(() => {
             const newParentWidth = parentNode.clientWidth;
-            if (newParentWidth === parentWidth) {
+            // แก้จาก === เป็น !== ให้ตรงกับ Odoo ต้นฉบับ
+            // (web/static/src/views/list/column_width_hook.js)
+            // ของเดิมสั่งคำนวณความกว้างใหม่เฉพาะตอนความกว้างพ่อ "ไม่เปลี่ยน"
+            // ซึ่งกลับด้านกับที่ควรเป็น พอกรองแล้วตารางเปลี่ยนขนาดจริง
+            // (แถวลดลง แถบเลื่อนหาย แถวค้นหาโผล่) การคำนวณจึงถูกข้าม
+            // ตารางเลยค้างความกว้างชุดเก่า คอลัมน์เบียดกันจนอ่านไม่ออก
+            // ยิ่งคอลัมน์เยอะยิ่งเห็นชัด และ parentWidth ไม่เคยถูกอัปเดตด้วย
+            if (newParentWidth !== parentWidth) {
                 parentWidth = newParentWidth;
                 debouncedResizeCallback();
             }
