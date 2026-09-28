@@ -35,6 +35,11 @@
                             <button name="action_npd_build_payment_sequence"
                                     type="object" class="btn-primary"
                                     string="สร้าง / อัปเดตเลขรัน"/>
+                            <button name="action_npd_copy_to_other_companies"
+                                    type="object" class="btn-secondary"
+                                    string="คัดลอกไปบริษัทอื่น"
+                                    invisible="not npd_payment_sequence_id"
+                                    confirm="คัดลอกรูปแบบเลขนี้ไปสมุดรหัสเดียวกันของบริษัทอื่นที่ยังไม่ได้ตั้ง เลขยังวิ่งแยกกันทุกบริษัท ดำเนินการต่อไหม"/>
                         </group>
                     </group>
                     <div class="alert alert-warning" role="alert"

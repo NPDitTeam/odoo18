@@ -167,6 +167,52 @@ class AccountJournal(models.Model):
         return len(missing)
 
     # ------------------------------------------------------------------
+    def action_npd_copy_to_other_companies(self):
+        """คัดลอกการตั้งค่าเลขไปสมุดรหัสเดียวกันของบริษัทอื่น
+
+        เลขยังวิ่งแยกกันทุกบริษัทเหมือนเดิม เพราะแต่ละเล่มมีลำดับของตัวเอง
+        ปุ่มนี้แค่ช่วยไม่ให้ต้องนั่งกรอกรูปแบบเดิมซ้ำห้ารอบ
+        """
+        self.ensure_one()
+        if not self.npd_own_payment_sequence:
+            raise UserError(_(
+                'ติ๊ก "ใช้เลขรับชำระของตัวเอง" และกดสร้างเลขรันให้เล่มนี้ก่อน'))
+        if not self.code:
+            raise UserError(_('สมุดเล่มนี้ไม่มีรหัส คัดลอกด้วยรหัสไม่ได้'))
+
+        targets = self.sudo().search([
+            ('code', '=', self.code),
+            ('company_id', '!=', self.company_id.id),
+            ('type', '=', self.type),
+        ])
+        done, skipped = [], []
+        for journal in targets:
+            if journal.npd_own_payment_sequence:
+                # ตั้งไว้แล้วอย่าไปทับ เลขที่ออกไปแล้วอาจเปลี่ยนรูปแบบกลางคัน
+                skipped.append(journal.company_id.name)
+                continue
+            journal.write({
+                'npd_own_payment_sequence': True,
+                'npd_payment_prefix': self.npd_payment_prefix,
+                'npd_payment_daily': self.npd_payment_daily,
+                'npd_payment_date_format': self.npd_payment_date_format,
+                'npd_payment_padding': self.npd_payment_padding,
+            })
+            journal._npd_build_payment_sequence()
+            done.append(journal.company_id.name)
+
+        message = (_('คัดลอกไป %s บริษัท: %s') % (len(done), ', '.join(done))
+                   if done else _('ไม่มีบริษัทไหนให้คัดลอก'))
+        if skipped:
+            message += chr(10) + _('ข้ามเพราะตั้งไว้แล้ว: %s') % ', '.join(skipped)
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {'title': _('คัดลอกเลขรัน'), 'message': message,
+                       'type': 'success', 'sticky': bool(skipped)},
+        }
+
+    # ------------------------------------------------------------------
     def _npd_next_payment_number(self, sequence_date=None):
         """เลขถัดไปของสมุดเล่มนี้ — คืน None ถ้าเล่มนี้ไม่ได้ตั้งเลขของตัวเอง
 
