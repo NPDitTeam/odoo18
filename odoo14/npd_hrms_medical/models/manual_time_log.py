@@ -465,7 +465,10 @@ class HrManualTimeLog(models.Model):
         }
         # branch_id มาจาก npd_commission_fields — ไม่บังคับติดตั้ง
         if 'branch_id' in Voucher._fields:
-            branch = employee.branch_id or company.hrms_medical_branch_id
+            # ฝ่ายบัญชีให้ใบเบิกค่ารักษาพยาบาลลงสำนักงานใหญ่ทุกใบ ไม่แยกตามสาขาพนักงาน
+            # (เป็นสวัสดิการระดับบริษัท เหมือนที่บัญชีวิเคราะห์ลงสำนักงานใหญ่อยู่แล้ว)
+            # ยังเผื่อสาขาพนักงานไว้ เผื่อบริษัทไหนยังไม่ได้ตั้งสาขาในหน้าบริษัท
+            branch = company.hrms_medical_branch_id or employee.branch_id
             vals['branch_id'] = branch.id or False
         if company.hrms_medical_sequence_id:
             # get_seq_voucher() ใช้เลขที่ตั้งไว้แล้ว ไม่ไปดึงลำดับ PA ของใบคืนเงินประกัน
