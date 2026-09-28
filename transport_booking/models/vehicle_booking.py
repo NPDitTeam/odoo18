@@ -222,7 +222,7 @@ class VehicleBooking(models.Model):
     planned_start_date = fields.Datetime('วันเวลาที่วางแผนออกเดินทาง', required=True)
     planned_end_date = fields.Datetime('วันเวลาที่วางแผนถึงปลายทาง')
 
-    planned_start_date_t = fields.Datetime('เวลาออกเดินทางจากคลัง', tracking=True)
+    planned_start_date_t = fields.Datetime('วันเวลาออกเดินทางจากคลัง', tracking=True)
     planned_end_date_t = fields.Datetime('วันเวลาถึงหน้าไซต์งาน', tracking=True)
 
     # วันส่งจริงแบบ "วันที่ล้วน" (เวลาไทย) — ใช้กรอง/จัดกลุ่มแบบ วัน/เดือน/ปี โดยไม่ติดเรื่องเวลา
