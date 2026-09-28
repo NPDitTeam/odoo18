@@ -1,10 +1,12 @@
 {
     'name': 'PFB NPD : Shipment Information',
-    'version': '18.0.1.0.0',
+    'version': '18.0.1.1.0',
     'author': 'PP',
     'license': 'AGPL-3',
     'category': 'Sale',
-    'depends': ['sale', 'web', 'shipping_cost', 'fleet_license_plate'],
+    'depends': ['sale', 'web', 'shipping_cost', 'fleet_license_plate',
+                # ทะเบียนคนขับ ใช้เป็นตัวเลือกของช่องพนักงานส่งของ
+                'vehicle_registration'],
     'data': [
         'views/sale_order.xml',
     ],

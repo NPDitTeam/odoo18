@@ -24,7 +24,21 @@ class ShipmentInformation(models.Model):
 
     use_special_delivery_zero = fields.Boolean(string='ใช้ค่าขนส่งพิเศษที่เป็น 0', default=False)
     shipping_cost_m = fields.Float(string='ค่าขนส่งพิเศษ', store=True)
-    delivery_employee_id = fields.Many2one('hr.employee', string='พนักงานส่งของ')
+    # ชี้ไปทะเบียนคนขับ ไม่ใช่ hr.employee เหมือนฝั่ง 14
+    #
+    # hr.employee ฝั่ง 18 ผูกบริษัทเดียว (คอลัมน์บริษัทห้ามว่าง) และมีอยู่
+    # เฉพาะบริษัทโลจิสติกส์ บริษัทอื่นเปิดใบขายแล้วช่องนี้ว่างเปล่าเลือกอะไร
+    # ไม่ได้ ถ้าจะใช้ต่อก็ต้องสร้างพนักงานซ้ำทุกบริษัทแบบที่ฝั่ง 14 ทำ
+    # (161/134/274/204 คนต่อฐาน) แล้วมีทะเบียนพนักงานซ้อนกันสามชุด
+    #
+    # vehicle.driver ไม่ผูกบริษัท ทุกบริษัทจึงเลือกได้ทันที ผูกกับทะเบียน
+    # พนักงาน HRMS ด้วยรหัสพนักงานอยู่แล้ว มีสาขา ใบขับขี่ สถานะการจ้าง
+    # และเป็นชุดเดียวกับที่ใบจองคิวใช้เลือกคนขับ ข้อมูลจึงไม่แตกเป็นสองสาย
+    delivery_employee_id = fields.Many2one(
+        'vehicle.driver', string='พนักงานส่งของ',
+        domain=[('active', '=', True)],
+        help='เลือกจากทะเบียนคนขับชุดเดียวกับใบจองคิวรถขนส่ง '
+             'เพิ่ม/แก้ได้ที่เมนูทะเบียนคนขับ')
     license_plate_id = fields.Many2one('fleet.license_plate', string='ป้ายทะเบียนรถ', domain=[('active', '=', True)])
 
     trip_allowance = fields.Float(string='ค่าเที่ยว (บาท)', compute='_compute_trip_allowance', store=True, readonly=True)

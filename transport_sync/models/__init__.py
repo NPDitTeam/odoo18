@@ -2,3 +2,4 @@
 from . import transport_order
 from . import res_users
 from . import sale_order
+from . import sync_cutover

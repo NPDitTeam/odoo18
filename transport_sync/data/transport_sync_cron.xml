@@ -6,10 +6,21 @@
             <field name="name">Transport: Auto Sync from Odoo 14 (Today)</field>
             <field name="model_id" ref="model_transport_order"/>
             <field name="state">code</field>
-            <field name="code">model.action_sync_recent_from_odoo14()</field>
+            <field name="code">model.with_context(transport_sync_from_cron=True).action_sync_recent_from_odoo14()</field>
             <field name="interval_number">5</field>
             <field name="interval_type">minutes</field>
             <field name="active" eval="True"/>
+        </record>
+
+        <!-- วันสุดท้ายที่ "ยังใช้งานได้เต็มวัน" ไม่ใช่วันที่หยุด
+             ตั้ง 2026-12-30 = วันที่ 30 ยังกดซิงค์ได้ปกติ พอขึ้นวันที่ 31
+             เมนูจะถูกซ่อนและงานตั้งเวลาปิดตัวเองถาวร
+             (ตรงกับ stop_after_date ของการซิงค์ HRMS ทั้งสองระบบตัดวันเดียวกัน)
+             หลังจากนี้ฝั่งบริษัท เอ็นพีดี โลจิสติกส์ เป็นผู้ส่งข้อมูลเข้ามาเอง
+             เลื่อนวันได้ที่ การตั้งค่า > เทคนิค > พารามิเตอร์ระบบ -->
+        <record id="param_transport_sync_stop_after" model="ir.config_parameter">
+            <field name="key">transport_sync.stop_after_date</field>
+            <field name="value">2026-12-30</field>
         </record>
     </data>
 </odoo>
