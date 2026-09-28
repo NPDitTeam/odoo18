@@ -16,6 +16,8 @@ import base64
 import logging
 from urllib.parse import quote
 
+from dateutil.relativedelta import relativedelta
+
 from odoo import api, Command, fields, models
 from odoo.exceptions import UserError, ValidationError
 
@@ -36,6 +38,24 @@ STATE_CANCELLED = 'ยกเลิก'
 
 NOTE_TRIGGERS = {'amount', 'bank_name', 'bank_account_number', 'bank_account_name',
                  'reason_type_id'}
+
+
+def _thai_date(value):
+    """วันที่แบบไทย dd/mm/พ.ศ."""
+    return '%02d/%02d/%d' % (value.day, value.month, value.year + 543)
+
+
+def _service_length(start, ref):
+    """อายุงานเป็นข้อความไทย เช่น 7 เดือน 12 วัน"""
+    diff = relativedelta(ref, start)
+    parts = []
+    if diff.years:
+        parts.append('%d ปี' % diff.years)
+    if diff.months:
+        parts.append('%d เดือน' % diff.months)
+    if diff.days or not parts:
+        parts.append('%d วัน' % diff.days)
+    return ' '.join(parts)
 
 
 def _money(value):
@@ -91,6 +111,10 @@ class HrManualTimeLog(models.Model):
         string='คงเหลือที่ขอได้ (บาท)', compute='_compute_medical_quota',
         help='วงเงินต่อปี − อนุมัติแล้ว (ยังไม่หักยอดที่รออนุมัติ)')
 
+    # อายุงานไม่ครบ 1 ปี — เตือนอย่างเดียว ไม่ปิดกั้นการขอหรืออนุมัติ
+    medical_service_warning = fields.Char(
+        string='แจ้งเตือนอายุงาน', compute='_compute_medical_service_warning')
+
     # ------------------------------------------------------------------
     # Compute
     # ------------------------------------------------------------------
@@ -103,6 +127,41 @@ class HrManualTimeLog(models.Model):
     def _compute_medical_note(self):
         for rec in self:
             rec.medical_note = rec.user_note or False
+
+    @api.depends('employee_id', 'employee_id.start_date', 'work_date', 'is_medical')
+    def _compute_medical_service_warning(self):
+        for rec in self:
+            rec.medical_service_warning = rec._build_service_warning()
+
+    def _build_service_warning(self):
+        """ข้อความเตือนอายุงานไม่ครบ 1 ปี (ว่าง = ไม่ต้องเตือน)
+
+        เฉพาะคำขอค่ารักษาพยาบาล — คำขอเพิ่มเวลาปกติไม่เกี่ยวกับอายุงาน
+        ยึด "วันที่ทำงาน" บนคำขอ ไม่ใช่วันนี้ — คำขอย้อนหลังต้องตัดสินด้วย
+        อายุงาน ณ วันที่เกิดค่าใช้จ่ายจริง
+        เตือนอย่างเดียว ไม่ได้บล็อกการขอหรืออนุมัติ และไม่ส่งออกไปที่แอป
+        """
+        self.ensure_one()
+        if not self.is_medical:
+            return False
+        employee = self.employee_id
+        if not employee:
+            return False
+        start = employee.start_date
+        if not start:
+            return ('ยังไม่ได้กรอก "วันที่เริ่มงาน" ในข้อมูลพนักงาน '
+                    'จึงตรวจสอบอายุงานไม่ได้')
+        ref = self.work_date or fields.Date.context_today(self)
+        if start > ref:
+            return ('วันที่เริ่มงาน (%s) อยู่หลังวันที่ทำงานในคำขอ (%s) '
+                    'ให้ตรวจสอบข้อมูลพนักงาน'
+                    % (_thai_date(start), _thai_date(ref)))
+        if start + relativedelta(years=1) <= ref:
+            return False
+        return ('อายุงานยังไม่ครบ 1 ปี — เริ่มงาน %s นับถึงวันที่ทำงาน %s '
+                'เป็นอายุงาน %s'
+                % (_thai_date(start), _thai_date(ref),
+                   _service_length(start, ref)))
 
     @api.depends('voucher_id')
     def _compute_has_medical_voucher(self):

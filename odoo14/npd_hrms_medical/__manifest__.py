@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'NPD HRMS - Medical Expense',
-    'version': '18.0.1.0.0',
+    'version': '18.0.1.0.1',
     'summary': 'เบิกค่ารักษาพยาบาลผ่านแอป — วงเงินต่อปี ยอดยกมา และส่งเข้าใบสำคัญจ่ายอัตโนมัติ',
     'description': """
 NPD HRMS - Medical Expense

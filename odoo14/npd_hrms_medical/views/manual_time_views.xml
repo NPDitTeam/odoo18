@@ -30,6 +30,13 @@
             </xpath>
 
             <xpath expr="//div[hasclass('oe_title')]" position="before">
+                <div class="alert alert-warning mb-3" role="alert"
+                     invisible="not medical_service_warning">
+                    <field name="medical_service_warning" nolabel="1" readonly="1"/>
+                    <div class="text-muted">
+                        แจ้งเตือนเท่านั้น ยังขอและอนุมัติได้ตามปกติ
+                    </div>
+                </div>
                 <div class="oe_button_box" name="button_box">
                     <button name="action_open_medical_voucher" type="object"
                             class="oe_stat_button" icon="fa-file-text-o"
