@@ -51,6 +51,10 @@ class EmployeeSalary(models.Model):
     _description = 'พนักงาน'
     _inherit = ['mail.thread', 'mail.activity.mixin']
     _rec_name = 'full_name'
+    # ชื่อที่แสดงคือ "[รหัส] ชื่อ นามสกุล" แต่ถ้าไม่บอกไว้ Odoo จะค้นเฉพาะ
+    # _rec_name (full_name) อย่างเดียว คนพิมพ์รหัสพนักงานจึงหาไม่เจอสักที่
+    # ทั้งช่องเลือกพนักงาน ช่องค้นหา และตัวกรองใต้คอลัมน์
+    _rec_names_search = ['full_name', 'employee_code', 'firstname', 'lastname']
     _order = 'employee_code'
 
     _sql_constraints = [
