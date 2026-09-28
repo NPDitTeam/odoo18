@@ -94,8 +94,17 @@ class HrmsSyncCheck(models.Model):
                 diff_count += 1
 
             # สลิปแยกดูรายบริษัทด้วย เพราะฝั่ง 18 แยกข้อมูลตามบริษัท
+            # ต้องกันพลาดเหมือนหัวข้ออื่น ไม่งั้นพังตรงนี้ทีเดียวแล้วใบตรวจ
+            # ทั้งใบไม่ออกเลย ทั้งที่หัวข้ออื่นตรวจผ่านไปหมดแล้ว
             if o14_model == 'payroll.salary':
-                for extra in self._compare_payroll_by_company(config):
+                try:
+                    extras = self._compare_payroll_by_company(config)
+                except Exception as error:
+                    _logger.exception('[HRMS-CHECK] แยกสลิปรายบริษัทไม่สำเร็จ')
+                    extras = [{
+                        'name': '  ↳ แยกรายบริษัท',
+                        'state': 'error', 'message': str(error)}]
+                for extra in extras:
                     Line.create(dict(values, **extra))
                     if extra['state'] != 'ok':
                         diff_count += 1
@@ -222,17 +231,34 @@ class HrmsSyncCheck(models.Model):
     def _compare_payroll_by_company(self, config):
         """เทียบสลิปแยกรายบริษัท — จับกรณีจับคู่บริษัทผิด"""
         results = []
+        # ฝั่ง 14 ไม่มีช่องบริษัทบนสลิป มีแต่บนทะเบียนพนักงาน
+        # เดิมโค้ดนี้จัดกลุ่มด้วย 'company' ตรง ๆ จึงพังทุกครั้งที่เรียก
+        # ต้องรวมยอดรายพนักงานก่อน แล้วค่อยเอาบริษัทของพนักงานมาทาบ
         groups = config.execute_kw(
             'payroll.salary', 'read_group',
-            [[], ['net_salary'], ['company']], {'lazy': False})
-        CompanyMap = self.env['npd.hrms.sync.company.map']
+            [[], ['net_salary'], ['employee_id']], {'lazy': False})
+        employee_ids = [g['employee_id'][0] for g in groups
+                        if g.get('employee_id')]
+        company_by_employee = {}
+        for row in config.execute_kw('employee.salary', 'read',
+                                     [sorted(set(employee_ids)), ['company']]):
+            company_by_employee[row['id']] = (row.get('company') or '').strip()
 
+        by_company = {}
         for group in groups:
-            raw = (group.get('company') or '').strip()
+            if not group.get('employee_id'):
+                continue
+            raw = company_by_employee.get(group['employee_id'][0], '')
+            bucket = by_company.setdefault(raw, {'count': 0, 'sum': 0.0})
+            bucket['count'] += group.get('__count') or 0
+            bucket['sum'] += group.get('net_salary') or 0.0
+
+        CompanyMap = self.env['npd.hrms.sync.company.map']
+        for raw, bucket in sorted(by_company.items()):
             company_id = CompanyMap.resolve(raw)
             label = raw or '(ไม่ระบุบริษัท)'
-            count14 = group.get('__count') or 0
-            sum14 = group.get('net_salary') or 0.0
+            count14 = bucket['count']
+            sum14 = bucket['sum']
 
             if not company_id:
                 results.append({
