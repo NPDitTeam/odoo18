@@ -216,7 +216,7 @@
 <!--                                <field name="planned_end_date" readonly="state != 'draft'"/>-->
                                 <field name="planned_start_date_t" readonly="state != 'draft'"/>
                                 <field name="planned_end_date_t" readonly="state != 'draft'"/>
-                                <field name="delivery_date" string="วันส่งจริง (วันที่)" readonly="1"/>
+                                <field name="delivery_date" string="วันที่ถึงหน้าไซต์งาน" readonly="1"/>
                             </group>
                         </group>
 
