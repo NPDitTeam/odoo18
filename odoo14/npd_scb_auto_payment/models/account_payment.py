@@ -14,15 +14,21 @@ u"""ตรวจสอบ "การโอนเงินจริง" ของ
 
 เงื่อนไขที่ต้องตรงกัน: ชื่อบริษัทผู้โอน (ไทยหรืออังกฤษก็ได้) + จำนวนเงิน + วันที่
 """
+import base64
+import io
 import json
 import logging
 import re
 from datetime import timedelta
+from itertools import combinations
 
 import requests
+from PIL import Image
 
 from odoo import models, fields, api, _
 from odoo.exceptions import UserError
+
+from .scb_payment_slip import ISSUE_TYPES
 
 _logger = logging.getLogger(__name__)
 
@@ -31,12 +37,17 @@ GEMINI_API_URL = (
     "gemini-2.5-flash:generateContent"
 )
 
-# Odoo 18 ไม่มีสถานะ 'posted' ของใบรับชำระแล้ว ลงบันทึกแล้ว = in_process (รอกระทบยอด) / paid
+# Odoo 18 ไม่มีสถานะ posted ของใบรับชำระแล้ว ลงบันทึกแล้ว = in_process (รอกระทบยอด) / paid
 POSTED_STATES = ['in_process', 'paid']
 
 # ไฟล์แนบที่ส่งให้ AI อ่านได้ (สลิปมีทั้งรูปถ่ายและ PDF จากธนาคาร)
 SLIP_MIMETYPES = (
     'image/png', 'image/jpeg', 'image/jpg', 'image/gif', 'image/webp',
+    'application/pdf',
+)
+# ชนิดไฟล์ที่ Gemini รับได้โดยตรง — รูปชนิดอื่น (เช่น GIF) ต้องแปลงเป็น PNG ก่อน
+GEMINI_MIMETYPES = (
+    'image/png', 'image/jpeg', 'image/webp', 'image/heic', 'image/heif',
     'application/pdf',
 )
 
@@ -110,6 +121,13 @@ class AccountPayment(models.Model):
     ], string=u"สถานะการโอน (ธนาคาร)", default='to_check', copy=False, index=True,
         readonly=True,
         help=u"ผลการจับคู่สลิปที่แนบไว้ กับรายการเดินบัญชีจริงของธนาคาร")
+    scb_issue_type = fields.Selection(
+        ISSUE_TYPES, string=u"ประเภทปัญหา", readonly=True, copy=False, index=True,
+        help=u"สาเหตุที่ตรวจสอบไม่ผ่าน (มีค่าเฉพาะใบที่ \"ไม่สำเร็จ\")\n"
+             u"• แนบสลิปผิดใบ — เงินก้อนนั้นเป็นของใบรับชำระอื่น ให้แนบสลิปที่ถูกต้อง\n"
+             u"• อาจรับชำระซ้ำ — ลูกค้าเดียวกันใช้เงินก้อนเดียวกันหลายใบจนเกินยอด\n"
+             u"• เงินก้อนเดียวถูกตัดเกิน — หลายใบใช้เงินก้อนเดียวกัน ชี้ไม่ได้ว่าใบไหนถูก\n"
+             u"• ยอดสลิปไม่ตรงใบรับชำระ — เช่น ลูกค้าหักภาษี ณ ที่จ่ายแต่บันทึกยอดเต็ม")
     scb_verify_bank = fields.Selection([
         ('scb', 'SCB'),
         ('kbank', 'Kbank'),
@@ -311,6 +329,12 @@ class AccountPayment(models.Model):
     # ------------------------------------------------------------------
     # gemini-2.5-flash นับ "thinking tokens" รวมใน maxOutputTokens ด้วย
     # ถ้าตั้งน้อยเกินไป JSON จะถูกตัดกลางคัน (เจอจริงในรอบสอง: '{"match_no": -1, ...' ค้าง)
+    # เอกสารที่ซับซ้อน (ใบแจ้งยอด/เอกสารหลายรายการ) AI คิดไป ~3,900 token จนเหลือที่
+    # ตอบไม่พอแม้ตั้ง 4,096 (finishReason=MAX_TOKENS) -> สลิปขึ้น "อ่านไม่ได้" ทั้งที่อ่านได้
+    # จึงจำกัดงบ "คิด" ไว้ และเผื่อที่ตอบให้พอเสมอ
+    THINKING_BUDGET = 2048
+    ANSWER_TOKENS = 4096
+
     def _scb_gemini_call(self, parts, max_tokens=4096):
         u"""ยิงคำขอไป Gemini แล้วคืน dict ที่ parse จาก JSON ที่ตอบกลับมา"""
         api_key = self._get_gemini_api_key()
@@ -318,7 +342,8 @@ class AccountPayment(models.Model):
             "contents": [{"parts": parts}],
             "generationConfig": {
                 "temperature": 0,
-                "maxOutputTokens": max_tokens,
+                "maxOutputTokens": max(max_tokens, self.THINKING_BUDGET + self.ANSWER_TOKENS),
+                "thinkingConfig": {"thinkingBudget": self.THINKING_BUDGET},
                 "responseMimeType": "application/json",
             },
         }
@@ -484,6 +509,23 @@ class AccountPayment(models.Model):
                 u"  - ถ้าเผลออ่านชื่อนี้ไปอยู่ฝั่งผู้โอน แปลว่าอ่านสลับด้าน ให้กลับไปอ่านใหม่\n\n"
             )
         prompt += (
+            u"########## 6) ใบนำฝากเช็ค / รูปเช็ค ##########\n"
+            u"ลูกค้าบางรายจ่ายเป็นเช็ค พนักงานจะแนบ **ใบนำฝากเช็ค** (Pay-in / Deposit slip "
+            u"มักเขียนด้วยลายมือ) หรือรูปเช็ค ซึ่งเป็นหลักฐานการรับเงินที่ใช้ได้ "
+            u"-> ตั้ง is_transfer_slip = true และ **is_cheque_deposit = true**\n"
+            u"  - cheque_no = 'เลขที่เช็ค' / 'Cheque Number' / 'Cheque No.' "
+            u"ตอบเป็นตัวเลขล้วนตามที่เห็น (สำคัญที่สุด ระบบใช้ช่องนี้จับคู่กับธนาคาร)\n"
+            u"  - cheque_no_candidates = ถ้าลายมืออ่านได้หลายแบบ ให้ใส่ทุกแบบที่เป็นไปได้\n"
+            u"  - amount = ช่อง 'จำนวนเงิน' / 'รวมยอดเงินเป็นตัวเลข' / 'Total Amount' "
+            u"ตัวเลขหลังจุดทศนิยมมักเขียนแยกเป็นเศษส่วนเล็ก ๆ เช่น '208,463 03/00' = "
+            u"208463.03 ถ้าลายมือกำกวม (3 กับ 5, 1 กับ 7) ให้ใส่ทุกยอดที่เป็นไปได้ใน "
+            u"amount_candidates\n"
+            u"  - date = ช่อง 'วันที่ / Date' ของใบนำฝาก (เขียนแบบ '3/9/69' = 03/09/2026)\n"
+            u"    ถ้าอ่านแล้วได้วันที่ที่ไม่มีจริง (เช่น 31/09) แปลว่าอ่านผิด ให้อ่านใหม่\n"
+            u"  - deposit_account = 'เลขที่บัญชีที่ต้องการฝาก' / 'Account No.'\n"
+            u"  - **ชื่อบัญชี / Account Name ในใบนำฝาก คือผู้รับ (บริษัทของเรา) ไม่ใช่ผู้จ่าย** "
+            u"ใบนำฝากส่วนใหญ่ไม่มีชื่อผู้จ่ายเช็ค -> ตั้ง sender_found = false "
+            u"และ sender_name = \"\" (ยกเว้นเห็นชื่อผู้สั่งจ่ายบนตัวเช็คชัดเจน)\n\n"
             u"########## รูปแบบคำตอบ (JSON เท่านั้น) ##########\n"
             u"{\n"
             u'  "found": true,\n'
@@ -503,6 +545,10 @@ class AccountPayment(models.Model):
             u'  "bill_ref": "เลขที่อ้างอิง 1 ของสลิปจ่ายบิล เช่น REF001",\n'
             u'  "is_bill_payment": false,\n'
             u'  "is_transfer_slip": true,\n'
+            u'  "is_cheque_deposit": false,\n'
+            u'  "cheque_no": "เลขที่เช็ค (เฉพาะใบนำฝากเช็ค/รูปเช็ค)",\n'
+            u'  "cheque_no_candidates": [],\n'
+            u'  "deposit_account": "เลขบัญชีที่ฝากเช็คเข้า",\n'
             u'  "doc_type": "ประเภทเอกสาร ถ้าไม่ใช่สลิปโอนเงิน"\n'
             u"}\n\n"
             u"########## เอกสารที่ไม่ใช่สลิปโอนเงิน ##########\n"
@@ -511,7 +557,8 @@ class AccountPayment(models.Model):
             u"  - หนังสือรับรองการหักภาษี ณ ที่จ่าย (50 ทวิ / ภ.ง.ด.3 / ภ.ง.ด.53)\n"
             u"  - ใบกำกับภาษี / ใบเสร็จรับเงิน / ใบแจ้งหนี้ / ใบวางบิล / ใบสั่งซื้อ\n"
             u"  - สัญญา, บัตรประชาชน, ทะเบียนบ้าน, หนังสือรับรองบริษัท, ภพ.20\n"
-            u"  - เช็ค, ใบนำฝากเช็ค, รูปสินค้า, รูปหน้างาน, เอกสารเปล่า/อ่านไม่ออก\n"
+            u"  - รูปสินค้า, รูปหน้างาน, เอกสารเปล่า/อ่านไม่ออก\n"
+            u"  (ใบนำฝากเช็ค / รูปเช็ค **ไม่อยู่ในกลุ่มนี้** — ดูข้อ 6)\n"
             u"**ระวังสับสน:** หนังสือรับรองการหักภาษี ณ ที่จ่าย มี 'จำนวนเงินที่จ่าย', "
             u"'ภาษีที่หัก' และ 'วัน เดือน ปี ที่จ่าย' หน้าตาคล้ายสลิปมาก "
             u"แต่**ไม่ใช่หลักฐานการโอนเงิน** สังเกตหัวเอกสารว่าเขียนว่า "
@@ -528,12 +575,27 @@ class AccountPayment(models.Model):
 
     @staticmethod
     def _scb_attachment_part(attachment):
-        u"""แปลงไฟล์แนบ 1 ไฟล์เป็น inline_data ของ Gemini"""
+        u"""แปลงไฟล์แนบ 1 ไฟล์เป็น inline_data ของ Gemini
+
+        Gemini รับรูปได้แค่ PNG/JPEG/WEBP/HEIC/HEIF (+PDF) — ไฟล์ GIF ที่พนักงานแนบ
+        ถูกตอบกลับว่าง ทุกครั้ง แล้วลากทั้งใบเป็น "อ่านสลิปไม่ได้" (เจอจริง:
+        CUST.IN-260903-0086 ไฟล์ 7710.gif) จึงแปลงรูปชนิดอื่นเป็น PNG ก่อนส่ง
+        """
         data = attachment.datas
-        return {"inline_data": {
-            "mime_type": attachment.mimetype or 'image/jpeg',
-            "data": data.decode('utf-8') if isinstance(data, bytes) else data,
-        }}
+        data = data.decode('utf-8') if isinstance(data, bytes) else data
+        mimetype = attachment.mimetype or 'image/jpeg'
+        if mimetype not in GEMINI_MIMETYPES and mimetype.startswith('image/'):
+            try:
+                image = Image.open(io.BytesIO(base64.b64decode(data)))
+                image.seek(0)       # GIF เคลื่อนไหว -> ใช้เฟรมแรก
+                buf = io.BytesIO()
+                image.convert('RGB').save(buf, format='PNG')
+                data = base64.b64encode(buf.getvalue()).decode('ascii')
+                mimetype = 'image/png'
+            except Exception:  # noqa: BLE001 - แปลงไม่ได้ก็ส่งไฟล์เดิมไปตามเดิม
+                _logger.warning("SCB verify: แปลงไฟล์ %s (%s) เป็น PNG ไม่สำเร็จ",
+                                attachment.name, mimetype)
+        return {"inline_data": {"mime_type": mimetype, "data": data}}
 
     def _scb_slip_parts(self, attachments=None):
         u"""แปลงไฟล์แนบเป็น parts ของ Gemini (ใช้ตอนตรวจซ้ำรอบสอง)"""
@@ -585,6 +647,8 @@ class AccountPayment(models.Model):
             'slip_sender': (result.get('sender_name') or '').strip() or False,
             'slip_sender_acc': (result.get('sender_account') or '').strip() or False,
             'slip_ref': (result.get('reference') or '').strip() or False,
+            'cheque_no': (re.sub(r'\D', '', str(result.get('cheque_no') or ''))
+                          if result.get('is_cheque_deposit') else '') or False,
             'raw': json.dumps(result, ensure_ascii=False, indent=2),
             'reason': False,
         }
@@ -726,6 +790,8 @@ class AccountPayment(models.Model):
                 ('deposit', '>=', amt - 0.01),
                 ('deposit', '<=', amt + 0.01),
             ], order='date desc', limit=10)
+        # บรรทัดยอดรวมจ่ายบิลทั้งวัน (22:59) ไม่ใช่เงินของใครคนเดียว ห้ามให้ AI เลือก
+        rows = rows._filter_kind()
         rows = rows.sorted(key=lambda r: (r.date or fields.Date.today(), r.time or ''),
                            reverse=True)
         if not rows:
@@ -824,13 +890,15 @@ class AccountPayment(models.Model):
                 lines.sudo().write({'state': 'skipped', 'statement_id': False,
                                     'reason': reason})
 
-        def finish(state, reason, statement=None):
+        def finish(state, reason, statement=None, issue=False, related='', diff=0.0, hint=''):
+            issue = issue if state in ('failed', 'waiting') else False
             vals = {
                 'scb_verify_state': state,
-                'scb_verify_summary': self._scb_public_summary(state),
+                'scb_verify_summary': self._scb_public_summary(state, issue, related, diff, hint),
                 'scb_verify_reason': reason,
                 'scb_verify_datetime': now,
                 'scb_statement_id': statement.id if statement else False,
+                'scb_issue_type': issue,
             }
             # นับเฉพาะครั้งที่ "ไม่สำเร็จ" เพื่อคุมจำนวนรอบที่ระบบจะลองซ้ำให้
             # (สถานะรออื่น ๆ ไม่นับ จะได้ตรวจซ้ำเรื่อย ๆ จนกว่าข้อมูลจะพร้อม)
@@ -895,6 +963,7 @@ class AccountPayment(models.Model):
                 claimed.add(line.statement_id.id)
 
         self._scb_mark_duplicate_slips(lines)
+        reused = self._scb_mark_reused_files(lines)
         self._scb_update_slip_summary(lines)
         active = lines.filtered(
             lambda l: l.state not in ('skipped', 'not_slip', 'duplicate'))
@@ -930,14 +999,20 @@ class AccountPayment(models.Model):
 
         matched = active.filtered(lambda l: l.state == 'matched')
         if len(matched) == len(active):
-            over, shared = self._scb_check_shared_statements(matched)
-            if over:
-                return finish('failed', u"%s\n\n%s\n\n%s" % (header, over, detail))
+            verdict = self._scb_resolve_group(matched)
+            if verdict['issue']:
+                res = finish('failed', u"%s\n\n%s\n\n%s" % (
+                    header, verdict['message'], detail),
+                    issue=verdict['issue'], related=verdict['related'],
+                    diff=verdict['diff'], hint=verdict.get('hint') or '')
+                if self._scb_propagate(verdict['others']):
+                    res = self._scb_recheck_self(res)
+                return res
             total = sum(matched.mapped('slip_amount'))
             summary = _(u"จับคู่ครบทุกสลิป (%s ไฟล์) รวมเป็นเงิน %s") % (
                 len(matched), '{:,.2f}'.format(total))
-            if shared:
-                summary += u"\n" + shared
+            if verdict['message']:
+                summary += u"\n" + verdict['message']
             statement = matched[0].statement_id if len(matched) == 1 else None
             # เงินเข้าจริงแล้ว แต่เข้าบัญชีบริษัทอื่นในเครือหรือเปล่า
             foreign = self._scb_foreign_accounts(matched)
@@ -946,73 +1021,35 @@ class AccountPayment(models.Model):
                     u"เงินเข้าบัญชีของ %s ซึ่งไม่ใช่บัญชีของ %s — "
                     u"ต้องโอนต่อ/ปรับบัญชีระหว่างกันเอง"
                 ) % (u', '.join(foreign), self.company_id.name)
-                return finish('other_company',
-                              u"%s\n%s\n\n%s" % (header, summary, detail),
-                              statement)
-            return finish('success', u"%s\n%s\n\n%s" % (header, summary, detail),
-                          statement)
+                res = finish('other_company',
+                             u"%s\n%s\n\n%s" % (header, summary, detail),
+                             statement)
+            else:
+                res = finish('success', u"%s\n%s\n\n%s" % (header, summary, detail),
+                             statement)
+            if self._scb_propagate(verdict['others']):
+                res = self._scb_recheck_self(res)
+            return res
 
         # ยังมีสลิปที่รอข้อมูลธนาคาร และไม่มีใบไหนที่ "ไม่พบ" -> รอต่อ
         waiting = active.filtered(lambda l: l.state == 'waiting')
         if waiting and not active.filtered(lambda l: l.state in ('not_found', 'unreadable')):
-            return finish('waiting', header + u'\n\n' + detail)
+            gap_line = waiting.filtered(lambda l: l.issue_type)[:1]
+            return finish('waiting', header + u'\n\n' + detail,
+                          issue=gap_line.issue_type or False,
+                          related=self._scb_gap_label(gap_line))
 
+        # ประเภทปัญหาของใบ = ของสลิปที่หนักที่สุด (ไม่พบเงินเลย > ชื่อไม่ตรง > อ่านไม่ได้)
+        # ไฟล์สลิปเดียวกันทุกไบต์ผ่านในใบอื่นแล้ว = หลักฐานแน่นที่สุดของ "แนบผิดใบ" มาก่อน
+        issues = set(active.filtered(lambda l: l.state != 'matched').mapped('issue_type'))
+        issue = next((i for i in ('wrong_slip', 'duplicate_receipt', 'not_found',
+                                  'name_mismatch', 'unreadable')
+                      if i in issues), 'not_found')
         pending = len(active) - len(matched)
         return finish('failed', _(
             u"%s\n\nจับคู่ได้ %s จาก %s สลิป — ยังเหลือ %s สลิปที่ยังไม่พบรายการ\n\n%s"
-        ) % (header, len(matched), len(active), pending, detail))
-
-    def _scb_has_own_data(self, sources, date, day_tol=0):
-        u"""มีรายการเดินบัญชี "ของบัญชีบริษัทเรา" ในวันนั้นแล้วหรือยัง
-
-        ชีตรวม statement ของทุกบริษัทในเครือไว้ด้วยกัน และบางวันข้อมูลเข้ามา
-        ไม่ครบทุกบัญชี ถ้าดูแค่ "มีแถวของวันนั้นไหม" จะเจอแถวของบริษัทอื่นแล้ว
-        เข้าใจผิดว่าข้อมูลพร้อมแล้ว -> สรุปว่า "ไม่สำเร็จ" ทั้งที่ยังไม่มีอะไรให้เทียบ
-        พอนับครบเพดานที่ตั้งไว้ cron ก็เลิกตรวจถาวร แม้ชีตจะเติมข้อมูลทีหลัง
-        (เจอจริง: 12/08/2026 ทั้งชีตมี 3 แถว ซึ่งเป็นของอีกสองบริษัท
-         บัญชีของบริษัทเรา 0 แถว)
-        """
-        self.ensure_one()
-        rows = self.env['npd.scb.bank.statement'].sudo().search([
-            ('source', 'in', sources),
-            ('date', '>=', date - timedelta(days=day_tol)),
-            ('date', '<=', date + timedelta(days=day_tol)),
-        ])
-        if not rows:
-            return False
-        if not self._scb_param('verify_check_own_account'):
-            return True
-        names = self._scb_own_account_names()
-        numbers = self._scb_own_account_numbers()
-        return any(r.belongs_to_company(names, numbers) for r in rows)
-
-    def _scb_bill_rows_available(self, sources, date):
-        u"""บัญชีของบริษัทเรามีรายการจ่ายบิล "แยกรายคน" ของวันนั้นแล้วหรือยัง
-
-        ธนาคารส่งบิลเพย์เมนต์มาสองแบบในชีตเดียวกัน
-          - แถวสรุปยอดรวมรายวัน: ลงเวลา 22:59 รายละเอียด "รับชำระค่าสินค้า
-            และบริการ CrossBank" ไม่มีชื่อผู้โอน + **มี**ยอดคงเหลือ
-          - รายการแยกรายคน: มีชื่อผู้โอนครบ + **ไม่มี**ยอดคงเหลือ
-        ยอดคงเหลือจึงเป็นตัวแยกสองแบบนี้ออกจากกัน
-
-        ตอนนี้ชีตทำรายการแยกรายคนให้ทีละบัญชี ยังไม่ครบทุกบริษัทในเครือ
-        บัญชีที่ยังไม่มีจะเทียบสลิปจ่ายบิลไม่ได้เลย ต้องข้ามไปก่อน
-        เช็คแบบนี้ทำให้ไม่ต้องตั้งค่าแยกรายบริษัท และพอชีตเพิ่มบัญชีเข้ามา
-        ระบบจะเริ่มตรวจให้เองทันทีโดยไม่ต้องแก้โค้ด
-        """
-        self.ensure_one()
-        rows = self.env['npd.scb.bank.statement'].sudo().search([
-            ('source', 'in', sources),
-            ('date', '=', date),
-            ('deposit', '>', 0),
-            ('counterparty', '!=', False),
-            ('balance', '=', 0),
-        ])
-        if not rows:
-            return False
-        names = self._scb_own_account_names()
-        numbers = self._scb_own_account_numbers()
-        return any(r.belongs_to_company(names, numbers) for r in rows)
+        ) % (header, len(matched), len(active), pending, detail), issue=issue,
+            related=u', '.join(reused.get(issue, [])))
 
     def _scb_mark_duplicate_slips(self, lines):
         u"""หาสลิปใบเดิมที่ถูกแนบซ้ำ แล้วเปลี่ยนจาก "ไม่พบรายการ" เป็น "สลิปซ้ำ"
@@ -1041,9 +1078,16 @@ class AccountPayment(models.Model):
 
         for line in pending:
             date, time, amount = key(line)
-            if not date or not amount:
+            if not amount:
                 continue
             twin = twins.get((date, time, amount))
+            if not twin and (not date or not time):
+                # ไฟล์ซ้ำที่ AI อ่านวันที่/เวลาไม่ออก (เช่น แนบสลิปใบเดิมเป็นไฟล์ที่สอง
+                # ความละเอียดต่ำ) แต่ยอดเท่ากับสลิปที่จับคู่ได้แล้วในใบเดียวกัน
+                # (เจอจริง: Bangkok CUST.IN-260827-0038/0039 มีสุข โซลูชั่นส์)
+                twin = next((m for m in matched
+                             if round(m.slip_amount or 0.0, 2) == amount
+                             and (not date or m.slip_date == date)), None)
             if not twin:
                 continue
             # เลขอ้างอิงต่างกัน = คนละรายการจริง ไม่ใช่สลิปซ้ำ
@@ -1056,6 +1100,50 @@ class AccountPayment(models.Model):
                 u"จึงไม่นับซ้ำ"
             ) % (twin.attachment_name or '-', date, time or '-',
                  '{:,.2f}'.format(amount))})
+
+    def _scb_mark_reused_files(self, lines):
+        u"""สลิปที่ยังจับคู่ไม่ได้ แต่ "ไฟล์เดียวกันทุกไบต์" ผ่านการตรวจในใบรับชำระอื่นแล้ว
+
+        เป็นหลักฐานชัดที่สุดว่าแนบสลิปผิดใบ — ไม่ต้องเดาจากยอดเงิน
+        (เจอจริง: CUST.IN-260821-0027 แนบไฟล์สลิป 6,920.00 วันที่ 03/08 ซึ่งเป็น
+         ไฟล์เดียวกับที่ใช้ผ่านไปแล้วใน CUST.IN-260803-0074)
+        เงินก้อนนั้นเข้าจริงและถูกนับให้ใบอื่นไปแล้ว ใบนี้จึงไม่ต้อง "รอข้อมูลธนาคาร"
+
+        คืน {ประเภทปัญหา: [ชื่อใบรับชำระที่ใช้สลิปนี้ไปแล้ว]}
+        """
+        self.ensure_one()
+        Slip = self.env['npd.scb.payment.slip'].sudo()
+        found = {}
+        partner = self.partner_id.commercial_partner_id
+        for line in lines.filtered(lambda l: l.state in ('not_found', 'waiting')):
+            checksum = line.attachment_id.sudo().checksum
+            amount = round(line.slip_amount or 0.0, 2)
+            if not checksum or not amount:
+                continue
+            # ยอดที่อ่านได้ต้องเท่ากันด้วย กันไฟล์รูปกลาง ๆ (โลโก้/ภาพตัวอย่าง) ที่แนบหลายใบ
+            twins = Slip.search([
+                ('payment_id', '!=', self.id), ('state', '=', 'matched'),
+                ('attachment_id.checksum', '=', checksum),
+            ]).filtered(lambda l: l.payment_id.state in POSTED_STATES
+                        and round(l.slip_amount or 0.0, 2) == amount)
+            if not twins:
+                continue
+            owners = twins.mapped('payment_id')
+            same = (partner in owners.mapped('partner_id.commercial_partner_id')
+                    and any(abs(o._scb_bank_portion() - self._scb_bank_portion())
+                            <= self.AMOUNT_NOTE_TOL for o in owners))
+            issue = 'duplicate_receipt' if same else 'wrong_slip'
+            names = owners.mapped('name')
+            found.setdefault(issue, [])
+            found[issue] += [n for n in names if n not in found[issue]]
+            line.sudo().write({'state': 'not_found', 'issue_type': issue, 'reason': _(
+                u"ไฟล์สลิปนี้เป็นไฟล์เดียวกันทุกไบต์กับสลิปที่ใช้ยืนยันใบ %s ไปแล้ว "
+                u"(เงินก้อนนี้เข้าจริง และถูกนับให้ใบนั้นแล้ว)\n%s\n\nผลตรวจเดิม: %s"
+            ) % (u', '.join(names),
+                 _(u"เป็นลูกค้ารายเดียวกันและยอดเท่ากัน — อาจบันทึกรับชำระซ้ำ") if same
+                 else _(u"น่าจะแนบสลิปผิดใบ — กรุณาแนบสลิปที่ถูกต้องของใบนี้"),
+                 line.reason or '-')})
+        return found
 
     def _scb_own_account_names(self):
         u"""ชื่อเจ้าของบัญชีที่ถือว่าเป็น "บัญชีของบริษัทเรา"
@@ -1120,43 +1208,62 @@ class AccountPayment(models.Model):
         """
         self.ensure_one()
         if getattr(self, 'is_payment_multi', False) and getattr(self, 'paid_ids', False):
-            # o18: account.paid.line เก็บชนิดวิธีชำระที่ payment_method_type และยอดที่ amount
             bank_lines = self.paid_ids.filtered(
                 lambda l: l.payment_method_type == 'bank')
             return sum(bank_lines.mapped('amount'))
         return abs(self.amount)
 
-    def _scb_check_shared_statements(self, lines):
-        u"""ตรวจว่าเงินเข้าก้อนเดียวถูกตัดไปเกินตัวหรือไม่
+    def _scb_group_claim(self, statements):
+        u"""ยอดที่ใบนี้ "ใช้" จากเงินเข้าชุดนี้
 
-        ลูกค้ามัก "โอนรวมมาก้อนเดียว" แล้วเอาไปตัดหลายใบรับชำระ เช่น
-        เงินเข้า 124.47 = ใบ 51.85 + ใบ 72.62 — กรณีนี้ถูกต้อง ไม่ใช่บันทึกซ้ำ
-        เกณฑ์ที่ใช้จึงไม่ใช่ "ห้ามใช้ซ้ำ" แต่เป็น
-            ผลรวมยอดโอนของทุกใบที่ตัดเงินก้อนนี้  <=  เงินที่เข้าจริง
+        = ยอดเงินโอนของใบ แต่ไม่เกินเงินเข้าที่สลิปของใบนี้ชี้ไป
+        เช่น ใบ 500 แนบสลิป 1,695 -> ใช้ 500 / ใบ 1,695 แนบสลิป 1,695 -> ใช้ 1,695
+        """
+        self.ensure_one()
+        mine = self.env['npd.scb.payment.slip'].sudo().search([
+            ('payment_id', '=', self.id), ('state', '=', 'matched'),
+            ('statement_id', 'in', statements.ids),
+        ]).mapped('statement_id')
+        return min(self._scb_bank_portion(), sum(mine.mapped('deposit')))
 
-        ต้องคิด "ทั้งกลุ่ม" ไม่ใช่ทีละก้อน เพราะความสัมพันธ์เป็นแบบหลายต่อหลาย
-        เงินเข้าก้อนหนึ่งถูกหลายใบตัดได้ และใบหนึ่งก็ตัดเงินหลายก้อนได้
-        ถ้าเทียบยอด "ทั้งใบ" กับเงินเข้า "ทีละก้อน" จะฟ้องว่าเกินทั้งที่ยอดตรง เช่น
-            เงินเข้า 233.00 + 2,084.83 = 2,317.83
-            ใบ A 2,200.00 + ใบ B 117.83 = 2,317.83  (พอดีเป๊ะ)
-        แต่พอเทียบใบ A (2,200) กับก้อน 233.00 ก้อนเดียวจะกลายเป็น "เกิน" ทันที
+    def _scb_resolve_group(self, lines):
+        u"""ตัดสินว่าเงินเข้าที่สลิปของใบนี้ชี้ไป "เป็นของใบไหน"
 
-        คืน (ข้อความเตือนถ้าเกิน, ข้อความหมายเหตุถ้าใช้ร่วมกันแบบถูกต้อง)
+        สลิปใบเดียวกันมักถูกแนบในหลายใบรับชำระ มีทั้งแบบถูกและผิด
+          • ถูก: ลูกค้าโอนรวมมาก้อนเดียวแล้วเอาไปตัดหลายใบ เช่น
+                 เงินเข้า 6,476 = ใบ 5,000 + ใบ 1,476
+          • ผิด: พนักงานแนบสลิปของใบอื่นมา (หรือบันทึกรับชำระซ้ำ) เช่น
+                 เงินเข้า 1,695 ถูกแนบในใบ 1,695 / ใบ 500 / ใบ 700
+        เดิมใช้ "ใบที่ตรวจก่อนได้ไปก่อน" ใบที่ถูกจริงจึงกลายเป็นใบที่ตก
+        ถ้ามาตรวจทีหลัง และใบที่ผ่านไปแล้วไม่เคยถูกตรวจซ้ำ
+
+        วิธีใหม่ดู "ทั้งกลุ่ม" พร้อมกัน (ใบ <-> เงินเข้า ไล่สลับกันจนครบ
+        เพราะเป็นความสัมพันธ์หลายต่อหลาย) แล้ว
+          1. ยอดที่ทุกใบใช้รวมกัน <= เงินที่เข้าจริง -> ใช้ร่วมกันได้ถูกต้อง
+          2. เกิน -> หา "ชุดใบรับชำระ" ที่ยอดรวมเท่ากับเงินเข้าพอดี
+             - ชุดเดียว    -> ใบในชุดเป็นเจ้าของ ใบนอกชุด = แนบสลิปผิด/รับชำระซ้ำ
+             - หลายชุด    -> ใบที่อยู่ทุกชุดเป็นเจ้าของ ใบที่อยู่บางชุด = ชี้ไม่ได้
+             - ไม่มีเลย    -> ทุกใบ = เงินก้อนเดียวถูกตัดเกิน
+        ผลตัดสินไม่ขึ้นกับลำดับที่ตรวจ ใบไหนตรวจก่อนหลังก็ได้คำตอบเดียวกัน
+
+        คืน dict {issue, message, related, others}
+          others = ใบอื่นในกลุ่ม (ต้องตรวจซ้ำให้สถานะตรงกับผลตัดสินใหม่)
         """
         self.ensure_one()
         Slip = self.env['npd.scb.payment.slip'].sudo()
         tol = max(self._scb_param('verify_amount_tolerance'), 0.01)
+        money = '{:,.2f}'.format
 
-        # ไล่หากลุ่มที่เกี่ยวข้องกันจนครบ (ใบ <-> เงินเข้า สลับกันไปมา)
         statements = lines.mapped('statement_id')
         payments = self
         for _round in range(10):    # กันวนไม่รู้จบ กลุ่มจริงเล็กมาก
             linked = Slip.search([
                 ('statement_id', 'in', statements.ids), ('state', '=', 'matched'),
             ]).mapped('payment_id').filtered(
-                # นับ other_company ด้วย — เงินก้อนนั้นถูกตัดไปแล้วเหมือนกัน
+                # นับทุกใบที่ลงบันทึกอยู่และสลิปชี้มาที่เงินก้อนนี้ ไม่ว่าสถานะ
+                # ตอนนี้จะเป็นอะไร (รวมใบที่เคยตกเพราะมาตรวจทีหลัง)
                 lambda p: p.id == self.id
-                or p.scb_verify_state in ('success', 'other_company'))
+                or (p.state in POSTED_STATES and p.scb_verify_state != 'skipped'))
             spread = Slip.search([
                 ('payment_id', 'in', payments.ids), ('state', '=', 'matched'),
             ]).mapped('statement_id')
@@ -1166,24 +1273,298 @@ class AccountPayment(models.Model):
             statements |= spread
 
         others = payments - self
-        if not others:
-            return u'', u''
-
         total_in = sum(statements.mapped('deposit'))
-        allocated = sum(p._scb_bank_portion() for p in payments)
-        names = u', '.join(p.display_name or str(p.id) for p in others)
-        detail = _(u"เงินเข้า %s รายการ รวม %s / ตัดโดย %s ใบ รวม %s") % (
-            len(statements), '{:,.2f}'.format(total_in),
-            len(payments), '{:,.2f}'.format(allocated))
+        claims = {p.id: p._scb_group_claim(statements) for p in payments}
+        allocated = sum(claims.values())
+        portion = self._scb_bank_portion()
+        result = {'issue': False, 'message': u'', 'related': u'', 'others': others,
+                  # ส่วนต่างที่บอกพนักงาน: บวก = ใบรับชำระบันทึกเงินเกินเงินที่เข้า
+                  #                       ลบ = เงินเข้ามากกว่าใบรับชำระ
+                  'diff': 0.0, 'hint': u''}
 
-        if allocated > total_in + tol:
-            return _(
-                u"เงินเข้าก้อนเดียวกันถูกตัดไปแล้วโดย %s — %s ซึ่ง **เกิน** "
-                u"ยอดที่เข้าจริง %s — กรุณาตรวจสอบว่าบันทึกรับชำระซ้ำหรือไม่"
-            ) % (names, detail, '{:,.2f}'.format(total_in)), u''
-        return u'', _(
-            u"ลูกค้าโอนรวมมาแล้วตัดหลายใบ — ใบนี้ %s ร่วมกับ %s (%s)"
-        ) % ('{:,.2f}'.format(self._scb_bank_portion()), names, detail)
+        def names(recs):
+            return u', '.join(p.name or str(p.id) for p in recs)
+
+        money_in = u', '.join(
+            u'%s %s %s' % (st.date or '', (st.time or '').strip(), money(st.deposit))
+            for st in statements.sorted(lambda s: (s.date or fields.Date.today(),
+                                                   s.time or '')))
+        group_detail = _(u"เงินเข้า %s รายการ รวม %s (%s) / ใช้โดย %s ใบ รวม %s") % (
+            len(statements), money(total_in), money_in, len(payments), money(allocated))
+
+        # ---------- 1) ใช้ร่วมกันไม่เกินเงินที่เข้า ----------
+        if allocated <= total_in + max(tol, self.AMOUNT_NOTE_TOL):
+            mine = claims[self.id]
+            notes = []
+            if allocated > total_in + tol:
+                notes.append(_(u"ใบที่ใช้เงินก้อนนี้รวมกันเกินเงินเข้า %s (ไม่เกิน %s บาท "
+                               u"ถือว่าเป็นเศษสตางค์)") % (
+                    money(allocated - total_in), money(self.AMOUNT_NOTE_TOL)))
+            if mine < portion - tol:
+                # เงินเข้าน้อยกว่าที่ใบบันทึกว่ารับ = บัญชีธนาคารในระบบเกินจริง -> ไม่ผ่าน
+                # ยกเว้นต่างกันเป็นเศษสตางค์ (เคาน์เตอร์เซอร์วิส/ลูกค้าปัดเศษ) ให้ผ่านพร้อมหมายเหตุ
+                if portion - mine > self.AMOUNT_NOTE_TOL:
+                    result.update(issue='amount_mismatch', diff=portion - mine, message=_(
+                        u"เงินเข้าตามสลิปที่แนบรวม %s น้อยกว่ายอดเงินโอนของใบรับชำระนี้ %s "
+                        u"(ขาด %s) — ถ้าลูกค้าหักภาษี ณ ที่จ่าย ให้แยกวิธีชำระส่วนภาษีออก "
+                        u"ถ้าลูกค้าโอนหลายครั้ง ให้แนบสลิปให้ครบ"
+                    ) % (money(mine), money(portion), money(portion - mine)))
+                    return result
+                notes.append(_(u"เงินเข้าน้อยกว่ายอดเงินโอนของใบนี้ %s (ไม่เกิน %s บาท "
+                               u"ถือว่าเป็นเศษสตางค์)") % (
+                    money(portion - mine), money(self.AMOUNT_NOTE_TOL)))
+            if not others:
+                # เงินเข้ามากกว่าใบนี้ และยังไม่มีใบอื่นใช้ร่วม -> ผ่าน แต่บันทึกไว้ให้เห็น
+                # ไม่ตัดสินว่าไม่ผ่าน เพราะส่วนใหญ่เป็นลูกค้าโอนค่าเช่า+ค่าประกันรวมกัน แล้ว
+                # ใบค่าประกันยังไม่ถูกตรวจ/ยังไม่ได้แนบสลิปเดียวกัน (ทดสอบกับข้อมูลจริง
+                # 31 ใบ ส่วนต่างเป็นเลขกลม 3,000/4,000/8,000 เกือบทั้งหมด)
+                # กรณีแนบสลิปผิดใบจริง ยังถูกจับได้เมื่อใบเจ้าของเงินก้อนนั้นถูกตรวจ
+                if total_in > portion + tol:
+                    notes.append(_(
+                        u"เงินเข้าตามสลิป %s มากกว่ายอดเงินโอนของใบนี้ %s (เกิน %s) และยังไม่มี"
+                        u"ใบรับชำระอื่นที่ใช้เงินก้อนนี้ร่วม — ถ้าส่วนที่เกินเป็นค่าประกัน/ใบอื่น "
+                        u"ให้แนบสลิปเดียวกันในใบนั้นด้วย"
+                    ) % (money(total_in), money(portion), money(total_in - portion)))
+                result['message'] = u'\n'.join(notes)
+                return result
+            message = _(u"ลูกค้าโอนรวมมาแล้วตัดหลายใบ — ใบนี้ %s ร่วมกับ %s (%s)") % (
+                money(portion), names(others), group_detail)
+            if allocated < total_in - tol:
+                message += _(u"\nยังมีเงินส่วนนี้ที่ไม่มีใบรับชำระรองรับ %s") % money(
+                    total_in - allocated)
+            result['message'] = u'\n'.join(notes + [message])
+            return result
+
+        # ---------- 2) ใช้เกินเงินที่เข้า -> หาว่าใบไหนเป็นเจ้าของ ----------
+        # เจ้าของได้เฉพาะใบที่เงินก้อนนี้ครอบคลุมยอดของใบเต็มจำนวน
+        # (ใบที่เงินไม่พอยอดของตัวเองอยู่แล้ว ไม่มีทางเป็นเจ้าของที่ถูกต้อง)
+        eligible = [p for p in payments if claims[p.id] >= p._scb_bank_portion() - tol]
+        subsets = []
+        if len(eligible) <= 12:     # กลุ่มจริงมีไม่กี่ใบ กันกรณีผิดปกติไม่ให้ช้า
+            for size in range(1, len(eligible) + 1):
+                for combo in combinations(eligible, size):
+                    if abs(sum(claims[p.id] for p in combo) - total_in) <= tol:
+                        subsets.append({p.id for p in combo})
+        owners = set.intersection(*subsets) if subsets else set()
+        maybe = set.union(*subsets) if subsets else set()
+        losers = payments.filtered(lambda p: p.id not in maybe)
+
+        if self.id in owners:
+            # ใบนี้ถูก — แต่บอกไว้ว่ามีใบอื่นแนบเงินก้อนเดียวกันมาผิด ๆ
+            result['message'] = _(
+                u"ใบนี้ยอดตรงกับเงินเข้า — แต่เงินก้อนเดียวกันถูกแนบในใบ %s ด้วย "
+                u"ซึ่งระบบตัดสินว่าแนบสลิปผิดใบ/รับชำระซ้ำ (%s)"
+            ) % (names(losers) or '-', group_detail)
+            return result
+
+        owner_recs = payments.filtered(lambda p: p.id in (owners or maybe))
+        partner = self.partner_id.commercial_partner_id
+        same_partner = partner in owner_recs.mapped('partner_id.commercial_partner_id')
+
+        if subsets and self.id not in maybe:
+            # ใบนี้ไม่อยู่ในชุดไหนเลย = เงินก้อนนี้เป็นของใบอื่นแน่นอน
+            # "อาจรับชำระซ้ำ" เฉพาะลูกค้าเดียวกัน + ยอดเท่ากับใบเจ้าของ นอกนั้น = แนบผิดก้อน
+            # (เจอจริง: CUST.IN-260902-0040 ค่าประกัน 1,215.71 แนบสลิป 1,784.29 ของ
+            #  0902-0041 ลูกค้าเดียวกัน แต่คนละยอด — สลิปที่ถูกคือก้อน 3,103.19)
+            same_amount = any(abs(portion - p._scb_bank_portion()) <= tol
+                              for p in owner_recs)
+            issue = 'duplicate_receipt' if (same_partner and same_amount) else 'wrong_slip'
+            result.update(issue=issue, related=names(owner_recs), message=_(
+                u"เงินเข้าตามสลิปที่แนบ เป็นของใบรับชำระ %s (ยอดตรงกับเงินเข้าพอดี) "
+                u"— ใบนี้ยอด %s %s\n%s"
+            ) % (names(owner_recs), money(portion),
+                 _(u"เป็นลูกค้ารายเดียวกัน อาจบันทึกรับชำระซ้ำ") if same_partner
+                 else _(u"น่าจะแนบสลิปผิดใบ กรุณาแนบสลิปของใบนี้"),
+                 group_detail))
+            return result
+
+        if subsets:
+            # มีหลายชุดที่ยอดรวมเท่ากับเงินเข้าพอดี = สลิปเดียวถูกใช้ซ้ำหลายชุด
+            # เช่น ชุด A (0807-0011+0012) กับชุด B (0807-0091+0092) ยอดเท่ากันทุกใบ
+            # ชุดหนึ่งเป็นของจริง อีกชุดแนบสลิปผิดหรือบันทึกซ้ำ ระบบชี้ไม่ได้ว่าชุดไหน
+            rivals = payments.filtered(lambda p: p.id in maybe and p.id not in owners)
+            rival_partners = rivals.mapped('partner_id.commercial_partner_id')
+            mine = [sub for sub in subsets if self.id in sub]
+            sets_txt = u' / '.join(
+                u'[%s]' % names(payments.filtered(lambda p, sub=sub: p.id in sub))
+                for sub in subsets[:4])
+            issue = 'duplicate_receipt' if (
+                len(rival_partners) <= 1 and all(len(sub) == 1 for sub in subsets)
+            ) else 'slip_reused'
+            result.update(issue=issue, related=sets_txt if issue == 'slip_reused'
+                          else names(rivals - self),
+                          diff=allocated - total_in, message=_(
+                u"สลิป/เงินเข้าก้อนเดียวกันถูกใช้กับใบรับชำระหลายชุด แต่ละชุดยอดรวมเท่ากับ"
+                u"เงินเข้าพอดี: %s — ชุดใดชุดหนึ่งแนบสลิปผิดหรือบันทึกรับชำระซ้ำ "
+                u"(ใบนี้อยู่ในชุด %s)\n%s"
+            ) % (sets_txt, u', '.join(u'[%s]' % names(payments.filtered(
+                lambda p, sub=sub: p.id in sub)) for sub in mine) or '-', group_detail))
+            return result
+
+        hint = self._scb_wht_hint(payments, allocated - total_in)
+        result.update(issue='over_allocated', related=names(others),
+                      diff=allocated - total_in, hint=hint, message=_(
+            u"เงินเข้าก้อนเดียวกันถูกใช้โดย %s ด้วย — ใช้รวม %s เกินยอดที่เข้าจริง %s "
+            u"และยอดของแต่ละใบรวมกันไม่ลงตัวกับเงินเข้า (ไม่ใช่การแนบสลิปผิด) — "
+            u"ลูกค้าโอนไม่ครบ หรือบันทึกยอด/ภาษีหัก ณ ที่จ่ายไม่ถูก%s\n%s"
+        ) % (names(others), money(allocated), money(total_in),
+             (u"\n" + hint) if hint else u'', group_detail))
+        return result
+
+    def _scb_wht_hint(self, payments, excess):
+        u"""ส่วนที่เกินเท่ากับภาษีหัก ณ ที่จ่าย 1/3/5% ของใบที่ยังไม่ได้บันทึกภาษีหรือเปล่า
+
+        เจอจริง: ทำทรัพย์ 0824-0073 เกิน 249.70 = 5% ของ 5,343.58/1.07 /
+        มีสุข 0827-0039 เกิน 939.60 = 5% ของ 20,107.44/1.07
+        ดูเฉพาะใบที่ "ไม่มีบรรทัดภาษี" เท่านั้น — ใบที่บันทึกภาษีแล้วแต่ยังเกิน
+        แปลว่าลูกค้าโอนขาด (เช่น ตั้งใจมานะขนส่ง) จะได้ไม่ชี้ผิดคน
+        """
+        if not excess or excess <= 0:
+            return u''
+        for p in payments:
+            has_wht = bool(getattr(p, 'wt_cert_ids', False)) or any(
+                (l.payment_method_type or '') == 'other'
+                for l in (getattr(p, 'paid_ids', False) or []))
+            if has_wht:
+                continue
+            gross = abs(p.amount)
+            for rate in (0.05, 0.03, 0.01, 0.02):
+                for base in (gross / 1.07, gross):
+                    if abs(round(base * rate, 2) - excess) <= 0.02:
+                        return _(u"ส่วนที่เกิน %s เท่ากับภาษีหัก ณ ที่จ่าย %s%% ของใบ %s พอดี "
+                                 u"(ใบนี้ยังไม่ได้บันทึกภาษีหัก ณ ที่จ่าย)") % (
+                            '{:,.2f}'.format(excess), int(rate * 100), p.name)
+        return u''
+
+    def _scb_propagate(self, others):
+        u"""ตรวจใบอื่นในกลุ่มเดียวกันซ้ำ ให้สถานะตรงกับผลตัดสินล่าสุด
+
+        เช่น ใบที่แนบสลิปผิดเคยผ่านไปก่อน พอใบเจ้าของจริงมาตรวจ ใบนั้นต้องถูก
+        เปลี่ยนเป็น "ไม่สำเร็จ — แนบสลิปผิดใบ" ด้วย ไม่ใช่ค้างว่าผ่านตลอดไป
+        ตรวจแค่ชั้นเดียว (context กันไม่ให้ใบที่ถูกตรวจซ้ำไปกระจายต่อไม่รู้จบ)
+
+        คืน True ถ้ามีใบไหน "ย้ายไปจับเงินก้อนอื่น" หลังตรวจซ้ำ — แปลว่ากลุ่ม
+        เปลี่ยนไปแล้ว ผลตัดสินของใบนี้ที่คิดไว้ก่อนหน้าอาจไม่ถูกแล้ว
+        (เช่น 2 ใบแย่งเงินก้อน 16:59 กันอยู่ พอใบหนึ่งย้ายไปก้อน 16:57 ที่ถูกต้อง
+         อีกใบก็ไม่ได้ตัดเกินอีกต่อไป)
+        """
+        if self.env.context.get('scb_no_propagate') or not others:
+            return False
+        Slip = self.env['npd.scb.payment.slip'].sudo()
+
+        def used(payment):
+            return set(Slip.search([('payment_id', '=', payment.id),
+                                    ('state', '=', 'matched')]).mapped('statement_id').ids)
+
+        moved = False
+        for payment in others.filtered(
+                lambda p: p.state in POSTED_STATES and p.scb_verify_state != 'skipped'):
+            before = used(payment)
+            try:
+                with self.env.cr.savepoint():
+                    payment.with_context(scb_no_propagate=True)._scb_verify_one()
+            except Exception:  # noqa: BLE001 - ใบอื่นพังต้องไม่ล้มใบนี้
+                _logger.exception(
+                    "SCB verify: ตรวจซ้ำใบในกลุ่มเดียวกัน id=%s ไม่สำเร็จ", payment.id)
+                continue
+            if used(payment) != before:
+                moved = True
+        return moved
+
+    def _scb_recheck_self(self, previous):
+        u"""ตรวจใบนี้ซ้ำหนึ่งรอบหลังใบอื่นในกลุ่มย้ายเงินก้อน (ไม่กระจายต่อ)"""
+        try:
+            with self.env.cr.savepoint():
+                return self.with_context(scb_no_propagate=True)._scb_verify_one()
+        except Exception:  # noqa: BLE001
+            _logger.exception("SCB verify: ตรวจซ้ำใบ id=%s ไม่สำเร็จ", self.id)
+            return previous
+
+    # ใบนำฝากเช็คเขียนด้วยลายมือ AI อ่านเศษสตางค์/วันที่คลาดได้ (เจอจริง: 208,463.03
+    # อ่านเป็น .05 และวันที่ 3/9/69 อ่านเป็น 31/09) จึงยอมให้คลาดได้เล็กน้อย
+    # ความเสี่ยงต่ำเพราะบังคับว่าเลขที่เช็คต้องตรงกับรายการของธนาคารด้วยเสมอ
+    CHEQUE_AMOUNT_TOL = 1.0
+    # ใบรับชำระบันทึกเงินโอนมากกว่าเงินเข้าไม่เกินเท่านี้ = เศษสตางค์ (ผ่านพร้อมหมายเหตุ)
+    # เจอจริง: 51.55 vs 51.56, 1,718.96 vs 1,719.00 (เคาน์เตอร์เซอร์วิส), 349.90 vs 349.00
+    AMOUNT_NOTE_TOL = 1.0
+    CHEQUE_DAY_TOL = 3
+
+    @staticmethod
+    def _scb_cheque_numbers(description):
+        u"""เลขที่เช็คในรายละเอียดของธนาคาร เช่น '... เช็คเลขที่ 10020051'"""
+        text = description or ''
+        found = re.findall(u'(?:เช็คเลขที่|เช็ค\\s*no\\.?|cheque\\s*no\\.?|chq\\.?)'
+                           u'\\s*[:#]?\\s*(\\d{5,})', text, re.IGNORECASE)
+        return found or [r for r in re.findall(r'\d+', text) if len(r) >= 7]
+
+    @staticmethod
+    def _scb_cheque_same(a, b):
+        u"""เลขที่เช็คจากลายมือ ตรงกับเลขของธนาคารไหม
+
+        ตรงเป๊ะ / ฝั่งหนึ่งเป็นท่อนต้นหรือท่อนท้ายของอีกฝั่ง (อ่านหลักสุดท้ายไม่ออก)
+        / ยาวเท่ากันและต่างกันไม่เกิน 1 หลัก (ลายมือ 1 กับ 7)
+        """
+        if not a or not b:
+            return False
+        if a == b:
+            return True
+        short, long_ = sorted((a, b), key=len)
+        if len(short) >= 6 and (long_.startswith(short) or long_.endswith(short)):
+            return True
+        return len(a) == len(b) >= 7 and sum(x != y for x, y in zip(a, b)) <= 1
+
+    def _scb_match_cheque(self, line, raw, amounts, dates, claimed):
+        u"""หารายการฝากเช็คที่ตรงกับใบนำฝาก -> (statement, หมายเหตุ) หรือ None
+
+        เงื่อนไข: เลขที่เช็คตรง + ยอดคลาดไม่เกิน 1 บาท + วันที่ภายใน ±3 วัน
+        (จากวันในเอกสารหรือวันในใบรับชำระ) และต้องเหลือรายการเดียวเท่านั้น
+        """
+        self.ensure_one()
+        numbers = [line.cheque_no, raw.get('cheque_no')] + list(
+            raw.get('cheque_no_candidates') or [])
+        numbers = [n for n in dict.fromkeys(
+            re.sub(r'\D', '', str(n or '')) for n in numbers) if len(n) >= 5]
+        if not numbers or not amounts:
+            return None
+        base = list(dates) + ([self.date] if self.date else [])
+        rows = self.env['npd.scb.bank.statement'].sudo().search([
+            ('deposit', '>=', min(amounts) - self.CHEQUE_AMOUNT_TOL),
+            ('deposit', '<=', max(amounts) + self.CHEQUE_AMOUNT_TOL),
+            ('date', '>=', min(base) - timedelta(days=self.CHEQUE_DAY_TOL)),
+            ('date', '<=', max(base) + timedelta(days=self.CHEQUE_DAY_TOL)),
+        ])
+        rows = rows.filtered(lambda r: r.id not in claimed and any(
+            abs(r.deposit - a) <= self.CHEQUE_AMOUNT_TOL for a in amounts))
+        hits = rows.filtered(lambda r: any(
+            self._scb_cheque_same(n, b) for n in numbers
+            for b in self._scb_cheque_numbers(r.description)))
+        if len(hits) == 1:
+            rec = hits[0]
+            note = _(u"ใบนำฝากเช็ค — จับคู่ด้วยเลขที่เช็ค %s กับรายการธนาคาร \"%s\"") % (
+                u'/'.join(numbers), rec.description or '-')
+        else:
+            # เลขที่เช็คลายมืออ่านยากที่สุดในใบนำฝาก (เจอจริง: 10020051 อ่านเป็น
+            # 90020097) ถ้าเลขไม่ตรง แต่มี "รายการฝากเช็ค" ยอด+วันที่ตรงอยู่รายการ
+            # เดียวในช่วงนั้น ก็ยืนยันได้ — ยอดเช็คระดับสตางค์ซ้ำกันยากมาก
+            cheque_rows = rows.filtered(lambda r: re.search(
+                u'เช็ค|cheque|chq', r.description or '', re.IGNORECASE))
+            if hits or len(cheque_rows) != 1:
+                return None
+            rec = cheque_rows[0]
+            note = _(u"ใบนำฝากเช็ค — เลขที่เช็คที่อ่านได้ (%s) ไม่ตรงกับธนาคาร แต่เป็น"
+                     u"รายการฝากเช็คเดียวที่ยอดและวันที่ตรงกัน: \"%s\"") % (
+                u'/'.join(numbers), rec.description or '-')
+        # ลายมืออ่านคลาด -> แก้ค่าในผลรายสลิปให้เป็นค่าจริงจากธนาคาร
+        fix = {}
+        if abs((line.slip_amount or 0.0) - rec.deposit) > 0.001:
+            note += _(u" (AI อ่านยอดได้ %s ธนาคาร %s — ใช้ยอดธนาคาร)") % (
+                '{:,.2f}'.format(line.slip_amount or 0.0), '{:,.2f}'.format(rec.deposit))
+            fix['slip_amount'] = rec.deposit
+        if line.slip_date != rec.date:
+            fix['slip_date'] = rec.date
+        if fix:
+            line.sudo().write(fix)
+        return rec, note
 
     def _scb_match_slip_line(self, line, sources, claimed):
         u"""จับคู่ "สลิป 1 ใบ" กับรายการเดินบัญชี แล้วเขียนผลลงบรรทัดนั้น
@@ -1196,11 +1577,17 @@ class AccountPayment(models.Model):
 
         Alias = self.env['npd.scb.counterparty.alias'].sudo()
 
-        def done(state, reason, statement=None):
+        def done(state, reason, statement=None, issue=False):
+            if state == 'not_found' and not issue:
+                issue = 'not_found'
+            elif state == 'unreadable':
+                issue = 'unreadable'
             line.sudo().write({
                 'state': state,
                 'reason': reason,
                 'statement_id': statement.id if statement else False,
+                'issue_type': issue if state in ('not_found', 'unreadable', 'waiting')
+                else False,
             })
             # จับคู่ได้แล้ว -> จำไว้ว่าชื่อผู้โอนที่ธนาคารบันทึก = ลูกค้ารายนี้
             # ครั้งหน้าที่ลูกค้าคนเดิมโอนมาจะเทียบได้ทันที ไม่ต้องพึ่ง AI อีก
@@ -1256,11 +1643,12 @@ class AccountPayment(models.Model):
         notes = []
         if not amounts:
             return done('not_found', _(
-                u"AI อ่านจำนวนเงินจากสลิปใบนี้ไม่ได้ — ตรวจสอบไม่ได้"))
+                u"AI อ่านจำนวนเงินจากสลิปใบนี้ไม่ได้ — ตรวจสอบไม่ได้"), issue='unreadable')
         if not dates:
             if not self.date:
                 return done('not_found', _(
-                    u"ไม่มีวันที่ให้ใช้ตรวจสอบ (ทั้งในสลิปและในใบรับชำระ)"))
+                    u"ไม่มีวันที่ให้ใช้ตรวจสอบ (ทั้งในสลิปและในใบรับชำระ)"),
+                    issue='unreadable')
             dates = [self.date]
             notes.append(_(u"AI อ่านวันที่จากสลิปไม่ได้ — ใช้วันที่ในใบรับชำระแทน"))
         if len(dates) > 1:
@@ -1275,6 +1663,28 @@ class AccountPayment(models.Model):
                 u"ข้อมูลการโอนของธนาคารมาช้ากว่าจริง %s วัน — "
                 u"รายการวันที่ %s จะตรวจสอบได้ตั้งแต่วันที่ %s"
             ) % (lag, max(dates), ready_date))
+
+        # ใบนำฝากเช็ค / รูปเช็ค -> จับคู่ด้วย "เลขที่เช็ค" แทนการเทียบชื่อ
+        # ใบนำฝากไม่มีชื่อผู้จ่าย (ช่อง "ชื่อบัญชี" คือบริษัทเราเอง) และเขียนด้วย
+        # ลายมือ AI จึงอ่านยอด/วันที่คลาดได้ แต่เลขที่เช็คไม่ซ้ำกัน ยืนยันได้แน่นกว่า
+        if raw.get('is_cheque_deposit') or line.cheque_no:
+            hit = self._scb_match_cheque(line, raw, amounts, dates, claimed)
+            if hit:
+                statement, note = hit
+                notes.append(note)
+                return done('matched', self._scb_success_reason(
+                    statement, '{:,.2f}'.format(statement.deposit), statement.date,
+                    _(u"(ใบนำฝากเช็ค — ไม่มีชื่อผู้จ่าย)"), notes), statement)
+            notes.append(_(
+                u"เป็นใบนำฝากเช็ค แต่ไม่พบรายการ \"เช็คเลขที่\" ในธนาคารที่ตรงกับเลขที่เช็ค "
+                u"ยอด และวันที่ในเอกสาร — ตรวจแบบปกติต่อ"))
+
+        # สลิปจ่ายบิล/QR -> เทียบเฉพาะ "รายการจ่ายบิลรายคน" ของ SCB
+        # เงินจ่ายบิลไม่มีทางอยู่ในรายการโอนปกติของคนอื่น ถ้าไปเทียบด้วยจะเจอเงิน
+        # ยอดเท่ากันของคนอื่นแล้วฟ้อง "ชื่อไม่ตรง" หรือแย่กว่านั้นคือจับคู่ผิดแล้วผ่าน
+        # (เจอจริง: Bangkok CUST.IN-260821-0008/0009 สลิปจ่ายบิล 1,000 ไปชนเงินโอน
+        #  1,000 ของคนอื่นในบัญชีโลจิสติกส์ ใบหนึ่งฟ้องชื่อไม่ตรง อีกใบผ่านปลอม)
+        is_bill = bool(raw.get('is_bill_payment'))
 
         slip_sender = line.slip_sender or ''
         # ชื่อที่ยอมรับได้ = ชื่อในสลิป + ชื่อลูกค้าใน Odoo + ชื่อที่ระบบเคยจำไว้
@@ -1298,6 +1708,12 @@ class AccountPayment(models.Model):
             'account_hint': line.slip_sender_acc,
             'time_hint': line.slip_time,
             'time_tol': self._scb_param('verify_time_tolerance_min'),
+            # แถวที่ใบรับชำระอื่นใช้ไปแล้ว — ถ้ามีแถวยอดเท่ากันให้เลือก ให้เลือกแถวที่ว่าง
+            'used_ids': self.env['npd.scb.payment.slip'].sudo().search([
+                ('state', '=', 'matched'), ('payment_id', '!=', self.id),
+                ('statement_id.date', 'in', dates),
+            ]).filtered(lambda l: l.payment_id.state in POSTED_STATES).mapped('statement_id').ids,
+            'row_kind': 'bill' if is_bill else None,
         }
         amount_label = u' / '.join('{:,.2f}'.format(a) for a in amounts)
 
@@ -1309,7 +1725,10 @@ class AccountPayment(models.Model):
         # ก็ได้ (เจอจริง: ใบสมุดรายวันค่าประกันแต่เงินเข้า SCB และกลับกัน)
         # จึงค้นในธนาคารที่คาดไว้ก่อน ถ้าไม่เจอค่อยขยายไปธนาคารอื่นที่ตั้งค่าไว้
         search_sets = [sources]
-        if self._scb_param('verify_cross_bank_fallback'):
+        if is_bill:
+            # จ่ายบิล/QR มีรายการรายคนเฉพาะ SCB (รายงาน HISTBILLPYT)
+            search_sets = [['scb']]
+        elif self._scb_param('verify_cross_bank_fallback'):
             wider = sources + [s for s in Statement.statement_codes()
                                if s not in sources]
             if len(wider) > len(sources):
@@ -1354,8 +1773,18 @@ class AccountPayment(models.Model):
 
         candidates = usable(match['amount_date_candidates'])
 
+        # ---- กลุ่ม 1: ข้อมูลธนาคารยังไม่ครบ -> "รอข้อมูลจากธนาคาร" ----
+        # เช็คก่อนเรียก AI รอบสอง: ถ้าธนาคารยังไม่ส่งรายงานของวันนั้น ตรวจไปก็ไม่เจอ
+        # (และไม่ใช่ความผิดของพนักงาน) ระบบจะตรวจซ้ำให้เองทุกรอบจนกว่ารายงานจะมา
+        if not candidates:
+            gap = self._scb_data_gap(line, raw, dates, sources, is_bill)
+            if gap:
+                return done('waiting', gap[1] + self._scb_notes_text(notes), issue=gap[0])
+
         # รอบสอง: ให้ AI ดูสลิปใบนี้เทียบกับรายการในบัญชีโดยตรง
-        if self._scb_param('verify_second_pass'):
+        # (ข้ามสำหรับสลิปจ่ายบิล — รายการในลิสต์ของ AI ปนเงินโอนของคนอื่น
+        #  AI อาจชี้เงินยอดเท่ากันของคนอื่นได้ ส่วนรายการจ่ายบิลรายคนมีชื่อ+เวลาชัดอยู่แล้ว)
+        if self._scb_param('verify_second_pass') and not is_bill:
             second = self._scb_second_opinion(line, dates, amounts, sources)
             rec = (second or {}).get('statement')
             if rec is not None and rec and rec.id not in claimed:
@@ -1372,28 +1801,13 @@ class AccountPayment(models.Model):
                              % second['ai']['reason'])
 
         if not candidates:
-            if not match['has_data_for_date'] or not self._scb_has_own_data(
-                    sources, slip_date, self._scb_param('verify_date_tolerance')):
-                return done('waiting', _(
-                    u"ยังไม่มีรายการเดินบัญชีของบัญชีบริษัทเราในวันที่ %s "
-                    u"(ข้อมูลจากธนาคารยังมาไม่ครบ) — ระบบจะตรวจให้อัตโนมัติอีกครั้ง"
-                ) % slip_date + self._scb_notes_text(notes))
-            # สลิปจ่ายบิล + บัญชีเรายังไม่มีรายการแยกรายคนของวันนั้น = เทียบไม่ได้
-            # จริง ๆ ไม่ใช่ "ตรวจไม่ผ่าน" (ดูคำอธิบายใน _scb_bill_rows_available)
-            if (raw.get('is_bill_payment')
-                    and not self._scb_bill_rows_available(sources, slip_date)):
-                return done('skipped', _(
-                    u"สลิปนี้เป็นการ \"จ่ายบิล\" และรายการเดินบัญชีของบริษัทเรา "
-                    u"วันที่ %s ยังมีแต่แถวสรุปยอดรวมรายวัน (ไม่มีชื่อผู้โอน) "
-                    u"ยังไม่มีรายการแยกรายคน จึงเทียบไม่ได้ — เมื่อชีตเพิ่มรายการ "
-                    u"แยกรายคนของบัญชีนี้แล้ว ระบบจะตรวจให้เองอัตโนมัติ"
-                ) % slip_date + self._scb_notes_text(notes))
             reason = _(
-                u"ไม่พบรายการเงินเข้าที่ตรงกับสลิปใบนี้\n"
+                u"ไม่พบรายการเงินเข้าที่ตรงกับสลิปใบนี้ (ข้อมูลธนาคารของวันนั้นครบแล้ว)\n"
                 u"• จำนวนเงินจากสลิป: %s\n"
                 u"• วันที่: %s\n"
-                u"• ผู้โอน: %s"
-            ) % (amount_label, slip_date, slip_sender or '-')
+                u"• ผู้โอน: %s%s"
+            ) % (amount_label, slip_date, slip_sender or '-',
+                 _(u"\n• ประเภท: สลิปจ่ายบิล/QR") if is_bill else u'')
             other = usable(match['amount_candidates'])
             if other:
                 reason += _(u"\n\nพบรายการที่ยอดตรงกันแต่คนละวัน: %s") % u', '.join(
@@ -1415,37 +1829,173 @@ class AccountPayment(models.Model):
                 return done('matched', self._scb_success_reason(
                     rec, amount_label, slip_date, slip_sender, notes), rec)
 
-        # ธนาคารไม่ระบุชื่อผู้โอน (เช่น จ่ายผ่านบิลเพย์เมนต์/CrossBank)
+        # ธนาคารไม่ระบุชื่อผู้โอน (เช่น ฝากผ่านเคาน์เตอร์/ตู้)
         unnamed = candidates.filtered(lambda r: not r.counterparty)
         if unnamed and self._scb_param('verify_allow_no_name'):
             if len(candidates) == 1:
                 notes.append(_(
-                    u"ธนาคารไม่ได้ระบุชื่อผู้โอนในรายการนี้ (เช่น ชำระผ่านบิลเพย์เมนต์) — "
+                    u"ธนาคารไม่ได้ระบุชื่อผู้โอนในรายการนี้ (เช่น ชำระผ่านเคาน์เตอร์) — "
                     u"ยืนยันด้วยจำนวนเงินและวันที่"))
                 return done('matched', self._scb_success_reason(
                     candidates[0], amount_label, slip_date, slip_sender, notes),
                     candidates[0])
-            return done('not_found', _(
-                u"พบรายการเงินเข้า %s รายการที่ยอด %s วันที่ %s ตรงกัน "
-                u"แต่ชื่อผู้โอนไม่ตรง/ธนาคารไม่ได้ระบุชื่อ จึงชี้ชัดไม่ได้ว่าเป็นรายการใด "
-                u"— กรุณาตรวจสอบด้วยตนเอง\n"
-                u"• ชื่อในสลิป: %s\n"
-                u"• รายการที่พบ: %s"
-            ) % (len(candidates), amount_label, slip_date, slip_sender or '-',
-                 u' | '.join(r.description or '-' for r in candidates[:5]))
-                + self._scb_notes_text(notes))
 
-        bank_names_txt = u', '.join(
-            u'"%s"' % (r.counterparty or r.description or '-') for r in candidates[:5])
+        # ---- กลุ่ม 3: เงินยอดเท่ากันวันเดียวกันมีอยู่ แต่ชื่อไม่ตรง ----
+        # ถ้าสลิปมีเวลา และไม่มีรายการไหนเวลาใกล้เคียงเลย = เป็นเงินของคนอื่นที่บังเอิญ
+        # ยอดเท่ากัน ไม่ใช่ "ชื่อไม่ตรง" -> เงินของสลิปนี้ยังหาไม่เจอ
+        # (ข้อมูลธนาคารอาจยังไม่ครบ -> รอ / ครบแล้ว -> ไม่พบเงินเข้า)
+        time_tol = self._scb_param('verify_time_tolerance_min')
+        others_txt = u' | '.join(
+            u'%s %s' % ((r.time or '').strip(), r.counterparty or r.description or '-')
+            for r in candidates[:5])
+        if line.slip_time and not any(
+                Statement._time_matches(line.slip_time, r.time, time_tol) for r in candidates):
+            gap = self._scb_data_gap(line, raw, dates, sources, is_bill)
+            if gap:
+                return done('waiting', gap[1] + self._scb_notes_text(notes), issue=gap[0])
+            return done('not_found', _(
+                u"ไม่พบเงินเข้าของสลิปใบนี้\n"
+                u"• สลิป: %s เวลา %s ผู้โอน %s\n"
+                u"• วันเดียวกันมีเงินยอดเท่ากัน %s รายการ แต่เป็นของผู้โอนอื่นและเวลาไม่ตรง: %s\n"
+                u"(ไม่ใช่เงินก้อนเดียวกัน — ตรวจว่าสลิปถูกต้อง/เงินเข้าบัญชีไหน)"
+            ) % (amount_label, line.slip_time, slip_sender or '-', len(candidates),
+                 others_txt) + self._scb_notes_text(notes))
+
+        # เวลาตรง (หรือสลิปไม่มีเวลา) แต่ชื่อไม่ตรง = น่าจะเป็นเงินก้อนเดียวกันที่ธนาคาร
+        # บันทึกชื่อไม่ตรงกับสลิป (โอนแทนกัน / ชื่อบริษัทคนละแบบ) -> ต้องให้คนดู
         return done('not_found', _(
-            u"ชื่อผู้โอนไม่ตรงกับรายการของธนาคาร\n"
-            u"• ชื่อในสลิป: %s\n"
-            u"• ชื่อในรายการธนาคาร: %s\n"
-            u"• จำนวนเงิน %s และวันที่ %s ตรงกัน\n"
+            u"เงินยอดและวันที่ตรงกัน แต่ชื่อผู้โอนไม่ตรง — อาจมีคนอื่นโอนแทน กรุณาตรวจสอบ\n"
+            u"• ชื่อในสลิป: %s%s\n"
+            u"• รายการในธนาคาร: %s\n"
+            u"• จำนวนเงิน %s วันที่ %s\n"
             u"(คะแนนความเหมือนสูงสุด %.2f ต่ำกว่าเกณฑ์ %.2f)"
-        ) % (slip_sender or '-', bank_names_txt, amount_label, slip_date,
+        ) % (slip_sender or '-',
+             _(u" เวลา %s") % line.slip_time if line.slip_time else _(u" (สลิปไม่มีเวลา)"),
+             others_txt, amount_label, slip_date,
              match['score'], self._scb_param('verify_name_threshold'))
-            + self._scb_notes_text(notes))
+            + self._scb_notes_text(notes), issue='name_mismatch')
+
+    # ------------------------------------------------------------------
+    # กลุ่ม 1: ข้อมูลธนาคารครบหรือยัง
+    # ------------------------------------------------------------------
+    @api.model
+    def _scb_known_accounts(self):
+        u"""เลขบัญชี SCB ทั้งหมดที่มีในรายการเดินบัญชี"""
+        self.env.cr.execute("""SELECT DISTINCT account_no FROM npd_scb_bank_statement
+                                WHERE source='scb' AND account_no IS NOT NULL
+                                  AND account_no <> ''""")
+        return [re.sub(r'\D', '', r[0]) for r in self.env.cr.fetchall() if r[0]]
+
+    def _scb_slip_accounts(self, raw):
+        u"""บัญชี SCB ปลายทางของสลิป — เดาจากเลขบัญชีผู้รับที่ AI อ่าน (มาสก์บางส่วน)
+
+        'xxx-x-x2160-x' -> 1862221602 | 'XXX-XXX773-9' -> 1862247739
+        จับคู่ไม่ได้ (เช่น พร้อมเพย์เลขผู้เสียภาษี) -> ใช้บัญชี SCB ของบริษัทเรา
+        """
+        self.ensure_one()
+        known = self._scb_known_accounts()
+        runs = [r for r in re.findall(r'\d+', raw.get('recipient_account') or '') if len(r) >= 3]
+        hits = [a for a in known if runs and any(run in a for run in runs)]
+        if hits:
+            return hits, True
+        # เลขบัญชีธนาคารที่ผูกกับบริษัทใน Odoo แม่นที่สุด (ชื่อเจ้าของบัญชีในชีต
+        # บล็อกจ่ายบิลเคยเขียนผิดบริษัท) ค่อยเสริมด้วยค่าที่ตั้ง/เดาจากชีต
+        banks = self.env['res.partner.bank'].sudo().search([
+            ('partner_id', '=', self.company_id.partner_id.id)]).mapped('acc_number')
+        own = [re.sub(r'\D', '', n) for n in list(banks) + self._scb_own_account_numbers()]
+        return ([a for a in known if a in own] or [a for a in own if a]), False
+
+    def _scb_data_gap(self, line, raw, dates, sources, is_bill):
+        u"""ข้อมูลธนาคารของสลิปใบนี้ครบหรือยัง -> (ประเภทปัญหา, ข้อความ) หรือ None
+
+        รายการเดินบัญชี: บัญชีปลายทางต้องมีรายการ (แบบมียอดคงเหลือ) ถึงวันที่ในสลิป
+            เช่น S_Group 186-2-22160-2 มีถึง 24/09 แต่สลิป 25/09 -> ยังไม่ส่งรายงาน
+            ใช้ "ถึงวันไหนแล้ว" แทน "วันนั้นมีรายการไหม" เพราะบางวันไม่มีรายการจริง
+        รายการจ่ายบิลรายคน: เทียบยอดรวมจ่ายบิลทั้งวันที่ธนาคารลงไว้ (บรรทัด 22:59)
+            กับผลรวมรายการรายคนที่ได้รับ ถ้ายังไม่เท่า = รายงานยังไม่ครบ
+            แม่นกว่าการดูวันที่ เพราะแยกได้ว่า "วันนั้นไม่มีใครจ่ายบิล" กับ "รายงานไม่มา"
+        """
+        self.ensure_one()
+        Statement = self.env['npd.scb.bank.statement'].sudo()
+        d = dates[0]
+        money = '{:,.2f}'.format
+
+        def fmt_acc(a):
+            return u'%s-%s-%s-%s' % (a[:3], a[3], a[4:9], a[9:]) if len(a) == 10 else a
+
+        def latest_main(acc):
+            self.env.cr.execute("""SELECT max(date) FROM npd_scb_bank_statement
+                                    WHERE source='scb' AND account_no=%s
+                                      AND COALESCE(balance, 0) <> 0""", (acc,))
+            return self.env.cr.fetchone()[0]
+
+        scb_accounts, from_slip = self._scb_slip_accounts(raw)
+        if not is_bill and raw.get('recipient_account') and not from_slip:
+            scb_accounts = []   # ปลายทางไม่ใช่บัญชี SCB ที่รู้จัก (เช่น บัญชี Kbank)
+        if not is_bill and 'scb' not in sources and not from_slip:
+            scb_accounts = []
+        # ---- รายการเดินบัญชี (SCB) ----
+        if scb_accounts:
+            behind = [(a, latest_main(a)) for a in scb_accounts]
+            if all(last is None or last < d for a, last in behind):
+                # ไม่รู้บัญชีปลายทางจากสลิป เงินอาจเข้า Kbank ก็ได้ — ถ้า Kbank มีข้อมูล
+                # ถึงวันนั้นแล้ว ยังสรุปไม่ได้ว่าขาดรายงาน
+                kbank_ok = (not is_bill and not from_slip and 'kbank' in sources
+                            and bool(Statement.search_count([
+                                ('source', '=', 'kbank'), ('date', '>=', d)])))
+                if not kbank_ok:
+                    return 'statement_missing', _(
+                        u"รอข้อมูลจากธนาคาร — ธนาคารยังไม่ส่ง \"รายการเดินบัญชีย้อนหลัง\" "
+                        u"ของวันที่ %s\n%s\n(ไม่ใช่ความผิดของผู้บันทึก ระบบจะตรวจให้เองเมื่อได้รับรายงาน)"
+                    ) % (d, u'\n'.join(
+                        u"• บัญชี %s มีรายการถึงวันที่ %s" % (fmt_acc(a), last or u'-')
+                        for a, last in behind))
+        elif 'kbank' in sources:
+            if not Statement.search_count([('source', '=', 'kbank'), ('date', '>=', d)]):
+                return 'statement_missing', _(
+                    u"รอข้อมูลจากธนาคาร — ยังไม่มีรายการเดินบัญชี Kbank ถึงวันที่ %s") % d
+
+        # ---- รายการจ่ายบิลรายคน (SCB) ----
+        if is_bill and scb_accounts:
+            gaps = []
+            for acc in scb_accounts:
+                summary = Statement.search([
+                    ('source', '=', 'scb'), ('account_no', '=', acc),
+                    ('description', 'ilike', Statement.SUMMARY_KEYWORD),
+                    ('balance', '!=', 0), ('date', '>=', d),
+                    ('date', '<=', d + timedelta(days=4)),
+                ], order='date asc', limit=1)
+                if not summary:
+                    continue
+                prev = Statement.search([
+                    ('source', '=', 'scb'), ('account_no', '=', acc),
+                    ('description', 'ilike', Statement.SUMMARY_KEYWORD),
+                    ('balance', '!=', 0), ('date', '<', summary.date),
+                ], order='date desc', limit=1)
+                # ยอดรวม 22:59 ครอบคลุมตั้งแต่ยอดรวมครั้งก่อน (ข้ามเสาร์-อาทิตย์/วันหยุด)
+                # แต่ถ้ายอดรวมครั้งก่อนเก่ากว่า 4 วัน = รายงานเดินบัญชีหายช่วงนั้น
+                # ห้ามลากช่วงยาว ไม่งั้นรายการรายคนของเดือนก่อนจะมาถมจนดูเหมือนครบ
+                start = summary.date - timedelta(days=4)
+                if prev and prev.date > start:
+                    start = prev.date
+                persons = Statement.search([
+                    ('source', '=', 'scb'), ('account_no', '=', acc), ('balance', '=', 0),
+                    ('deposit', '>', 0), ('date', '<=', summary.date),
+                    ('date', '>', start),
+                ])
+                got = sum(persons.mapped('deposit'))
+                if got + 0.01 < summary.deposit:
+                    gaps.append(_(u"• บัญชี %s: ยอดจ่ายบิลรวมที่ธนาคารลงไว้ %s (วันที่ %s) "
+                                  u"แต่ได้รับรายการรายคนมาแค่ %s รายการ รวม %s") % (
+                        fmt_acc(acc), money(summary.deposit), summary.date,
+                        len(persons), money(got)))
+            if gaps:
+                return 'billpay_missing', _(
+                    u"รอข้อมูลจากธนาคาร — สลิปนี้เป็นการจ่ายบิล/QR และธนาคารยังไม่ส่ง "
+                    u"\"รายการรับชำระค่าสินค้าและบริการย้อนหลัง\" (รายคน) ของวันที่ %s ครบ\n%s\n"
+                    u"(ไม่ใช่ความผิดของผู้บันทึก ระบบจะตรวจให้เองเมื่อได้รับรายงาน)"
+                ) % (d, u'\n'.join(gaps))
+        return None
 
     def _scb_update_slip_summary(self, lines):
         u"""สรุปค่าจากทุกสลิปมาไว้ที่หัวใบรับชำระ (ใช้แสดงในตาราง/ค้นหา)
@@ -1493,13 +2043,72 @@ class AccountPayment(models.Model):
             line.sudo().write(vals)
 
     @api.model
-    def _scb_public_summary(self, state):
+    def _scb_gap_label(self, line):
+        u"""ป้ายสั้น "บัญชี X วันที่ D" ของสลิปที่รอข้อมูลธนาคาร (ใช้ในข้อความให้พนักงาน)"""
+        reason = (line.sudo().reason or '') if line else ''
+        m = re.search(r'วันที่ (\d{4})-(\d{2})-(\d{2})', reason)
+        accounts = []
+        for acc in re.findall(r'บัญชี (\d{3}-\d-\d{5}-\d)', reason):
+            if acc not in accounts:
+                accounts.append(acc)
+        parts = []
+        if accounts:
+            parts.append(u'บัญชี ' + u', '.join(accounts))
+        if m:
+            parts.append(u'วันที่ %s/%s/%s' % (m.group(3), m.group(2), m.group(1)))
+        return u' '.join(parts)
+
+    @api.model
+    def _scb_public_summary(self, state, issue=False, related='', diff=0.0, hint=''):
         u"""ข้อความสั้นที่พนักงานทั่วไปเห็น — บอกว่าต้องทำอะไรต่อ แต่ไม่บอกเกณฑ์
 
         เจตนา: ไม่เปิดเผยว่าระบบเทียบอะไรบ้าง (ชื่อ/ยอด/วันที่/เวลา/เลขบัญชี)
         และไม่บอกคะแนน เพื่อไม่ให้เดาได้ว่าต้องทำสลิปอย่างไรจึงจะ "ผ่าน"
         รายละเอียดเต็มดูได้เฉพาะผู้จัดการบัญชี
+
+        ยกเว้นปัญหาที่ต้องไปแก้ที่ใบรับชำระหรือคุยกับลูกค้า บอก "เลขใบที่เกี่ยวข้อง"
+        และ "ยอดที่ต่างกัน" ให้ด้วย ไม่งั้นพนักงานไม่รู้ว่าต้องแก้อะไร เท่าไร
+        (ยอดส่วนต่างไม่ได้บอกเกณฑ์การตรวจ — เป็นตัวเลขทางบัญชีที่ต้องรู้อยู่แล้ว)
         """
+        amount = '{:,.2f}'.format(abs(diff or 0.0))
+        where = (u' (%s)' % related) if related else u''
+        # ---- กลุ่ม 1: ธนาคารส่งข้อมูลไม่ครบ — บอกชัดว่าไม่ต้องแก้เอกสาร ----
+        if state == 'waiting' and issue == 'statement_missing':
+            return _(u"รอข้อมูลจากธนาคาร — ธนาคารยังไม่ส่งรายการเดินบัญชี%s "
+                     u"ระบบจะตรวจให้เองเมื่อได้รับ (ไม่ต้องแก้ไขเอกสาร)") % where
+        if state == 'waiting' and issue == 'billpay_missing':
+            return _(u"รอข้อมูลจากธนาคาร — สลิปนี้เป็นการจ่ายบิล/QR ธนาคารยังไม่ส่งรายการ"
+                     u"จ่ายบิลรายคน%s ระบบจะตรวจให้เองเมื่อได้รับ (ไม่ต้องแก้ไขเอกสาร)") % where
+        # ---- กลุ่ม 2: แนบสลิปผิด / บันทึกซ้ำ ----
+        if state == 'failed' and issue == 'slip_reused':
+            return _(u"สลิปเดียวกันถูกใช้กับใบรับชำระหลายชุดที่ยอดเท่ากัน%s — ชุดใดชุดหนึ่ง"
+                     u"แนบสลิปผิดหรือบันทึกซ้ำ กรุณาตรวจสอบ") % where
+        if state == 'failed' and issue == 'wrong_slip':
+            return _(u"สลิปที่แนบไม่ใช่ของใบรับชำระนี้%s — กรุณาแนบสลิปที่ถูกต้อง "
+                     u"แล้วระบบจะตรวจให้ใหม่อัตโนมัติ") % (
+                _(u" (สลิปนี้เป็นของใบ %s)") % related if related else u'')
+        if state == 'failed' and issue == 'duplicate_receipt':
+            return _(u"สลิปนี้ถูกใช้กับใบรับชำระอื่นของลูกค้ารายเดียวกันด้วย%s "
+                     u"— อาจบันทึกรับชำระซ้ำ กรุณาตรวจสอบ") % (
+                _(u" (%s)") % related if related else u'')
+        if state == 'failed' and issue == 'over_allocated':
+            if hint:
+                return _(u"เงินโอนก้อนนี้ถูกใช้กับหลายใบรับชำระ%s รวมแล้วเกินยอดที่เข้าจริง "
+                         u"%s บาท — %s กรุณาบันทึกภาษีหัก ณ ที่จ่ายให้ถูกต้อง") % (
+                    _(u" (ใช้ร่วมกับ %s)") % related if related else u'', amount, hint)
+            return _(u"เงินโอนก้อนนี้ถูกใช้กับหลายใบรับชำระ%s รวมแล้วเกินยอดที่เข้าจริง "
+                     u"%s บาท — ลูกค้าอาจโอนไม่ครบ หรือบันทึกยอดผิด "
+                     u"กรุณาแจ้งฝ่ายบัญชีตรวจสอบ") % (
+                _(u" (ใช้ร่วมกับ %s)") % related if related else u'', amount)
+        if state == 'failed' and issue == 'amount_mismatch':
+            if diff and diff > 0:
+                return _(u"ยอดเงินโอนในใบรับชำระมากกว่าเงินที่เข้าตามสลิป %s บาท "
+                         u"— ถ้าลูกค้าหักภาษี ณ ที่จ่าย ให้บันทึกแยกบรรทัดภาษี "
+                         u"ถ้าลูกค้าโอนหลายครั้ง ให้แนบสลิปให้ครบ") % amount
+            if diff and diff < 0:
+                return _(u"เงินที่เข้าตามสลิปมากกว่ายอดใบรับชำระ %s บาท — ตรวจว่าแนบสลิป"
+                         u"ถูกใบ หรือยังไม่ได้ทำใบรับชำระของเงินส่วนที่เหลือ") % amount
+            return _(u"ยอดในสลิปไม่ตรงกับยอดใบรับชำระ — กรุณาตรวจสอบสลิปที่แนบ")
         return {
             'success': _(u"โอนสำเร็จ — ตรวจสอบกับรายการเดินบัญชีของธนาคารแล้ว"),
             'other_company': _(u"เงินเข้าแล้ว แต่เข้าบัญชีของบริษัทอื่นในเครือ "
@@ -1540,7 +2149,8 @@ class AccountPayment(models.Model):
         state_label = dict(self._fields['scb_verify_state'].selection).get(res['state'])
         # พนักงานทั่วไปเห็นเฉพาะข้อความสรุป ไม่เห็นเกณฑ์การตรวจ
         message = res['reason'] if self.env.user.has_group(
-            'account.group_account_manager') else self._scb_public_summary(res['state'])
+            'account.group_account_manager') else (
+            self.scb_verify_summary or self._scb_public_summary(res['state']))
         return {
             'type': 'ir.actions.client',
             'tag': 'display_notification',
@@ -1639,6 +2249,7 @@ class AccountPayment(models.Model):
             'scb_verify_datetime': False,
             'scb_verify_attempts': 0,
             'scb_statement_id': False,
+            'scb_issue_type': False,
             'scb_slip_read': False,
             'scb_slip_date': False,
             'scb_slip_amount': 0.0,
@@ -1721,8 +2332,16 @@ class AccountPayment(models.Model):
         if not self._scb_param('verify_enabled'):
             return
         limit = self._scb_param('verify_batch_limit')
-        payments = self.sudo().search(self._scb_pending_domain(),
+        # ใบใหม่ (รอตรวจสอบ) ก่อน แล้วค่อยใบที่รอข้อมูลธนาคาร/ลองซ้ำ โดยเอาใบที่ตรวจ
+        # นานที่สุดก่อน — ไม่งั้นใบที่รอธนาคารนาน ๆ (หลายร้อยใบ) จะกินโควตาทุกรอบ
+        # จนใบใหม่ไม่ถึงคิว
+        domain = self._scb_pending_domain()
+        payments = self.sudo().search(domain + [('scb_verify_state', 'in', ('to_check', False))],
                                       order='date asc, id asc', limit=limit)
+        if len(payments) < limit:
+            payments |= self.sudo().search(
+                domain + [('id', 'not in', payments.ids)],
+                order='scb_verify_datetime asc, id asc', limit=limit - len(payments))
         _logger.info("SCB verify: เริ่มตรวจสอบ %s ใบรับชำระ", len(payments))
         for payment in payments:
             # savepoint กันไม่ให้ใบที่พังทำ transaction ทั้งก้อนใช้ต่อไม่ได้
@@ -1738,6 +2357,7 @@ class AccountPayment(models.Model):
                         payment.sudo().write({
                             'scb_verify_state': 'waiting',
                             'scb_verify_summary': self._scb_public_summary('waiting'),
+                            'scb_issue_type': False,
                             'scb_verify_reason': _(u"ตรวจสอบไม่สำเร็จ: %s") % e,
                             'scb_verify_datetime': fields.Datetime.now(),
                         })
@@ -1762,6 +2382,36 @@ class AccountPayment(models.Model):
         except (ValueError, TypeError):
             return 0.0
 
+    def _scb_release_on_cancel(self):
+        u"""ใบรับชำระถูกยกเลิก -> ปล่อยเงินก้อนที่สลิปของใบนี้จับไว้
+
+        ถ้าไม่ปล่อย ใบที่ยกเลิกไปแล้วจะยังถูกนับว่า "ใช้เงินก้อนนี้อยู่" ใบจริงที่ทำ
+        ใหม่แทน (เช่น ออกใบแจ้งหนี้ใหม่เป็นชื่ออื่น) จะตก "ตัดเกิน" ตลอดไป
+        (เจอจริง: Intertrading CUST.IN-260803-0093/0094 ยกเลิกแล้วแต่ยังจับเงิน
+         74,110 ไว้ ทำให้ 0803-0098/0099 ตกทุกครั้งที่กดตรวจ — ค้างอยู่ 23 ใบ)
+        ใบอื่นที่ใช้เงินก้อนเดียวกัน -> กลับเป็น "รอตรวจสอบ" ให้ cron ตรวจใหม่
+        """
+        Slip = self.env['npd.scb.payment.slip'].sudo()
+        lines = Slip.search([('payment_id', 'in', self.ids), ('state', '=', 'matched')])
+        statements = lines.mapped('statement_id')
+        if lines:
+            lines.write({'state': 'to_check', 'statement_id': False, 'issue_type': False,
+                         'reason': False})
+        self.sudo().write({'scb_verify_state': 'to_check', 'scb_statement_id': False,
+                           'scb_verify_summary': self._scb_public_summary('to_check'),
+                           'scb_issue_type': False, 'scb_verify_attempts': 0})
+        if statements:
+            others = Slip.search([('statement_id', 'in', statements.ids),
+                                  ('state', '=', 'matched')]).mapped('payment_id') - self
+            others = others.filtered(lambda p: p.state in POSTED_STATES
+                                     and p.scb_verify_state != 'skipped')
+            if others:
+                others.sudo().write({
+                    'scb_verify_state': 'to_check',
+                    'scb_verify_summary': self._scb_public_summary('to_check'),
+                    'scb_verify_attempts': 0, 'scb_issue_type': False,
+                })
+
     def action_draft(self):
         u"""กลับเป็นร่าง = ต้องตรวจสอบการโอนใหม่
 
@@ -1774,8 +2424,23 @@ class AccountPayment(models.Model):
             'scb_verify_reason': False,
             'scb_statement_id': False,
             'scb_verify_attempts': 0,
+            'scb_issue_type': False,
         })
         self.mapped('scb_slip_ids').sudo().write({
             'state': 'to_check', 'reason': False, 'statement_id': False,
+            'issue_type': False,
         })
+        return res
+
+
+class AccountMove(models.Model):
+    _inherit = "account.move"
+
+    def button_cancel(self):
+        u"""ยกเลิกใบรับชำระ (ทั้งจากหน้ารับชำระและจากสมุดรายวัน) -> ปล่อยเงินก้อนที่จับไว้"""
+        res = super(AccountMove, self).button_cancel()
+        payments = self.mapped('payment_id').filtered(
+            lambda p: p.payment_type == 'inbound' and p.partner_type == 'customer')
+        if payments:
+            payments._scb_release_on_cancel()
         return res

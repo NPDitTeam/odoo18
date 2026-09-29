@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ปุ่มบนหัวฟอร์มใบสั่งขาย -->
+    <record id="view_order_form_ship_approval_header" model="ir.ui.view">
+        <field name="name">sale.order.form.ship.approval.header</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_order_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="/form/header" position="inside">
+                <field name="ship_approval_required" invisible="1"/>
+                <field name="ship_approval_state" invisible="1"/>
+                <field name="ship_can_approve" invisible="1"/>
+                <button name="action_ship_request_approval" type="object" string="ขออนุมัติค่าขนส่ง"
+                        class="btn-primary"
+                        invisible="not ship_approval_required or ship_approval_state not in ['draft', 'reject'] or state not in ['draft', 'sent']"/>
+                <button name="action_ship_approve" type="object" string="อนุมัติค่าขนส่ง" class="btn-success"
+                        invisible="not ship_can_approve"/>
+                <button name="action_ship_reject" type="object" string="ไม่อนุมัติค่าขนส่ง" class="btn-warning"
+                        invisible="not ship_can_approve"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- ผลการอนุมัติในแท็บ ข้อมูลขนส่ง (ใบเสนอราคาซ่อนหัวฟอร์มหลัก จึงมีปุ่มที่นี่ด้วย) -->
+    <record id="view_order_form_ship_approval_tab" model="ir.ui.view">
+        <field name="name">sale.order.form.ship.approval.tab</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="pfb_npd_tap_shipment_information.view_order_form_inherit"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='shipping_cost_m']/../.." position="after">
+                <group string="การอนุมัติค่าขนส่งพิเศษ"
+                       invisible="not ship_approval_required">
+                    <group>
+                        <field name="ship_approval_result"/>
+                        <field name="ship_approver_id"/>
+                        <field name="ship_approval_reason"/>
+                    </group>
+                    <group>
+                        <field name="ship_request_user_id"/>
+                        <field name="ship_request_date"/>
+                        <field name="ship_approved_user_id"
+                               invisible="ship_approval_state not in ['approved', 'reject']"/>
+                        <field name="ship_approved_date"
+                               invisible="ship_approval_state not in ['approved', 'reject']"/>
+                        <field name="ship_approval_note"
+                               invisible="ship_approval_state not in ['approved', 'reject']"/>
+                    </group>
+                    <div colspan="2">
+                        <button name="action_ship_request_approval" type="object" string="ขออนุมัติค่าขนส่ง"
+                                class="btn-primary"
+                                invisible="not ship_approval_required or ship_approval_state not in ['draft', 'reject'] or state not in ['draft', 'sent']"/>
+                        <button name="action_ship_approve" type="object" string="อนุมัติค่าขนส่ง"
+                                class="btn-success" invisible="not ship_can_approve"/>
+                        <button name="action_ship_reject" type="object" string="ไม่อนุมัติค่าขนส่ง"
+                                class="btn-warning" invisible="not ship_can_approve"/>
+                    </div>
+                </group>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- ค้นหา/กรองใบที่รออนุมัติค่าขนส่ง -->
+    <record id="view_sales_order_filter_ship_approval" model="ir.ui.view">
+        <field name="name">sale.order.search.ship.approval</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_sales_order_filter"/>
+        <field name="arch" type="xml">
+            <xpath expr="//filter[@name='my_sale_orders_filter']" position="after">
+                <separator/>
+                <filter string="ค่าขนส่งรออนุมัติ (ของฉัน)" name="ship_waiting_mine"
+                        domain="[('ship_approval_state', '=', 'waiting'), ('ship_approver_id', '=', uid)]"/>
+                <filter string="ค่าขนส่งรออนุมัติ" name="ship_waiting"
+                        domain="[('ship_approval_state', '=', 'waiting')]"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

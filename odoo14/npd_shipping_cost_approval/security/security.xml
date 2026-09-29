@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="module_category_ship_cost_approval" model="ir.module.category">
+        <field name="name">อนุมัติค่าขนส่ง</field>
+        <field name="sequence">90</field>
+    </record>
+
+    <!-- ติ๊กที่หน้าผู้ใช้ (ตั้งค่า > ผู้ใช้) คนที่ติ๊กเท่านั้นที่ถูกเลือกเป็นผู้อนุมัติได้ -->
+    <record id="group_ship_cost_approver" model="res.groups">
+        <field name="name">ผู้อนุมัติค่าขนส่งพิเศษ</field>
+        <field name="category_id" ref="module_category_ship_cost_approval"/>
+    </record>
+</odoo>

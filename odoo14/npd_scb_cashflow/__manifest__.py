@@ -16,7 +16,7 @@ NPD SCB Cash Flow Report
 พอร์ตจาก Odoo 14 (14.0.2.6.0): เรียก Google Sheets API ตรงด้วย requests + cryptography
 (ไลบรารีที่ Odoo มีอยู่แล้ว) ไม่ต้อง pip install google-api-python-client ใน container
 """,
-    'version': '18.0.1.0.0',
+    'version': '18.0.1.1.0',
     'author': 'PP',
     'category': 'Accounting',
     'license': 'AGPL-3',

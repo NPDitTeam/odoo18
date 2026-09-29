@@ -33,7 +33,14 @@
                      invisible="scb_verify_state != 'failed'">
                     <i class="fa fa-times-circle me-1" title="สถานะการโอน"/>
                     <b>ตรวจสอบการโอนไม่สำเร็จ</b>
-                    <field name="scb_verify_summary" readonly="1" nolabel="1" class="mb-0"/>
+                    <field name="scb_issue_type" readonly="1" nolabel="1" widget="badge"
+                           class="ms-2"
+                           invisible="not scb_issue_type"
+                           decoration-warning="scb_issue_type in ['wrong_slip', 'duplicate_receipt', 'slip_reused']"
+                           decoration-muted="scb_issue_type in ['statement_missing', 'billpay_missing']"
+                           decoration-danger="scb_issue_type in ['over_allocated', 'not_found']"
+                           decoration-info="scb_issue_type in ['amount_mismatch', 'name_mismatch', 'unreadable']"/>
+                    <div><field name="scb_verify_summary" readonly="1" nolabel="1" class="mb-0"/></div>
                 </div>
                 <div class="alert alert-warning mb-0" role="alert"
                      invisible="scb_verify_state != 'other_company'">
@@ -129,7 +136,9 @@
                         <field name="slip_time"/>
                         <field name="slip_amount" sum="รวม"/>
                         <field name="slip_sender"/>
+                        <field name="cheque_no" optional="hide"/>
                         <field name="statement_id"/>
+                        <field name="issue_type" optional="show"/>
                         <field name="state" widget="badge"
                                decoration-success="state == 'matched'"
                                decoration-danger="state == 'not_found'"
@@ -183,6 +192,11 @@
                        decoration-warning="scb_verify_state in ['waiting', 'no_slip', 'other_company']"
                        decoration-info="scb_verify_state == 'to_check'"
                        decoration-muted="scb_verify_state == 'skipped'"/>
+                <field name="scb_issue_type" widget="badge" optional="show"
+                       decoration-warning="scb_issue_type in ['wrong_slip', 'duplicate_receipt', 'slip_reused']"
+                       decoration-muted="scb_issue_type in ['statement_missing', 'billpay_missing']"
+                       decoration-danger="scb_issue_type in ['over_allocated', 'not_found']"
+                       decoration-info="scb_issue_type in ['amount_mismatch', 'name_mismatch', 'unreadable']"/>
                 <field name="state" widget="badge" optional="show"/>
                 <field name="currency_id" invisible="1"/>
                 <!-- ไอคอนดูรายละเอียดผลตรวจแบบ popup (แทน log ที่ซ่อนไปแล้ว) -->
@@ -215,6 +229,36 @@
                         domain="[('scb_verify_state', '=', 'success')]"/>
                 <filter name="scb_skipped" string="ไม่ต้องตรวจสอบ"
                         domain="[('scb_verify_state', '=', 'skipped')]"/>
+                <separator/>
+                <!-- 3 กลุ่มหลักของปัญหา — แต่ละฝ่ายกรองดูเฉพาะเรื่องของตัวเอง -->
+                <filter name="scb_cat_bank" string="① ธนาคารส่งข้อมูลไม่ครบ (IT/การเงิน)"
+                        domain="[('scb_issue_type', 'in', ('statement_missing', 'billpay_missing'))]"/>
+                <filter name="scb_cat_staff" string="② แนบสลิปผิด / บันทึกซ้ำ (ผู้บันทึก)"
+                        domain="[('scb_issue_type', 'in', ('wrong_slip', 'duplicate_receipt', 'slip_reused'))]"/>
+                <filter name="scb_cat_check" string="③ ยอด/ชื่อไม่ตรง ไม่พบเงินเข้า (ฝ่ายบัญชี)"
+                        domain="[('scb_issue_type', 'in', ('over_allocated', 'amount_mismatch', 'name_mismatch', 'not_found', 'unreadable'))]"/>
+                <separator/>
+                <filter name="scb_issue_statement" string="ธนาคารยังไม่ส่งรายการเดินบัญชี"
+                        domain="[('scb_issue_type', '=', 'statement_missing')]"/>
+                <filter name="scb_issue_billpay" string="ธนาคารยังไม่ส่งรายการจ่ายบิลรายคน"
+                        domain="[('scb_issue_type', '=', 'billpay_missing')]"/>
+                <filter name="scb_issue_reused" string="สลิปเดียวถูกใช้หลายชุด"
+                        domain="[('scb_issue_type', '=', 'slip_reused')]"/>
+                <filter name="scb_issue_wrong_slip" string="แนบสลิปผิดใบ"
+                        domain="[('scb_issue_type', '=', 'wrong_slip')]"/>
+                <filter name="scb_issue_duplicate" string="อาจรับชำระซ้ำ"
+                        domain="[('scb_issue_type', '=', 'duplicate_receipt')]"/>
+                <filter name="scb_issue_over" string="เงินก้อนเดียวถูกตัดเกิน"
+                        domain="[('scb_issue_type', '=', 'over_allocated')]"/>
+                <filter name="scb_issue_amount" string="ยอดสลิปไม่ตรงใบรับชำระ"
+                        domain="[('scb_issue_type', '=', 'amount_mismatch')]"/>
+                <filter name="scb_issue_name" string="ชื่อผู้โอนไม่ตรง"
+                        domain="[('scb_issue_type', '=', 'name_mismatch')]"/>
+                <filter name="scb_issue_not_found" string="ไม่พบเงินเข้า"
+                        domain="[('scb_issue_type', '=', 'not_found')]"/>
+                <filter name="scb_issue_unreadable" string="อ่านสลิปไม่ได้"
+                        domain="[('scb_issue_type', '=', 'unreadable')]"/>
+                <separator/>
                 <filter name="scb_bank_scb" string="ธนาคาร SCB"
                         domain="[('scb_verify_bank', '=', 'scb')]"/>
                 <filter name="scb_bank_kbank" string="ธนาคาร Kbank"
@@ -222,6 +266,8 @@
                 <group expand="0" string="จัดกลุ่มตาม">
                     <filter name="grp_verify" string="สถานะการโอน"
                             context="{'group_by': 'scb_verify_state'}"/>
+                    <filter name="grp_issue" string="ประเภทปัญหา"
+                            context="{'group_by': 'scb_issue_type'}"/>
                     <filter name="grp_bank" string="ธนาคารที่ตรวจ"
                             context="{'group_by': 'scb_verify_bank'}"/>
                     <filter name="grp_partner" string="ลูกค้า" context="{'group_by': 'partner_id'}"/>

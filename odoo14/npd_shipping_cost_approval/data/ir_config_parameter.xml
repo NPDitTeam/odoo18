@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+    <!-- ค่าขนส่งพิเศษต่ำกว่ากี่ % ของค่าขนส่งหลังปัดเศษ ถึงต้องขออนุมัติ -->
+    <record id="param_min_percent" model="ir.config_parameter">
+        <field name="key">npd_shipping_cost_approval.min_percent</field>
+        <field name="value">30</field>
+    </record>
+</odoo>

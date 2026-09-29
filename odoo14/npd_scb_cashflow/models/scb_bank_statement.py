@@ -356,6 +356,16 @@ class ScbBankStatement(models.Model):
         diff = min(diff, 24 * 60 - diff)
         return diff <= max(0, tolerance_min)
 
+    @api.model
+    def _time_distance(self, slip_time, bank_time):
+        u"""เวลาบนสลิปห่างจากเวลาที่ธนาคารบันทึกกี่นาที (None = อ่านเวลาไม่ได้)"""
+        a = self._time_to_minutes(slip_time)
+        b = self._time_to_minutes(bank_time)
+        if a is None or b is None:
+            return None
+        diff = abs(a - b)
+        return min(diff, 24 * 60 - diff)
+
     @staticmethod
     def _digit_runs(value, min_len=3):
         u"""ท่อนตัวเลขที่ "มองเห็นได้" จากเลขบัญชีที่ถูกมาสก์"""
@@ -476,6 +486,28 @@ class ScbBankStatement(models.Model):
         minute = int(parts[1]) % 60 if len(parts) > 1 else 0
         return '%02d:%02d' % (hour, minute)
 
+    # รายการเดินบัญชีมี 3 แบบในแท็บเดียวกัน (แยกด้วยยอดคงเหลือ + รายละเอียด)
+    #   main    = รายการเดินบัญชีปกติ มียอดคงเหลือ (จากรายงาน HISTSTMT)
+    #   summary = บรรทัด "รับชำระค่าสินค้าและบริการ" ~22:59 = เงินจ่ายบิล QR ทั้งวันรวมกัน
+    #             ไม่ใช่เงินของลูกค้าคนใดคนหนึ่ง ห้ามจับคู่กับสลิปใบเดียว
+    #   bill    = รายการจ่ายบิลรายคน ไม่มียอดคงเหลือ (จากรายงาน HISTBILLPYT)
+    SUMMARY_KEYWORD = u'รับชำระค่าสินค้าและบริการ'
+
+    def row_kind(self):
+        self.ensure_one()
+        if not self.balance and self.source == 'scb':
+            return 'bill'
+        if self.SUMMARY_KEYWORD in (self.description or ''):
+            return 'summary'
+        return 'main'
+
+    def _filter_kind(self, kind=None):
+        u"""ตัดบรรทัดยอดรวมจ่ายบิลทิ้งเสมอ / kind='bill' = เอาเฉพาะรายการจ่ายบิลรายคน"""
+        rows = self.filtered(lambda r: r.row_kind() != 'summary')
+        if kind == 'bill':
+            rows = rows.filtered(lambda r: r.row_kind() == 'bill')
+        return rows
+
     @api.model
     def statement_codes(self):
         u"""รหัสธนาคารทั้งหมดที่ระบบดึง statement มาเก็บไว้"""
@@ -544,7 +576,8 @@ class ScbBankStatement(models.Model):
     def find_incoming_match(self, amount, date, names, sources=None,
                             amount_tol=0.0, day_tol=0, name_threshold=0.6,
                             account_hint=None, time_hint=None, time_tol=5,
-                            own_names=None, own_numbers=None):
+                            own_names=None, own_numbers=None, used_ids=None,
+                            row_kind=None):
         u"""หาแถว "เงินเข้า" ที่ตรงกับ จำนวนเงิน + วันที่ + ชื่อบริษัท
 
         :param amount: จำนวนเงินจากสลิป (หรือ list ของจำนวนเงินที่เป็นไปได้)
@@ -556,6 +589,11 @@ class ScbBankStatement(models.Model):
         :param time_hint: เวลาบนสลิป (ใช้เทียบกับเวลาที่ธนาคารบันทึกเป็นสัญญาณเสริม)
         :param own_names/own_numbers: ชื่อ/เลขบัญชีของบริษัทเรา ใช้เป็นตัวตัดสิน
             เมื่อมีหลายแถวได้คะแนนเท่ากัน ให้เลือกแถวที่เข้าบัญชีบริษัทเราก่อน
+        :param used_ids: id ของแถวที่ใบรับชำระอื่นจับคู่ไปแล้ว — ใช้เป็นตัวตัดสิน
+            ท้ายสุด (ยังเลือกได้ เพราะลูกค้าโอนรวมแล้วตัดหลายใบได้จริง)
+        :param row_kind: 'bill' = สลิปจ่ายบิล/QR เทียบเฉพาะรายการจ่ายบิลรายคน
+            (เงินจ่ายบิลไม่มีทางอยู่ในรายการโอนปกติของคนอื่น — เจอจริง: สลิปจ่ายบิล
+             1,000 ไปเทียบกับเงินโอน 1,000 ของคนอื่นแล้วฟ้อง "ชื่อไม่ตรง")
         :return: dict {
             'matched': bool, 'statement': record|empty, 'score': float,
             'amount_date_candidates': recordset,   # ตรงยอด+วันที่ (ยังไม่เช็คชื่อ)
@@ -592,13 +630,13 @@ class ScbBankStatement(models.Model):
             ('source', 'in', sources),
             ('date', '>=', date_from),
             ('date', '<=', date_to),
-        ] + amount_domain)
+        ] + amount_domain)._filter_kind(row_kind)
         result['amount_date_candidates'] = by_amount_date
 
         # ตรงยอดอย่างเดียว (ไว้บอกผู้ใช้ว่าอาจลงวันผิด)
         result['amount_candidates'] = self.search(
             [('source', 'in', sources)] + amount_domain,
-            order='date desc', limit=10)
+            order='date desc', limit=30)._filter_kind(row_kind)[:10]
 
         if not by_amount_date:
             return result
@@ -617,6 +655,12 @@ class ScbBankStatement(models.Model):
         # และชื่อผ่านทั้งคู่) เดิมใช้ "คะแนนมากกว่า" อย่างเดียว แถวที่เจอก่อนจึงชนะ
         # ทำให้หยิบรายการของบริษัทอื่นในเครือมาแทนรายการที่เข้าบัญชีเราเอง
         # ลำดับตัวตัดสิน: คะแนนชื่อ -> เข้าบัญชีบริษัทเรา -> เวลาตรงกับสลิป
+        #                -> เวลาใกล้สลิปที่สุด -> แถวที่ใบอื่นยังไม่ได้ใช้
+        # สองตัวท้ายแก้เคสลูกค้าโอนยอดเท่ากันสองครั้งห่างกันไม่กี่นาที เช่น
+        # 314.57 ตอน 16:57 และ 16:59 — สลิป 16:57 "ตรง" ทั้งสองแถวเพราะยอมให้เวลา
+        # คลาดได้ 5 นาที เดิมหยิบแถวแรกที่เจอ (16:59) สองใบเลยแย่งแถวเดียวกัน
+        # แถว 16:57 ไม่มีใครใช้ และใบที่ถูกกลับขึ้น "ตัดเกิน"
+        used = set(used_ids or [])
         best_rec, best_key = empty, None
         for rec in by_amount_date:
             bank_names = [rec.counterparty, rec.description, rec.account_name]
@@ -636,7 +680,10 @@ class ScbBankStatement(models.Model):
                 own_names, own_numbers) else 0
             same_time = 1 if time_hint and self._time_matches(
                 time_hint, rec.time, time_tol) else 0
-            key = (score, is_own, same_time)
+            distance = self._time_distance(time_hint, rec.time) if time_hint else None
+            closeness = -distance if distance is not None else -24 * 60
+            unused = 0 if rec.id in used else 1
+            key = (score, is_own, same_time, closeness, unused)
             if best_key is None or key > best_key:
                 best_key, best_rec = key, rec
 

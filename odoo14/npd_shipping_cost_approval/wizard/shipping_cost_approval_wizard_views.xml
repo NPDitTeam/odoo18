@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Odoo 17 ขึ้นไปไม่มี attrs แล้ว ใช้ invisible/readonly/required เป็นนิพจน์ตรง ๆ -->
+    <record id="view_shipping_cost_approval_wizard_form" model="ir.ui.view">
+        <field name="name">shipping.cost.approval.wizard.form</field>
+        <field name="model">shipping.cost.approval.wizard</field>
+        <field name="arch" type="xml">
+            <form string="อนุมัติค่าขนส่งพิเศษ">
+                <field name="mode" invisible="1"/>
+                <field name="sale_order_id" invisible="1"/>
+                <group>
+                    <group string="ค่าขนส่ง">
+                        <field name="shipping_cost" readonly="1"/>
+                        <field name="use_special_delivery_zero" readonly="1"/>
+                        <field name="shipping_cost_m" readonly="1"
+                               invisible="use_special_delivery_zero"/>
+                    </group>
+                    <group string="การอนุมัติ">
+                        <field name="approver_id" options="{'no_create': True, 'no_open': True}"
+                               readonly="mode != 'request'" required="mode == 'request'"/>
+                        <field name="request_user_id" readonly="1"
+                               invisible="mode == 'request'"/>
+                    </group>
+                </group>
+                <group>
+                    <field name="reason" placeholder="ระบุเหตุผลที่ต้องใช้ค่าขนส่งพิเศษ..."
+                           readonly="mode != 'request'" required="mode == 'request'"/>
+                    <field name="note" placeholder="ความเห็น / เหตุผลที่ไม่อนุมัติ"
+                           invisible="mode == 'request'" required="mode == 'reject'"/>
+                </group>
+                <footer>
+                    <button name="action_confirm" type="object" string="ส่งขออนุมัติ" class="btn-primary"
+                            invisible="mode != 'request'"/>
+                    <button name="action_confirm" type="object" string="อนุมัติ" class="btn-success"
+                            invisible="mode != 'approve'"/>
+                    <button name="action_confirm" type="object" string="ไม่อนุมัติ" class="btn-warning"
+                            invisible="mode != 'reject'"/>
+                    <button string="ยกเลิก" special="cancel" class="btn-secondary"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+</odoo>
