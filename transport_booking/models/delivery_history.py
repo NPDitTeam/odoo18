@@ -106,10 +106,9 @@ class DeliveryHistory(models.Model):
         if not booking:
             return False
 
-        # ✅ ถ้ามี receiver_name หรือ actual_pickup_time แสดงว่าข้อมูลมาจากแอป
-        if booking.receiver_name or booking.actual_pickup_time:
-            source = 'app'
-            _logger.info(f"📱 Detected app data (receiver_name or actual_pickup_time exists), setting source='app'")
+        # แหล่งที่มายึดตามที่ผู้เรียกบอกมาเท่านั้น
+        # เดิมถ้ามีชื่อผู้รับของ/เวลารับของจริงจะทับเป็น 'app' เสมอ ทำให้งาน
+        # ที่ปิดจากหน้าจอ Odoo ถูกนับเป็นงานจากแอป
 
         _logger.info(f"📜 Creating delivery history from booking: {booking.name} (source: {source})")
 

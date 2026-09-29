@@ -636,6 +636,9 @@ class TrackingController(http.Controller):
             booking = request.env['vehicle.booking'].browse(int(booking_id))
             if not booking.exists():
                 return {'success': False, 'message': 'ไม่พบข้อมูลการจองรถ'}
+
+            # คำสั่งนี้มาจากแอปคนขับ ใช้ตั้งแหล่งที่มาให้ถูก
+            booking = booking.with_context(npd_from_driver_app=True)
             
             vals = {'tracking_status': status}
             
@@ -730,6 +733,10 @@ class TrackingController(http.Controller):
             if not booking.exists():
                 _logger.error(f'❌ Booking {booking_id} not found')
                 return {'success': False, 'message': 'Booking not found'}
+
+            # คำสั่งนี้มาจากแอปคนขับ — action_done() ที่เรียกต่อจากนี้จะได้
+            # สร้างประวัติการจัดส่งเป็นแหล่งที่มา App ไม่ใช่ Odoo
+            booking = booking.with_context(npd_from_driver_app=True)
             
             # 🔹 ขั้นที่ 1: บันทึกรูปและลายเซ็น
             _logger.info('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')

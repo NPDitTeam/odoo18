@@ -671,14 +671,26 @@ class VehicleBooking(models.Model):
 
         return super().create(vals_list)
 
+    def _npd_action_source(self):
+        """คำสั่งนี้มาจากไหน — 'app' เมื่อ controller ของแอปเป็นคนเรียก
+
+        แอปปิดงานด้วยการเรียก action_done() ผ่าน /api/delivery/complete
+        ซึ่งเป็นเมธอดเดียวกับปุ่มบน Odoo แยกกันไม่ได้ถ้าไม่มีธงบอก
+        """
+        return 'app' if self.env.context.get('npd_from_driver_app') else 'odoo'
+
     def write(self, vals):
         """อัพเดทเอกสาร - auto-geocode ถ้ามีการเปลี่ยนแปลง address"""
 
-        # ✅ Auto-detect source = 'app' ถ้ามีข้อมูลจากแอป
+        # 📱 ติดป้ายว่ามาจากแอป เฉพาะคำสั่งที่มาจากแอปจริง ๆ เท่านั้น
+        # (controller ของแอปเป็นคนติดธง npd_from_driver_app ให้)
+        # เดิมเดาจากฟิลด์ที่ถูกกรอก ซึ่งตอนนี้ฝั่ง Odoo ก็กรอกฟิลด์เดียวกัน
+        # งานที่ทำบน Odoo จึงกลายเป็น "App" ไปด้วย
         app_fields = ['receiver_name', 'receiver_position', 'actual_pickup_time', 'pickup_photo', 'delivery_photo']
-        if any(vals.get(field) for field in app_fields):
+        if (self.env.context.get('npd_from_driver_app')
+                and any(vals.get(field) for field in app_fields)):
             vals['source'] = 'app'
-            _logger.info(f"📱 [WRITE] Detected app data, setting source='app'")
+            _logger.info("📱 [WRITE] คำสั่งมาจากแอป ตั้ง source='app'")
 
         # 🌍 Auto-geocode ถ้ามี address ใหม่
         if vals.get('pickup_location'):
@@ -1112,8 +1124,8 @@ class VehicleBooking(models.Model):
             # 📜 สร้างประวัติการจัดส่ง
             try:
                 _logger.info(f"📜 Creating delivery history for booking: {record.name}")
-                history = self.env['delivery.history'].create_from_booking(record,
-                                                                           source='odoo')  # ✅ เพิ่ม source='odoo'
+                history = self.env['delivery.history'].create_from_booking(
+                    record, source=record._npd_action_source())
                 if history:
                     _logger.info(f"✅ Delivery history created: {history.id}")
                 else:
@@ -1133,8 +1145,8 @@ class VehicleBooking(models.Model):
             if record.actual_pickup_time or record.pickup_photo:
                 try:
                     _logger.info(f"📜 Creating cancelled delivery history for booking: {record.name}")
-                    history = self.env['delivery.history'].create_from_booking(record,
-                                                                               source='odoo')  # ✅ เพิ่ม source='odoo'
+                    history = self.env['delivery.history'].create_from_booking(
+                        record, source=record._npd_action_source())
                     if history:
                         _logger.info(f"✅ Cancelled delivery history created: {history.id}")
                 except Exception as e:
