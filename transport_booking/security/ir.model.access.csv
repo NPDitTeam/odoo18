@@ -20,3 +20,6 @@ access_vehicle_booking_expense_user,vehicle.booking.expense.user,model_vehicle_b
 access_vehicle_booking_expense_admin,vehicle.booking.expense.admin,model_vehicle_booking_expense,base.group_system,1,1,1,1
 
 access_vehicle_booking_done_reason_wizard_user,vehicle.booking.done.reason.wizard.user,model_vehicle_booking_done_reason_wizard,base.group_user,1,1,1,1
+access_vehicle_booking_pso_document_wizard_user,vehicle.booking.pso.document.wizard.user,model_vehicle_booking_pso_document_wizard,base.group_user,1,1,1,1
+access_vehicle_booking_start_check_wizard_user,vehicle.booking.start.check.wizard.user,model_vehicle_booking_start_check_wizard,base.group_user,1,1,1,1
+access_vehicle_booking_start_check_line_user,vehicle.booking.start.check.line.user,model_vehicle_booking_start_check_line,base.group_user,1,1,1,1

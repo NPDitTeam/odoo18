@@ -100,6 +100,8 @@
                             <group>
                                 <group string="ผู้รับ">
                                     <field name="receiver_name"/>
+                                    <field name="receiver_position"/>
+                                    <field name="signed_by_self"/>
                                     <field name="receiver_signature" widget="image" class="oe_avatar" 
                                            options="{'size': [200, 100]}"/>
                                 </group>
@@ -144,6 +146,7 @@
                 <field name="driver_name" string="คนขับ"/>
                 <field name="vehicle_name" string="รถ"/>
                 <field name="receiver_name" string="ผู้รับ"/>
+                <field name="receiver_position" string="ตำแหน่งผู้รับ"/>
                 <field name="source" widget="statusbar"/>
                 <filter name="completed" string="✅ เสร็จสิ้น" 
                         domain="[('state', '=', 'completed')]"/>

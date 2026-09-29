@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 from odoo import models, fields, api, _
-from odoo.exceptions import UserError
+from odoo.exceptions import AccessError, UserError
 import requests
 import json
 import logging
@@ -311,13 +311,38 @@ class TransportOrder(models.Model):
         # ✅ Odoo 18: ไม่มี access_rights_uid parameter
         return super(TransportOrder, self)._search(domain, offset=offset, limit=limit, order=order)
 
+    def _sync_button(self, today_only):
+        """จุดเข้าของปุ่มซิงค์ — รันทั้งงานด้วยสิทธิ์ระบบตั้งแต่บรรทัดแรก
+
+        เดิมใส่ sudo ไว้ชั้นในเท่านั้น ผู้ใช้ที่เห็นได้สาขาเดียวยังเจอ
+        "การเข้าถึงผิดพลาด" อยู่ เพราะโมดูลนี้และ transport_booking กรองสาขา
+        ใน _search ซึ่ง Odoo 18 ใช้ตัดสินสิทธิ์ตอน read/write ด้วย พอมีโค้ด
+        ส่วนไหนหลุดออกนอก env ที่เป็น sudo (เช่นคิวคำนวณของ ORM หรือ
+        recordset ที่เดินผ่าน related field) ก็ชนกำแพงทันที
+
+        ครอบตั้งแต่ชั้นนอกสุดแล้ว sub-call ทุกชั้นจึงอยู่ใน env เดียวกันหมด
+        และ flush ให้จบในนี้ ไม่ปล่อยให้ค้างไปโผล่ตอนจบคำขอด้วยสิทธิ์ผู้ใช้
+        """
+        sudo_self = self.sudo().with_context(transport_sync_all_branches=True)
+        try:
+            result = sudo_self._sync_orders_from_odoo14(today_only=today_only)
+            sudo_self.env.flush_all()
+            return result
+        except AccessError:
+            # ยังไม่ควรเกิดแล้ว ถ้าเกิดอีกต้องเห็น stack เต็มเพื่อไล่ต่อได้
+            _logger.exception(
+                'ซิงค์ล้มเพราะสิทธิ์ (uid=%s, today_only=%s) — '
+                'ดู stack ด้านบนเพื่อหาจุดที่หลุดออกนอก sudo',
+                self.env.uid, today_only)
+            raise
+
     def action_sync_from_odoo14(self):
         """ดึงข้อมูลจาก Odoo 14 ทั้งหมด (Full Sync)"""
-        return self._sync_orders_from_odoo14(today_only=False)
+        return self._sync_button(today_only=False)
 
     def action_sync_recent_from_odoo14(self):
         """ดึงข้อมูลจาก Odoo 14 เฉพาะวันปัจจุบัน + อัพเดทข้อมูลที่มีอยู่"""
-        return self._sync_orders_from_odoo14(today_only=True)
+        return self._sync_button(today_only=True)
 
     @api.model
     def action_remove_duplicates(self):
@@ -447,7 +472,18 @@ class TransportOrder(models.Model):
                 }
             }
         # ✅ ค้นหาใบเดิมต้องเห็นทุกสาขา — ถ้ากรองตามสาขาของคนกด จะหาใบของสาขาอื่นไม่เจอแล้วสร้างซ้ำทุกครั้ง
-        return self.with_context(transport_sync_all_branches=True)._run_sync_orders_from_odoo14(today_only)
+        #
+        # ต้อง sudo ด้วย ไม่ใช่แค่ใส่ context เพราะ _search ของโมดูลนี้และของ
+        # transport_booking กรองตามสาขาของผู้ใช้ และ Odoo 18 ใช้ _search เป็น
+        # ตัวตัดสินสิทธิ์ตอน read/write ด้วย พอ context หลุดระหว่างทาง (เช่น
+        # recordset ที่เดินทางผ่าน related field หรือคิวคำนวณของ ORM) ผู้ใช้
+        # สาขาเดียวจะเจอ "การเข้าถึงผิดพลาด" กลางคัน ทั้งที่แค่กดซิงค์
+        #
+        # การซิงค์เป็นงานระบบที่ดึงข้อมูลจาก Odoo 14 มาทั้งชุด ไม่ควรผูกกับ
+        # สิทธิ์มองเห็นสาขาของคนที่กดปุ่ม และ cron ก็รันด้วยสิทธิ์ระบบอยู่แล้ว
+        return self.sudo().with_context(
+            transport_sync_all_branches=True
+        )._run_sync_orders_from_odoo14(today_only)
 
     def _run_sync_orders_from_odoo14(self, today_only=False):
         try:
@@ -966,9 +1002,28 @@ class TransportOrder(models.Model):
         self._process_order_lines(existing_order, order_data.get('order_lines', []))
 
     def _process_order_lines(self, order, lines_data):
-        """ประมวลผลรายการสินค้า"""
+        """ปรับรายการสินค้าให้ตรงกับ Odoo 14 โดยไม่ลบบรรทัดเดิมทิ้ง
+
+        ⚠️ ของเดิม unlink ทั้งใบแล้วสร้างใหม่ทุกครั้งที่ซิงค์ ซึ่งลบข้อมูลที่
+        เกิดฝั่ง Odoo 18 เองไปด้วย โดยเฉพาะผลตรวจนับสินค้าของคนขับ
+        (check_state / checked_quantity / ผู้ตรวจ) เพราะข้อมูลพวกนี้ผูกกับ
+        id ของบรรทัด และ Odoo 14 ไม่มีค่านี้ให้เขียนกลับคืน คนขับตรวจเสร็จ
+        พอมีคนกดซิงค์ก็กลายเป็น "ยังไม่ตรวจ" ทั้งใบ
+
+        จับคู่ด้วย odoo14_id ซึ่งไม่ซ้ำกันภายในใบเดียว แล้วเขียนทับเฉพาะค่าที่
+        มาจาก Odoo 14 บรรทัดเดิมจึงอยู่ที่ id เดิมพร้อมผลตรวจ
+        """
         TransportOrderLine = self.env['transport.order.line']
-        order.order_line_ids.unlink()
+
+        # บรรทัดเดิมในใบ แยกเป็นพวกที่จับคู่ได้กับพวกที่ไม่มีคีย์ (ของเก่าค้าง)
+        by_o14 = {}
+        orphans = TransportOrderLine.browse()
+        for line in order.order_line_ids:
+            key = line.odoo14_id
+            if key and key not in by_o14:
+                by_o14[key] = line
+            else:
+                orphans |= line
 
         for line_data in lines_data:
             product_id = False
@@ -979,8 +1034,6 @@ class TransportOrder(models.Model):
                 )
 
             line_vals = {
-                'order_id': order.id,
-                'odoo14_id': line_data.get('id'),
                 'product_id': product_id,
                 'product_name_o14': line_data.get('product_name'),
                 'product_code': line_data.get('product_code'),
@@ -994,7 +1047,42 @@ class TransportOrder(models.Model):
                 'price_total': line_data.get('price_total', 0.0),
                 'total_weight': line_data.get('total_weight', 0.0),
             }
-            TransportOrderLine.create(line_vals)
+
+            o14_line_id = line_data.get('id')
+            line = by_o14.pop(o14_line_id, None) if o14_line_id else None
+
+            if line:
+                # จำนวนที่สั่งเปลี่ยนหลังคนขับนับไปแล้ว ผลเดิมใช้อ้างอิงไม่ได้
+                # ต้องล้างให้นับใหม่ ไม่ใช่ปล่อยให้ขึ้นว่า "ถูกต้อง" กับจำนวนอื่น
+                if (line.check_state != 'pending'
+                        and abs((line.quantity or 0.0)
+                                - (line_vals['quantity'] or 0.0)) > 0.001):
+                    line_vals.update({
+                        'check_state': 'pending',
+                        'checked_quantity': 0.0,
+                        'checked_by_driver_id': False,
+                        'checked_at': False,
+                        'check_note': 'จำนวนจาก Odoo 14 เปลี่ยน ต้องตรวจนับใหม่',
+                    })
+                    _logger.info(
+                        f"🔄 {order.name}: จำนวน {line.product_name_o14} เปลี่ยน "
+                        f"{line.quantity} → {line_vals['quantity']} ล้างผลตรวจนับ"
+                    )
+                line.write(line_vals)
+            else:
+                line_vals.update({
+                    'order_id': order.id,
+                    'odoo14_id': o14_line_id,
+                })
+                TransportOrderLine.create(line_vals)
+
+        # เหลือจากการจับคู่ = Odoo 14 ไม่ส่งมาแล้ว (ถูกลบต้นทาง) จึงลบตาม
+        stale = orphans
+        for line in by_o14.values():
+            stale |= line
+        if stale:
+            _logger.info(f"🗑️ {order.name}: ลบบรรทัดที่ไม่มีใน Odoo 14 แล้ว {len(stale)} รายการ")
+            stale.unlink()
 
     def _find_or_create_partner(self, partner_name, partner_phone, partner_email):
         """ค้นหาหรือสร้างลูกค้าจากชื่อ"""

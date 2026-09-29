@@ -1,6 +1,6 @@
 {
     'name': 'จองคิวรถขนส่ง',
-    'version': '18.0.2.8.0',  # คลิกรูปก่อนขนส่ง/หลักฐานการส่ง เพื่อดูรูปเต็ม (widget image_popup)
+    'version': '18.0.3.0.0',  # ตรวจสินค้าก่อนเริ่มขนส่งฝั่ง Odoo + รูปหลายใบ + จำกัดสาขา
     'category': 'Operations/Inventory',
     'summary': 'ระบบจองคิวรถขนส่ง พร้อมแสดงเส้นทางบน Google Maps และติดตามรถ Real-time',
     'depends': [
@@ -14,7 +14,9 @@
     'data': [
         'security/ir.model.access.csv',
         'data/sequence_data.xml',
+        'data/rental_return_sequence.xml',
         'views/vehicle_booking_views.xml',
+        'views/res_company_views.xml',
         'views/res_users_settings_views.xml',
         'views/tracking_settings_views.xml',
         'views/vehicle_tracking_views.xml',

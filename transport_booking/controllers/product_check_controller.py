@@ -30,19 +30,23 @@ class ProductCheckController(http.Controller):
             return Booking.search([('name', '=', name)], limit=1)
         return Booking.browse()
 
-    def _line_payload(self, line):
+    def _line_payload(self, line, booking=None):
+        # ผลตรวจของเที่ยวก่อนหน้าไม่นับ — ใบขนส่งหนึ่งใบวิ่งได้หลายเที่ยว
+        # ถ้าส่งของเที่ยวเก่าไปให้แอป คนขับคนใหม่จะเห็นว่าตรวจครบแล้วทั้งที่
+        # ยังไม่ได้แตะของ แล้วกดถ่ายรูปออกรถได้เลย
+        mine = bool(booking) and line.checked_booking_id == booking
         return {
             'line_id': line.id,
             'product_name': line.product_name_o14 or '',
             'quantity': line.quantity or 0.0,
             'uom': line.uom_name or '',
             'weight': line.total_weight or 0.0,
-            'check_state': line.check_state or 'pending',
-            'checked_quantity': line.checked_quantity or 0.0,
-            'quantity_diff': line.quantity_diff or 0.0,
-            'check_note': line.check_note or '',
+            'check_state': line.check_state if mine else 'pending',
+            'checked_quantity': line.checked_quantity if mine else 0.0,
+            'quantity_diff': line.quantity_diff if mine else 0.0,
+            'check_note': (line.check_note or '') if mine else '',
             'checked_at': (fields.Datetime.to_string(line.checked_at)
-                           if line.checked_at else None),
+                           if mine and line.checked_at else None),
         }
 
     def _summary_payload(self, booking):
@@ -55,6 +59,14 @@ class ProductCheckController(http.Controller):
             'mismatch': booking.product_check_mismatch,
             # แอปใช้ค่านี้ค่าเดียวในการเปิด/ปิดปุ่มกล้อง ไม่ต้องคิดเองซ้ำ
             'can_take_photo': booking.can_take_photo,
+            # เที่ยวช่วยสาขาไม่มีของให้ตรวจ แอปต้องสลับไปใช้ช่องหมายเหตุแทน
+            'shipment_purpose': booking.shipment_purpose or '',
+            'needs_product_check': booking.needs_product_check,
+            'note': booking.help_branch_note or '',
+            # ผล AI ตรวจหมายเหตุ ให้แอปบอกคนขับได้ว่าเขียนใช้ได้หรือยัง
+            'note_ai_state': booking.help_branch_ai_state or '',
+            'note_ai_message': booking.help_branch_ai_message or '',
+            'note_ai_example': booking.help_branch_ai_example or '',
         }
 
     # ------------------------------------------------------------------
@@ -72,7 +84,7 @@ class ProductCheckController(http.Controller):
             return {
                 'success': True,
                 'summary': self._summary_payload(booking),
-                'lines': [self._line_payload(line) for line in lines],
+                'lines': [self._line_payload(line, booking) for line in lines],
             }
         except Exception as error:
             _logger.exception('[PRODUCT CHECK] ดึงรายการสินค้าไม่สำเร็จ')
@@ -95,6 +107,14 @@ class ProductCheckController(http.Controller):
             booking = self._find_booking(params)
             if not booking:
                 return {'success': False, 'error': 'ไม่พบใบจองที่ระบุ'}
+
+            # เที่ยวช่วยสาขาไม่มีของให้ตรวจ แอปส่งหมายเหตุมาแทนรายการตรวจ
+            if booking.shipment_purpose == 'help_branch':
+                booking._save_help_branch_note(params.get('note'))
+                booking.invalidate_recordset(
+                    ['product_check_state', 'can_take_photo'])
+                return {'success': True, 'saved': 0, 'rejected': [],
+                        'summary': self._summary_payload(booking)}
 
             driver = booking.driver_id
             driver_id = params.get('driver_id')
@@ -120,7 +140,8 @@ class ProductCheckController(http.Controller):
                     checked_quantity=(None if is_correct
                                       else item.get('checked_quantity') or 0.0),
                     note=item.get('note'),
-                    driver=driver)
+                    driver=driver,
+                    booking=booking)
                 saved += 1
 
             booking.invalidate_recordset(

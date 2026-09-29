@@ -253,6 +253,13 @@ class VehicleBooking(models.Model):
     pickup_photo = fields.Binary('รูปถ่ายสินค้าก่อนขนส่ง', attachment=True)
     delivery_photo = fields.Binary('รูปถ่ายหลักฐานการส่ง', attachment=True)
     receiver_name = fields.Char('ชื่อผู้รับ')
+    receiver_position = fields.Char(
+        'ตำแหน่งผู้รับ',
+        help='ตำแหน่งหรือความเกี่ยวข้องของคนที่เซ็นรับ เช่น เจ้าของบ้าน ยาม '
+             'หัวหน้าช่าง — ใช้ยืนยันว่าคนเซ็นมีสิทธิ์รับของจริง')
+    signed_by_self = fields.Boolean(
+        'เซ็นรับแทน (ไม่เจอลูกค้า)',
+        help='คนขับไม่เจอผู้รับตัวจริง จึงให้คนอื่นเซ็นรับแทน')
     receiver_signature = fields.Binary('ลายเซ็นผู้รับ', attachment=True)
 
     # 🎨 ข้อมูลลายน้ำจากแอป
@@ -668,7 +675,7 @@ class VehicleBooking(models.Model):
         """อัพเดทเอกสาร - auto-geocode ถ้ามีการเปลี่ยนแปลง address"""
 
         # ✅ Auto-detect source = 'app' ถ้ามีข้อมูลจากแอป
-        app_fields = ['receiver_name', 'actual_pickup_time', 'pickup_photo', 'delivery_photo']
+        app_fields = ['receiver_name', 'receiver_position', 'actual_pickup_time', 'pickup_photo', 'delivery_photo']
         if any(vals.get(field) for field in app_fields):
             vals['source'] = 'app'
             _logger.info(f"📱 [WRITE] Detected app data, setting source='app'")
@@ -967,8 +974,13 @@ class VehicleBooking(models.Model):
 
             record.write(vals)
 
-    def start_job_with_photo(self, photo_base64):
-        """เริ่มงานพร้อมอัพโหลดรูปถ่ายสินค้า (สำหรับ Mobile App)"""
+    def start_job_with_photo(self, photo_base64, driver_latitude=None,
+                             driver_longitude=None):
+        """เริ่มงานพร้อมอัพโหลดรูปถ่ายสินค้า (สำหรับ Mobile App)
+
+        driver_latitude/longitude = ตำแหน่งจริงของคนขับตอนกดเริ่มงาน
+        ถ้าไม่ได้ส่งมาจะถอยไปใช้พิกัดคลังในใบจองเหมือนเดิม
+        """
         self.ensure_one()
 
         try:
@@ -987,9 +999,21 @@ class VehicleBooking(models.Model):
             self.action_start()
             _logger.info("✅ [start_job_with_photo] Job started successfully")
 
-            # 📍 สร้าง tracking record เริ่มต้น (ณ จุดรับสินค้า)
+            # 📍 สร้าง tracking record เริ่มต้น
             try:
-                if self.pickup_latitude and self.pickup_longitude:
+                # ตำแหน่งจริงของคนขับมาก่อนเสมอ พิกัดคลังเป็นแค่ตัวสำรอง
+                if driver_latitude and driver_longitude:
+                    start_lat = float(driver_latitude)
+                    start_lng = float(driver_longitude)
+                    start_note = 'เริ่มงาน - ตำแหน่งจริงของคนขับ'
+                    start_address = ''
+                else:
+                    start_lat = self.pickup_latitude
+                    start_lng = self.pickup_longitude
+                    start_note = 'เริ่มงาน - พิกัดคลังในใบจอง (แอปไม่ได้ส่งตำแหน่งมา)'
+                    start_address = self.pickup_location or ''
+
+                if start_lat and start_lng:
                     # ✅ ใช้ driver_id จากตัว booking แทน current_user
                     if not self.driver_id:
                         _logger.warning("⚠️ [start_job_with_photo] No driver assigned to booking %s, skipping tracking",
@@ -998,18 +1022,18 @@ class VehicleBooking(models.Model):
                         tracking_vals = {
                             'booking_id': self.id,
                             'driver_id': self.driver_id.id,  # ✅ ใช้ vehicle.driver.id
-                            'latitude': self.pickup_latitude,
-                            'longitude': self.pickup_longitude,
+                            'latitude': start_lat,
+                            'longitude': start_lng,
                             'timestamp': fields.Datetime.now(),
-                            'address': self.pickup_location or '',
-                            'notes': 'เริ่มงาน - รับสินค้าที่ต้นทาง',
+                            'address': start_address,
+                            'notes': start_note,
                             'speed': 0.0,
                         }
                         tracking = self.env['vehicle.tracking'].create(tracking_vals)
-                        _logger.info("✅ [start_job_with_photo] Initial tracking created: %s at (%s, %s)",
-                                     tracking.id, self.pickup_latitude, self.pickup_longitude)
+                        _logger.info("✅ [start_job_with_photo] Initial tracking created: %s at (%s, %s) - %s",
+                                     tracking.id, start_lat, start_lng, start_note)
                 else:
-                    _logger.warning("⚠️ [start_job_with_photo] Missing pickup coordinates, skipping tracking")
+                    _logger.warning("⚠️ [start_job_with_photo] ไม่มีทั้งตำแหน่งคนขับและพิกัดคลัง ข้ามการสร้างจุดเริ่มต้น")
             except Exception as e:
                 _logger.error("❌ [start_job_with_photo] Error creating tracking: %s", str(e))
                 # ไม่ throw error - ให้งานดำเนินต่อแม้ tracking จะไม่สำเร็จ

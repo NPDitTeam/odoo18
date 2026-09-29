@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        <!-- เลขที่ใบรับคืนสินค้าเช่า
+             noupdate="1" เพื่อให้แก้รูปแบบ/เลขถัดไปเองได้ที่
+             ตั้งค่า > เทคนิค > ลำดับ แล้วอัปเดตโมดูลจะไม่เขียนทับ -->
+        <record id="sequence_rental_return" model="ir.sequence">
+            <field name="name">เลขที่ใบรับคืนสินค้าเช่า</field>
+            <field name="code">vehicle.booking.rental.return</field>
+            <field name="prefix">RTN-%(year)s%(month)s-</field>
+            <field name="padding">4</field>
+            <field name="number_increment">1</field>
+            <field name="number_next">1</field>
+            <field name="implementation">standard</field>
+        </record>
+    </data>
+</odoo>

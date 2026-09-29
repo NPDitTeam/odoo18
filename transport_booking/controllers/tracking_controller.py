@@ -673,6 +673,9 @@ class TrackingController(http.Controller):
             - delivery_photo: base64 string (รูปหลักฐาน)
             - receiver_signature: base64 string (ลายเซ็น)
             - receiver_name: string
+            - delivery_photos: list of base64 (รูปหลักฐานเพิ่มเติม)
+            - receiver_position: string (ตำแหน่งผู้รับ เช่น เจ้าของบ้าน ยาม)
+            - signed_by_self: bool (เซ็นรับแทนเพราะไม่เจอลูกค้า)
             - delivery_timestamp: datetime (เวลาถ่ายรูป)
             - delivery_latitude: float (GPS ละติจูด)
             - delivery_longitude: float (GPS ลองจิจูด)
@@ -683,8 +686,13 @@ class TrackingController(http.Controller):
             
             booking_id = kwargs.get('booking_id')
             delivery_photo = kwargs.get('delivery_photo')
+            # แอปรุ่นใหม่ส่ง delivery_photos มาเป็นลิสต์ รุ่นเก่าส่งรูปเดียว
+            # ผ่าน delivery_photo เหมือนเดิม ต้องรับได้ทั้งสองแบบ
+            delivery_photos = kwargs.get('delivery_photos') or []
             receiver_signature = kwargs.get('receiver_signature')
             receiver_name = kwargs.get('receiver_name')
+            receiver_position = kwargs.get('receiver_position')
+            signed_by_self = kwargs.get('signed_by_self')
             planned_end_date_t = kwargs.get('planned_end_date_t')  # ✅ เพิ่มเวลาส่งจริง
             delivery_timestamp = kwargs.get('delivery_timestamp')
             delivery_latitude = kwargs.get('delivery_latitude')
@@ -709,7 +717,7 @@ class TrackingController(http.Controller):
             _logger.info(f'   📦 Booking ID: {booking_id}')
             _logger.info(f'   📸 Photo size: {len(delivery_photo) if delivery_photo else 0} bytes')
             _logger.info(f'   ✍️  Signature size: {len(receiver_signature) if receiver_signature else 0} bytes')
-            _logger.info(f'   👤 Receiver: {receiver_name}')
+            _logger.info(f'   👤 Receiver: {receiver_name} ({receiver_position or "-"}) เซ็นแทน={bool(signed_by_self)}')
             _logger.info(f'   🕐 Delivery Time (planned_end_date_t): {planned_end_date_t} (type: {type(planned_end_date_t).__name__})')
             _logger.info(f'   🎨 Watermark - Time: {delivery_timestamp}')
             _logger.info(f'   🎨 Watermark - Lat: {delivery_latitude}, Lng: {delivery_longitude}')
@@ -730,7 +738,11 @@ class TrackingController(http.Controller):
                 'delivery_photo': delivery_photo,
                 'receiver_signature': receiver_signature,
                 'receiver_name': receiver_name,
+                'signed_by_self': bool(signed_by_self),
             }
+            # แอปรุ่นเก่ายังไม่ส่งตำแหน่งมา ถ้าเขียนทับด้วย False ข้อมูลเดิมจะหาย
+            if receiver_position:
+                update_vals['receiver_position'] = receiver_position
             
             # ✅ บันทึกเวลาส่งจริง
             if planned_end_date_t:
@@ -749,6 +761,13 @@ class TrackingController(http.Controller):
             
             # อัพเดท booking ด้วยข้อมูลรูปและลายเซ็น
             booking.write(update_vals)
+
+            # เก็บรูปทุกใบไว้เป็นไฟล์แนบ ฟิลด์ delivery_photo เดิมเก็บได้ใบเดียว
+            all_photos = ([delivery_photo] if delivery_photo else []) + list(delivery_photos)
+            if all_photos:
+                saved = booking._npd_store_photos(
+                    'delivery_photo_ids', all_photos, 'หลักฐานการส่ง')
+                _logger.info('✅ [Step 1] เก็บรูปหลักฐานการส่ง %d ใบ', saved)
             
             _logger.info(f'✅ [Step 1] Delivery photos and signatures saved')
             _logger.info(f'   🎨 Watermark data saved:')

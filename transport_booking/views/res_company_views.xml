@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <!-- แท็บตั้งค่างานขนส่ง บนฟอร์มบริษัท -->
+        <record id="view_res_company_form_npd_transport" model="ir.ui.view">
+            <field name="name">res.company.form.npd.transport</field>
+            <field name="model">res.company</field>
+            <field name="inherit_id" ref="base.view_company_form"/>
+            <field name="arch" type="xml">
+                <notebook position="inside">
+                    <page string="งานขนส่ง (NPD)" name="npd_transport">
+                        <div class="alert alert-info" role="alert"
+                             invisible="npd_odoo_blocked_branch_ids">
+                            ยังไม่ได้ปิดสาขาไหน — ทุกสาขากดปุ่ม
+                            "เริ่มขนส่ง" และ "เสร็จสิ้น" บนหน้าจอ Odoo ได้ตามปกติ
+                            ใส่ชื่อสาขาลงช่องด้านล่างเพื่อปิดปุ่มของสาขานั้น
+                            บังคับให้สั่งงานผ่านแอปคนขับอย่างเดียว
+                            (รายการนี้ใช้ร่วมกันทุกบริษัท)
+                        </div>
+                        <div class="alert alert-warning" role="alert"
+                             invisible="not npd_odoo_blocked_branch_ids">
+                            สาขาในรายการนี้จะไม่เห็นปุ่ม "เริ่มขนส่ง" และ "เสร็จสิ้น"
+                            บนหน้าจอ Odoo ต้องสั่งงานผ่านแอปคนขับเท่านั้น
+                            สาขาอื่นที่ไม่อยู่ในรายการยังใช้งานได้ตามปกติ
+                            ลบออกให้หมดเมื่อต้องการเปิดให้ทุกสาขา
+                        </div>
+                        <group>
+                            <field name="npd_odoo_blocked_branch_ids"
+                                   widget="many2many_tags"
+                                   options="{'no_create': True}"
+                                   nolabel="1"
+                                   colspan="2"/>
+                        </group>
+                    </page>
+                </notebook>
+            </field>
+        </record>
+    </data>
+</odoo>

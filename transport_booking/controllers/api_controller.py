@@ -410,6 +410,8 @@ class VehicleBookingAPIController(http.Controller):
                 'pickup_location': history.pickup_location,
                 'destination': history.destination,
                 'receiver_name': history.receiver_name,
+                'receiver_position': history.receiver_position,
+                'signed_by_self': history.signed_by_self,
                 'state': history.state,
                 'completion_date': history.completion_date.isoformat() if history.completion_date else None,
                 'planned_start_date_t': history.planned_start_date_t.isoformat() if history.planned_start_date_t else None,

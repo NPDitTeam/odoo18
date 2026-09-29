@@ -60,6 +60,8 @@ class DeliveryHistory(models.Model):
     pickup_photo = fields.Binary('รูปถ่ายสินค้าก่อนขนส่ง', attachment=True)
     delivery_photo = fields.Binary('รูปถ่ายหลักฐานการส่ง', attachment=True)
     receiver_name = fields.Char('ชื่อผู้รับ', tracking=True)
+    receiver_position = fields.Char('ตำแหน่งผู้รับ', tracking=True)
+    signed_by_self = fields.Boolean('เซ็นรับแทน (ไม่เจอลูกค้า)', tracking=True)
     receiver_signature = fields.Binary('ลายเซ็นผู้รับ', attachment=True)
 
     # พิกัด GPS
@@ -139,6 +141,8 @@ class DeliveryHistory(models.Model):
                 'pickup_photo': booking.pickup_photo,
                 'delivery_photo': booking.delivery_photo,
                 'receiver_name': booking.receiver_name,
+                'receiver_position': booking.receiver_position,
+                'signed_by_self': booking.signed_by_self,
                 'receiver_signature': booking.receiver_signature,
                 'pickup_latitude': booking.pickup_latitude,
                 'pickup_longitude': booking.pickup_longitude,
