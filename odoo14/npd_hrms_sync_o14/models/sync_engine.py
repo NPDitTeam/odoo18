@@ -791,6 +791,130 @@ class HrmsSyncEngine(models.AbstractModel):
             counters['message'] = '\n'.join(notes)
         return counters
 
+    def _sync_medical_expense(self, config, spec, incremental):
+        u"""คำขอค่ารักษาพยาบาล — ฝั่ง 14 เป็นตารางของตัวเอง ฝั่ง 18 รวมเข้ากับ
+        ใบขอลงเวลาย้อนหลังที่เลือกประเภทเหตุผล "ค่ารักษาพยาบาล"
+
+        ระหว่างรันคู่ขนาน แอปยื่นคำขอเข้าทั้งสองระบบ ใบเกือบทั้งหมดจึงมีอยู่ฝั่ง
+        18 อยู่แล้ว ถ้าสร้างตามที่อ่านมาจะได้ใบซ้ำทุกคน ก่อนสร้างจึงต้องมองหาใบ
+        ที่ตรงกันด้วย รหัสพนักงาน + จำนวนเงิน + ปี แล้วจดคู่ไว้ รอบถัดไปจะได้
+        อัปเดตใบเดิมแทนการสร้างใหม่
+        """
+        Log = self._writable('hr.manual.time.log').with_context(
+            npd_hrms_sync=True)
+        Reason = self.env['hrms.manual.time.reason'].sudo().with_context(
+            active_test=False)
+        Map = self.env['npd.hrms.sync.map']
+        counters = {'fetched': 0, 'created_count': 0, 'updated_count': 0,
+                    'skipped_count': 0, 'error_count': 0}
+        errors, skipped = [], []
+
+        remote = config.remote_fields(spec['o14_model'])
+        read_fields = [f for f in (
+            'id', 'employee_id', 'employee_code', 'amount', 'expense_year',
+            'state', 'created_at', 'approved_at', 'bank_name',
+            'bank_account_number', 'bank_account_name', 'write_date')
+            if f in remote]
+
+        states = dict(Log._fields['state'].selection)
+
+        # ใบค่ารักษาที่มีอยู่แล้วฝั่ง 18 และยังไม่ได้จดคู่กับใบฝั่ง 14
+        taken = set(Map.search([
+            ('o14_model', '=', spec['o14_model'])]).mapped('res_id'))
+        pool = {}
+        for log in Log.search([('is_medical', '=', True)]):
+            if log.id in taken:
+                continue
+            key = ((log.employee_id.employee_code or '').strip(),
+                   round(log.amount or 0.0, 2),
+                   log.work_date.year if log.work_date else 0)
+            pool.setdefault(key, []).append(log)
+
+        for rows in config.search_read_batched(spec['o14_model'], [], read_fields):
+            counters['fetched'] += len(rows)
+            for row in rows:
+                raw = row.get('employee_id')
+                remote_employee = raw[0] if isinstance(raw, (list, tuple)) else raw
+                employee_id = Map.lookup('employee.salary', remote_employee)
+                if not employee_id:
+                    counters['skipped_count'] += 1
+                    if len(skipped) < 20:
+                        skipped.append('id %s: ยังไม่ได้ยกพนักงานคนนี้มา'
+                                       % row.get('id'))
+                    continue
+                employee = self._writable('employee.salary').browse(employee_id)
+                amount = round(row.get('amount') or 0.0, 2)
+                try:
+                    year = int(row.get('expense_year') or 0)
+                except (TypeError, ValueError):
+                    year = 0
+                work_date = (row.get('created_at') or '')[:10] or False
+                state = row.get('state') if row.get('state') in states else 'รออนุมัติ'
+
+                values = {
+                    'employee_id': employee_id,
+                    'amount': amount,
+                    'state': state,
+                    'checkin_time': '08:00:00',
+                    'checkout_time': '17:00:00',
+                }
+                if work_date:
+                    values['work_date'] = work_date
+                for name in ('bank_name', 'bank_account_number',
+                             'bank_account_name'):
+                    if name in Log._fields and row.get(name):
+                        values[name] = row[name]
+                if 'approved_at' in Log._fields and row.get('approved_at'):
+                    values['approved_at'] = row['approved_at']
+
+                try:
+                    with self.env.cr.savepoint():
+                        record = Log.browse(
+                            Map.lookup(spec['o14_model'], row['id'])).exists()
+                        if not record:
+                            bucket = pool.get(
+                                ((row.get('employee_code') or '').strip(),
+                                 amount, year))
+                            if bucket:
+                                record = bucket.pop()
+                        if record:
+                            record.write(values)
+                            counters['updated_count'] += 1
+                        else:
+                            reason = Reason.search([
+                                ('code', '=', 'medical_expense'),
+                                ('company_id', '=', employee.company_id.id),
+                            ], limit=1) or Reason.search([
+                                ('code', '=', 'medical_expense')], limit=1)
+                            if not reason:
+                                counters['skipped_count'] += 1
+                                if len(skipped) < 20:
+                                    skipped.append(
+                                        'id %s: ฝั่ง 18 ยังไม่มีประเภทเหตุผล '
+                                        '"ค่ารักษาพยาบาล"' % row.get('id'))
+                                continue
+                            record = Log.create(dict(
+                                values, reason_type_id=reason.id))
+                            counters['created_count'] += 1
+                        Map.remember(spec['o14_model'], row['id'], record,
+                                     natural_key='%s/%s' % (
+                                         row.get('employee_code') or '', amount),
+                                     o14_write_date=row.get('write_date'))
+                except Exception as error:
+                    counters['error_count'] += 1
+                    if len(errors) < 20:
+                        errors.append('id %s: %s' % (row.get('id'), error))
+            self.env.cr.commit()
+
+        notes = []
+        if skipped:
+            notes.append('ข้าม: ' + '; '.join(skipped))
+        if errors:
+            notes.append('\n'.join(errors))
+        if notes:
+            counters['message'] = '\n'.join(notes)
+        return counters
+
     def _sync_checkin_distance(self, config, spec, incremental):
         """ระยะเช็คอินรายสาขา — ฝั่ง 14 เป็นตารางแยก ฝั่ง 18 เป็นช่องบนตัวสาขา
 

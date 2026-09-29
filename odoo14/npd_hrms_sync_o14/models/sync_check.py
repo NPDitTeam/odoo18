@@ -78,7 +78,9 @@ class HrmsSyncCheck(models.Model):
                 'o14_model': o14_model,
                 'o18_model': o18_model,
             }
-            if o18_model not in self.env:
+            # หัวข้อที่มีตัวตรวจเฉพาะ ตรวจได้แม้ฝั่ง 18 จะไม่มีตารางชื่อเดียวกัน
+            # (เช่น ระยะเช็คอินที่ย้ายไปเก็บบนตัวสาขา) ข้ามเฉพาะหัวข้อที่ไม่มี
+            if o18_model not in self.env and not spec.get('check_handler'):
                 Line.create(dict(values, state='skipped',
                                  message='ฝั่ง 18 ยังไม่มีโมเดลนี้'))
                 continue
@@ -205,6 +207,63 @@ class HrmsSyncCheck(models.Model):
             'amount14': total14, 'amount18': total18,
             'state': state,
             'message': ' / '.join(notes) if notes else 'ตรงกัน (นับเป็นจำนวนคน)',
+        }
+
+    def _check_medical_expense(self, config, spec):
+        """ค่ารักษาพยาบาล — ฝั่ง 18 รวมเข้ากับใบขอลงเวลาย้อนหลัง
+
+        ฝั่ง 14 เป็นตารางของตัวเอง ฝั่ง 18 เป็นใบขอลงเวลาที่ติ๊กว่าเป็น
+        ค่ารักษาพยาบาล และมีใบที่ยื่นบนระบบใหม่โดยตรงเพิ่มเข้ามาด้วย
+        จำนวนแถวรวมจึงไม่มีทางเท่ากันและไม่ได้แปลว่าผิด
+
+        สิ่งที่ต้องรู้คือใบของฝั่ง 14 มีคู่บนฝั่ง 18 ครบหรือไม่ จับคู่ด้วย
+        รหัสพนักงาน + จำนวนเงิน + ปี ซึ่งพอแยกใบได้จริงในทางปฏิบัติ
+        """
+        fields_14 = ['id', 'employee_code', 'amount', 'expense_year', 'state']
+        remote = config.remote_fields(spec['o14_model'])
+        fields_14 = [f for f in fields_14 if f in remote]
+        rows = config.execute_kw(spec['o14_model'], 'search_read', [[], fields_14])
+
+        Log = self.env['hr.manual.time.log'].sudo().with_context(
+            allowed_company_ids=self.env['res.company'].sudo().search([]).ids)
+        logs = Log.search([('is_medical', '=', True)])
+        pool = {}
+        for log in logs:
+            code = (log.employee_id.employee_code or '').strip()
+            year = log.work_date.year if log.work_date else 0
+            pool.setdefault((code, round(log.amount or 0.0, 2), year), []).append(log)
+
+        matched, missing = 0, []
+        total14 = total18 = 0.0
+        for row in rows:
+            code = (row.get('employee_code') or '').strip()
+            amount = round(row.get('amount') or 0.0, 2)
+            try:
+                year = int(row.get('expense_year') or 0)
+            except (TypeError, ValueError):
+                year = 0
+            total14 += amount
+            bucket = pool.get((code, amount, year))
+            if bucket:
+                bucket.pop()
+                matched += 1
+                total18 += amount
+            else:
+                missing.append('%s %s บาท ปี %s (%s)' % (
+                    code, '{:,.2f}'.format(amount), year or '-',
+                    row.get('state') or '-'))
+
+        state = 'ok' if not missing else 'diff'
+        if missing:
+            message = 'ใบฝั่ง 14 ที่ยังไม่มีคู่บนฝั่ง 18: %s' % '; '.join(missing[:5])
+        else:
+            message = ('ครบทุกใบ (ฝั่ง 18 รวมอยู่ในใบขอลงเวลาย้อนหลัง '
+                       'และมีใบที่ยื่นบนระบบใหม่เองอีก %s ใบ)'
+                       % (len(logs) - matched))
+        return {
+            'count14': len(rows), 'count18': matched,
+            'amount14': total14, 'amount18': total18,
+            'state': state, 'message': message,
         }
 
     def _check_checkin_distance(self, config, spec):
