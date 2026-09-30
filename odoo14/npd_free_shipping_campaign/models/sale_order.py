@@ -196,10 +196,30 @@ class SaleOrder(models.Model):
         orders._npd_apply_free_shipping_lock()
         return orders
 
+    def _npd_refresh_before_lock(self):
+        u"""รอให้ฟิลด์คำนวณเสร็จก่อน ค่อยตัดสินว่าเข้าโปรหรือหลุดโปร
+
+        ระยะทางเป็นฟิลด์คำนวณจากต้นทาง/ปลายทาง ตอนบันทึกการแก้ปลายทาง
+        Odoo ยังไม่ได้คำนวณระยะใหม่ ถ้าอ่านเลยจะได้ค่าเก่า แล้วตัดสินผิด
+        (เจอจริง: แก้ปลายทางจน 80 กม. เกินโปร 35 กม. แต่ช่อง
+         "ใช้ค่าขนส่งพิเศษที่เป็น 0" ยังติ๊กค้างอยู่)
+        """
+        watched = ['distance_km', 'shipping_cost', 'shipping_cost_m']
+        if hasattr(self.env, 'flush_all'):          # Odoo 17 ขึ้นไป
+            self.env.flush_all()
+        else:                                        # Odoo 14
+            self.flush()
+        if hasattr(self, 'invalidate_recordset'):
+            self.invalidate_recordset(watched)
+        else:
+            self.invalidate_cache(watched, self.ids)
+
     def write(self, vals):
         res = super().write(vals)
-        # กันวนซ้ำ: ตอนที่ตัวเองเป็นคนเขียนสามช่องนี้ ไม่ต้องตรวจซ้ำอีกรอบ
-        if not set(vals) <= {'use_special_delivery_zero', 'shipping_cost_m',
-                             'npd_free_shipping_zero_set'}:
-            self._npd_apply_free_shipping_lock()
+        # กันวนซ้ำตอนที่ตัวเองเป็นคนเขียนสามช่องนี้
+        if self.env.context.get('npd_free_shipping_locking'):
+            return res
+        self._npd_refresh_before_lock()
+        self.with_context(
+            npd_free_shipping_locking=True)._npd_apply_free_shipping_lock()
         return res
