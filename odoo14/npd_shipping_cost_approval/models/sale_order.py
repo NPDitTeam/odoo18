@@ -58,6 +58,11 @@ class SaleOrder(models.Model):
         for order in self:
             special = order.shipping_cost_m or 0.0
             threshold = (order.shipping_cost or 0.0) * percent / 100.0
+            if getattr(order, 'npd_free_shipping_zero_set', False):
+                # ค่าขนส่งเป็น 0 เพราะโปรของบริษัทเอง ถือว่าอนุมัติมาแล้วในตัว
+                # ไม่ต้องให้ใครกดอนุมัติซ้ำ ไม่งั้นใบที่เข้าโปรจะยืนยันไม่ได้
+                order.ship_approval_required = False
+                continue
             order.ship_approval_required = bool(
                 order.use_special_delivery_zero
                 or (float_compare(special, 0.0, precision_digits=2) > 0

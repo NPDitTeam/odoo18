@@ -31,6 +31,13 @@ class SaleOrder(models.Model):
         digits=(16, 2),
         help='ค่าขนส่งที่ต้องจ่ายถ้าไม่มีโปร ไว้เทียบว่าโปรนี้ช่วยลูกค้าไปเท่าไร',
     )
+    npd_free_shipping_zero_set = fields.Boolean(
+        string='ระบบติ๊กค่าขนส่งพิเศษ 0 ให้จากโปร',
+        copy=False,
+        help='จดไว้ว่าช่อง "ใช้ค่าขนส่งพิเศษที่เป็น 0" ถูกติ๊กโดยโปร ไม่ใช่โดยผู้ใช้\n'
+             'พอใบหลุดเงื่อนไขโปร ระบบจะปลดคืนเฉพาะอันที่ตัวเองติ๊กไว้',
+    )
+
     npd_free_shipping_note = fields.Char(
         string='สถานะโปรส่งฟรี',
         compute='_compute_npd_free_shipping_note',
@@ -141,3 +148,58 @@ class SaleOrder(models.Model):
                     record.name, campaign.name, record.distance_km or 0.0,
                     limit, record.shipping_cost or 0.0)
             record.shipping_cost = 0.0
+
+    # ------------------------------------------------------------------
+    # ล็อกค่าขนส่งเมื่อเข้าเงื่อนไขโปร
+    # ------------------------------------------------------------------
+    def _npd_free_shipping_lock_values(self):
+        u"""ค่าที่ต้องบังคับให้ใบนี้ — คืน dict ว่างถ้าไม่ต้องเปลี่ยนอะไร
+
+        เข้าโปร   : ติ๊กใช้ค่าขนส่งพิเศษที่เป็น 0 + ล้างค่าขนส่งพิเศษเป็น 0
+        หลุดโปร   : ปลดติ๊กคืน เฉพาะใบที่ระบบเป็นคนติ๊กให้
+        """
+        self.ensure_one()
+        applied = self._npd_free_shipping_state()[0]
+        values = {}
+        if applied:
+            if not self.use_special_delivery_zero:
+                values['use_special_delivery_zero'] = True
+            if self.shipping_cost_m:
+                values['shipping_cost_m'] = 0.0
+            if not self.npd_free_shipping_zero_set:
+                values['npd_free_shipping_zero_set'] = True
+        elif self.npd_free_shipping_zero_set:
+            # เคยเข้าโปรแล้วหลุด (เช่น แก้ปลายทางจนระยะทางเกิน) คืนค่าให้คิดปกติ
+            values['use_special_delivery_zero'] = False
+            values['npd_free_shipping_zero_set'] = False
+        return values
+
+    def _npd_apply_free_shipping_lock(self):
+        for order in self:
+            values = order._npd_free_shipping_lock_values()
+            if values:
+                _logger.info('[FREE_SHIPPING] %s: ปรับช่องค่าขนส่งตามโปร %s',
+                             order.name, values)
+                super(SaleOrder, order).write(values)
+
+    @api.onchange('campaign_id', 'distance_km')
+    def _onchange_npd_free_shipping(self):
+        u"""ให้เห็นผลทันทีบนหน้าจอ ไม่ต้องรอบันทึก"""
+        for order in self:
+            values = order._npd_free_shipping_lock_values()
+            for name, value in values.items():
+                order[name] = value
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        orders = super().create(vals_list)
+        orders._npd_apply_free_shipping_lock()
+        return orders
+
+    def write(self, vals):
+        res = super().write(vals)
+        # กันวนซ้ำ: ตอนที่ตัวเองเป็นคนเขียนสามช่องนี้ ไม่ต้องตรวจซ้ำอีกรอบ
+        if not set(vals) <= {'use_special_delivery_zero', 'shipping_cost_m',
+                             'npd_free_shipping_zero_set'}:
+            self._npd_apply_free_shipping_lock()
+        return res

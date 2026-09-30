@@ -29,6 +29,17 @@
                 <field name="npd_free_shipping_normal_cost" readonly="1"
                        invisible="not npd_free_shipping_applied"/>
             </xpath>
+
+            <!-- โปรมีผล = ล็อกไม่ให้แก้ค่าขนส่งเอง -->
+            <xpath expr="//field[@name='shipping_cost']" position="attributes">
+                <attribute name="readonly">npd_free_shipping_applied</attribute>
+            </xpath>
+            <xpath expr="//field[@name='shipping_cost_m']" position="attributes">
+                <attribute name="readonly">npd_free_shipping_applied</attribute>
+            </xpath>
+            <xpath expr="//field[@name='use_special_delivery_zero']" position="attributes">
+                <attribute name="readonly">npd_free_shipping_applied</attribute>
+            </xpath>
         </field>
     </record>
 </odoo>
