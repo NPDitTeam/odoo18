@@ -246,6 +246,9 @@ class NpdAiItSession(models.Model):
         ('ask_qty', 'รอจำนวนสต๊อกจริง'),
         ('confirm', 'รอการยืนยัน'),
         ('ask_cut', 'เติมสต๊อกแล้ว รอสั่งตัดสต๊อกต่อ'),
+        ('pick_transfer', 'รอเลือกใบโยกสินค้า'),
+        ('ask_transfer_qty', 'รอจำนวนสต๊อกจริงของใบโยกสินค้า'),
+        ('confirm_transfer', 'รอยืนยันการเติมสต๊อกให้ใบโยกสินค้า'),
         ('ask_url', 'รอ URL ของเอกสาร'),
         ('ask_return_doc', 'รอเลขที่ใบคืน'),
         ('ask_return_date', 'รอวันที่คืนใหม่'),
@@ -253,6 +256,7 @@ class NpdAiItSession(models.Model):
         ('confirm_status', 'รอยืนยันการแก้สถานะการเช่า'),
         ('ask_expense', 'รอคำถามเรื่องค่าใช้จ่าย'),
         ('ask_closing', 'รอคำถามเรื่องปิดงบ'),
+        ('confirm_closing_fix', 'รอยืนยันให้ลงมือแก้งานปิดงบ'),
         ('ask_vat_doc', 'รอใบแจ้งหนี้ที่จะแก้การปัดเศษ VAT'),
         ('ask_vat_mode', 'รอเลือกวิธีปัดเศษ VAT'),
         ('confirm_vat', 'รอยืนยันการแก้การปัดเศษ VAT'),
@@ -490,7 +494,10 @@ class NpdAiItSession(models.Model):
             self._post_bot(_block(
                 heading,
                 'พิมพ์ <b>เลขที่เอกสาร</b> ที่ตัดสต๊อกไม่ผ่าน<br/>'
-                + _hint('ใช้ได้ทั้งเลขใบสั่งขาย และเลขใบจัดส่ง'),
+                + _hint('ใช้ได้ทั้งเลขใบสั่งขาย ใบจัดส่ง และใบโยกสินค้า')
+                + '<br/>'
+                + _hint('ใบโยกสินค้าที่ยังไม่มีเลขที่ วาง URL ของหน้าใบมาได้ '
+                        'หรือพิมพ์ "โยก" แล้วผมจะแสดงรายการที่ค้างอยู่ให้เลือก'),
             ))
             return
         if topic.code == 'invoice_date_fix':
@@ -564,11 +571,16 @@ class NpdAiItSession(models.Model):
                           'ต้องแก้เท่าไหร่ และเมนูที่ต้องไปทำอยู่ตรงไหน'),
                 ),
                 _rows(
+                    _hint('ตอนนี้ตั้งไว้ที่ <b>ปี %s</b> — จะเปลี่ยนพิมพ์ "ปิดปี 2025" ได้เลย'
+                          % year),
+                ),
+                _rows(
                     _hint('ตัวอย่างคำถาม'),
                     _indent('• ปี %s ปิดงบได้หรือยัง ติดอะไรบ้าง' % year),
-                    _indent('• แต่ละปีปิดงบครบไหม'),
-                    _indent('• ขั้นตอนปิดงบมีอะไรบ้าง ต้องดูเมนูไหนก่อน'),
-                    _indent('• เมนูงบทดลองอยู่ตรงไหน'),
+                    _indent('• ต้องแก้อะไรบ้าง (ผมจะไล่เลขเอกสารให้)'),
+                    _indent('• ตั้งค่าให้หน่อย (แม่แบบใบปิด · Cut-off)'),
+                    _indent('• ถอย / ถอยข้อ 2 / ถอยทั้งหมด'),
+                    _indent('• ตรวจต่อ (หลังแก้ข้อมูลเสร็จ) · ยื่นงบ'),
                     _indent('• Hard Lock Date ต่างจาก Lock Date ยังไง'),
                 ),
                 _rows(
@@ -776,19 +788,35 @@ class NpdAiItSession(models.Model):
             self._step_confirm(text)
         elif self.state == 'ask_cut':
             self._step_ask_cut(text)
+        elif self.state == 'pick_transfer':
+            self._step_pick_transfer(text)
+        elif self.state == 'ask_transfer_qty':
+            self._step_ask_transfer_qty(text)
+        elif self.state == 'confirm_transfer':
+            self._step_confirm_transfer(text)
         else:
             self._recover_unknown_state()
 
     # ---- ขั้นที่ 1: รับเลขเอกสาร -------------------------------------
     def _step_ask_doc(self, text):
         Fix = self.env['npd.ai.it.stock.fix']
+        # วาง URL ของใบโยกมา ต้องดูก่อน ไม่งั้นตัวเลขใน URL อาจไปชนเอกสารอื่น
+        if 'stock.api.transfer' in (text or '') and self._try_start_transfer(text):
+            return
         doc_ref, document = self._parse_doc_number(text)
         if not document:
+            # ใบโยกสินค้า (stock.api.transfer) ต้องหาแยก เพราะใบที่ตัดไม่ผ่าน
+            # ยังไม่มีเลขที่ — เลขรันออกตอนกดยืนยันสำเร็จเท่านั้น
+            if self._try_start_transfer(text):
+                return
             self._post_bot(
-                'ไม่พบเอกสาร%s ในระบบ 🙏<br/>'
-                'กรุณาพิมพ์เฉพาะ <b>เลขที่เอกสาร</b> อีกครั้ง '
-                '(เลขใบสั่งขาย หรือเลขใบจัดส่ง)'
-                % (' "%s"' % html_escape(doc_ref) if doc_ref else '')
+                ('ไม่พบเอกสาร%s ในระบบ 🙏<br/>'
+                 'กรุณาพิมพ์เฉพาะ <b>เลขที่เอกสาร</b> อีกครั้ง '
+                 '(เลขใบสั่งขาย ใบจัดส่ง หรือใบโยกสินค้า)'
+                 % (' "%s"' % html_escape(doc_ref) if doc_ref else ''))
+                + '<br/>'
+                + _hint('ใบโยกสินค้าที่ยังไม่มีเลขที่ วาง URL ของหน้าใบมาได้ '
+                        'หรือพิมพ์ "โยก" เพื่อดูรายการที่ค้างอยู่')
             )
             return
 
@@ -880,6 +908,278 @@ class NpdAiItSession(models.Model):
             _rows('กรุณานับของจริงในคลัง แล้วแจ้ง <b>จำนวนสต็อกจริง</b> ของแต่ละรายการ',
                   example),
         ))
+
+    # ==================================================================
+    # ใบโยกสินค้า (stock.api.transfer)
+    # ==================================================================
+    def _transfer_label(self, transfer):
+        """ชื่อที่ใช้เรียกใบโยก — ใบที่ยังตัดไม่ผ่านมักยังไม่มีเลขที่"""
+        if transfer.name and transfer.name != 'New':
+            return transfer.name
+        return 'ใบโยกสินค้า #%d' % transfer.id
+
+    def _transfer_item_label(self, item):
+        code = (item.get('code') or '').strip()
+        name = item.get('name') or code
+        return '[%s] %s' % (code, name) if code else name
+
+    def _try_start_transfer(self, text):
+        """ตีความว่าพนักงานหมายถึงใบโยกสินค้าไหม — คืน True ถ้ารับเรื่องแล้ว"""
+        TFix = self.env['npd.ai.it.stock.transfer.fix']
+        if not TFix.available():
+            return False
+
+        transfer = TFix.find_transfer(text)
+        if transfer:
+            self._start_transfer(transfer)
+            return True
+
+        lowered = (text or '').strip().lower()
+        if any(word in lowered for word in ('โยก', 'transfer', 'ใบโยก')):
+            self._show_transfer_list()
+            return True
+        return False
+
+    def _show_transfer_list(self):
+        """แสดงใบโยกที่ยังตัดสต๊อกไม่สำเร็จ ให้เลือกตามลำดับ"""
+        TFix = self.env['npd.ai.it.stock.transfer.fix']
+        transfers = TFix.pending_transfers()
+        if not transfers:
+            self._post_bot(_block(
+                _title('ตอนนี้ไม่มีใบโยกสินค้าที่ค้างอยู่', '📦'),
+                _hint('ใบที่ยืนยันสำเร็จไปแล้วจะไม่อยู่ในรายการนี้ '
+                      'ถ้ามีเลขที่เอกสารอยู่แล้วพิมพ์เลขมาได้เลย'),
+            ))
+            return
+
+        rows = []
+        for index, transfer in enumerate(transfers, start=1):
+            rows.append(_rows(
+                '<b>%d.</b> %s' % (index, html_escape(self._transfer_label(transfer))),
+                _indent('%s <span class="text-muted">·</span> %d รายการ'
+                        % (transfer.transfer_date or '—', len(transfer.line_ids))),
+            ))
+
+        self._set_data({'transfer_ids': transfers.ids})
+        self.sudo().write({'state': 'pick_transfer'})
+        self._post_bot(_block(
+            _title('ใบโยกสินค้าที่ยังตัดสต๊อกไม่สำเร็จ', '📦'),
+            _rows(*rows),
+            'พิมพ์ <b>ลำดับ</b> ของใบที่ต้องการให้ผมช่วยดู',
+        ))
+
+    def _step_pick_transfer(self, text):
+        data = self._get_data()
+        ids = data.get('transfer_ids') or []
+        TFix = self.env['npd.ai.it.stock.transfer.fix']
+
+        picked = None
+        numbers = re.findall(r'\d+', text or '')
+        if numbers:
+            index = int(numbers[0])
+            if 1 <= index <= len(ids):
+                picked = self.env['stock.api.transfer'].sudo().browse(
+                    ids[index - 1]).exists()
+        if not picked:
+            picked = TFix.find_transfer(text)
+        if not picked:
+            self._post_bot('ยังไม่แน่ใจว่าหมายถึงใบไหน 🙏 '
+                           'พิมพ์ <b>ลำดับ</b> ของใบในรายการด้านบน')
+            return
+        self._start_transfer(picked)
+
+    def _start_transfer(self, transfer):
+        """อ่านสต๊อกที่คลังต้นทางแล้วบอกว่าขาดอะไรเท่าไร"""
+        TFix = self.env['npd.ai.it.stock.transfer.fix']
+        all_items, shortage, error = TFix.analyze(transfer)
+
+        header = _title(html_escape(self._transfer_label(transfer)), '📦')
+
+        if error:
+            self._post_bot(_block(
+                header, _title('ตรวจสต๊อกต้นทางไม่ได้', '⛔'), html_escape(error),
+            ))
+            self.sudo().write({'state': 'cancelled'})
+            return
+
+        self.sudo().write({
+            'document_ref': self._transfer_label(transfer),
+            'document_model': transfer._name,
+            'document_id': transfer.id,
+        })
+
+        if not all_items:
+            self._post_bot(_block(header, 'ใบนี้ยังไม่มีรายการสินค้าที่ต้องตัด'))
+            self.sudo().write({'state': 'done'})
+            return
+
+        if not shortage:
+            self._post_bot(_block(
+                header,
+                _rows(
+                    _title('สต๊อกที่ต้นทางพอตัดครบทุกรายการ', '✅'),
+                    'กลับไปที่ใบโยกแล้วกดปุ่ม "ยืนยันการโอน" ได้เลย',
+                ),
+                _hint('ถ้ายังยืนยันไม่ผ่าน แสดงว่าติดสาเหตุอื่น '
+                      'กรุณาแจ้งฝ่าย IT พร้อมข้อความ error ที่ขึ้นบนหน้าจอ'),
+            ))
+            self.sudo().write({'state': 'done'})
+            return
+
+        self._set_data({'transfer_id': transfer.id, 'items': shortage})
+        self.sudo().write({'state': 'ask_transfer_qty'})
+
+        item_rows = []
+        for index, item in enumerate(shortage, start=1):
+            item_rows.append(_rows(
+                '<b>%d.</b> %s' % (index,
+                                   html_escape(self._transfer_item_label(item))),
+                _indent(
+                    '<span class="text-muted">คลังต้นทาง</span> %s'
+                    ' <span class="text-muted">· ต้องตัด</span> %s'
+                    ' <span class="text-muted">· มีอยู่</span> %s'
+                    ' <span class="text-muted">· ขาด</span> <b class="text-danger">%s</b>'
+                    % (html_escape(item.get('location_name')
+                                   or 'id=%s' % item['location_id']),
+                       _fmt(item['need']), _fmt(item['current']),
+                       _fmt(item['missing']))
+                ),
+            ))
+
+        if len(shortage) == 1:
+            example = _hint('ตอบเป็นตัวเลขได้เลย เช่น %s' % _fmt(shortage[0]['need']))
+        else:
+            example = _hint('ตอบเช่น %s' % ', '.join(
+                '%d=%s' % (i + 1, _fmt(it['need'])) for i, it in enumerate(shortage)))
+
+        self._post_bot(_block(
+            header,
+            _title('สต๊อกที่ต้นทางไม่พอตัด %d รายการ' % len(shortage), '⚠️'),
+            _rows(*item_rows),
+            _rows('กรุณานับของจริงที่คลังต้นทาง แล้วแจ้ง '
+                  '<b>จำนวนสต็อกจริง</b> ของแต่ละรายการ', example),
+        ))
+
+    def _step_ask_transfer_qty(self, text):
+        data = self._get_data()
+        items = data.get('items') or []
+        if not items:
+            self._post_bot('ข้อมูลรายการหายไป กรุณาเริ่มใหม่จากแท็บ "ตัวช่วย AI-IT"')
+            self.sudo().write({'state': 'cancelled'})
+            return
+
+        quantities = self._parse_quantities(text, items)
+        missing_index = [i + 1 for i in range(len(items)) if (i + 1) not in quantities]
+        if missing_index:
+            self._post_bot(_block(
+                'ยังไม่ได้รับจำนวนสต็อกจริงของรายการนี้ 🙏',
+                _rows(*['<b>%d.</b> %s %s'
+                        % (i, html_escape(self._transfer_item_label(items[i - 1])),
+                           _hint('(ต้องตัด %s)' % _fmt(items[i - 1]['need'])))
+                        for i in missing_index]),
+                _hint('ตอบเช่น %s' % ', '.join('%d=จำนวน' % i for i in missing_index)),
+            ))
+            return
+
+        for index, item in enumerate(items, start=1):
+            item['target'] = quantities[index]
+        self._set_data({'transfer_id': data.get('transfer_id'), 'items': items})
+        self.sudo().write({'state': 'confirm_transfer'})
+
+        item_rows, warnings = [], []
+        for index, item in enumerate(items, start=1):
+            add = max(item['target'] - item['current'], 0.0)
+            item_rows.append(_rows(
+                '<b>%d.</b> %s' % (index,
+                                   html_escape(self._transfer_item_label(item))),
+                _indent('%s → <b>%s</b> <span class="text-success">(เติม +%s)</span>'
+                        % (_fmt(item['current']), _fmt(item['target']), _fmt(add))),
+            ))
+            if item['target'] < item['need']:
+                warnings.append(
+                    '%s <span class="text-muted">·</span> แจ้ง %s แต่ต้องตัด %s'
+                    % (html_escape(self._transfer_item_label(item)),
+                       _fmt(item['target']), _fmt(item['need']))
+                )
+
+        warning_block = None
+        if warnings:
+            warning_block = _rows(
+                '<b class="text-danger">⚠️ รายการที่แจ้งมาน้อยกว่าที่ต้องตัด</b>',
+                _bullets(warnings),
+                _hint('ระบบจะเติมให้เท่าที่แจ้ง แต่จะยังตัดไม่ครบ'),
+            )
+
+        self._post_bot(_block(
+            _title('ตรวจทานก่อนเติมสต๊อก', '📋'),
+            _rows(*item_rows),
+            warning_block,
+            _hint('เติมได้อย่างเดียว ไม่มีการลดสต๊อก'),
+            'พิมพ์ <b>"ยืนยัน"</b> เพื่อให้ระบบเติมสต๊อก '
+            'หรือ <b>"ยกเลิก"</b> เพื่อออกจากรายการนี้',
+        ))
+
+    def _step_confirm_transfer(self, text):
+        if not _is_command(text, CONFIRM_WORDS):
+            self._post_bot('กรุณาพิมพ์ <b>"ยืนยัน"</b> เพื่อดำเนินการ, '
+                           '<b>"ยกเลิก"</b> เพื่อยกเลิกรายการนี้ '
+                           'หรือ <b>"เริ่มใหม่"</b> เพื่อกลับไปเลือกหัวข้อ')
+            return
+
+        data = self._get_data()
+        items = data.get('items') or []
+        transfer = self.env['stock.api.transfer'].sudo().browse(
+            data.get('transfer_id') or 0).exists()
+        if not items or not transfer:
+            self._post_bot('ข้อมูลรายการหายไป กรุณาเริ่มใหม่จากแท็บ "ตัวช่วย AI-IT"')
+            self.sudo().write({'state': 'cancelled'})
+            return
+
+        TFix = self.env['npd.ai.it.stock.transfer.fix']
+        applied, error = TFix.apply_topup(transfer, items)
+        if error:
+            self._post_bot(_block(
+                _title('เติมสต๊อกไม่สำเร็จ', '⛔'), html_escape(error),
+                _hint('ยังไม่มีอะไรถูกแก้ กรุณาแจ้งฝ่าย IT พร้อมข้อความนี้'),
+            ))
+            self.sudo().write({'state': 'cancelled'})
+            return
+
+        item_rows = []
+        for index, row in enumerate(applied, start=1):
+            if row['added'] > 0:
+                detail = ('%s → <b>%s</b> <span class="text-success">(+%s)</span>'
+                          % (_fmt(row['before']), _fmt(row['after']),
+                             _fmt(row['added'])))
+            else:
+                detail = '%s %s' % (_fmt(row['after']),
+                                    _hint('(พออยู่แล้ว ไม่ต้องเติม)'))
+            item_rows.append(_rows(
+                '<b>%d.</b> %s' % (index,
+                                   html_escape(self._transfer_item_label(row))),
+                _indent(detail),
+            ))
+
+        lines = [_block(
+            _title('เติมสต๊อกเรียบร้อยแล้ว', '✅'),
+            _rows(*item_rows),
+            _rows('กลับไปที่ใบโยก <b>%s</b> แล้วกดปุ่ม "ยืนยันการโอน" อีกครั้งได้เลย'
+                  % html_escape(self._transfer_label(transfer)),
+                  _hint('มีใบอื่นอีกไหม? พิมพ์ "เริ่มใหม่" ได้เลย')),
+        )]
+        summary = html2plaintext('<br/>'.join(lines))
+        self.sudo().write({'state': 'done', 'summary': summary})
+        self._log_history('stock_transfer_topup', html2plaintext(
+            '<br/>'.join('%s @ %s : %s → %s (+%s)'
+                         % (self._transfer_item_label(row),
+                            row['location_name'] or row['location_id'],
+                            _fmt(row['before']), _fmt(row['after']),
+                            _fmt(row['added']))
+                         for row in applied)
+        ))
+        self._post_bot('<br/>'.join(lines))
+        _logger.info('ตัวช่วย AI-IT: %s เติมสต๊อกให้ใบโยก %s (%d รายการ)',
+                     self.user_id.display_name, self.document_ref, len(applied))
 
     # ---- คลังของสาขาที่ตัวช่วยสร้าง/ผูกให้เอง ------------------------
     def _location_fail_reason(self, info):
@@ -2384,6 +2684,173 @@ class NpdAiItSession(models.Model):
         data = self._get_data()
         history = data.get('closing_history') or []
 
+        # ปีที่กำลังปิด ติดอยู่กับบทสนทนาจนกว่าพนักงานจะสั่งเปลี่ยน
+        asked = Closing.parse_years(question)
+        previous_year = data.get('closing_year')
+        if asked:
+            data['closing_year'] = asked[0]
+            self._set_data(data)
+        year = data.get('closing_year') or Closing.default_year()
+        changed_year = bool(asked) and previous_year and asked[0] != previous_year
+
+        # ---- ถามว่าปิดปีไหนได้บ้าง ----
+        if any(w in question for w in (u'ปีไหนได้บ้าง', u'มีปีอะไรบ้าง', u'เลือกปี',
+                                       u'ปิดปีไหนได้')):
+            years = Closing.available_years()
+            self._post_bot(_block(
+                _rows(_title(u'ปีที่มีข้อมูลให้ปิดงบ', '📆'),
+                      *[_indent(u'• ปี %s (พ.ศ. %s)' % (y, y + 543)) for y in years[:8]]),
+                _rows(_hint(u'ตอนนี้กำลังดูปี %s' % year),
+                      _hint(u'จะเปลี่ยนปีพิมพ์ว่า "ปิดปี 2025" ได้เลย')),
+            ))
+            return
+        if changed_year:
+            self._post_bot(_block(
+                _rows(_title(u'เปลี่ยนมาทำปี %s แล้ว' % year, '📆'),
+                      _hint(u'คำสั่งต่อจากนี้ (ตรวจ / ตั้งค่าให้ / ถอย / ตรวจต่อ) '
+                            u'จะยึดปี %s จนกว่าจะสั่งเปลี่ยนอีกครั้ง' % year)),
+            ), commands=False)
+
+        # ---- รอยืนยันให้ลงมือแก้ ----
+        if self.state == 'confirm_closing_fix':
+            pending = data.get('closing_fix') or {}
+            if not _is_command(text, CONFIRM_WORDS):
+                # บัญชีพิมพ์เงื่อนไขใหม่มาแทนการยืนยัน -> เสนอใหม่ตามที่สั่ง
+                options = Closing.detect_options(question)
+                if options:
+                    pending['options'] = dict(pending.get('options') or {}, **options)
+                    title, rows, error = Closing.fix_preview(
+                        pending.get('key'), pending.get('year') or year,
+                        options=pending['options'])
+                    if error:
+                        self.sudo().write({'state': 'ask_closing'})
+                        self._post_bot(_block(_rows(_title(u'ปรับตามที่บัญชีสั่งแล้ว', '📝'),
+                                                    html_escape(error))))
+                        return
+                    data['closing_fix'] = pending
+                    self._set_data(data)
+                    self._post_bot(_block(
+                        _rows(_title(u'ปรับตามที่ฝ่ายบัญชีสั่งแล้ว — %s' % title, '📝')),
+                        _rows(*rows),
+                        _hint(u'พิมพ์ "ยืนยัน" เพื่อให้ผมลงมือ'),
+                    ), commands=False)
+                    return
+                self.sudo().write({'state': 'ask_closing'})
+                self._post_bot(u'ยังไม่ได้ลงมือแก้อะไรครับ ถามต่อได้เลย')
+                return
+            batch, done, failed, error = Closing.fix_apply(
+                pending.get('key'), pending.get('year') or year, session=self,
+                options=pending.get('options'))
+            self.sudo().write({'state': 'ask_closing'})
+            data.pop('closing_fix', None)
+            self._set_data(data)
+            if error:
+                self._post_bot(_block(_rows(_title(u'ไม่ได้แก้อะไร', 'ℹ️'), html_escape(error))))
+                return
+            body = []
+            if done:
+                body.append(_rows(_title(u'แก้ให้แล้ว %s เรื่อง' % len(done), '✅'),
+                                  *[_indent(u'• %s' % html_escape(d)) for d in done]))
+            if failed:
+                body.append(_rows(_title(u'ทำให้ไม่ได้ %s เรื่อง' % len(failed), '⚠️'),
+                                  *[_indent(u'• %s' % html_escape(d)) for d in failed]))
+            if done:
+                body.append(_rows(_hint(u'ถ้าไม่ถูกใจ พิมพ์ "ถอย" เพื่อดูรายการที่ถอยได้ '
+                                        u'ถอยทีละข้อหรือถอยทั้งหมดก็ได้')))
+            body += [_rows(b) for b in Closing.verify_blocks(pending.get('year') or year)]
+            self._post_bot(_block(*body), commands=False)
+            self._log_history('closing_fix', html2plaintext(u'; '.join(done))[:400])
+            return
+
+        # ---- สั่งถอย ----
+        mode, key = Closing.detect_fix(question)
+        if mode == 'undo':
+            match = re.search(u'ข้อ\\s*(\\d+)', question)
+            if key == 'all' or match:
+                count, problems = Closing.undo_apply(int(match.group(1)) if match else None)
+                body = [_rows(_title(u'ถอยกลับแล้ว %s รายการ' % count, '↩️'))]
+                if problems:
+                    body.append(_rows(_hint(u'ถอยไม่ได้: %s'
+                                            % html_escape(u' · '.join(problems[:3])))))
+                body += [_rows(b) for b in Closing.undo_blocks()]
+                self._post_bot(_block(*body), commands=False)
+                self._log_history('closing_fix', u'ถอยกลับ %s รายการ' % count)
+                return
+            self._post_bot(_block(*[_rows(b) for b in Closing.undo_blocks()]), commands=False)
+            return
+
+        # ---- สั่งให้ลงมือแก้ ----
+        if mode == 'fix':
+            options = Closing.detect_options(question)
+            asked = Closing.parse_years(question)
+            fix_year = asked[0] if asked else year
+            title, rows, error = Closing.fix_preview(key, fix_year, options=options)
+            if error:
+                body = [_rows(_title(u'ยังไม่ต้องแก้', 'ℹ️'), html_escape(error))]
+                body += [_rows(b) for b in rows]
+                self._post_bot(_block(*body))
+                return
+            data['closing_fix'] = {'key': key, 'year': fix_year, 'options': options}
+            self._set_data(data)
+            self.sudo().write({'state': 'confirm_closing_fix'})
+            self._post_bot(_block(
+                _rows(_title(title, '🛠️')),
+                _rows(*rows),
+                _rows(_hint(u'พิมพ์ "ยืนยัน" เพื่อให้ผมลงมือ · ทุกอย่างที่ผมทำถอยกลับได้')),
+            ), commands=False)
+            return
+
+        # ---- ฝ่ายบัญชีแจ้งการตัดสินใจเรื่องค่าเสื่อม ----
+        decided = Closing.detect_options(question).get('depreciation')
+        if decided:
+            Closing.set_decision('depreciation_control', decided)
+            self._post_bot(_block(
+                _rows(_title(u'รับทราบครับ บันทึกไว้แล้ว', '📝'),
+                      u'ค่าเสื่อมราคา: คุมใน <b>%s</b>'
+                      % (u'Excel (นอกระบบ)' if decided == 'excel' else u'Odoo')),
+                _hint(u'ผมจะ%sนับเรื่องค่าเสื่อมเป็นตัวบล็อกการปิดงบ'
+                      % (u'ไม่' if decided == 'excel' else u'')),
+            ))
+            return
+
+        # ---- ขอชุดข้อมูลสำหรับยื่นงบ ----
+        if any(w in question for w in (u'ยื่นงบ', u'ยื่นปิดงบ', u'สบช', u'ส.บช.3',
+                                       u'dbd', u'ภ.ง.ด.50', u'ภงด 50', u'ภงด50',
+                                       u'e-filing', u'efiling')):
+            blocks, ready = Closing.filing_blocks(year)
+            filename, content, rows = Closing.build_filing_excel(year)
+            attachments = []
+            body = [_rows(b) for b in blocks]
+            if content:
+                attachments.append((filename, content))
+                body.append(_rows(_title(u'แนบไฟล์ให้แล้ว (%s บรรทัดบัญชี)' % rows, '📎'),
+                                  _hint(u'ในไฟล์มี 4 ชีต: ข้อมูลสำหรับยื่น · '
+                                        u'งบแสดงฐานะการเงิน · งบกำไรขาดทุน · งบทดลอง')))
+            else:
+                body.append(_hint(u'สร้างไฟล์ไม่สำเร็จ (ไม่มีไลบรารี xlsxwriter) แจ้งฝ่าย IT'))
+            self._post_bot(_block(*body), commands=False, attachments=attachments)
+            self._log_history('closing_help', u'ออกชุดข้อมูลยื่นงบ ปี %s' % year)
+            return
+
+        # ---- แก้ข้อมูลเสร็จแล้ว ให้ตรวจต่อจากของเดิม ----
+        if u'ตรวจต่อ' in question:
+            before = (data.get('closing_snapshot') or {}).get(str(year))
+            blocks, after = Closing.progress_blocks(year, before)
+            data.setdefault('closing_snapshot', {})[str(year)] = after
+            self._set_data(data)
+            self._post_bot(_block(*[_rows(b) for b in blocks]), commands=False)
+            return
+
+        # ---- ขอรายการงานที่ต้องให้คนแก้เอง ----
+        if any(w in question for w in (u'ต้องแก้อะไรบ้าง', u'งานที่ต้องทำ', u'ให้พนักงานแก้',
+                                       u'รายการที่ต้องแก้', u'worklist')):
+            blocks = Closing.worklist_blocks(year)
+            self._post_bot(_block(*[_rows(b) for b in blocks]), commands=False)
+            # เก็บสภาพไว้เทียบตอนพนักงานกลับมาพิมพ์ "ตรวจต่อ"
+            data.setdefault('closing_snapshot', {})[str(year)] = Closing.snapshot(year)
+            self._set_data(data)
+            return
+
         # "ขอเป็นไฟล์ Excel" เฉย ๆ -> ใช้ปีของคำถามล่าสุด ไม่ต้องถามซ้ำ
         want_excel = Closing.wants_excel(question)
         years_override = None
@@ -2392,8 +2859,21 @@ class NpdAiItSession(models.Model):
             if not asked:
                 years_override = (history[-1] or {}).get('years')
 
+        # ปีที่พนักงานเลือกไว้ต้องมีผลกับทุกคำสั่ง ไม่ใช่เฉพาะตอนพิมพ์ปีมาด้วย
+        # (ถามเทียบหลายปีในประโยคเดียว ยังใช้ปีที่ระบุในประโยคนั้นตามเดิม)
+        use_years = years_override or (asked if len(asked) > 1 else [year])
+
+        # "ขอเป็นไฟล์ Excel" เฉย ๆ -> ใช้ปีของคำถามล่าสุด ไม่ต้องถามซ้ำ
+        want_excel = Closing.wants_excel(question)
+        years_override = None
+        if want_excel and history:
+            asked = Closing.parse_years(question)
+            if not asked:
+                years_override = (history[-1] or {}).get('years')
+
+        use_years = years_override or (asked if len(asked) > 1 else [year])
         blocks, meta, error = Closing.answer(question, history=history[-2:],
-                                             years=years_override)
+                                             years=use_years)
         if error:
             self._post_bot(_block(
                 _rows(_title('ยังตอบคำถามนี้ไม่ได้', '🤔'), html_escape(error)),

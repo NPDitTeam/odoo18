@@ -7,3 +7,5 @@ access_npd_ai_it_session_line_user,npd.ai.it.session.line user,model_npd_ai_it_s
 access_npd_ai_it_session_line_manager,npd.ai.it.session.line manager,model_npd_ai_it_session_line,group_ai_it_manager,1,1,1,1
 access_npd_ai_it_history_user,npd.ai.it.history user,model_npd_ai_it_history,base.group_user,1,0,0,0
 access_npd_ai_it_history_manager,npd.ai.it.history manager,model_npd_ai_it_history,group_ai_it_manager,1,1,1,1
+access_npd_ai_it_closing_fix_user,npd.ai.it.closing.fix user,model_npd_ai_it_closing_fix,base.group_user,1,0,0,0
+access_npd_ai_it_closing_fix_manager,npd.ai.it.closing.fix manager,model_npd_ai_it_closing_fix,group_ai_it_manager,1,1,1,1

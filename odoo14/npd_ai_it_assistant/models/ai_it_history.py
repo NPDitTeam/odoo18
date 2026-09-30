@@ -9,6 +9,7 @@ from odoo import api, fields, models
 
 ACTION_TYPES = [
     ('stock_topup', u'เติมสต๊อกให้พอตัด'),
+    ('stock_transfer_topup', u'เติมสต๊อกให้ใบโยกสินค้า'),
     ('stock_location', u'สร้าง/ผูกคลังของสาขา'),
     ('stock_cut', u'ตัดสต๊อกให้'),
     ('invoice_date', u'แก้วันที่ใบแจ้งหนี้'),
@@ -19,6 +20,7 @@ ACTION_TYPES = [
     # หัวข้อตรวจสอบค่าใช้จ่ายไม่ได้แก้เอกสาร แต่เก็บไว้ดูว่าบัญชีถามอะไรบ่อย
     ('expense_check', u'ตรวจสอบค่าใช้จ่าย (ค้นข้อมูล)'),
     ('closing_help', u'ช่วยปิดงบ (ค้นข้อมูล)'),
+    ('closing_fix', u'ช่วยปิดงบ (ลงมือแก้/ถอยกลับ)'),
 ]
 
 
