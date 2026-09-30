@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="utm_campaign_view_form_free_shipping" model="ir.ui.view">
+        <field name="name">utm.campaign.form.free.shipping</field>
+        <field name="model">utm.campaign</field>
+        <field name="inherit_id" ref="utm.utm_campaign_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//group[@id='top-group']" position="after">
+                <group string="โปรส่งฟรี">
+                    <field name="npd_free_shipping"/>
+                    <field name="npd_free_shipping_max_km"
+                           invisible="not npd_free_shipping"
+                           required="npd_free_shipping"/>
+                    <div colspan="2" invisible="not npd_free_shipping">
+                        <span class="text-muted">
+                            ใบสั่งขายที่เลือกแคมเปญนี้ ถ้าระยะทางไม่เกินตัวเลขข้างบน
+                            ค่าขนส่งหลังปัดเศษจะถูกตั้งเป็น 0 ให้อัตโนมัติ
+                            ถ้าเกินจะคิดค่าขนส่งตามปกติ
+                        </span>
+                    </div>
+                </group>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="utm_campaign_view_tree_free_shipping" model="ir.ui.view">
+        <field name="name">utm.campaign.tree.free.shipping</field>
+        <field name="model">utm.campaign</field>
+        <field name="inherit_id" ref="utm.utm_campaign_view_tree"/>
+        <field name="arch" type="xml">
+            <field name="name" position="after">
+                <field name="npd_free_shipping"/>
+                <field name="npd_free_shipping_max_km" optional="show"/>
+            </field>
+        </field>
+    </record>
+</odoo>
