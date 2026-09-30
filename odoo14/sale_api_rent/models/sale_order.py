@@ -124,6 +124,12 @@ class SaleOrder(models.Model):
             # ต้องติดมาด้วย ไม่งั้นใบนี้จะถูกขอให้อนุมัติค่าขนส่งพิเศษซ้ำ
             "npd_free_shipping_zero_set": getattr(
                 source_order, "npd_free_shipping_zero_set", False),
+            # แท็บการตลาด — อยู่ฐานเดียวกัน ใช้ id ของต้นทางได้ตรง ๆ
+            # ต้องติดมาด้วย ไม่งั้นใบฝั่งโลจิสติกส์จะไม่รู้ว่างานนี้มาจากโปรไหน
+            # และดูรายงานแยกตามแคมเปญไม่ได้
+            "campaign_id": source_order.campaign_id.id,
+            "medium_id": source_order.medium_id.id,
+            "source_id": source_order.source_id.id,
         })
 
         # คัดลอก "เลขที่สัญญาเช่า" จากต้นทางมาด้วย (เฉพาะบริษัท เอ็นพีดี โลจิสติกส์)
