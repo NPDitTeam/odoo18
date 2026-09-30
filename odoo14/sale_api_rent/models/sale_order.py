@@ -120,6 +120,10 @@ class SaleOrder(models.Model):
             "profit_per_trip_p": source_order.profit_per_trip_p,
             "profit_per_trip": source_order.profit_per_trip,
             "use_special_delivery_zero": source_order.use_special_delivery_zero,
+            # ค่าขนส่งเป็น 0 เพราะโปรของบริษัท ไม่ใช่คนกดเอง
+            # ต้องติดมาด้วย ไม่งั้นใบนี้จะถูกขอให้อนุมัติค่าขนส่งพิเศษซ้ำ
+            "npd_free_shipping_zero_set": getattr(
+                source_order, "npd_free_shipping_zero_set", False),
         })
 
         # คัดลอก "เลขที่สัญญาเช่า" จากต้นทางมาด้วย (เฉพาะบริษัท เอ็นพีดี โลจิสติกส์)
