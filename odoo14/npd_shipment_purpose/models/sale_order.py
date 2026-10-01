@@ -183,12 +183,22 @@ class SaleOrder(models.Model):
         if self.order_line:
             self.order_line.unlink()
         for line in lines:
-            self.env['sale.order.line'].create({
+            qty = line.request_qty or 0.0
+            # น้ำหนักต่อหน่วยมาจากข้อมูลสินค้า ใบโยกไม่มีช่องน้ำหนัก
+            unit_weight = line.product_id.weight or 0.0
+            values = {
                 'order_id': self.id,
                 'product_id': line.product_id.id,
                 'name': line.product_id.display_name,
-                'product_uom_qty': line.request_qty or 0.0,
-            })
+                'product_uom_qty': qty,
+                'pfb_quantity': int(qty),
+            }
+            if unit_weight:
+                # ตัวคำนวณน้ำหนักรวมข้ามใบที่อ้างอิงเอกสารจากบริษัทอื่น
+                # จึงต้องใส่ค่าตรง ๆ ไม่งั้นน้ำหนักจะเป็นศูนย์
+                values['second_uom_qty'] = unit_weight
+                values['total_weight'] = qty * unit_weight
+            self.env['sale.order.line'].create(values)
         self.so_number = transfer.name
         _logger.info('📦 ดึงใบโยก %s (%s) ได้ %s รายการ',
                      transfer.name, transfer.source_company_id.name, len(lines))
