@@ -1,6 +1,6 @@
 {
     "name": "Account Advance",
-    "version": "18.0.1.0.0",
+    "version": "18.0.1.1.0",
     "summary": "Employee Advance Payment Management",
     "description": "Manage employee advance requests, payments, and clearing",
     "category": "Accounting",
