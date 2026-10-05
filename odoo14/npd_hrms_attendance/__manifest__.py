@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'NPD HRMS - Attendance & Leave',
-    'version': '18.0.1.0.0',
+    'version': '18.0.1.0.1',
     'summary': 'ลงเวลาเข้า-ออก การลา และการขอเพิ่มเวลา (แทนฐานข้อมูล MySQL/PHP เดิม)',
     'description': """
 NPD HRMS - Attendance & Leave

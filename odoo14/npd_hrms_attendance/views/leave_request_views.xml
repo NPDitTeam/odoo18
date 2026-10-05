@@ -94,6 +94,7 @@
                         <group string="การอนุมัติ">
                             <field name="approved_by"/>
                             <field name="approved_at"/>
+                            <field name="requested_at"/>
                             <field name="reason"/>
                             <field name="deducted_days"/>
                             <field name="deducted_type_id"/>

@@ -1209,6 +1209,17 @@ class HrmsSyncEngine(models.AbstractModel):
                 values['leave_type_name'] = name
             if leave_type.code == 'leave_saturday':
                 values = self._fix_saturday_leave(row, values, warnings)
+
+        # วันยื่นจริง: created_at คือเวลาที่ MySQL รับใบลา (เวลาไทย)
+        # ใบที่ HR คีย์ใน o14 เองไม่มี created_at ใช้ date_requested แทน
+        requested = self._thai_text_to_utc(row.get('created_at'))
+        if not requested and row.get('date_requested'):
+            requested = self._thai_text_to_utc('%s 00:00:00' % row['date_requested'])
+        if requested and 'requested_at' in local:
+            values['requested_at'] = requested
+        approved = self._thai_text_to_utc(row.get('approved_at'))
+        if approved and 'approved_at' in local:
+            values['approved_at'] = approved
         return values
 
     @staticmethod

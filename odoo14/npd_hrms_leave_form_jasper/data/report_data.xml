@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- report_name ต้องไม่ซ้ำทั้งฐาน (jasper_reports หาไฟล์ jrxml จากชื่อนี้) และห้ามมี "/" -->
+    <record id="jasper_leave_form_report" model="ir.actions.report">
+        <field name="name">ใบลา (NPD-HR.03)</field>
+        <field name="model">hr.attendance.branch.leave</field>
+        <field name="report_type">jasper</field>
+        <field name="file">npd_hrms_leave_form_jasper/report/leave_form.jrxml</field>
+        <field name="attachment_use">False</field>
+        <field name="report_name">ใบลา NPD-HR.03</field>
+        <field name="jasper_report">True</field>
+        <field name="jasper_output">pdf</field>
+        <field name="model_id" ref="npd_hrms_attendance.model_hr_attendance_branch_leave"/>
+        <field name="binding_model_id" ref="npd_hrms_attendance.model_hr_attendance_branch_leave"/>
+        <field name="binding_type">report</field>
+        <field name="print_report_name">'ใบลา_%s' % (object.id)</field>
+    </record>
+    <record id="jasper_leave_form_file" model="ir.actions.report.xml.file">
+        <field name="default">True</field>
+        <field name="filename">leave_form.jrxml</field>
+        <field name="report_id" ref="npd_hrms_leave_form_jasper.jasper_leave_form_report"/>
+        <field name="file" type="base64" file="npd_hrms_leave_form_jasper/report/leave_form.jrxml"/>
+    </record>
+</odoo>

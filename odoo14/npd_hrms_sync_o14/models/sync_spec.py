@@ -328,6 +328,10 @@ SYNC_SPECS = [
         'o14_model': 'hr.attendance.branch.leave',
         'key': ['employee_id', 'leave_start_date', 'leave_type_id'],
         'create': True,
+        # ฝั่ง 14 เก็บวันยื่น/วันอนุมัติเป็นข้อความเวลาไทย ฝั่ง 18 เป็นวันเวลา
+        # ชนิดไม่ตรงกันตัวจับคู่จึงข้ามเงียบ ๆ ต้องขอมาเองแล้วแปลงใน _tf_leave
+        # (ใบลา NPD/HR.03 พิมพ์ทั้งสองวัน)
+        'read_extra': ['created_at', 'approved_at', 'date_requested'],
         'transform': '_tf_leave',
         'date_field': 'leave_start_date',
     },

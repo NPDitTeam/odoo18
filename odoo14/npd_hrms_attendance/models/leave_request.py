@@ -82,6 +82,10 @@ class HrAttendanceBranchLeave(models.Model):
     approved_by = fields.Many2one(
         'employee.salary', string='ผู้อนุมัติ', readonly=True)
     approved_at = fields.Datetime(string='วันที่อนุมัติ', readonly=True)
+    # วันที่พนักงานยื่นใบลาจริง — แยกจาก create_date เพราะใบที่ยกมาจาก o14
+    # มี create_date เป็นวันที่ซิงก์ ไม่ใช่วันที่ยื่น (ใบลา NPD/HR.03 พิมพ์วันนี้)
+    requested_at = fields.Datetime(
+        string='วันที่ยื่นใบลา', default=fields.Datetime.now, copy=False, readonly=True)
 
     attachment = fields.Binary(string='ไฟล์แนบ', attachment=True)
     filename = fields.Char(string='ชื่อไฟล์')
@@ -335,7 +339,8 @@ class HrAttendanceBranchLeave(models.Model):
             'approver_firstname': approver.firstname if approver else '',
             'approver_lastname': approver.lastname if approver else '',
             'approved_at': self.approved_at.strftime('%Y-%m-%d %H:%M:%S') if self.approved_at else '',
-            'created_at': self.create_date.strftime('%Y-%m-%d %H:%M:%S') if self.create_date else '',
+            'created_at': (self.requested_at or self.create_date).strftime('%Y-%m-%d %H:%M:%S')
+                          if (self.requested_at or self.create_date) else '',
             'department': self.department_id.name or '',
             'position': self.position_id.name or '',
             'branch': self.branch_id.name or '',
