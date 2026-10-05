@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_npd_payroll_account_reverse_wizard_form" model="ir.ui.view">
+        <field name="name">npd.payroll.account.reverse.wizard.form</field>
+        <field name="model">npd.payroll.account.reverse.wizard</field>
+        <field name="arch" type="xml">
+            <form string="กลับรายการบัญชีเงินเดือน">
+                <div class="text-muted mb-2">
+                    ระบบสร้างรายการกลับและจับคู่กับรายการเดิม จากนั้นลงบัญชีรอบนี้ใหม่ได้
+                    ถ้าเงินเดือนค้างจ่ายถูกจับคู่กับการจ่ายเงินแล้ว ต้องยกเลิกการจับคู่ก่อน
+                </div>
+                <group>
+                    <field name="link_id" readonly="1" options="{'no_open': True}"/>
+                    <field name="date"/>
+                    <field name="reason"/>
+                </group>
+                <footer>
+                    <button name="action_reverse" type="object" string="กลับรายการ"
+                            class="btn-danger"
+                            confirm="กลับรายการบัญชีเงินเดือนนี้ ยืนยันหรือไม่?"/>
+                    <button special="cancel" string="ยกเลิก"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+</odoo>

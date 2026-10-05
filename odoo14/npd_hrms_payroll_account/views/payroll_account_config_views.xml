@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_npd_payroll_account_config_list" model="ir.ui.view">
+        <field name="name">npd.payroll.account.config.list</field>
+        <field name="model">npd.payroll.account.config</field>
+        <field name="arch" type="xml">
+            <list string="ผังบัญชีเงินเดือน">
+                <header>
+                    <button name="action_create_missing_configs" type="object"
+                            string="สร้างการตั้งค่าให้ทุกบริษัทที่ยังไม่มี" display="always"/>
+                </header>
+                <field name="company_id"/>
+                <field name="journal_id"/>
+                <field name="payable_account_id"/>
+                <field name="employer_sso_enabled"/>
+                <field name="date_policy"/>
+                <field name="map_missing_count"
+                       decoration-warning="map_missing_count &gt; 0"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_npd_payroll_account_config_form" model="ir.ui.view">
+        <field name="name">npd.payroll.account.config.form</field>
+        <field name="model">npd.payroll.account.config</field>
+        <field name="arch" type="xml">
+            <form string="ตั้งค่าลงบัญชีเงินเดือน">
+                <header>
+                    <button name="action_generate_defaults" type="object"
+                            string="สร้างค่าเริ่มต้นจากผังบัญชี" class="btn-primary"
+                            confirm="เติมเฉพาะช่องที่ยังว่าง ไม่ทับบัญชีที่ตั้งไว้แล้ว ยืนยันหรือไม่?"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <label for="company_id"/>
+                        <h1>
+                            <field name="company_id" readonly="id"
+                                   options="{'no_create': True, 'no_open': True}"/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group string="การลงบัญชี" name="posting">
+                            <field name="journal_id" options="{'no_create': True}"/>
+                            <field name="payable_account_id" options="{'no_create': True}"/>
+                            <field name="date_policy"/>
+                        </group>
+                        <group string="ประกันสังคมส่วนนายจ้าง" name="employer_sso">
+                            <field name="employer_sso_enabled"/>
+                            <field name="employer_sso_expense_account_id"
+                                   invisible="not employer_sso_enabled"
+                                   required="employer_sso_enabled"
+                                   options="{'no_create': True}"/>
+                            <field name="employer_sso_payable_account_id"
+                                   invisible="not employer_sso_enabled"
+                                   required="employer_sso_enabled"
+                                   options="{'no_create': True}"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="ผังบัญชีเงินเดือน" name="mapping">
+                            <div class="text-muted mb-2">
+                                ชื่อรายการต้องตรงกับชื่อบรรทัดในสลิปทุกตัวอักษร
+                                แถวที่ระบุแผนกจะใช้ก่อนแถวทั้งบริษัท
+                                รายการหักสาย/ลา/ขาด/พักงานที่ติ๊ก "หักลดค่าใช้จ่ายเงินเดือน"
+                                จะเครดิตบัญชีเดียวกับบรรทัด "เงินเดือน" ของแผนกนั้น
+                                รายการที่มียอดแต่ยังไม่ได้เลือกบัญชีจะลงบัญชีไม่ได้
+                            </div>
+                            <field name="map_ids">
+                                <list editable="bottom"
+                                      decoration-warning="not account_id and not reduce_expense">
+                                    <field name="sequence" widget="handle"/>
+                                    <field name="company_id" column_invisible="True"/>
+                                    <field name="line_type"/>
+                                    <field name="line_name"/>
+                                    <field name="line_label"/>
+                                    <field name="department_id" optional="show"
+                                           options="{'no_create': True}"/>
+                                    <field name="account_id" options="{'no_create': True}"/>
+                                    <field name="reduce_expense"
+                                           readonly="line_type != 'deduction'"/>
+                                    <field name="note" optional="hide"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="ผลการสร้างค่าเริ่มต้น" name="default_report">
+                            <field name="default_report" readonly="1" nolabel="1"/>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_npd_payroll_account_config" model="ir.actions.act_window">
+        <field name="name">ผังบัญชีเงินเดือน</field>
+        <field name="res_model">npd.payroll.account.config</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">ตั้งค่าการลงบัญชีเงินเดือนของแต่ละบริษัท</p>
+            <p>
+                กด "สร้างการตั้งค่าให้ทุกบริษัทที่ยังไม่มี" ระบบจะสร้างการตั้งค่าและกด
+                "สร้างค่าเริ่มต้นจากผังบัญชี" ให้ทันที โดยจับคู่บัญชีจาก<b>ชื่อบัญชี</b>
+                ในผังของบริษัทนั้น (ไม่ใช้รหัสบัญชี) รายการที่หาไม่เจอหรือชื่อซ้ำหลายบัญชี
+                จะเว้นว่างไว้ให้เลือกเอง ดูผลได้ที่แท็บ "ผลการสร้างค่าเริ่มต้น"
+            </p>
+            <p>
+                รหัสบัญชีที่แสดงขึ้นกับบริษัทที่ติ๊กไว้ในตัวสลับบริษัท
+                ให้เลือกบริษัทเดียวกับการตั้งค่าที่กำลังแก้
+            </p>
+        </field>
+    </record>
+
+</odoo>

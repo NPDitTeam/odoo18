@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_npd_payroll_account_post_wizard_form" model="ir.ui.view">
+        <field name="name">npd.payroll.account.post.wizard.form</field>
+        <field name="model">npd.payroll.account.post.wizard</field>
+        <field name="arch" type="xml">
+            <form string="ลงบัญชีเงินเดือน">
+                <group>
+                    <field name="period_id" readonly="1" options="{'no_open': True}"/>
+                </group>
+                <div class="text-muted mb-2">
+                    ระบบสร้างรายการบัญชี 1 ใบต่อบริษัทของสลิปในรอบ ลงในสมุดรายวันของบริษัทนั้น
+                    กดที่แถวเพื่อดูบัญชีที่จะลงและปัญหาที่พบ แก้วันที่ลงบัญชีได้ก่อนกดลงบัญชี
+                    บริษัทที่ "ติดปัญหา" ต้องแก้ตามรายละเอียดแล้วกด "คำนวณใหม่"
+                </div>
+                <field name="company_line_ids" nolabel="1">
+                    <list create="0" delete="0"
+                          decoration-danger="state == 'blocked'"
+                          decoration-muted="state in ('posted', 'no_access')">
+                        <field name="company_id"/>
+                        <field name="state" widget="badge"
+                               decoration-success="state == 'ready'"
+                               decoration-danger="state == 'blocked'"
+                               decoration-info="state == 'posted'"/>
+                        <field name="to_post" widget="boolean_toggle"
+                               readonly="state != 'ready'"/>
+                        <field name="date" readonly="state != 'ready'"/>
+                        <field name="journal_name"/>
+                        <field name="slip_count"/>
+                        <field name="total_net" sum="รวม"/>
+                        <field name="total_debit"/>
+                        <field name="total_credit"/>
+                        <field name="rounding_residue" optional="show"/>
+                        <field name="issue_count"/>
+                        <field name="existing_move_name" optional="show"/>
+                    </list>
+                    <form string="รายละเอียดการลงบัญชี">
+                        <group>
+                            <group name="posting">
+                                <field name="company_id" readonly="1"/>
+                                <field name="state" readonly="1"/>
+                                <field name="to_post" readonly="state != 'ready'"/>
+                                <field name="date" readonly="state != 'ready'"/>
+                                <field name="journal_name" readonly="1"/>
+                                <field name="existing_move_name" readonly="1"
+                                       invisible="not existing_move_name"/>
+                            </group>
+                            <group name="totals">
+                                <field name="slip_count" readonly="1"/>
+                                <field name="total_gross" readonly="1"/>
+                                <field name="total_deduction" readonly="1"/>
+                                <field name="total_net" readonly="1"/>
+                                <field name="employer_sso_amount" readonly="1"/>
+                                <field name="rounding_residue" readonly="1"/>
+                                <field name="total_debit" readonly="1"/>
+                                <field name="total_credit" readonly="1"/>
+                            </group>
+                        </group>
+                        <separator string="ปัญหาและคำเตือน" invisible="not issue_count"/>
+                        <field name="issue_count" invisible="1"/>
+                        <field name="issue_ids" readonly="1" nolabel="1"
+                               invisible="not issue_count">
+                            <list>
+                                <field name="severity" widget="badge"
+                                       decoration-danger="severity == 'block'"
+                                       decoration-warning="severity == 'warn'"/>
+                                <field name="message"/>
+                                <field name="amount"/>
+                            </list>
+                        </field>
+                        <separator string="รายการบัญชีที่จะลง"/>
+                        <field name="line_ids" readonly="1" nolabel="1">
+                            <list>
+                                <field name="account_code"/>
+                                <field name="account_name"/>
+                                <field name="branch_name"/>
+                                <field name="label"/>
+                                <field name="debit" sum="รวมเดบิต"/>
+                                <field name="credit" sum="รวมเครดิต"/>
+                            </list>
+                        </field>
+                    </form>
+                </field>
+                <footer>
+                    <button name="action_post" type="object" string="ลงบัญชี"
+                            class="btn-primary"
+                            confirm="ระบบจะสร้างและผ่านรายการบัญชีของบริษัทที่เลือก ยืนยันหรือไม่?"/>
+                    <button name="action_refresh" type="object" string="คำนวณใหม่"/>
+                    <button special="cancel" string="ปิด"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+</odoo>

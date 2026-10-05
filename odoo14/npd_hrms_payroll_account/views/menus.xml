@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ออกใบแจ้งหนี้ > การกำหนดค่า > การบัญชี > ผังบัญชีเงินเดือน -->
+    <menuitem id="menu_npd_payroll_account_config"
+              name="ผังบัญชีเงินเดือน"
+              parent="account.account_account_menu"
+              action="action_npd_payroll_account_config"
+              sequence="20"
+              groups="npd_hrms_payroll_account.group_payroll_account"/>
+
+    <!-- ไม่ใส่ใต้ account.menu_finance_entries: เมนูนั้นต้องมีสิทธิ์ group_account_readonly
+         ซึ่งบน prod มีแค่ 3 คน ฝ่ายบัญชีที่ลงเงินเดือนจะมองไม่เห็นเมนู -->
+    <menuitem id="menu_npd_payroll_account_root"
+              name="เงินเดือน"
+              parent="account.menu_finance"
+              sequence="5"
+              groups="npd_hrms_payroll_account.group_payroll_account"/>
+
+    <menuitem id="menu_npd_payroll_account_period"
+              name="ลงบัญชีเงินเดือน"
+              parent="menu_npd_payroll_account_root"
+              action="action_npd_payroll_account_period"
+              sequence="10"/>
+
+    <menuitem id="menu_npd_payroll_account_move"
+              name="ประวัติการลงบัญชีเงินเดือน"
+              parent="menu_npd_payroll_account_root"
+              action="action_npd_payroll_account_move"
+              sequence="20"/>
+
+</odoo>

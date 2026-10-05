@@ -1,0 +1,11 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_npd_payroll_account_config,npd.payroll.account.config payroll account,model_npd_payroll_account_config,group_payroll_account,1,1,1,0
+access_npd_payroll_account_map,npd.payroll.account.map payroll account,model_npd_payroll_account_map,group_payroll_account,1,1,1,1
+access_npd_payroll_account_move,npd.payroll.account.move payroll account,model_npd_payroll_account_move,group_payroll_account,1,0,0,0
+access_payroll_period_payroll_account,payroll.period payroll account,npd_hrms_payroll.model_payroll_period,group_payroll_account,1,0,0,0
+access_hr_department_custom_payroll_account,hr.department.custom payroll account,npd_hrms_base.model_hr_department_custom,group_payroll_account,1,0,0,0
+access_npd_payroll_account_post_wizard,npd.payroll.account.post.wizard payroll account,model_npd_payroll_account_post_wizard,group_payroll_account,1,1,1,1
+access_npd_payroll_account_post_wizard_company,npd.payroll.account.post.wizard.company payroll account,model_npd_payroll_account_post_wizard_company,group_payroll_account,1,1,1,1
+access_npd_payroll_account_post_wizard_line,npd.payroll.account.post.wizard.line payroll account,model_npd_payroll_account_post_wizard_line,group_payroll_account,1,1,1,1
+access_npd_payroll_account_post_wizard_issue,npd.payroll.account.post.wizard.issue payroll account,model_npd_payroll_account_post_wizard_issue,group_payroll_account,1,1,1,1
+access_npd_payroll_account_reverse_wizard,npd.payroll.account.reverse.wizard payroll account,model_npd_payroll_account_reverse_wizard,group_payroll_account,1,1,1,1

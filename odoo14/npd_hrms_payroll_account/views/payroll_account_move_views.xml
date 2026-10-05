@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_npd_payroll_account_move_list" model="ir.ui.view">
+        <field name="name">npd.payroll.account.move.list</field>
+        <field name="model">npd.payroll.account.move</field>
+        <field name="arch" type="xml">
+            <list string="ประวัติการลงบัญชีเงินเดือน" create="0" delete="0"
+                  decoration-muted="state == 'reversed'"
+                  decoration-warning="is_outdated">
+                <field name="name"/>
+                <field name="period_id" options="{'no_open': True}"/>
+                <field name="company_id"/>
+                <field name="date"/>
+                <field name="move_id"/>
+                <field name="state" widget="badge"
+                       decoration-success="state == 'posted'"
+                       decoration-muted="state == 'reversed'"/>
+                <field name="is_outdated" widget="boolean"/>
+                <field name="amount_net" sum="รวมเงินสุทธิ"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_npd_payroll_account_move_form" model="ir.ui.view">
+        <field name="name">npd.payroll.account.move.form</field>
+        <field name="model">npd.payroll.account.move</field>
+        <field name="arch" type="xml">
+            <form string="การลงบัญชีเงินเดือน" create="0" delete="0" edit="0">
+                <header>
+                    <button name="action_open_move" type="object"
+                            string="เปิดรายการบัญชี" class="btn-primary"/>
+                    <button name="action_open_reverse_wizard" type="object"
+                            string="กลับรายการ" class="btn-danger"
+                            invisible="state != 'posted'"/>
+                    <field name="state" widget="statusbar"/>
+                </header>
+                <sheet>
+                    <div class="alert alert-warning" role="alert" invisible="not is_outdated">
+                        สลิปของบริษัทนี้ถูกแก้หลังลงบัญชี ให้ตรวจ กลับรายการ แล้วลงบัญชีใหม่
+                    </div>
+                    <div class="oe_title">
+                        <h1><field name="name" readonly="1"/></h1>
+                    </div>
+                    <group>
+                        <group string="รายการ" name="entry">
+                            <field name="period_id" readonly="1" options="{'no_open': True}"/>
+                            <field name="company_id" readonly="1"/>
+                            <field name="date" readonly="1"/>
+                            <field name="journal_id" readonly="1"/>
+                            <field name="move_id" readonly="1"/>
+                            <field name="move_state" readonly="1"/>
+                            <field name="reversal_move_id" readonly="1"
+                                   invisible="not reversal_move_id"/>
+                            <field name="is_outdated" invisible="1"/>
+                        </group>
+                        <group string="ยอด ณ วันที่ลงบัญชี" name="snapshot">
+                            <field name="slip_count" readonly="1"/>
+                            <field name="amount_gross" readonly="1"/>
+                            <field name="amount_deduction" readonly="1"/>
+                            <field name="amount_net" readonly="1"/>
+                            <field name="amount_employer_sso" readonly="1"/>
+                            <field name="rounding_residue" readonly="1"/>
+                        </group>
+                    </group>
+                    <group string="การกลับรายการ" name="reversal"
+                           invisible="state != 'reversed'">
+                        <field name="reversed_date" readonly="1"/>
+                        <field name="reversed_uid" readonly="1"/>
+                        <field name="reverse_reason" readonly="1"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_npd_payroll_account_move_search" model="ir.ui.view">
+        <field name="name">npd.payroll.account.move.search</field>
+        <field name="model">npd.payroll.account.move</field>
+        <field name="arch" type="xml">
+            <search string="ประวัติการลงบัญชีเงินเดือน">
+                <field name="period_id"/>
+                <field name="company_id"/>
+                <field name="move_id"/>
+                <filter name="filter_posted" string="ลงบัญชีแล้ว"
+                        domain="[('state', '=', 'posted')]"/>
+                <filter name="filter_reversed" string="กลับรายการแล้ว"
+                        domain="[('state', '=', 'reversed')]"/>
+                <group expand="0" string="จัดกลุ่มตาม">
+                    <filter name="group_period" string="รอบเงินเดือน"
+                            context="{'group_by': 'period_id'}"/>
+                    <filter name="group_company" string="บริษัท"
+                            context="{'group_by': 'company_id'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_npd_payroll_account_move" model="ir.actions.act_window">
+        <field name="name">ประวัติการลงบัญชีเงินเดือน</field>
+        <field name="res_model">npd.payroll.account.move</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_npd_payroll_account_move_search"/>
+        <field name="context">{'create': 0}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_empty_folder">ยังไม่มีการลงบัญชีเงินเดือน</p>
+            <p>ลงบัญชีได้จากเมนู เงินเดือน &gt; ลงบัญชีเงินเดือน (รอบที่อนุมัติแล้วหรือจ่ายแล้ว)</p>
+        </field>
+    </record>
+
+</odoo>
