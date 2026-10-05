@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- แดชบอร์ดของ core กรองเฉพาะสมุดธนาคารที่พร้อม (มีบัญชีเงินฝาก + บัญชีพัก)
+         ปุ่ม "Reconcile N Items" / "Import (OCA)" / "Transactions" มาจาก OCA บนวิวนี้
+         สมุดเช็ค CHP/CHR/QP/QR เป็นประเภทธนาคารแต่ไม่มีบัญชี จึงหลุดจากรายการเอง -->
+    <record id="action_npd_bank_reconcile_journals" model="ir.actions.act_window">
+        <field name="name">สมุดบัญชีธนาคาร</field>
+        <field name="res_model">account.journal</field>
+        <field name="view_mode">kanban</field>
+        <field name="view_id" ref="account.account_journal_dashboard_kanban_view"/>
+        <field name="domain">[('type', 'in', ('bank', 'credit')), ('default_account_id', '!=', False), ('suspense_account_id', '!=', False)]</field>
+        <field name="context">{}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_neutral_face">ยังไม่มีสมุดบัญชีธนาคารที่พร้อมกระทบยอด</p>
+            <p>สมุดต้องมีบัญชีเงินฝากและบัญชีพักธนาคาร</p>
+        </field>
+    </record>
+
+    <!-- รวมทุกสมุด หน้ากระทบยอดของ OCA ทำงานได้โดยไม่ต้องมีสมุดใน context
+         (แค่ไม่โชว์ยอดคงเหลือของสมุด ซึ่งโชว์เฉพาะตอนเปิดจากแดชบอร์ด) -->
+    <record id="action_npd_bank_statement_line_todo" model="ir.actions.act_window">
+        <field name="name">รายการเดินบัญชีที่ยังไม่กระทบยอด</field>
+        <field name="res_model">account.bank.statement.line</field>
+        <field name="view_mode">kanban,list</field>
+        <field name="view_ids" eval="[(5, 0, 0),
+            (0, 0, {'view_mode': 'kanban', 'view_id': ref('account_reconcile_oca.bank_statement_line_reconcile_view')}),
+            (0, 0, {'view_mode': 'list', 'view_id': ref('account_statement_base.account_bank_statement_line_tree')})]"/>
+        <field name="search_view_id" ref="account_statement_base.account_bank_statement_line_search"/>
+        <field name="context">{'search_default_not_reconciled': 1, 'view_ref': 'account_reconcile_oca.bank_statement_line_form_reconcile_view'}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">ไม่มีรายการรอกระทบยอด</p>
+        </field>
+    </record>
+
+    <!-- ลำดับ 5 = ถัดจากเมนู Accounting (4) ก่อน Reporting (20) -->
+    <menuitem id="menu_npd_bank_reconcile_root"
+              name="กระทบยอดธนาคาร"
+              parent="account.menu_finance"
+              sequence="5"
+              groups="npd_bank_reconcile.group_npd_bank_reconcile"/>
+    <menuitem id="menu_npd_bank_reconcile_journals"
+              name="สมุดบัญชีธนาคาร (กระทบยอด)"
+              parent="menu_npd_bank_reconcile_root"
+              action="action_npd_bank_reconcile_journals"
+              sequence="10"/>
+    <menuitem id="menu_npd_bank_statement_line_todo"
+              name="รายการเดินบัญชีที่ยังไม่กระทบยอด"
+              parent="menu_npd_bank_reconcile_root"
+              action="action_npd_bank_statement_line_todo"
+              sequence="20"/>
+    <menuitem id="menu_npd_bank_statement_import"
+              name="นำเข้ารายการเดินบัญชี"
+              parent="menu_npd_bank_reconcile_root"
+              action="account_statement_import_file.account_statement_import_action"
+              sequence="30"/>
+    <!-- เมนู Reconcile ของ OCA อยู่ใต้ Accounting ซึ่งผู้ใช้กลุ่มนี้อาจไม่เห็น -->
+    <menuitem id="menu_npd_account_reconcile"
+              name="ตัดคู่รายการ (บัญชีพัก/ลูกหนี้/เจ้าหนี้)"
+              parent="menu_npd_bank_reconcile_root"
+              action="account_reconcile_oca.account_account_reconcile_act_window"
+              sequence="40"/>
+    <menuitem id="menu_npd_bank_statements"
+              name="ใบรายการเดินบัญชี (ตามไฟล์ที่นำเข้า)"
+              parent="menu_npd_bank_reconcile_root"
+              action="account.action_bank_statement_tree"
+              sequence="50"/>
+
+    <!-- ตั้งค่า > ธนาคาร (ผู้ดูแลบัญชี) -->
+    <menuitem id="menu_npd_sheet_mapping"
+              name="รูปแบบไฟล์รายการเดินบัญชีธนาคาร"
+              parent="account.account_banks_menu"
+              action="account_statement_import_sheet_file.action_statement_import_sheet_report_mappings"
+              sequence="40"/>
+    <menuitem id="menu_npd_bank_reconcile_setup"
+              name="ตั้งค่าเริ่มต้นกระทบยอดธนาคาร (ทุกบริษัท)"
+              parent="account.account_banks_menu"
+              action="action_npd_bank_reconcile_setup"
+              sequence="50"
+              groups="base.group_system"/>
+</odoo>

@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- แยกหมวดเอง ห้ามใส่ใน base.module_category_accounting_accounting:
+         ช่อง Invoicing/Administrator บนฟอร์มผู้ใช้เป็นตัวเลือกแบบลำดับขั้น
+         เพิ่มกลุ่มที่ไม่ได้ต่อกันเป็นเส้นตรงเข้าไปจะทำให้ช่องนั้นพัง -->
+    <record id="module_category_npd_bank_reconcile" model="ir.module.category">
+        <field name="name">กระทบยอดธนาคาร</field>
+        <field name="parent_id" ref="base.module_category_accounting"/>
+        <field name="sequence">20</field>
+    </record>
+
+    <!-- สิทธิ์ของ OCA และการแก้รายการเดินบัญชีของ core ต้องใช้ group_account_user
+         ทำเป็นกลุ่มเลือกเปิดให้เฉพาะคนที่กระทบยอด ไม่แจกให้ผู้ดูแลบัญชีทั้ง 83 คน -->
+    <record id="group_npd_bank_reconcile" model="res.groups">
+        <field name="name">ผู้กระทบยอดธนาคาร</field>
+        <field name="category_id" ref="module_category_npd_bank_reconcile"/>
+        <field name="implied_ids" eval="[(4, ref('account.group_account_user'))]"/>
+        <field name="users" eval="[(4, ref('base.user_admin'))]"/>
+        <field name="comment">เห็นเมนูกระทบยอดธนาคาร นำเข้ารายการเดินบัญชี และกระทบยอดได้ (ได้สิทธิ์ Show Full Accounting Features ด้วย)</field>
+    </record>
+</odoo>

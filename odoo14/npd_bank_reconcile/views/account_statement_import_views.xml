@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="account_statement_import_form_npd" model="ir.ui.view">
+        <field name="name">account.statement.import.form.npd</field>
+        <field name="model">account.statement.import</field>
+        <field name="inherit_id" ref="account_statement_import_sheet_file.account_statement_import_form"/>
+        <field name="arch" type="xml">
+            <!-- เปิดจากเมนูไม่มีสมุดใน context ให้เลือกเอง (เปิดจากแดชบอร์ดจะเติมให้) -->
+            <xpath expr="//field[@name='statement_file']" position="before">
+                <group>
+                    <field name="npd_journal_id"
+                           options="{'no_create': True}"
+                           required="not context.get('journal_id')"/>
+                </group>
+            </xpath>
+            <!-- ไม่มีตัวอ่านไฟล์แบบอื่นติดตั้งไว้ ไม่เลือกรูปแบบไฟล์ = core แจ้ง "ไม่รองรับรูปแบบ" -->
+            <xpath expr="//field[@name='sheet_mapping_id']" position="attributes">
+                <attribute name="required">1</attribute>
+            </xpath>
+        </field>
+    </record>
+</odoo>

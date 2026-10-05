@@ -1,0 +1,25 @@
+# Translation of Odoo Server.
+# This file contains the translation of the following modules:
+# 	* account_statement_import_file_reconcile_oca
+# Thai translation added by NPD for Odoo 18
+msgid ""
+msgstr ""
+"Project-Id-Version: Odoo Server 18.0\n"
+"Report-Msgid-Bugs-To: \n"
+"Last-Translator: NPD Dev\n"
+"Language-Team: Thai\n"
+"Language: th\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: \n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+
+#. module: account_statement_import_file_reconcile_oca
+#: model:ir.model,name:account_statement_import_file_reconcile_oca.model_account_statement_import
+msgid "Import Bank Statement Files"
+msgstr "นำเข้าไฟล์รายการเดินบัญชีธนาคาร"
+
+#. module: account_statement_import_file_reconcile_oca
+#: model_terms:ir.ui.view,arch_db:account_statement_import_file_reconcile_oca.account_statement_import_form
+msgid "Import and Start to Reconcile"
+msgstr "นำเข้าและเริ่มกระทบยอด"

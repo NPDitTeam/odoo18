@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- เขียน res.company จึงจำกัดเฉพาะผู้ดูแลระบบ กดซ้ำได้ เติมเฉพาะช่องที่ยังว่าง -->
+    <record id="action_npd_bank_reconcile_setup" model="ir.actions.server">
+        <field name="name">ตั้งค่าเริ่มต้นกระทบยอดธนาคาร (ทุกบริษัท)</field>
+        <field name="model_id" ref="base.model_res_company"/>
+        <field name="state">code</field>
+        <field name="code">action = env['res.company'].search([])._npd_setup_bank_reconcile_action()</field>
+        <field name="groups_id" eval="[(4, ref('base.group_system'))]"/>
+    </record>
+
+    <!-- ปุ่ม/เมนู "Reconcile" ของ OCA ผูกกับรายการบันทึกทุกหน้า ฟอร์มพาร์ทเนอร์ และฟอร์มผังบัญชี
+         แต่เปิดโมเดลที่ผู้ใช้สิทธิ์ Invoicing อย่างเดียวเข้าไม่ได้ (กดแล้วเจอ AccessError)
+         จึงซ่อนจากคนที่ไม่มี group_account_user -->
+    <record id="account_reconcile_oca.action_reconcile" model="ir.actions.server">
+        <field name="groups_id" eval="[(4, ref('account.group_account_user'))]"/>
+    </record>
+    <record id="account_reconcile_oca.res_partner_account_account_reconcile_act_window" model="ir.actions.act_window">
+        <field name="groups_id" eval="[(4, ref('account.group_account_user'))]"/>
+    </record>
+    <record id="account_reconcile_oca.account_account_account_account_reconcile_act_window" model="ir.actions.act_window">
+        <field name="groups_id" eval="[(4, ref('account.group_account_user'))]"/>
+    </record>
+</odoo>
