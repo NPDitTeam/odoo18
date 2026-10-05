@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!--
+        อยู่ใต้ ออกใบแจ้งหนี้ > การกำหนดค่า > การบัญชี ข้างผังบัญชี/ภาษี/สมุดรายวัน
+        เมนูแม่ทั้งสองชั้นเห็นได้เฉพาะผู้ดูแลบัญชี กลุ่มผู้ปิดงวดจึงต้องพ่วงสิทธิ์นั้น (ดู security.xml)
+    -->
+    <menuitem id="menu_npd_account_lock_wizard"
+              name="ล็อกงวดบัญชี"
+              parent="account.account_account_menu"
+              action="action_npd_account_lock_wizard"
+              sequence="30"
+              groups="group_npd_lock_manager"/>
+
+    <menuitem id="menu_npd_account_lock_status"
+              name="สถานะการล็อกทุกบริษัท"
+              parent="account.account_account_menu"
+              action="action_npd_account_lock_status"
+              sequence="31"
+              groups="group_npd_lock_manager"/>
+
+    <menuitem id="menu_npd_account_lock_log"
+              name="ประวัติการล็อกงวด"
+              parent="account.account_account_menu"
+              action="action_npd_account_lock_log"
+              sequence="32"
+              groups="group_npd_lock_manager"/>
+</odoo>

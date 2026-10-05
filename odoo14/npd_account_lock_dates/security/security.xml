@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!--
+        ต้องพ่วงผู้ดูแลบัญชี (group_account_manager) เพราะ
+        1) เมนูแม่ การกำหนดค่า และ การกำหนดค่า > การบัญชี เห็นได้เฉพาะกลุ่มนั้น ไม่พ่วงจะเข้าเมนูไม่ถึง
+        2) ตอนเปลี่ยนวันล็อก Odoo ยกเลิก/สร้างข้อยกเว้นการล็อกใหม่ และเช็กสิทธิ์ผู้ดูแลบัญชีกับผู้ใช้จริงแม้ใช้ sudo
+        ใส่หมวด Accounting (ไม่ใช่ Accounting > Accounting) เพื่อให้เป็นช่องติ๊กแยก
+        ถ้าใส่หมวดย่อย จะกลายเป็นตัวเลือกขั้นที่ 3 ต่อจาก Administrator แล้วเลือกกลับเป็น Administrator ทีไรสิทธิ์นี้หายเงียบ ๆ
+        ไม่ใส่ผู้ใช้ในไฟล์นี้ ให้ IT ติ๊กให้เฉพาะคนที่ฝ่ายบัญชีระบุหลังติดตั้ง
+    -->
+    <record id="group_npd_lock_manager" model="res.groups">
+        <field name="name">ผู้ปิดงวดบัญชี</field>
+        <field name="category_id" ref="base.module_category_accounting"/>
+        <field name="implied_ids" eval="[Command.link(ref('account.group_account_manager'))]"/>
+        <field name="comment">ตั้ง/ปลดวันล็อกงวดบัญชีได้ (ปิดงวด ล็อกภาษี ล็อกขาย/ซื้อ ล็อกถาวร) ผ่านเมนู การกำหนดค่า &gt; การบัญชี &gt; ล็อกงวดบัญชี · การปลดล็อก/ถอยวันล็อกและข้อยกเว้นการล็อกจากทุกช่องทาง (รวม AI-IT) ต้องอยู่กลุ่มนี้</field>
+    </record>
+
+    <!-- ประวัติ: เห็นเฉพาะบริษัทที่ติ๊กอยู่มุมขวาบน เหมือนเอกสารบัญชีทั่วไป -->
+    <record id="rule_npd_account_lock_log_company" model="ir.rule">
+        <field name="name">ประวัติการล็อกงวด: เฉพาะบริษัทที่เลือก</field>
+        <field name="model_id" ref="model_npd_account_lock_log"/>
+        <field name="global" eval="True"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+    </record>
+
+    <!--
+        สถานะ: ตั้งใจให้เห็นทุกบริษัทที่ผู้ใช้มีสิทธิ์ ไม่ใช่แค่ที่ติ๊กอยู่
+        ชื่อบริษัทใน many2one หน้าเว็บอ่านด้วย sudo จึงไม่ติด AccessError ของ res.company
+    -->
+    <record id="rule_npd_account_lock_status_company" model="ir.rule">
+        <field name="name">สถานะการล็อกงวด: บริษัทที่ผู้ใช้มีสิทธิ์</field>
+        <field name="model_id" ref="model_npd_account_lock_status"/>
+        <field name="global" eval="True"/>
+        <field name="domain_force">[('company_id', 'in', user.company_ids.ids)]</field>
+    </record>
+</odoo>

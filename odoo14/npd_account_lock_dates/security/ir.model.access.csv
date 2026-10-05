@@ -1,0 +1,4 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_npd_account_lock_wizard,npd.account.lock.wizard,model_npd_account_lock_wizard,group_npd_lock_manager,1,1,1,1
+access_npd_account_lock_log,npd.account.lock.log,model_npd_account_lock_log,group_npd_lock_manager,1,0,0,0
+access_npd_account_lock_status,npd.account.lock.status,model_npd_account_lock_status,group_npd_lock_manager,1,0,0,0
