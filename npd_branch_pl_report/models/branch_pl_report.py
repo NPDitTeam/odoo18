@@ -217,22 +217,23 @@ class BranchPLReport(models.TransientModel):
             add_vat(line.account_id.id, m_idx, vat)
 
         # ==============================================================
-        # (4) JV — สมุดทั่วไป (JV-%), branch หัวเอกสาร, งวด = date, ยอด = debit ทุกบรรทัด
+        # (4) JV — สมุดทั่วไป (JV-%), งวด = date, ยอด = debit ทุกบรรทัด
+        #     สาขา = สาขาของ "บรรทัด" (แก้รายบรรทัดได้ — npd_move_line_branch_editable)
+        #     บรรทัดที่ไม่ได้แก้มีสาขาเท่าหัวเอกสาร ผลจึงเหมือนเดิม ยกเว้นบรรทัดที่ย้ายสาขา
         # ==============================================================
-        jv_moves = self.env['account.move'].sudo().search([
-            ('name', '=like', 'JV-%'),
-            ('branch_id', '=', branch.id),
+        jv_lines = self.env['account.move.line'].sudo().search([
+            ('move_id.name', '=like', 'JV-%'),
+            ('parent_state', '=', 'posted'),
             ('date', '>=', date_from),
             ('date', '<=', date_to),
-            ('state', '=', 'posted'),
+            ('debit', '>', 0),
+            '|', ('branch_id', '=', branch.id),
+            '&', ('branch_id', '=', False), ('move_id.branch_id', '=', branch.id),
         ])
-        for mv in jv_moves:
-            if not mv.date:
+        for l in jv_lines:
+            if not l.date or not l.account_id:
                 continue
-            m_idx = mv.date.month - 1
-            for l in mv.line_ids:
-                if l.debit and l.debit > 0 and l.account_id:
-                    add_exp(l.account_id.id, m_idx, l.debit)
+            add_exp(l.account_id.id, l.date.month - 1, l.debit)
 
         # ==============================================================
         # (5) เงินเดือน — เฉพาะเดือนที่มีรายจ่าย (1)-(4) > 0  (เหมือน commission)

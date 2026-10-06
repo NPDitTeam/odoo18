@@ -306,16 +306,18 @@ class CommissionReport(models.Model):
         total += self._voucher_expense(branch, company, date_from, date_to, notes)
 
         # 4) รายการสมุดรายวันทั่วไปที่เลขขึ้นต้น JV-
-        jv_moves = Move.search([
-            ('name', '=like', 'JV-%'),
-            ('branch_id', '=', branch.id),
+        #    สาขา = สาขาของ "บรรทัด" (แก้รายบรรทัดได้) — บรรทัดที่ไม่ได้แก้เท่าหัวเอกสาร
+        jv_lines = self.env['account.move.line'].sudo().search([
+            ('move_id.name', '=like', 'JV-%'),
+            ('parent_state', '=', 'posted'),
             ('company_id', '=', company.id),
             ('date', '>=', date_from),
             ('date', '<=', date_to),
-            ('state', '=', 'posted'),
+            ('debit', '>', 0),
+            '|', ('branch_id', '=', branch.id),
+            '&', ('branch_id', '=', False), ('move_id.branch_id', '=', branch.id),
         ])
-        for move in jv_moves:
-            total += sum(l.debit for l in move.line_ids if l.debit and l.debit > 0)
+        total += sum(jv_lines.mapped('debit'))
 
         # 5) ค่าจ้างพนักงาน — บวกเฉพาะสาขาที่มีรายจ่ายอื่นอยู่แล้ว
         #    (สาขาที่ไม่มีรายจ่ายเลย = ยังไม่เปิดดำเนินการในเดือนนั้น)
