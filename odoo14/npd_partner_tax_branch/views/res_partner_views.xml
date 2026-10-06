@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ฝ่ายบัญชี: บริษัทต้องมีรหัสสาขาเสมอ (สำนักงานใหญ่ = 00000) -->
+    <record id="view_partner_form_tax_branch_required" model="ir.ui.view">
+        <field name="name">res.partner.form.tax.branch.required</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="l10n_th_partner.view_partner_form"/>
+        <field name="arch" type="xml">
+            <field name="branch" position="attributes">
+                <attribute name="required">is_company</attribute>
+            </field>
+        </field>
+    </record>
+</odoo>

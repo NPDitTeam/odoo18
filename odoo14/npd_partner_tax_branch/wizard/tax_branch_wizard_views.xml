@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="npd_tax_branch_wizard_form" model="ir.ui.view">
+        <field name="name">npd.tax.branch.wizard.form</field>
+        <field name="model">npd.tax.branch.wizard</field>
+        <field name="arch" type="xml">
+            <form string="กรอกรหัสสาขาลูกค้า">
+                <div class="alert alert-warning" role="alert">
+                    <p><strong>ลูกค้ารายนี้เป็นบริษัท แต่ยังไม่มีรหัสสาขา (Tax Branch)</strong></p>
+                    <p>ใบกำกับภาษีของบริษัทต้องระบุรหัสสาขา ไม่งั้นผิดหลักบัญชี ให้ทำดังนี้</p>
+                    <ol>
+                        <li>ถามลูกค้าว่าออกใบกำกับภาษีในนามสำนักงานใหญ่ หรือสาขาไหน (ดูจากใบ ภ.พ.20 หรือใบกำกับภาษีที่ลูกค้าเคยได้รับก็ได้)</li>
+                        <li>กรอกรหัสสาขาเป็นตัวเลข 5 หลัก เช่น สาขาที่ 1 = <strong>00001</strong></li>
+                        <li>ถ้าลูกค้ามี<strong>แค่สำนักงานใหญ่อย่างเดียว</strong> (ไม่มีสาขา) ใส่ <strong>00000</strong> ได้เลย</li>
+                        <li>ถ้าลูกค้ามีหลายสาขาแต่ออกใบกำกับภาษีในนามสำนักงานใหญ่ ก็ใส่ <strong>00000</strong></li>
+                    </ol>
+                    <p class="mb-0">กดบันทึกแล้ว ระบบจะเก็บรหัสนี้ไว้ที่ข้อมูลลูกค้าเลย ครั้งหน้าไม่ต้องกรอกอีก</p>
+                </div>
+                <group>
+                    <field name="partner_id" options="{'no_open': True}"/>
+                    <field name="vat"/>
+                    <field name="branch" placeholder="00000"/>
+                </group>
+                <footer>
+                    <button name="action_save" type="object" string="บันทึก" class="btn-primary"/>
+                    <button string="ยกเลิก" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="npd_tax_branch_wizard_action" model="ir.actions.act_window">
+        <field name="name">กรอกรหัสสาขาลูกค้า (Tax Branch)</field>
+        <field name="res_model">npd.tax.branch.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="view_id" ref="npd_tax_branch_wizard_form"/>
+        <field name="target">new</field>
+    </record>
+</odoo>
