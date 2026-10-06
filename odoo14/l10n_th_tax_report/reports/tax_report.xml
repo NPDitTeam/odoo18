@@ -142,6 +142,7 @@
                 <div class="act_as_cell">Branch ID</div>
                 <div class="act_as_cell">Base Amount</div>
                 <div class="act_as_cell">Tax Amount</div>
+                <div class="act_as_cell">Total Amount</div>
                 <div class="act_as_cell">Doc Ref.</div>
                 <div class="act_as_cell">Branch</div>
 
@@ -192,6 +193,9 @@
             <div class="act_as_cell amount">
                 <t t-esc="'{0:,.2f}'.format(line.tax_amount)"/>
             </div>
+            <div class="act_as_cell amount">
+                <t t-esc="'{0:,.2f}'.format(line.tax_base_amount + line.tax_amount)"/>
+            </div>
             <div class="act_as_cell left">
                 <t t-esc="line.name"/>
             </div>
@@ -237,6 +241,9 @@
             </div>
             <div class="act_as_cell amount">
                 <t t-esc="'{0:,.2f}'.format(total_tax)"/>
+            </div>
+            <div class="act_as_cell amount">
+                <t t-esc="'{0:,.2f}'.format(total_base + total_tax)"/>
             </div>
             <div class="act_as_cell"/>
             <div class="act_as_cell"/>

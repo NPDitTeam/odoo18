@@ -11,6 +11,7 @@
                 <field name="name" string="เอกสารอ้างอิง"/>
                 <field name="tax_base_amount" string="ฐานภาษี" sum="รวม"/>
                 <field name="tax_amount" string="ภาษี" sum="รวม"/>
+                <field name="total_amount" string="ยอดรวม" sum="รวม"/>
                 <field name="branch_id" string="สาขา" optional="show"/>
                 <field name="tax_id" string="ภาษี" optional="hide"/>
             </list>

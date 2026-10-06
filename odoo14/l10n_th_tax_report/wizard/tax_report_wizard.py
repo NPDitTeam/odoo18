@@ -170,8 +170,13 @@ class TaxReportWizard(models.TransientModel):
                 sheet.write(row, col + 7, 'Branch ID', header_format)
                 sheet.write(row, col + 8, 'Base Amount', header_format)
                 sheet.write(row, col + 9, 'Tax Amount', header_format)
-                sheet.write(row, col + 10, 'Doc Ref.', header_format)
-                sheet.write(row, col + 11, 'Branch', header_format)
+                # ยอดรวมรวมภาษี (Base + Tax) ต่อจาก Tax Amount — ฝ่ายบัญชีขอ
+                sheet.write(row, col + 10, 'Total Amount', header_format)
+                sheet.write(row, col + 11, 'Doc Ref.', header_format)
+                sheet.write(row, col + 12, 'Branch', header_format)
+                extra_columns = self._get_extra_line_columns()
+                for offset, (label, _getter) in enumerate(extra_columns, start=13):
+                    sheet.write(row, col + offset, label, header_format)
                 row += 1
 
                 line_num = 1
@@ -203,10 +208,11 @@ class TaxReportWizard(models.TransientModel):
                         sheet.write(row, col + 7, line.partner_id.branch or '', text_format)
                         sheet.write(row, col + 8, line.tax_base_amount, currency_format)
                         sheet.write(row, col + 9, line.tax_amount, currency_format)
-                        sheet.write(row, col + 10, line.name or '', text_format)
+                        sheet.write(row, col + 10, line.tax_base_amount + line.tax_amount, currency_format)
+                        sheet.write(row, col + 11, line.name or '', text_format)
 
                         if move_branch:
-                            sheet.write(row, col + 11, move_branch, text_format)
+                            sheet.write(row, col + 12, move_branch, text_format)
 
                         else:
                             move_obj = False
@@ -217,7 +223,10 @@ class TaxReportWizard(models.TransientModel):
                                                                            limit=1)
 
                             branch_name_from_move = move_obj.branch_id.name if move_obj and move_obj.branch_id else ''
-                            sheet.write(row, col + 11, branch_name_from_move, text_format)
+                            sheet.write(row, col + 12, branch_name_from_move, text_format)
+
+                        for offset, (_label, getter) in enumerate(extra_columns, start=13):
+                            sheet.write(row, col + offset, getter(line) or '', text_format)
 
                         line_num += 1
                         total_base += line.tax_base_amount
@@ -225,10 +234,11 @@ class TaxReportWizard(models.TransientModel):
                         row += 1
 
                 # Total Line
-                sheet.write(row, col + 6, 'Total:', header_format)
-                sheet.write(row, col + 7, total_base, currency_format)
-                sheet.write(row, col + 8, total_tax, currency_format)
-                sheet.write(row, col + 9, '', text_format)
+                # เดิมยอดรวมวางเยื้องไปซ้าย 1 ช่อง (ยอด Base อยู่ใต้ Branch ID)
+                sheet.write(row, col + 7, 'Total:', header_format)
+                sheet.write(row, col + 8, total_base, currency_format)
+                sheet.write(row, col + 9, total_tax, currency_format)
+                sheet.write(row, col + 10, total_base + total_tax, currency_format)
                 row += 2
 
             workbook.close()
@@ -241,6 +251,14 @@ class TaxReportWizard(models.TransientModel):
         except Exception as e:
             _logger.error("Error creating Excel report: %s", e, exc_info=True)
             raise
+
+    def _get_extra_line_columns(self):
+        """คอลัมน์เพิ่มท้ายตาราง Excel ให้โมดูลอื่น override
+
+        คืน [(หัวคอลัมน์, ฟังก์ชันรับ tax.report.view แล้วคืนข้อความ), ...]
+        ต่อจากคอลัมน์ Branch ตามลำดับ
+        """
+        return []
 
     def _get_extra_filter_cells(self):
         """หัวตารางเงื่อนไขเพิ่มเติมใน Excel ให้โมดูลอื่น override

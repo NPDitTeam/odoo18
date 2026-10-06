@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <template id="report_tax_report_lines_header_debt_type"
+              inherit_id="l10n_th_tax_report.report_tax_report_lines_header">
+        <xpath expr="//div[hasclass('labels')]" position="inside">
+            <div class="act_as_cell">ประเภทหนี้</div>
+            <div class="act_as_cell">ประเภทหนี้ (บ้านเขียว)</div>
+        </xpath>
+    </template>
+    <template id="report_tax_report_lines_debt_type"
+              inherit_id="l10n_th_tax_report.report_tax_report_lines">
+        <xpath expr="//div[hasclass('lines')]" position="inside">
+            <div class="act_as_cell left"><t t-esc="line.npd_debt_type"/></div>
+            <div class="act_as_cell left"><t t-esc="line.npd_bk_debt_type"/></div>
+        </xpath>
+    </template>
+    <template id="report_tax_report_total_lines_debt_type"
+              inherit_id="l10n_th_tax_report.report_tax_report_total_lines">
+        <xpath expr="//div[hasclass('totals_table')]" position="inside">
+            <div class="act_as_cell"/>
+            <div class="act_as_cell"/>
+        </xpath>
+    </template>
+</odoo>

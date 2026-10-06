@@ -21,10 +21,17 @@ class TaxReportView(models.TransientModel):
     tax_id = fields.Many2one("account.tax")
     tax_base_amount = fields.Float()
     tax_amount = fields.Float()
+    # ยอดรวมรวมภาษี (Base + Tax) — ฝ่ายบัญชีขอ
+    total_amount = fields.Float(compute="_compute_total_amount", store=True)
     tax_date = fields.Char()
     tax_invoice_number = fields.Char()
     move_id = fields.Many2one("account.move", string="Journal Entry")
     branch_id = fields.Many2one("res.branch")
+
+    @api.depends("tax_base_amount", "tax_amount")
+    def _compute_total_amount(self):
+        for rec in self:
+            rec.total_amount = rec.tax_base_amount + rec.tax_amount
 
 
 class TaxReport(models.TransientModel):

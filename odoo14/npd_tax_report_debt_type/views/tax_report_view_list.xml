@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ปุ่มดูรายงานบนหน้าจอของ o18 เปิดเป็นรายการ tax.report.view -->
+    <record id="view_tax_report_view_list_debt_type" model="ir.ui.view">
+        <field name="name">tax.report.view.list.debt.type</field>
+        <field name="model">tax.report.view</field>
+        <field name="inherit_id" ref="l10n_th_tax_report.view_tax_report_view_list"/>
+        <field name="arch" type="xml">
+            <field name="branch_id" position="after">
+                <field name="npd_debt_type"/>
+                <field name="npd_bk_debt_type" optional="show"/>
+            </field>
+        </field>
+    </record>
+</odoo>
