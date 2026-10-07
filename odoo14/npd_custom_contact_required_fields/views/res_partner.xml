@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <record id="view_res_partner_form_custom" model="ir.ui.view">
+        <field name="name">res.partner.form.npd.required</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="base.view_partner_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='phone']" position="attributes">
+                <attribute name="placeholder"></attribute>
+                <attribute name="required">1</attribute>
+            </xpath>
+            <xpath expr="//field[@name='mobile']" position="attributes">
+                <attribute name="placeholder"></attribute>
+            </xpath>
+            <!-- เลขผู้เสียภาษี: ตัวเลขล้วน 13 หลักขึ้นไป (ตรวจจริงที่ _check_vat_digits)
+                 บังคับกรอกเฉพาะรายชื่อหลัก (ผู้ติดต่อย่อยรับค่าจากบริษัทแม่) -->
+            <xpath expr="//field[@name='vat']" position="attributes">
+                <attribute name="placeholder"></attribute>
+                <attribute name="required">not parent_id</attribute>
+            </xpath>
+            <xpath expr="//field[@name='vat']" position="after">
+                <div colspan="2" class="text-muted small" invisible="parent_id">
+                    (หากเปิดใบเสนอราคาและยังไม่ได้ข้อมูลจากลูกค้าให้ใส่ 0000000000000)
+                </div>
+            </xpath>
+        </field>
+    </record>
+</odoo>
