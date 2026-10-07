@@ -32,28 +32,6 @@ class AccountPayment(models.Model):
     jasper_pfr_baht_text = fields.Char(compute='_compute_jasper_pfr_amounts')
     jasper_pfr_company_th = fields.Char(compute='_compute_jasper_pfr_company')
     jasper_pfr_company_en = fields.Char(compute='_compute_jasper_pfr_company')
-    jasper_pfr_receipt_number = fields.Char(compute='_compute_jasper_pfr_receipt_number')
-
-    # วันที่เริ่มใช้เลข Tax Invoice Number เป็น "เลขที่" ของใบกำกับภาษี-ใบเสร็จรับเงิน
-    # (เหมือน o14 pfb_npd_payment_form_receipt) ใบก่อนวันนี้ยังเป็นเลขรับชำระ
-    # ปรับได้ที่ ตั้งค่า > เทคนิค > System Parameters โดยไม่ต้องแก้โค้ด
-    RECEIPT_TAX_NUMBER_PARAM = 'pfb_npd_payment_form_receipt.tax_number_from'
-    RECEIPT_TAX_NUMBER_FROM = '2026-10-07'
-
-    @api.depends('name', 'date', 'tax_invoice_ids.tax_invoice_number')
-    def _compute_jasper_pfr_receipt_number(self):
-        """ตั้งแต่วันที่กำหนด และมี Tax Invoice Number → ใช้เลขนั้น นอกนั้นใช้เลขรับชำระ"""
-        start = self.env['ir.config_parameter'].sudo().get_param(
-            self.RECEIPT_TAX_NUMBER_PARAM, self.RECEIPT_TAX_NUMBER_FROM)
-        for rec in self:
-            number = rec.name
-            if rec.date and str(rec.date) >= start:
-                numbers = rec.tax_invoice_ids.filtered(
-                    lambda t: t.tax_invoice_number and not t.reversing_id and not t.reversed_id
-                ).mapped('tax_invoice_number')
-                if numbers:
-                    number = ', '.join(dict.fromkeys(numbers))
-            rec.jasper_pfr_receipt_number = number or ''
 
     def _pfr_wht_rent_5(self, untaxed_amount):
         """ภาษีหัก ณ ที่จ่าย 5% (ค่าเช่า) — ปัดฐานก่อน VAT เป็น 2 ตำแหน่งก่อนคิด 5% แบบ round-half-up

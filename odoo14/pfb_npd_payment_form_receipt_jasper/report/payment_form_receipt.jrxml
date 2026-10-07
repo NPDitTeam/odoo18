@@ -31,8 +31,8 @@
 	<field name="Partner_VAT-jasper_rcp_partner_vat" class="java.lang.String">
 		<fieldDescription><![CDATA[Partner_VAT-jasper_rcp_partner_vat]]></fieldDescription>
 	</field>
-	<field name="Receipt_Number-jasper_pfr_receipt_number" class="java.lang.String">
-		<fieldDescription><![CDATA[Receipt_Number-jasper_pfr_receipt_number]]></fieldDescription>
+	<field name="Payment_Name-name" class="java.lang.String">
+		<fieldDescription><![CDATA[Payment_Name-name]]></fieldDescription>
 	</field>
 	<field name="Date_Thai-jasper_date_thai" class="java.lang.String">
 		<fieldDescription><![CDATA[Date_Thai-jasper_date_thai]]></fieldDescription>
@@ -165,7 +165,7 @@
 			<textField isBlankWhenNull="true">
 				<reportElement style="Thai" x="448" y="66" width="114" height="19" uuid="b7c8d900-0000-4000-8000-000000000015"/>
 				<textElement textAlignment="Left" verticalAlignment="Middle"><font fontName="Sarabun" size="12"/></textElement>
-				<textFieldExpression><![CDATA[$F{Receipt_Number-jasper_pfr_receipt_number}]]></textFieldExpression>
+				<textFieldExpression><![CDATA[$F{Payment_Name-name}]]></textFieldExpression>
 			</textField>
 			<staticText>
 				<reportElement style="Thai" x="374" y="85" width="72" height="19" uuid="b7c8d900-0000-4000-8000-000000000016"/>
