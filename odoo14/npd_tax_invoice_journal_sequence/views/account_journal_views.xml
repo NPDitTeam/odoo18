@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_account_journal_form_npd_taxinv_sequence" model="ir.ui.view">
+        <field name="name">account.journal.form.npd.taxinv.sequence</field>
+        <field name="model">account.journal</field>
+        <field name="inherit_id" ref="account.view_account_journal_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//notebook" position="inside">
+                <page string="เลขใบกำกับภาษี" name="npd_taxinv_sequence"
+                      invisible="type not in ('receivable', 'bank', 'cash', 'credit')">
+                    <div class="alert alert-info" role="alert"
+                         invisible="npd_own_taxinv_sequence">
+                        ตอนนี้ Tax Invoice Number ของใบรับชำระในสมุดเล่มนี้ใช้<b>ค่าเดิมของบริษัท</b>
+                        (เลขใบรับชำระ) ติ๊กด้านล่างถ้าต้องการให้เล่มนี้มีเลขใบกำกับภาษีของตัวเอง
+                        เช่น CABA-ชื่อย่อบริษัท- ใช้กับภาษีขายแบบรับชำระ (ภาษีขายยังไม่ถึงกำหนด)
+                    </div>
+                    <group>
+                        <group string="การตั้งค่า">
+                            <field name="npd_own_taxinv_sequence"/>
+                            <field name="npd_taxinv_prefix"
+                                   placeholder="เช่น CABA-BKK-"
+                                   required="npd_own_taxinv_sequence"
+                                   invisible="not npd_own_taxinv_sequence"/>
+                            <field name="npd_taxinv_daily"
+                                   invisible="not npd_own_taxinv_sequence"/>
+                            <field name="npd_taxinv_date_format"
+                                   invisible="not npd_own_taxinv_sequence or not npd_taxinv_daily"/>
+                            <field name="npd_taxinv_padding"
+                                   invisible="not npd_own_taxinv_sequence"/>
+                        </group>
+                        <group string="ผลลัพธ์"
+                               invisible="not npd_own_taxinv_sequence">
+                            <field name="npd_taxinv_next_number"
+                                   class="fw-bold text-primary"/>
+                            <field name="npd_taxinv_sequence_id"
+                                   invisible="not npd_taxinv_sequence_id"/>
+                            <button name="action_npd_build_taxinv_sequence"
+                                    type="object" class="btn-primary"
+                                    string="สร้าง / อัปเดตเลขใบกำกับภาษี"/>
+                            <button name="action_npd_copy_taxinv_to_other_companies"
+                                    type="object" class="btn-secondary"
+                                    string="คัดลอกรูปแบบไปบริษัทอื่น"
+                                    invisible="not npd_taxinv_sequence_id"
+                                    confirm="คัดลอกรูปแบบวันที่/จำนวนหลักไปสมุดรหัสเดียวกันของบริษัทอื่น คำนำหน้า (ชื่อย่อบริษัท) ต้องกรอกเองแล้วกดสร้างที่แต่ละบริษัท ดำเนินการต่อไหม"/>
+                        </group>
+                    </group>
+                    <div class="alert alert-warning" role="alert"
+                         invisible="not npd_own_taxinv_sequence or npd_taxinv_sequence_id">
+                        ยังไม่ได้สร้างเลขรัน — ตัวเลขด้านขวาเป็นแค่ตัวอย่าง
+                        ยังไม่มีผลจริงจนกว่าจะกดปุ่ม "สร้าง / อัปเดตเลขใบกำกับภาษี"
+                        ถ้าไม่กด ระบบจะใช้ค่าเดิมของบริษัท
+                    </div>
+                    <div class="alert alert-secondary" role="alert"
+                         invisible="not npd_taxinv_sequence_id">
+                        มีผลกับใบรับชำระที่ยืนยันหลังจากนี้ ใบที่ออกเลขไปแล้วไม่เปลี่ยน
+                        ใบรับชำระหนึ่งใบได้เลขใบกำกับภาษีเดียว กลับเป็นร่างแล้วยืนยันใหม่ได้เลขเดิม
+                    </div>
+                </page>
+            </xpath>
+        </field>
+    </record>
+</odoo>
