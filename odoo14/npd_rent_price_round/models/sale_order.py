@@ -34,6 +34,16 @@ class SaleOrder(models.Model):
     )
     can_edit_use_new_calc = fields.Boolean(
         compute='_compute_can_edit_use_new_calc')
+    npd_amount_total_vat = fields.Monetary(
+        string='รวม VAT', compute='_compute_npd_amount_total_vat',
+        currency_field='currency_id',
+        help='ผลรวมคอลัมน์ "รวม VAT" รายบรรทัด (จำนวน x ราคารวม VAT)')
+
+    @api.depends('order_line.price_total', 'order_line.display_type')
+    def _compute_npd_amount_total_vat(self):
+        for order in self:
+            order.npd_amount_total_vat = sum(
+                order.order_line.filtered(lambda l: not l.display_type).mapped('price_total'))
 
     @api.depends_context('uid')
     def _compute_can_edit_use_new_calc(self):
