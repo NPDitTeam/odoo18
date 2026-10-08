@@ -34,14 +34,6 @@
                 <attribute name="optional">show</attribute>
                 <attribute name="string">รวม VAT</attribute>
             </xpath>
-            <!-- ท้ายใบ: ผลรวมคอลัมน์ "รวม VAT" ใต้กล่องยอดรวม -->
-            <xpath expr="//group[@name='sale_total']/field[@name='tax_totals']" position="after">
-                <div colspan="2" class="d-flex justify-content-end align-items-baseline gap-3">
-                    <span class="text-muted">รวม VAT:</span>
-                    <field name="npd_amount_total_vat" nolabel="1" widget="monetary"
-                           options="{'currency_field': 'currency_id'}" class="fw-bold"/>
-                </div>
-            </xpath>
         </field>
     </record>
 </odoo>
