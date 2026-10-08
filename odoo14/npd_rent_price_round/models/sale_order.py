@@ -11,8 +11,9 @@ class SaleOrder(models.Model):
         default=True,
         copy=True,
         tracking=True,
-        help='เปิด = ราคาต่อหน่วยที่เก็บไว้เป็นราคารวม VAT แต่คิดยอดแบบ '
-             'ถอด VAT ก่อนแล้วบวก 7% กลับ (Method A) '
+        help='เปิด = ราคาต่อหน่วยที่เก็บไว้เป็นราคารวม VAT '
+             'ยอดรวมบรรทัด = จำนวน x ราคา แล้วถอด VAT 7% จากยอดรวม '
+             '(ช่องราคาไม่รวม VAT แสดงไว้ดูเท่านั้น) '
              'ปิด = ใช้สูตรมาตรฐานของ Odoo',
     )
     use_baan_kheaw = fields.Boolean(
@@ -27,8 +28,9 @@ class SaleOrder(models.Model):
         default=True,
         copy=True,
         tracking=True,
-        help='เปิด (Method B) = ภาษี = ปัด(ยอดก่อนภาษี x 7%) ครั้งเดียวทั้งใบ '
-             'ปิด = ภาษี = ผลรวมภาษีรายบรรทัดที่ปัดมาแล้ว',
+        help='เปิด = ถอด VAT จากยอดรวมทั้งใบครั้งเดียว '
+             '(ยอดก่อนภาษี = ยอดรวม / 1.07) '
+             'ปิด = ภาษี = ผลรวมภาษีรายบรรทัด',
     )
     can_edit_use_new_calc = fields.Boolean(
         compute='_compute_can_edit_use_new_calc')

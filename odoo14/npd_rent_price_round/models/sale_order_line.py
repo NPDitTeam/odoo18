@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
-"""คิดยอดรายบรรทัดแบบฝั่ง Odoo 14
+"""คิดยอดรายบรรทัดของใบเช่า — ถอด VAT จากยอดรวม (ตัดสินใจ 8 ต.ค. 2569)
 
-ตัวเลขสองฝั่งต้องเท่ากันถึงหลักสตางค์ จึงลอกลำดับการปัดเศษมาทั้งดุ้น
-ห้ามย่อหรือสลับลำดับ round() เพราะผลจะต่างกันทีละสตางค์แล้วสะสมทั้งใบ
+ไม่อิงสูตรของ Odoo 14 แล้ว เพราะฝั่ง 14 คิดสองแบบปนกัน (ถอด VAT ต่อหน่วยก่อน
+บ้าง ถอดจากยอดรวมบ้าง) ยอดของ 18 จึงอาจต่างจากใบเดียวกันใน 14 ได้ — ตั้งใจ
 """
 import logging
 
@@ -83,11 +83,13 @@ class SaleOrderLine(models.Model):
 
     # ------------------------------------------------------------------
     def _npd_compute_method_a(self):
-        """ยอดรายบรรทัดแบบ Method A → {line_id: (ก่อนภาษี, รวม, ภาษี)}
+        """ยอดรายบรรทัด → {line_id: (ก่อนภาษี, รวม, ภาษี)}
 
-        คิด VAT ไปข้างหน้าจากยอดก่อนภาษีที่แสดงจริง ไม่ใช่ถอดย้อนจากราคา
-        รวม VAT ที่ปัด 2 ตำแหน่งมาแล้ว (การปัด 0.10 เป็น 0.11 ทำให้ภาษีบวม)
-        บรรทัดราคา 0 (ของแถม) ข้ามไป เพราะไม่มีอะไรให้ถอด
+        ถอด VAT จากยอดรวม: ยอดรวม = จำนวน x ราคาต่อหน่วย (ราคารวม VAT ที่ตกลงกับลูกค้า)
+        แล้วถอด 7% ออกครั้งเดียว — ไม่ปัดราคาต่อหน่วยไม่รวม VAT ก่อนคูณ
+        (เดิมปัด 1.1215 เป็น 1.12 แล้วคูณ 10,920 หน่วย ยอดหายไป 16 บาทต่อบรรทัด)
+        ตรงกับที่กล่องยอดรวมท้ายใบของ Odoo 18 คิด (ภาษีรวมในราคา + ปัดทั้งใบ)
+        บรรทัดราคา 0 (ของแถม) ข้ามไป
         """
         result = {}
         for line in self:
@@ -95,12 +97,11 @@ class SaleOrderLine(models.Model):
                 continue
             if not line.price_unit or not line.product_uom_qty:
                 continue
-            unit_ex_vat = round(line.price_unit / 1.07, 2)
-            new_subtotal = round(unit_ex_vat * line.product_uom_qty, 2)
-            new_tax = round(new_subtotal * VAT_RATE, 2)
-            result[line.id] = (new_subtotal,
-                               round(new_subtotal + new_tax, 2),
-                               new_tax)
+            new_total = round(line.price_unit * line.product_uom_qty
+                              * (1 - (line.discount or 0.0) / 100.0), 2)
+            new_subtotal = round(new_total / (1 + VAT_RATE), 2)
+            new_tax = round(new_total - new_subtotal, 2)
+            result[line.id] = (new_subtotal, new_total, new_tax)
         return result
 
     def _npd_write_order_totals(self, order_ids):
@@ -116,15 +117,25 @@ class SaleOrderLine(models.Model):
         for order_id in order_ids:
             cr.execute("""
                 select coalesce(sum(price_subtotal), 0),
-                       coalesce(sum(price_tax), 0)
+                       coalesce(sum(price_tax), 0),
+                       coalesce(sum(price_total), 0)
                   from sale_order_line where order_id = %s
             """, (order_id,))
-            untaxed, tax = cr.fetchone()
+            untaxed, tax, total = cr.fetchone()
             untaxed = round(float(untaxed or 0), 2)
             tax = round(float(tax or 0), 2)
-            if Order.browse(order_id).vat_from_total:
-                # Method B — ปัดครั้งเดียวทั้งใบ ยอมให้ต่างจากผลบวกรายบรรทัด
-                tax = round(untaxed * VAT_RATE, 2)
+            total = round(float(total or 0), 2)
+            order = Order.browse(order_id)
+            if order.vat_from_total:
+                lines = order.order_line.filtered(
+                    lambda l: not l.display_type and l.price_total)
+                if lines and all(l._npd_use_method_a() for l in lines):
+                    # ถอด VAT จากยอดรวมทั้งใบครั้งเดียว ยอดรวม = ผลรวมราคาที่ตกลงกับลูกค้า
+                    untaxed = round(total / (1 + VAT_RATE), 2)
+                    tax = round(total - untaxed, 2)
+                else:
+                    # มีบรรทัดราคาไม่รวม VAT ปนอยู่ → คิดภาษีครั้งเดียวจากยอดก่อนภาษี
+                    tax = round(untaxed * VAT_RATE, 2)
             cr.execute("""
                 update sale_order
                    set amount_untaxed = %s, amount_tax = %s, amount_total = %s

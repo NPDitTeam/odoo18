@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'NPD ปัดเศษราคาเช่า (ใบเสนอราคา)',
-    'version': '18.0.1.0.0',
+    'version': '18.0.1.1.0',
     'category': 'Sales',
     'summary': 'คิดราคาต่อหน่วยแบบถอด VAT และคิด VAT จากยอดรวม ให้ตรงกับ Odoo 14',
     'description': """
