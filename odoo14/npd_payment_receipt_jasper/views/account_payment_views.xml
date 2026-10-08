@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ช่อง "หมายเหตุ" บนหน้ารับชำระ = ฟิลด์ note ที่ใบเสร็จพิมพ์ (Payment_Note-note) เหมือน o14
+         เดิมฟอร์มแสดง payment_memo ซึ่งไม่มีรายงานไหนใช้ พิมพ์ออกมาจึงไม่มีหมายเหตุ -->
+    <record id="view_account_payment_form_receipt_note" model="ir.ui.view">
+        <field name="name">account.payment.form.receipt.note</field>
+        <field name="model">account.payment</field>
+        <field name="inherit_id" ref="account_payment_invoice.view_account_payment_form_inherit"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='payment_memo']" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+            <xpath expr="//field[@name='payment_memo']" position="after">
+                <field name="note" string="หมายเหตุ" widget="char"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

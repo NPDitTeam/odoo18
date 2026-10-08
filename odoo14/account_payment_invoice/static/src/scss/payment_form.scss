@@ -1,0 +1,32 @@
+// หน้ารับชำระ: จัดให้แน่นแบบ o14
+// Odoo 18 ให้คอลัมน์ชื่อช่องกว้างไม่เกิน 150px ชื่อไทยยาว ๆ (สถานะโอนคืนค่าเช่าส่วนต่าง ฯลฯ)
+// จึงตัดเป็น 2 บรรทัด ทุกแถวสูงขึ้นจนฟอร์มยาว — ขยายคอลัมน์ชื่อช่องและลดระยะแถว
+// คลาสจาก <form class> อาจอยู่ที่ตัว .o_form_view เองหรือข้างใน จึงไม่ผูกกับ .o_form_view
+.o_npd_payment_form {
+    @include media-breakpoint-up(sm) {
+        .o_inner_group:not(.oe_subtotal_footer) {
+            grid-template-columns: fit-content(240px) minmax(0, 1fr) !important;
+            row-gap: 0 !important;
+        }
+    }
+    .o_inner_group:not(.oe_subtotal_footer) {
+        > .o_wrap_field > .o_cell,
+        > .o_wrap_field_boolean > .o_cell {
+            padding-top: 1px !important;
+            padding-bottom: 1px !important;
+        }
+        .o_wrap_label .o_form_label {
+            white-space: nowrap;
+        }
+    }
+    // ยอดท้ายตาราง: ช่องยอดชำระ (แก้ไขได้) แคบจนตัวเลขซ้อนกับสัญลักษณ์ ฿
+    .oe_subtotal_footer {
+        .o_field_monetary {
+            justify-content: flex-end;
+            input {
+                min-width: 9rem;
+                text-align: right;
+            }
+        }
+    }
+}

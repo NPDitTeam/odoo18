@@ -11,6 +11,11 @@
         <field name="priority">50</field>
         <field name="arch" type="xml">
 
+            <!-- คลาสสำหรับจัดฟอร์มให้แน่นแบบ o14 (static/src/scss/payment_form.scss) -->
+            <xpath expr="//form" position="attributes">
+                <attribute name="class" add="o_npd_payment_form" separator=" "/>
+            </xpath>
+
             <!-- Override statusbar: แสดงเฉพาะ flow หลัก (ยกเลิกจะแสดงเฉพาะตอนเป็นสถานะปัจจุบัน) -->
             <xpath expr="//field[@name='state'][@widget='statusbar']" position="replace">
                 <field name="state" widget="statusbar" statusbar_visible="draft,paid"/>

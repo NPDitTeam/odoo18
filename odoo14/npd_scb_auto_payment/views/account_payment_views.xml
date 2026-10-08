@@ -78,6 +78,13 @@
                        decoration-warning="scb_verify_state in ['waiting', 'no_slip', 'other_company']"
                        decoration-info="scb_verify_state == 'to_check'"
                        decoration-muted="scb_verify_state == 'skipped'"/>
+                <!-- ประเภทปัญหา แสดงข้างสถานะการโอนเหมือน o14 (เฉพาะเมื่อมีปัญหา) -->
+                <field name="scb_issue_type" widget="badge" readonly="1" force_save="1"
+                       invisible="state not in ('in_process', 'paid') or not scb_issue_type"
+                       decoration-warning="scb_issue_type in ['wrong_slip', 'duplicate_receipt', 'slip_reused']"
+                       decoration-muted="scb_issue_type in ['statement_missing', 'billpay_missing']"
+                       decoration-danger="scb_issue_type in ['over_allocated', 'not_found']"
+                       decoration-info="scb_issue_type in ['amount_mismatch', 'name_mismatch', 'unreadable']"/>
             </xpath>
         </field>
     </record>

@@ -1,6 +1,6 @@
 {
     "name": "Account Payment Invoice",
-    "version": "18.0.1.0.1",
+    "version": "18.0.1.0.2",
     "license": "LGPL-3",
     "category": "Accounting",
     "summary": "Custom payment with invoice lines, paid lines, and WHT certificates",
@@ -21,6 +21,11 @@
         "views/res_users_views.xml",
         "wizard/account_payment_register_view.xml",
     ],
+    "assets": {
+        "web.assets_backend": [
+            "account_payment_invoice/static/src/scss/payment_form.scss",
+        ],
+    },
     "installable": True,
     "auto_install": False,
 }

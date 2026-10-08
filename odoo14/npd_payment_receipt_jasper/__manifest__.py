@@ -21,6 +21,7 @@
     ],
     'data': [
         'data/report_data.xml',
+        'views/account_payment_views.xml',
     ],
     'installable': True,
     'application': False,

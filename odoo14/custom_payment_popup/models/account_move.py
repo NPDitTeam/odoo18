@@ -4,6 +4,20 @@ from odoo import models, _
 class AccountMove(models.Model):
     _inherit = 'account.move'
 
+    def use_wht_billing_sheet_invoice(self):
+        """ใบสั่งขายต้นทางติ๊ก 'ใช้ภาษีหัก ณ ที่จ่ายใบแจ้งหนี้/ใบวางบิล หัก 5%' ไหม (เหมือน o14)
+        ไม่มีฟิลด์ / ไม่ได้ออกจากใบสั่งขาย = ไม่ติ๊ก, รวมหลายใบสั่งขาย ติ๊กใบใดใบหนึ่ง = หัก 5%"""
+        return any(getattr(order, 'use_wht_billing_sheet', False)
+                   for order in self.line_ids.sale_line_ids.order_id)
+
+    def _npd_rent_days(self):
+        """จำนวนวันเช่าสำหรับหน้ารับชำระ: ของใบแจ้งหนี้ก่อน ไม่มีค่อยใช้ของใบสั่งขาย"""
+        days = getattr(self, 'pfb_date_of_rent', 0) or 0
+        if not days:
+            days = max([getattr(o, 'pfb_date_of_rent', 0) or 0
+                        for o in self.line_ids.sale_line_ids.order_id] or [0])
+        return days
+
     def action_open_payment_form(self):
         """Open payment form pre-filled from invoice + auto search invoice"""
         self.ensure_one()
@@ -36,7 +50,14 @@ class AccountMove(models.Model):
             payment_type = 'outbound'
             partner_type = 'supplier'
 
+        # ตั้งค่าเริ่มต้นตามการติ๊กภาษีหัก ณ ที่จ่ายบนใบสั่งขาย เหมือน o14
+        #   ติ๊ก = ใบวางบิลหัก 5% ให้แล้ว -> หมายเหตุ "โอนเงินแบบหัก 5%" และติ๊ก Payment Multi ให้
+        #   ไม่ติ๊ก = ยอดเต็ม -> หมายเหตุ "โอนเงินแบบหัก 7%"
+        wht_5_percent = self.use_wht_billing_sheet_invoice()
         ctx = {
+            'default_note': 'โอนเงินแบบหัก 5%' if wht_5_percent else 'โอนเงินแบบหัก 7%',
+            'default_is_payment_multi': wht_5_percent,
+            'default_pfb_date_of_rent': self._npd_rent_days(),
             'default_partner_id': self.partner_id.id,
             'default_date': self.invoice_date or False,
             'default_ref': self.name,
