@@ -27,6 +27,15 @@ class SaleOrder(models.Model):
                 vals['sales_contact_id'] = order.sales_contact.id
             if getattr(order, 'contact_type', False) and not invoice.contact_type:
                 vals['contact_type'] = order.contact_type
+            # วันที่เริ่มต้น/สิ้นสุดการเช่า จากใบสั่งขาย (ฟิลด์มาจากโมดูลอื่น เช็กก่อนว่ามี)
+            for src, dst in (('start_rent_date', 'start_date'), ('end_rent_date', 'end_date')):
+                if (src in order._fields and dst in invoice._fields
+                        and order[src] and not invoice[dst]):
+                    vals[dst] = order[src]
+            if not invoice.reason_code_id:
+                rent_code = invoice._npd_default_reason_code()
+                if rent_code:
+                    vals['reason_code_id'] = rent_code.id
             if vals:
                 invoice.write(vals)
                 if len(orders) > 1:

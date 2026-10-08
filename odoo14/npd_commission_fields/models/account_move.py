@@ -4,7 +4,7 @@
 ``contact_type`` มีอยู่แล้วในระบบ (จาก pfb_npd_all_customs) ไฟล์นี้จึงเพิ่ม
 เฉพาะสองฟิลด์ที่ยังขาด และรายงานค่าคอมต้องใช้
 """
-from odoo import fields, models
+from odoo import api, fields, models
 
 
 class AccountMove(models.Model):
@@ -21,3 +21,21 @@ class AccountMove(models.Model):
         'scrap.reason.code', string='ประเภทสินค้า', copy=True, index=True,
         help='ใช้แยกว่าใบนี้เป็นใบค่าปรับสินค้าหาย/ชำรุด '
              'รายงานค่าคอมนับใบพวกนี้เป็นหนี้ค้างชำระ แต่ไม่นับเป็นยอดเช่า')
+
+    DEFAULT_REASON_CODE = 'ใบแจ้งหนี้ค่าเช่า'
+
+    @api.model
+    def _npd_default_reason_code(self):
+        """ประเภทสินค้าค่าเริ่มต้นของใบแจ้งหนี้ลูกค้า = ใบแจ้งหนี้ค่าเช่า (ไม่มี xmlid จึงหาจากชื่อ)"""
+        return self.env['scrap.reason.code'].sudo().search(
+            [('name', '=', self.DEFAULT_REASON_CODE)], limit=1)
+
+    @api.model
+    def default_get(self, fields_list):
+        res = super().default_get(fields_list)
+        if ('reason_code_id' in fields_list and not res.get('reason_code_id')
+                and (res.get('move_type') or self.env.context.get('default_move_type')) == 'out_invoice'):
+            code = self._npd_default_reason_code()
+            if code:
+                res['reason_code_id'] = code.id
+        return res
