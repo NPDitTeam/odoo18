@@ -18,6 +18,13 @@
                    position="after">
                 <field name="price_unit_no_vat" optional="show"/>
             </xpath>
+            <!-- ยอดรวม VAT ต่อบรรทัด (จำนวน x ราคา) — Odoo มีคอลัมน์ "Tax Incl." ซ่อนไว้
+                 เปิดให้แสดงเป็นค่าเริ่มต้น ช่อง "รวม" หลักเป็นยอดก่อน VAT -->
+            <xpath expr="//field[@name='order_line']/list/field[@name='price_total'][@optional]"
+                   position="attributes">
+                <attribute name="optional">show</attribute>
+                <attribute name="string">รวม VAT</attribute>
+            </xpath>
         </field>
     </record>
 </odoo>
