@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+    <!-- วันครบกำหนดใบแจ้งหนี้จากใบสั่งขาย = 14 วันนับวันที่ใบแจ้งหนี้เป็นวันแรก (+13 วัน)
+         เหมือน o14 pfb_npd_all_customs (invoice_date_due = วันนี้ + 13)
+         o18 คิดวันครบกำหนดจากเงื่อนไขการชำระเงิน ใส่วันตรง ๆ จะถูกคำนวณทับตอนยืนยัน จึงใช้เงื่อนไขแทน -->
+    <record id="npd_payment_term_due_14" model="account.payment.term">
+        <field name="name">14 วัน (นับวันออกใบเป็นวันแรก)</field>
+        <field name="line_ids" eval="[Command.clear(), Command.create({'value': 'percent', 'value_amount': 100.0, 'nb_days': 13, 'delay_type': 'days_after'})]"/>
+    </record>
+</odoo>

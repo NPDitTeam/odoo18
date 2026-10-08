@@ -255,6 +255,12 @@ class SaleOrder(models.Model):
             if journal:
                 invoice_vals['journal_id'] = journal.id
 
+        # วันครบกำหนด = 14 วันนับวันที่ใบแจ้งหนี้เป็นวันแรก (+13) บังคับเสมอ เหมือน o14
+        # (o14 ใส่ invoice_date_due ตรง ๆ + ล้างเงื่อนไขชำระ; o18 วันครบกำหนดคำนวณจากเงื่อนไข จึงใช้เงื่อนไขแทน)
+        due_term = self.env.ref('pfb_npd_all_customs.npd_payment_term_due_14', raise_if_not_found=False)
+        if due_term:
+            invoice_vals['invoice_payment_term_id'] = due_term.id
+
         return invoice_vals
 
     def _get_invoice_journal_by_so_type(self):
