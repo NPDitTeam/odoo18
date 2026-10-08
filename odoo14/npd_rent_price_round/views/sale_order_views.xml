@@ -14,9 +14,15 @@
                 <field name="vat_from_total"
                        readonly="not can_edit_use_new_calc"/>
             </xpath>
+            <!-- แบบ o14: ช่องที่พิมพ์ = ราคาไม่รวม VAT ชื่อ "ราคาต่อหน่วย"
+                 ช่องราคาที่ระบบเก็บ (รวม VAT) อยู่ถัดไป ชื่อ "ราคารวม VAT" -->
             <xpath expr="//field[@name='order_line']/list/field[@name='price_unit']"
-                   position="after">
-                <field name="price_unit_no_vat" optional="show"/>
+                   position="before">
+                <field name="price_unit_no_vat" string="ราคาต่อหน่วย" optional="show"/>
+            </xpath>
+            <xpath expr="//field[@name='order_line']/list/field[@name='price_unit']"
+                   position="attributes">
+                <attribute name="string">ราคารวม VAT</attribute>
             </xpath>
             <!-- ยอดรวม VAT ต่อบรรทัด (จำนวน x ราคา) — Odoo มีคอลัมน์ "Tax Incl." ซ่อนไว้
                  เปิดให้แสดงเป็นค่าเริ่มต้น ช่อง "รวม" หลักเป็นยอดก่อน VAT -->

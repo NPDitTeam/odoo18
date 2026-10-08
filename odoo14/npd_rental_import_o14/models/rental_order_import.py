@@ -224,6 +224,8 @@ class RentalOrderImport(models.Model):
                     # ใบส่งของซ้ำกับสต็อกที่ยกมาแล้ว
                     if row.get('state') and order.state != row['state']:
                         order.write({'state': row['state']})
+                    # o14 เก็บราคารวม VAT ปัด 2 ตำแหน่ง (1.28) → แปลงเป็น 1.2840 ให้ยอดตรง o14
+                    order.order_line._npd_normalize_vat_price()
                     order.order_line.with_context(
                         npd_skip_round=True)._npd_recalc_amounts()
                     order.invalidate_recordset(

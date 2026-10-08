@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'NPD ปัดเศษราคาเช่า (ใบเสนอราคา)',
-    'version': '18.0.1.1.0',
+    'version': '18.0.1.2.0',
     'category': 'Sales',
     'summary': 'คิดราคาต่อหน่วยแบบถอด VAT และคิด VAT จากยอดรวม ให้ตรงกับ Odoo 14',
     'description': """
@@ -27,8 +27,9 @@
   ยังไม่ได้พอร์ต — ตัวนำเข้าจะกันใบที่ใช้ค่านี้ไว้ไม่ให้ยกมาเงียบ ๆ
     """,
     'author': 'NPD Dev',
-    'depends': ['sale', 'account'],
+    'depends': ['sale', 'account', 'product'],
     'data': [
+        'data/decimal_precision.xml',
         'views/sale_order_views.xml',
         'views/res_users_views.xml',
     ],

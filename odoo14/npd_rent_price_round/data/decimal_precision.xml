@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ราคาสินค้า 4 ตำแหน่ง: ราคาไม่รวม VAT 2 ตำแหน่ง x 1.07 ได้ทศนิยมไม่เกิน 4 ตำแหน่งเสมอ
+         (1.20 -> 1.2840) เก็บได้ครบไม่ต้องปัด ยอดจึงตรงกับ ราคาไม่รวม VAT x จำนวน + 7%
+         o14 ตั้งไว้ 4-5 ตำแหน่ง -->
+    <!-- record ของ product เป็น noupdate จึงเขียนผ่าน function (รันทุกครั้งที่ -u ค่าเดิมไม่เปลี่ยน) -->
+    <function model="decimal.precision" name="write">
+        <value eval="[ref('product.decimal_price')]"/>
+        <value eval="{'digits': 4}"/>
+    </function>
+</odoo>

@@ -1,8 +1,13 @@
 # -*- coding: utf-8 -*-
-"""คิดยอดรายบรรทัดของใบเช่า — ถอด VAT จากยอดรวม (ตัดสินใจ 8 ต.ค. 2569)
+"""ราคาใบเช่าแบบ Odoo 14 — พิมพ์ราคาไม่รวม VAT แล้วคิด ราคาไม่รวม VAT x จำนวน + 7%
 
-ไม่อิงสูตรของ Odoo 14 แล้ว เพราะฝั่ง 14 คิดสองแบบปนกัน (ถอด VAT ต่อหน่วยก่อน
-บ้าง ถอดจากยอดรวมบ้าง) ยอดของ 18 จึงอาจต่างจากใบเดียวกันใน 14 ได้ — ตั้งใจ
+ช่อง "ราคาต่อหน่วย" (price_unit_no_vat) = ราคาไม่รวม VAT ที่พนักงานพิมพ์
+ระบบเก็บ price_unit = ราคารวม VAT = ราคาไม่รวม VAT x 1.07 แบบไม่ปัด (ทศนิยม 4 ตำแหน่ง)
+เช่น 1.20 -> 1.2840 ภาษีรวมในราคา + ปัดทั้งใบ จึงได้ยอดตรงกับ o14 ด้วยสูตรมาตรฐานของ Odoo
+(1.2840 x 10,920 = 14,021.28 ก่อน VAT 13,104.00) และใบแจ้งหนี้ที่ก็อปราคาไปก็ได้ยอดเดียวกัน
+
+เดิม (o14 และ o18 รุ่นแรก) ปัดราคารวม VAT เหลือ 2 ตำแหน่ง (1.28) แล้วต้องมีสูตรพิเศษ
+ถอดกลับทีละบรรทัด + เขียนยอดหัวใบด้วย SQL — เลิกใช้แล้ว ใช้สูตรมาตรฐานทั้งหมด
 """
 import logging
 
@@ -63,7 +68,8 @@ class SaleOrderLine(models.Model):
             expected = round(self.price_unit / 1.07, 2)
             if abs(self.price_unit_no_vat - expected) < 0.001:
                 return None
-            return round(self.price_unit_no_vat * 1.07, 2)
+            # ไม่ปัดเหลือ 2 ตำแหน่ง — 1.20 x 1.07 = 1.284 ต้องเก็บ 1.2840 ไม่ใช่ 1.28
+            return round(self.price_unit_no_vat * 1.07, 4)
         if abs(self.price_unit_no_vat - self.price_unit) < 0.001:
             return None
         return self.price_unit_no_vat
@@ -82,117 +88,22 @@ class SaleOrderLine(models.Model):
                 line.price_unit = new_price
 
     # ------------------------------------------------------------------
-    def _npd_compute_method_a(self):
-        """ยอดรายบรรทัด → {line_id: (ก่อนภาษี, รวม, ภาษี)}
-
-        ถอด VAT จากยอดรวม: ยอดรวม = จำนวน x ราคาต่อหน่วย (ราคารวม VAT ที่ตกลงกับลูกค้า)
-        แล้วถอด 7% ออกครั้งเดียว — ไม่ปัดราคาต่อหน่วยไม่รวม VAT ก่อนคูณ
-        (เดิมปัด 1.1215 เป็น 1.12 แล้วคูณ 10,920 หน่วย ยอดหายไป 16 บาทต่อบรรทัด)
-        ตรงกับที่กล่องยอดรวมท้ายใบของ Odoo 18 คิด (ภาษีรวมในราคา + ปัดทั้งใบ)
-        บรรทัดราคา 0 (ของแถม) ข้ามไป
-        """
-        result = {}
+    def _npd_normalize_vat_price(self):
+        """แปลงราคารวม VAT ที่ปัด 2 ตำแหน่งแบบเก่า (o14 / ใบ o18 ก่อน 8 ต.ค. 2569)
+        เป็นราคาไม่ปัด เช่น 1.28 -> ราคาไม่รวม VAT 1.20 -> 1.2840
+        ใช้ตอนยกใบจาก o14 และตอนคิดใบร่างเก่าใหม่ ไม่แตะบรรทัดที่ไม่เข้าเงื่อนไข"""
         for line in self:
-            if not line._npd_use_method_a():
+            if line.display_type or not line.price_unit or not line._npd_use_method_a():
                 continue
-            if not line.price_unit or not line.product_uom_qty:
-                continue
-            new_total = round(line.price_unit * line.product_uom_qty
-                              * (1 - (line.discount or 0.0) / 100.0), 2)
-            new_subtotal = round(new_total / (1 + VAT_RATE), 2)
-            new_tax = round(new_total - new_subtotal, 2)
-            result[line.id] = (new_subtotal, new_total, new_tax)
-        return result
-
-    def _npd_write_order_totals(self, order_ids):
-        """รวมยอดจากบรรทัดแล้วเขียนลงหัวใบด้วย SQL
-
-        ต้องเขียนด้วย SQL เพราะ amount_* เป็นฟิลด์คำนวณ ถ้าเขียนผ่าน ORM
-        สูตรมาตรฐานของ Odoo จะคำนวณทับกลับเป็นผลรวมรายบรรทัดทันที
-        """
-        if not order_ids:
-            return
-        cr = self.env.cr
-        Order = self.env['sale.order']
-        for order_id in order_ids:
-            cr.execute("""
-                select coalesce(sum(price_subtotal), 0),
-                       coalesce(sum(price_tax), 0),
-                       coalesce(sum(price_total), 0)
-                  from sale_order_line where order_id = %s
-            """, (order_id,))
-            untaxed, tax, total = cr.fetchone()
-            untaxed = round(float(untaxed or 0), 2)
-            tax = round(float(tax or 0), 2)
-            total = round(float(total or 0), 2)
-            order = Order.browse(order_id)
-            if order.vat_from_total:
-                lines = order.order_line.filtered(
-                    lambda l: not l.display_type and l.price_total)
-                if lines and all(l._npd_use_method_a() for l in lines):
-                    # ถอด VAT จากยอดรวมทั้งใบครั้งเดียว ยอดรวม = ผลรวมราคาที่ตกลงกับลูกค้า
-                    untaxed = round(total / (1 + VAT_RATE), 2)
-                    tax = round(total - untaxed, 2)
-                else:
-                    # มีบรรทัดราคาไม่รวม VAT ปนอยู่ → คิดภาษีครั้งเดียวจากยอดก่อนภาษี
-                    tax = round(untaxed * VAT_RATE, 2)
-            cr.execute("""
-                update sale_order
-                   set amount_untaxed = %s, amount_tax = %s, amount_total = %s
-                 where id = %s
-            """, (untaxed, tax, round(untaxed + tax, 2), order_id))
-
-    def _npd_force_round_sql(self):
-        rounded = self._npd_compute_method_a()
-        cr = self.env.cr
-        for line_id, (subtotal, total, tax) in rounded.items():
-            cr.execute("""
-                update sale_order_line
-                   set price_subtotal = %s, price_total = %s, price_tax = %s
-                 where id = %s
-            """, (subtotal, total, tax, line_id))
-        # ใบที่ติ๊กใช้ราคาบ้านเขียวไม่ผ่าน Method A แต่ยังต้องคิด Method B
-        # จึงต้องรวมเข้ามาด้วย ไม่งั้นยอดภาษีของใบพวกนั้นค้างเป็นแบบเก่า
-        order_ids = sorted(set(self.mapped('order_id').ids))
-        if order_ids:
-            self.env.flush_all()
-            self._npd_write_order_totals(order_ids)
-            self.env.invalidate_all()
+            exact = round(round(line.price_unit / 1.07, 2) * 1.07, 4)
+            if abs(exact - line.price_unit) > 0.00001:
+                line.with_context(npd_skip_round=True).price_unit = exact
 
     def _npd_recalc_amounts(self):
-        """สั่งคิดยอดใหม่ทั้งใบ — ใช้ตอนธงเปลี่ยนหรือหลังก็อปใบ"""
+        """คิดยอดใหม่ด้วยสูตรมาตรฐาน — ใช้ตอนสลับธง ก็อปใบ หรือยกใบจาก o14"""
         if not self:
             return
         self.invalidate_recordset(['price_subtotal', 'price_total', 'price_tax',
-                                   'use_new_calc', 'use_baan_kheaw',
-                                   'vat_from_total'])
+                                   'price_unit_no_vat'])
         self._compute_amount()
-        # ต้องบังคับให้ค่าใหม่ลงฐานก่อน ไม่งั้น SQL ด้านล่างจะไปรวมค่าเก่า
-        self.flush_recordset()
-        self._npd_force_round_sql()
-
-    # ------------------------------------------------------------------
-    @api.depends('product_uom_qty', 'discount', 'price_unit', 'tax_id',
-                 'use_new_calc', 'use_baan_kheaw')
-    def _compute_amount(self):
-        res = super()._compute_amount()
-        rounded = self._npd_compute_method_a()
-        for line in self:
-            if line.id in rounded:
-                subtotal, total, tax = rounded[line.id]
-                line.price_subtotal = subtotal
-                line.price_total = total
-                line.price_tax = tax
-        return res
-
-    @api.model_create_multi
-    def create(self, vals_list):
-        lines = super().create(vals_list)
-        lines._npd_force_round_sql()
-        return lines
-
-    def write(self, vals):
-        res = super().write(vals)
-        if not self.env.context.get('npd_skip_round'):
-            self.with_context(npd_skip_round=True)._npd_force_round_sql()
-        return res
+        self.order_id._compute_amounts()
