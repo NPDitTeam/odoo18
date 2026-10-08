@@ -69,18 +69,28 @@
                 </div>
             </xpath>
 
-            <!-- สถานะการโอน (แสดงข้าง ๆ สมุดรายวัน) -->
-            <xpath expr="(//field[@name='journal_id'][not(ancestor::list)])[1]" position="after">
+        </field>
+    </record>
+
+    <!-- สถานะการโอน (ธนาคาร) + ประเภทปัญหา ต่อจากช่องสมุดรายวัน เหมือน o14
+         ต้องสืบทอดจากวิวหน้ารับชำระของ account_payment_invoice (ที่ย้ายชื่อสาขามาต่อสมุดรายวัน)
+         ไม่งั้นชื่อสาขาจะแทรกเข้ามาคั่นระหว่างสมุดรายวันกับสองช่องนี้
+         แสดงตั้งแต่ใบร่าง (ใบรับเงินเท่านั้น) — ประเภทปัญหาแสดงเมื่อมีค่า -->
+    <record id="view_account_payment_form_scb_status" model="ir.ui.view">
+        <field name="name">account.payment.form.scb.status</field>
+        <field name="model">account.payment</field>
+        <field name="inherit_id" ref="account_payment_invoice.view_account_payment_form_inherit"/>
+        <field name="arch" type="xml">
+            <xpath expr="//group[@name='group2']/field[@name='journal_id']" position="after">
                 <field name="scb_verify_state" widget="badge" readonly="1" force_save="1"
-                       invisible="state not in ('in_process', 'paid') or payment_type != 'inbound'"
+                       invisible="payment_type != 'inbound'"
                        decoration-success="scb_verify_state == 'success'"
                        decoration-danger="scb_verify_state == 'failed'"
                        decoration-warning="scb_verify_state in ['waiting', 'no_slip', 'other_company']"
                        decoration-info="scb_verify_state == 'to_check'"
                        decoration-muted="scb_verify_state == 'skipped'"/>
-                <!-- ประเภทปัญหา แสดงข้างสถานะการโอนเหมือน o14 (เฉพาะเมื่อมีปัญหา) -->
                 <field name="scb_issue_type" widget="badge" readonly="1" force_save="1"
-                       invisible="state not in ('in_process', 'paid') or not scb_issue_type"
+                       invisible="payment_type != 'inbound' or not scb_issue_type"
                        decoration-warning="scb_issue_type in ['wrong_slip', 'duplicate_receipt', 'slip_reused']"
                        decoration-muted="scb_issue_type in ['statement_missing', 'billpay_missing']"
                        decoration-danger="scb_issue_type in ['over_allocated', 'not_found']"
