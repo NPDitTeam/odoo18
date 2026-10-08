@@ -13,6 +13,20 @@
                         invisible="state != 'posted' or payment_state == 'paid'"
                         icon="fa-money"/>
             </xpath>
+            <!-- ซ่อนปุ่มมาตรฐาน "จ่าย" (Register Payment) เหมือน o14 pfb_account_move — ให้รับชำระผ่าน "ชำระเงิน" ของ NPD
+                 และปุ่ม "พิมพ์" (PDF มาตรฐาน) ใช้แบบฟอร์ม NPD จากเมนูพิมพ์แทน -->
+            <xpath expr="//button[@id='account_invoice_payment_btn']" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+            <xpath expr="//button[@id='account_invoice_payment_secondary_btn']" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+            <xpath expr="(//header/button[@name='action_print_pdf'])[1]" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+            <xpath expr="(//header/button[@name='action_print_pdf'])[2]" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
         </field>
     </record>
 </odoo>
