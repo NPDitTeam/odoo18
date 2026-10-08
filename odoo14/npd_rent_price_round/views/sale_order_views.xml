@@ -18,7 +18,10 @@
                  ช่องราคาที่ระบบเก็บ (รวม VAT) อยู่ถัดไป ชื่อ "ราคารวม VAT" -->
             <xpath expr="//field[@name='order_line']/list/field[@name='price_unit']"
                    position="before">
-                <field name="price_unit_no_vat" string="ราคาต่อหน่วย" optional="show"/>
+                <!-- อ้าง parent.use_new_calc / use_baan_kheaw เพื่อให้หน้าจอส่งค่าธงหัวใบมากับ onchange ของบรรทัด
+                     (ไม่งั้นใบใหม่ที่ยังไม่บันทึกจะไม่รู้ว่าติ๊กถอด VAT แล้วเอาราคาไปใส่ช่องรวม VAT ตรง ๆ) -->
+                <field name="price_unit_no_vat" string="ราคาต่อหน่วย" optional="show"
+                       readonly="parent.use_baan_kheaw and not parent.use_new_calc and False"/>
             </xpath>
             <xpath expr="//field[@name='order_line']/list/field[@name='price_unit']"
                    position="attributes">

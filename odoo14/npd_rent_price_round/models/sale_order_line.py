@@ -43,7 +43,13 @@ class SaleOrderLine(models.Model):
         """
         self.ensure_one()
         order = self.order_id
-        if not order or not order.use_new_calc or order.use_baan_kheaw:
+        if not order or order.use_baan_kheaw:
+            return False
+        use_new_calc = order.use_new_calc
+        if not use_new_calc and not order._origin and 'use_new_calc' not in order._cache:
+            # ใบใหม่ที่ยังไม่บันทึก หน้าจออาจไม่ส่งค่าธงหัวใบมาให้บรรทัด → ใช้ค่าตั้งต้นของฟิลด์
+            use_new_calc = order._fields['use_new_calc'].default(order)
+        if not use_new_calc:
             return False
         return bool(self.tax_id) and any(
             tax.price_include and abs(tax.amount - 7.0) < 0.01
