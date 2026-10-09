@@ -1368,6 +1368,9 @@ class AccountVoucher(models.Model):
                 'partner_id': self.partner_id.id,
                 'debit': self.voucher_type != 'sale' and tax_vals[tax]['amount'] or 0.0,
                 'credit': self.voucher_type == 'sale' and tax_vals[tax]['amount'] or 0.0,
+                # ฐานภาษีของใบกำกับ (l10n_th) คำนวณจาก tax_base_amount ของบรรทัดนี้
+                # o14 ได้ค่าผ่าน related field ตอนสร้างใบกำกับ ใน o18 ต้องใส่เอง (แบบ Advance Clear)
+                'tax_base_amount': abs(tax_vals[tax]['base']),
             }
             if company_currency != current_currency:
                 ctx = {}

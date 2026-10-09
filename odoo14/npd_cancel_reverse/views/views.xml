@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ใบรับ/จ่ายชำระ: ซ่อนปุ่มรีเซตเป็นฉบับร่างของใบที่ลงบัญชีแล้ว -->
+    <record id="view_account_payment_form_npd_cancel_reverse" model="ir.ui.view">
+        <field name="name">account.payment.form.npd.cancel.reverse</field>
+        <field name="model">account.payment</field>
+        <field name="inherit_id" ref="account.view_account_payment_form"/>
+        <field name="priority">99</field>
+        <field name="arch" type="xml">
+            <xpath expr="//button[@name='action_draft'][@data-hotkey='w']" position="attributes">
+                <attribute name="invisible">state != 'rejected'</attribute>
+            </xpath>
+        </field>
+    </record>
+    <record id="view_account_payment_form_inherit_npd_cancel_reverse" model="ir.ui.view">
+        <field name="name">account.payment.form.invoice.npd.cancel.reverse</field>
+        <field name="model">account.payment</field>
+        <field name="inherit_id" ref="account_payment_invoice.view_account_payment_form_inherit"/>
+        <field name="arch" type="xml">
+            <xpath expr="//button[@name='action_draft']" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+            <xpath expr="//button[@name='action_cancel_payment']" position="attributes">
+                <attribute name="confirm">ต้องการยกเลิกการชำระเงินนี้? ระบบจะกลับขาบัญชี (Reverse) ใบแจ้งหนี้จะกลับเป็นค้างชำระ</attribute>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- ใบสำคัญ: Set to Draft แสดงเฉพาะใบที่ยกเลิกตอนยังไม่ลงบัญชี -->
+    <record id="view_sale_receipt_form_npd_cancel_reverse" model="ir.ui.view">
+        <field name="name">account.voucher.sale.npd.cancel.reverse</field>
+        <field name="model">account.voucher</field>
+        <field name="inherit_id" ref="account_voucher_npd.view_sale_receipt_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//button[@name='action_cancel_draft']" position="attributes">
+                <attribute name="invisible">state != 'cancel' or move_id</attribute>
+            </xpath>
+        </field>
+    </record>
+    <record id="view_purchase_receipt_form_npd_cancel_reverse" model="ir.ui.view">
+        <field name="name">account.voucher.purchase.npd.cancel.reverse</field>
+        <field name="model">account.voucher</field>
+        <field name="inherit_id" ref="account_voucher_npd.view_purchase_receipt_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//button[@name='action_cancel_draft']" position="attributes">
+                <attribute name="invisible">state != 'cancel' or move_id</attribute>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Advance Clear: รีเซตได้เฉพาะใบที่ยังไม่เคยลงบัญชี -->
+    <record id="account_advance_clear_form_npd_cancel_reverse" model="ir.ui.view">
+        <field name="name">account.advance.clear.npd.cancel.reverse</field>
+        <field name="model">account.advance.clear</field>
+        <field name="inherit_id" ref="account_advance.account_advance_clear_form_view"/>
+        <field name="priority">99</field>
+        <field name="arch" type="xml">
+            <xpath expr="//button[@name='set_draft']" position="attributes">
+                <attribute name="invisible">state not in ('cancel', 'confirm') or move_id</attribute>
+            </xpath>
+            <xpath expr="//button[@name='action_reset_draft_keep_ai']" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- รับชำระเงินสด: ปุ่มเดิมกลายเป็นยกเลิกด้วยการกลับรายการ -->
+    <record id="view_cash_payment_form_npd_cancel_reverse" model="ir.ui.view">
+        <field name="name">cash.payment.form.npd.cancel.reverse</field>
+        <field name="model">cash.payment</field>
+        <field name="inherit_id" ref="custom_cash_payment.view_cash_payment_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//button[@name='action_reset_to_draft']" position="attributes">
+                <attribute name="string">ยกเลิก (กลับรายการบัญชี)</attribute>
+                <attribute name="invisible">state != 'confirmed'</attribute>
+                <attribute name="confirm">ต้องการยกเลิกรายการนี้? ระบบจะกลับขาบัญชี (Reverse)</attribute>
+            </xpath>
+            <xpath expr="//field[@name='state']" position="attributes">
+                <attribute name="statusbar_visible">draft,confirmed,cancel</attribute>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- โอนคืนเงินลูกค้า: รีเซตได้เฉพาะยังไม่ลงบัญชี -->
+    <record id="view_refund_payment_form_npd_cancel_reverse" model="ir.ui.view">
+        <field name="name">refund.payment.form.npd.cancel.reverse</field>
+        <field name="model">refund.payment</field>
+        <field name="inherit_id" ref="custom_refund_payment.view_refund_payment_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//button[@name='action_reset_to_draft']" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+        </field>
+    </record>
+</odoo>

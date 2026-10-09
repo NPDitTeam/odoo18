@@ -1,10 +1,12 @@
 <odoo>
-    <record id="seq_cash_payment" model="ir.sequence">
-        <field name="name">Cash Payment</field>
-        <field name="code">cash.payment</field>
-        <field name="prefix">CP/%(year)s/%(month)s/%(day)s/</field>
-        <field name="padding">4</field>
-        <field name="number_next">1</field>
-        <field name="number_increment">1</field>
-    </record>
+    <!-- noupdate + ไม่ใส่ number_next: เดิมทุกครั้งที่อัปเดตโมดูล เลขถัดไปถูกตั้งกลับเป็น 1 แล้วออกเลขซ้ำ -->
+    <data noupdate="1">
+        <record id="seq_cash_payment" model="ir.sequence">
+            <field name="name">Cash Payment</field>
+            <field name="code">cash.payment</field>
+            <field name="prefix">CP/%(year)s/%(month)s/%(day)s/</field>
+            <field name="padding">4</field>
+            <field name="number_increment">1</field>
+        </record>
+    </data>
 </odoo>

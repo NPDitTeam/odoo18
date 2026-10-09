@@ -3,7 +3,7 @@
 
 {
     'name': 'Sale & Purchase Vouchers NPD',
-    'version': '18.0.1.3.0',
+    'version': '18.0.1.3.1',
     'summary': 'Manage your debts and credits thanks to simple sale/purchase receipts',
     'description': """
     Module Sale & Purchase Voucher for create sale receipt and purchase receipt derect from customer and supplier
