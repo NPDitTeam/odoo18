@@ -171,8 +171,10 @@
                         <field name="paid_ids" readonly="state != 'draft'">
                             <list editable="bottom">
                                 <field name="sequence" widget="handle"/>
-                                <field name="journal_id" string="สมุดรายวัน"/>
-                                <field name="payment_method_type" string="วิธีการชำระเงิน"/>
+                                <field name="payment_method_id" string="วิธีการชำระเงิน"/>
+                                <field name="journal_id" string="สมุดรายวัน" optional="hide"/>
+                                <field name="payment_method_type" string="ประเภท" optional="hide"/>
+                                <field name="company_id" column_invisible="True"/>
                                 <field name="amount" string="จำนวนเงิน"/>
                                 <field name="date" string="วันที่" optional="show"/>
                                 <field name="cheque_id" string="เช็ค" optional="show"
@@ -183,7 +185,7 @@
                                        invisible="payment_method_type != 'cheque'"/>
                                 <field name="bank_account_id" string="บัญชีธนาคาร" optional="show"
                                        invisible="payment_method_type not in ('bank', 'cheque')"/>
-                                <field name="account_id" string="บัญชี" optional="hide"/>
+                                <field name="account_id" string="บัญชี" optional="show"/>
                                 <field name="analytic_account_id" string="บัญชีวิเคราะห์" optional="hide"/>
                                 <field name="analytic_distribution" widget="analytic_distribution" optional="hide"/>
                                 <field name="is_write_off" string="ตัดจ่าย"/>

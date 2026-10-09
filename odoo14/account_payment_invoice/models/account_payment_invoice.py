@@ -396,6 +396,21 @@ class AccountPayment(models.Model):
         self.invalidate_recordset(['move_line_ids'])
         _logger.info('SQL rebuild done: %d lines inserted for move %s', len(line_vals), move.id)
 
+    def _get_outstanding_account(self, payment_type):
+        """บัญชีฝั่งเงินของใบรับ/จ่าย = บัญชีของวิธีการชำระเงินที่เลือก เหมือน o14
+        (o14: payment_account_id related payment_method_one_id.account_id)
+
+        Odoo 18 บังคับให้มีบัญชีนี้ตอนสร้างใบ ถ้าไม่ระบุจะไปหาบัญชีตามผังมาตรฐาน
+        ซึ่งไม่มีในผังของบริษัท ทำให้สร้างใบรับชำระไม่ได้เลย
+        """
+        account = self.payment_method_one_id.account_id
+        if not account and self.is_payment_multi:
+            account = self.paid_ids.filtered(lambda p: not p.is_write_off)[:1].account_id
+        account = account or self.journal_id.default_account_id
+        if account:
+            return account
+        return super()._get_outstanding_account(payment_type)
+
     def _prepare_payment_move_lines(self):
         """Build journal entry line values from custom invoice/paid lines.
 
@@ -1324,6 +1339,12 @@ class AccountPaidLine(models.Model):
     )
     journal_id = fields.Many2one(
         'account.journal', string='Journal', required=True,
+        compute='_compute_journal_id', store=True, readonly=False, precompute=True,
+    )
+    # o14 เลือก "วิธีการชำระเงิน" ต่อบรรทัด แล้วบัญชีตามวิธีนั้น (account_id related)
+    payment_method_id = fields.Many2one(
+        'custom.payment.method', string='วิธีการชำระเงิน',
+        domain="[('is_active', '=', True), ('company_id', 'in', [company_id, False])]",
     )
     amount = fields.Monetary(string='Amount')
     date = fields.Date(string='Date')
@@ -1335,6 +1356,7 @@ class AccountPaidLine(models.Model):
     )
     account_id = fields.Many2one(
         'account.account', string='Account',
+        compute='_compute_from_payment_method', store=True, readonly=False, precompute=True,
     )
     analytic_account_id = fields.Many2one(
         'account.analytic.account', string='Analytic Account',
@@ -1348,7 +1370,9 @@ class AccountPaidLine(models.Model):
         ('cheque', 'Cheque'),
         ('credit_card', 'Credit Card'),
         ('other', 'Other'),
-    ], string='Payment Method', default='cash')
+    ], string='Payment Method',
+        # ห้ามใส่ default: Odoo จะถือว่าผู้ใช้กรอกมาเอง แล้วไม่คำนวณ account_id ที่ใช้ compute ร่วมกัน
+        compute='_compute_from_payment_method', store=True, readonly=False, precompute=True)
     is_write_off = fields.Boolean(string='Write Off', default=False)
     write_off_account_id = fields.Many2one(
         'account.account', string='Write-off Account',
@@ -1372,6 +1396,24 @@ class AccountPaidLine(models.Model):
     cheque_date = fields.Date(
         string='Cheque Date',
     )
+
+    @api.depends('payment_id.journal_id')
+    def _compute_journal_id(self):
+        for line in self:
+            line.journal_id = line.journal_id or line.payment_id.journal_id
+
+    @api.depends('payment_method_id')
+    def _compute_from_payment_method(self):
+        types = dict(self._fields['payment_method_type'].selection)
+        for line in self:
+            method = line.payment_method_id
+            if not method:
+                # บรรทัดเก่าที่ไม่มีวิธีชำระ คงค่าที่กรอกไว้
+                line.account_id = line.account_id
+                line.payment_method_type = line.payment_method_type or 'cash'
+                continue
+            line.account_id = method.account_id
+            line.payment_method_type = method.type if method.type in types else 'other'
 
 
 # ====================================================================

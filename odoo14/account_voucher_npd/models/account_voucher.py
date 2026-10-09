@@ -1303,7 +1303,8 @@ class AccountVoucher(models.Model):
                 "move_line_id": move_line_id.id,
                 "voucher_id": self.id,
                 "partner_id": self.partner_id.id,
-                "tax_invoice_number": move_line_id.move_id.name,
+                # o14 ตอนนี้ชื่อรายการยังเป็น "/" ใบกำกับจึงได้ "/" ไว้ก่อน (o18 ยังว่าง ทำให้โพสต์ไม่ผ่านเงียบ ๆ)
+                "tax_invoice_number": move_line_id.move_id.name or '/',
                 "tax_invoice_date": fields.Date.today() or False,
                 "tax_base_amount": abs(tax_base),
                 "balance": abs(tax_amount),
@@ -1395,8 +1396,11 @@ class AccountVoucher(models.Model):
             ctx = local_context.copy()
             ctx['date'] = voucher.account_date
             ctx['check_move_validity'] = False
+            # ใบสำคัญสร้างบรรทัดภาษีเอง (vat_move_line_create) ต้องปิดการคำนวณภาษีอัตโนมัติของ o18
+            # ไม่งั้น VAT ลงซ้ำ 2 บรรทัด + บรรทัดถ่วงดุล (แบบเดียวกับ Advance Clear)
+            ctx['skip_invoice_sync'] = True
             # Create the account move record.
-            move = self.env['account.move'].create(voucher.account_move_get())
+            move = self.env['account.move'].with_context(ctx).create(voucher.account_move_get())
             # Create the first line of the voucher
             if voucher.is_payment_multi is False:
                 move_line = self.env['account.move.line'].with_context(ctx).create(
@@ -1439,7 +1443,9 @@ class AccountVoucher(models.Model):
                 'number': self.get_seq_voucher()
             })
             # Odoo 18: action_post() แทน post()
-            move.action_post()
+            move.with_context(skip_invoice_sync=True).action_post()
+            if move.state != 'posted':
+                raise UserError(_('ลงบัญชีใบสำคัญ %s ไม่สำเร็จ กรุณาตรวจเลขที่/วันที่ใบกำกับภาษี') % (voucher.number or ''))
             voucher._sync_wht_cert_state('done')
         return True
 

@@ -420,6 +420,12 @@ class AccountAdvanceClear(models.Model):
                 else company_currency,
                 "branch_id": self.branch_id.id,
             }
+            # o14 ส่งบัญชีวิเคราะห์ของบรรทัดไปที่รายการบัญชีด้วย
+            analytic = line.analytic_distribution
+            if not analytic and "account_analytic_id" in line._fields and line.account_analytic_id:
+                analytic = {str(line.account_analytic_id.id): 100}
+            if analytic:
+                move_line["analytic_distribution"] = analytic
             self.env["account.move.line"].with_context(
                 check_move_validity=False
             ).create(move_line)

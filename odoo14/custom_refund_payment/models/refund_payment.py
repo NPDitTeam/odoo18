@@ -119,11 +119,11 @@ class RefundPayment(models.Model):
                 domain.append(('branch_id', '=', rec.branch_id.id))
             # ใบที่คืนเงินประเภทนี้ไปแล้วไม่ให้เลือกซ้ำ
             if rec.transfer_type == 'overpaid_refund':
-                domain.append(('overpaid_refund_status', '=', False))
+                domain.append(('overpaid_refund_status', 'in', ('none', False)))
             elif rec.transfer_type == 'wtax_refund':
-                domain.append(('wtax_refund_status', '=', False))
+                domain.append(('wtax_refund_status', 'in', ('none', False)))
             elif rec.transfer_type == 'rental_difference':
-                domain.append(('rental_difference_status', '=', False))
+                domain.append(('rental_difference_status', 'in', ('none', False)))
             rec.payment_ids_domain = domain
 
     @api.depends('create_uid')
@@ -194,11 +194,11 @@ class RefundPayment(models.Model):
 
             for p in rec.payment_ids:
                 if rec.transfer_type == 'overpaid_refund' and hasattr(p, 'overpaid_refund_status'):
-                    p.overpaid_refund_status = ''
+                    p.overpaid_refund_status = 'none'
                 elif rec.transfer_type == 'wtax_refund' and hasattr(p, 'wtax_refund_status'):
-                    p.wtax_refund_status = ''
+                    p.wtax_refund_status = 'none'
                 elif rec.transfer_type == 'rental_difference' and hasattr(p, 'rental_difference_status'):
-                    p.rental_difference_status = ''
+                    p.rental_difference_status = 'none'
 
             rec.message_post(body='เอกสารถูกยกเลิกเรียบร้อยแล้ว')
 
@@ -216,11 +216,11 @@ class RefundPayment(models.Model):
 
             for p in rec.payment_ids:
                 if rec.transfer_type == 'overpaid_refund' and hasattr(p, 'overpaid_refund_status'):
-                    p.overpaid_refund_status = ''
+                    p.overpaid_refund_status = 'none'
                 elif rec.transfer_type == 'wtax_refund' and hasattr(p, 'wtax_refund_status'):
-                    p.wtax_refund_status = ''
+                    p.wtax_refund_status = 'none'
                 elif rec.transfer_type == 'rental_difference' and hasattr(p, 'rental_difference_status'):
-                    p.rental_difference_status = ''
+                    p.rental_difference_status = 'none'
 
             rec.message_post(body='ยกเลิกรายการและกลับเป็นฉบับร่างเรียบร้อยแล้ว')
 
@@ -289,7 +289,7 @@ class RefundPayment(models.Model):
             if rec.transfer_type == 'overpaid_refund':
                 for p in rec.payment_ids:
                     if hasattr(p, 'overpaid_refund_status'):
-                        p.overpaid_refund_status = 'overpaid_refund'
+                        p.overpaid_refund_status = 'refunded'
 
     def action_reverse_wtax(self):
         for rec in self:
@@ -420,13 +420,13 @@ class RefundPayment(models.Model):
                 rec.show_state = True
                 for p in rec.payment_ids:
                     if hasattr(p, 'wtax_refund_status'):
-                        p.wtax_refund_status = 'wtax_refund'
+                        p.wtax_refund_status = 'refunded'
 
             if rec.transfer_type == 'rental_difference':
                 rec.show_state = True
                 for p in rec.payment_ids:
                     if hasattr(p, 'rental_difference_status'):
-                        p.rental_difference_status = 'rental_difference'
+                        p.rental_difference_status = 'done'
 
 
 class RefundPaymentLine(models.Model):

@@ -7,5 +7,7 @@
         <field name="number_next">1</field>
         <field name="number_increment">1</field>
         <field name="use_date_range">True</field>
+        <!-- ใช้ร่วมทุกบริษัท ถ้าผูกบริษัทแรกไว้ บริษัทอื่นได้เลขเอกสาร "/" -->
+        <field name="company_id" eval="False"/>
     </record>
 </odoo>
