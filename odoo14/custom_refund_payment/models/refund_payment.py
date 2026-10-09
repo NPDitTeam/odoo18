@@ -154,6 +154,8 @@ class RefundPayment(models.Model):
         # o14 แยกฐานต่อบริษัทจึงหาสมุดด้วยชื่อได้ แต่ o18 ชื่อเดียวกันมีทุกบริษัท
         # หาด้วยชื่ออย่างเดียวจะได้สมุดของบริษัทอื่น จึงยึดค่าที่ตั้งไว้ของบริษัท
         self.ensure_one()
+        if not self.company_id.refund_journal_id:
+            self.company_id._npd_refund_fill_defaults()
         journal = self.company_id.refund_journal_id
         if not journal:
             raise UserError(_('บริษัท %s ยังไม่ได้ตั้ง "สมุดรายวันโอนคืนเงิน" '
@@ -162,6 +164,9 @@ class RefundPayment(models.Model):
 
     def _refund_account(self, field):
         self.ensure_one()
+        if not self.company_id[field]:
+            # ฝ่ายบัญชีอาจเพิ่มบัญชีในผังทีหลัง ลองจับจากชื่ออีกรอบก่อนแจ้งว่าไม่ได้ตั้ง
+            self.company_id._npd_refund_fill_defaults()
         account = self.company_id[field]
         if not account:
             label = self.company_id._fields[field].string
