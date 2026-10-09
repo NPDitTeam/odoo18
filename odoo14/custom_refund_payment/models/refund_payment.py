@@ -77,6 +77,11 @@ class RefundPayment(models.Model):
         readonly=True
     )
 
+    # o18 รวม 5 บริษัทไว้ในฐานเดียว ต้องรู้ว่าเอกสารเป็นของบริษัทไหน
+    # ไม่งั้นจะไปหยิบใบรับชำระ/สมุด/บัญชีข้ามบริษัท
+    company_id = fields.Many2one('res.company', string='บริษัท', required=True,
+                                 default=lambda self: self.env.company, readonly=True)
+
     move_id = fields.Many2one('account.move', string='รายการบันทึกบัญชี', readonly=True)
     reversed_wtax_move_id = fields.Many2one('account.move', string='รายการบันทึกบัญชีกลับขา (Wtax)', readonly=True)
 
@@ -92,19 +97,34 @@ class RefundPayment(models.Model):
         string='รายการชำระเงิน'
     )
 
-    @api.onchange('transfer_type')
-    def _onchange_transfer_type_domain(self):
+    # สรุปไว้แสดงในหน้ารายการ (ตามที่ทีมเพิ่มใน o14)
+    payment_ref = fields.Char(string='เลขที่การชำระเงิน', compute='_compute_payment_summary', store=True)
+    total_amount = fields.Float(string='จำนวนเงินรวม', compute='_compute_payment_summary', store=True)
+
+    # Odoo 18 เลิกให้ onchange ส่ง domain กลับมาแล้ว จึงคำนวณ domain เป็นฟิลด์ให้หน้าจอใช้
+    payment_ids_domain = fields.Binary(compute='_compute_payment_ids_domain')
+
+    @api.depends('payment_lines', 'payment_lines.payment_name', 'payment_lines.amount')
+    def _compute_payment_summary(self):
         for rec in self:
-            domain = [
-                ('payment_type', '=', 'inbound'),
-            ]
-            # Note: branch_id, overpaid_refund_status, wtax_refund_status, rental_difference_status
-            # are custom fields - add to domain when available
-            return {
-                'domain': {
-                    'payment_ids': domain
-                }
-            }
+            names = [l.payment_name for l in rec.payment_lines if l.payment_name]
+            rec.payment_ref = ', '.join(names)
+            rec.total_amount = sum(rec.payment_lines.mapped('amount'))
+
+    @api.depends('transfer_type', 'branch_id', 'company_id')
+    def _compute_payment_ids_domain(self):
+        for rec in self:
+            domain = [('payment_type', '=', 'inbound'), ('company_id', '=', rec.company_id.id)]
+            if rec.branch_id:
+                domain.append(('branch_id', '=', rec.branch_id.id))
+            # ใบที่คืนเงินประเภทนี้ไปแล้วไม่ให้เลือกซ้ำ
+            if rec.transfer_type == 'overpaid_refund':
+                domain.append(('overpaid_refund_status', '=', False))
+            elif rec.transfer_type == 'wtax_refund':
+                domain.append(('wtax_refund_status', '=', False))
+            elif rec.transfer_type == 'rental_difference':
+                domain.append(('rental_difference_status', '=', False))
+            rec.payment_ids_domain = domain
 
     @api.depends('create_uid')
     def _compute_show_fleet_refund_button(self):
@@ -131,18 +151,23 @@ class RefundPayment(models.Model):
     )
 
     def _get_journal(self):
-        db_name = self.env.cr.dbname
-        default_journal_name = 'สมุดรายวันเช่า(สาขา)'
-        journal_name_map = {
-            'NPD_Logistics_New': 'สมุดรายวันขาย',
-        }
-        target_journal_name = journal_name_map.get(db_name, default_journal_name)
-        journal = self.env['account.journal'].search([
-            ('name', '=', target_journal_name)
-        ], limit=1)
+        # o14 แยกฐานต่อบริษัทจึงหาสมุดด้วยชื่อได้ แต่ o18 ชื่อเดียวกันมีทุกบริษัท
+        # หาด้วยชื่ออย่างเดียวจะได้สมุดของบริษัทอื่น จึงยึดค่าที่ตั้งไว้ของบริษัท
+        self.ensure_one()
+        journal = self.company_id.refund_journal_id
         if not journal:
-            raise UserError("ไม่พบสมุดรายวัน กรุณาสร้างอย่างน้อย 1 รายการ")
+            raise UserError(_('บริษัท %s ยังไม่ได้ตั้ง "สมุดรายวันโอนคืนเงิน" '
+                              '(ตั้งค่า > บริษัท > แท็บโอนคืนเงินลูกค้า)') % self.company_id.name)
         return journal
+
+    def _refund_account(self, field):
+        self.ensure_one()
+        account = self.company_id[field]
+        if not account:
+            label = self.company_id._fields[field].string
+            raise UserError(_('บริษัท %s ยังไม่ได้ตั้ง "%s" '
+                              '(ตั้งค่า > บริษัท > แท็บโอนคืนเงินลูกค้า)') % (self.company_id.name, label))
+        return account
 
     def action_cancel(self):
         for rec in self:
@@ -224,11 +249,8 @@ class RefundPayment(models.Model):
                 raise UserError("สามารถกลับขาบัญชีได้เมื่อเอกสารอยู่ในสถานะ Confirmed เท่านั้น")
 
             journal = rec._get_journal()
-            debit_account = self.env['account.account'].search([('code', '=', '1112-01')], limit=1)
-            credit_account = self.env['account.account'].search([('code', '=', '9999-99')], limit=1)
-
-            if not debit_account or not credit_account:
-                raise UserError("ไม่พบบัญชีที่ต้องการกลับขา")
+            debit_account = rec._refund_account('refund_bank_current_account_id')
+            credit_account = rec._refund_account('refund_suspense_account_id')
 
             lines = []
             for line in rec.payment_lines:
@@ -280,11 +302,8 @@ class RefundPayment(models.Model):
                 raise UserError("เอกสารนี้ได้ทำการกลับขาบัญชีไปแล้ว: %s" % rec.reversed_wtax_move_id.name)
 
             journal = rec._get_journal()
-            debit_account = self.env['account.account'].search([('code', '=', '9999-99')], limit=1)
-            credit_account = self.env['account.account'].search([('code', '=', '1112-01')], limit=1)
-
-            if not debit_account or not credit_account:
-                raise UserError("ไม่พบบัญชีที่ต้องการกลับขา (1112-01 หรือ 1151-02)")
+            debit_account = rec._refund_account('refund_suspense_account_id')
+            credit_account = rec._refund_account('refund_bank_current_account_id')
 
             lines = []
             for line in rec.payment_lines:
@@ -337,20 +356,18 @@ class RefundPayment(models.Model):
 
             journal = rec._get_journal()
 
+            # คู่บัญชีเหมือน o14 ทุกประเภท เปลี่ยนแค่ที่มาของบัญชีจากรหัสเป็นค่าที่ตั้งต่อบริษัท
             if rec.transfer_type == 'overpaid_refund':
-                debit_account = self.env['account.account'].search([('code', '=', '9999-99')], limit=1)
-                credit_account = self.env['account.account'].search([('code', '=', '1113-01')], limit=1)
+                debit_account = rec._refund_account('refund_suspense_account_id')
+                credit_account = rec._refund_account('refund_bank_savings_account_id')
             elif rec.transfer_type == 'wtax_refund':
-                debit_account = self.env['account.account'].search([('code', '=', '1151-02')], limit=1)
-                credit_account = self.env['account.account'].search([('code', '=', '9999-99')], limit=1)
+                debit_account = rec._refund_account('refund_wht_account_id')
+                credit_account = rec._refund_account('refund_suspense_account_id')
             elif rec.transfer_type == 'rental_difference':
-                debit_account = self.env['account.account'].search([('code', '=', '4100-01')], limit=1)
-                credit_account = self.env['account.account'].search([('code', '=', '1112-01')], limit=1)
+                debit_account = rec._refund_account('refund_rental_income_account_id')
+                credit_account = rec._refund_account('refund_bank_current_account_id')
             else:
                 raise UserError("กรุณาเลือกประเภทการโอน")
-
-            if not debit_account or not credit_account:
-                raise UserError("รหัสบัญชีที่เกี่ยวข้องไม่พบในระบบ")
 
             lines = []
             for line in rec.payment_lines:

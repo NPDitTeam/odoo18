@@ -1,6 +1,6 @@
 {
     'name': 'Custom Refund Payment',
-    'version': '18.0.1.0.0',
+    'version': '18.0.1.1.0',
     'summary': 'โอนคืนเงินลูกค้า',
     'category': 'Accounting',
     'author': 'Your Company',
@@ -10,6 +10,8 @@
         'security/ir.model.access.csv',
         'views/refund_payment_views.xml',
         'views/res_users_views.xml',
+        'views/res_company_views.xml',
+        'data/refund_account_defaults.xml',
         'data/refund_payment_sequence.xml',
         'views/menu.xml',
     ],

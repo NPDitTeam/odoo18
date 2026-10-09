@@ -8,7 +8,10 @@
                 <field name="name"/>
                 <field name="transfer_type"/>
                 <field name="state"/>
-                <field name="payment_ids"/>
+                <field name="payment_ref"/>
+                <field name="total_amount" sum="รวมทั้งหมด"/>
+                <field name="payment_ids" widget="many2many_tags" optional="hide"/>
+                <field name="company_id" optional="hide" groups="base.group_multi_company"/>
                 <field name="date"/>
             </list>
         </field>
@@ -76,7 +79,10 @@
                         <field name="is_date_readonly" invisible="1"/>
                         <field name="name" readonly="1"/>
                         <field name="branch_id" readonly="1"/>
+                        <field name="company_id" groups="base.group_multi_company"/>
+                        <field name="payment_ids_domain" invisible="1"/>
                         <field name="payment_ids"
+                               domain="payment_ids_domain"
                                widget="many2many_tags"
                                options="{'no_create_edit': True}"
                                readonly="state in ('confirmed', 'cancelled')"/>

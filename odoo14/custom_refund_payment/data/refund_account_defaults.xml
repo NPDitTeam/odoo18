@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- เติมค่าเริ่มต้นตอนติดตั้ง/อัปเดต เฉพาะช่องที่ยังว่าง ไม่ทับที่ฝ่ายบัญชีตั้งไว้ -->
+    <function model="res.company" name="_npd_refund_fill_defaults_all"/>
+</odoo>
