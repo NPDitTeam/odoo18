@@ -1,6 +1,6 @@
 {
     "name": "Account Advance",
-    "version": "18.0.1.1.0",
+    "version": "18.0.1.2.0",
     "summary": "Employee Advance Payment Management",
     "description": "Manage employee advance requests, payments, and clearing",
     "category": "Accounting",
@@ -14,6 +14,8 @@
         "l10n_th_account_tax",
         "multi_branch_management_aagam",
         "payment_method",
+        # บัญชีภาษีหัก ณ ที่จ่ายตามแบบ ภ.ง.ด. (cert.account_id) อยู่ในโมดูลนี้
+        "withholding_tax_cert_amount",
     ],
     "data": [
         "data/ir_sequence_data.xml",

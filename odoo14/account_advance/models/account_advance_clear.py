@@ -440,7 +440,11 @@ class AccountAdvanceClear(models.Model):
         if credit < 0.0:
             credit = 0.0
         sign = -1 if debit - credit < 0 else 1
-        wht_account_id = wht_cert_line.wht_tax_id.account_id.id
+        # ถ้ายังไม่ได้ตั้งภาษีหัก ณ ที่จ่ายแบบ OCA ใช้บัญชีตามแบบ ภ.ง.ด. ของบริษัท เหมือน o14
+        wht_account_id = (wht_cert_line.wht_tax_id.account_id
+                          or wht_cert_line.cert_id.account_id).id
+        if not wht_account_id:
+            raise UserError(_("ไม่มีบัญชีภาษีหัก ณ ที่จ่าย กรุณาตั้งค่า (ตั้งค่า > บริษัท > แท็บภาษีหัก ณ ที่จ่าย)"))
         move_line = {
             "name": _("Withholding Tax"),
             "debit": debit,
