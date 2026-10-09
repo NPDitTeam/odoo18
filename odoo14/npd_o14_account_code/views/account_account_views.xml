@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_account_list_npd_o14_code" model="ir.ui.view">
+        <field name="name">account.account.list.npd.o14.code</field>
+        <field name="model">account.account</field>
+        <field name="inherit_id" ref="account.view_account_list"/>
+        <field name="arch" type="xml">
+            <field name="name" position="after">
+                <field name="npd_o14_code" optional="show"/>
+            </field>
+        </field>
+    </record>
+    <record id="view_account_form_npd_o14_code" model="ir.ui.view">
+        <field name="name">account.account.form.npd.o14.code</field>
+        <field name="model">account.account</field>
+        <field name="inherit_id" ref="account.view_account_form"/>
+        <field name="arch" type="xml">
+            <field name="account_type" position="after">
+                <field name="npd_o14_code"/>
+            </field>
+        </field>
+    </record>
+    <record id="view_account_search_npd_o14_code" model="ir.ui.view">
+        <field name="name">account.account.search.npd.o14.code</field>
+        <field name="model">account.account</field>
+        <field name="inherit_id" ref="account.view_account_search"/>
+        <field name="arch" type="xml">
+            <field name="name" position="after">
+                <field name="npd_o14_code"/>
+            </field>
+        </field>
+    </record>
+</odoo>

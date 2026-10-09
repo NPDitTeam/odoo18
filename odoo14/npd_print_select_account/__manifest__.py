@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'ปุ่มอัพเดทรายการค่าปรับบนใบแจ้งหนี้',
-    'version': '18.0.1.0.0',
+    'version': '18.0.1.1.0',
     'summary': 'ดึงรายการแตกหักเสียหาย/สินค้าหาย จากใบส่ง-ใบคืน มาลงใบแจ้งหนี้',
     'description': """
 ปุ่ม "อัพเดท" บนใบแจ้งหนี้ (พอร์ตจาก Odoo 14 npd_print_select_account)
@@ -33,6 +33,7 @@
         'stock',
         'scrap_reason_code',
         'npd_commission_fields',
+        'npd_o14_account_code',
     ],
     'data': [
         'views/account_move_views.xml',

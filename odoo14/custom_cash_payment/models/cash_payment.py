@@ -183,13 +183,14 @@ class CashPayment(models.Model):
             if rec.name in ['New', '/']:
                 rec.name = rec._next_document_number()
 
-            cash_account = self.env['account.account'].with_company(company).search(
-                [('code', '=', '1111-00')], limit=1)
-            ar_account = self.env['account.account'].with_company(company).search(
-                [('code', '=', '1113-01')], limit=1)
+            # ขาบัญชีเดิมของ o14 คือ 1111-00 / 1113-01 ผังใหม่รหัสไม่ตรงแล้ว จึงหาผ่านรหัส o14 ที่ลงไว้
+            Account = self.env['account.account']
+            cash_account = Account._npd_o14_account('1111-00', company)
+            ar_account = Account._npd_o14_account('1113-01', company)
 
             if not cash_account or not ar_account:
-                raise UserError(_("กรุณาตั้งค่าบัญชี 1111-00 หรือ 1113-01 ของบริษัท %s ให้เรียบร้อยก่อน" % company.name))
+                raise UserError(_("ไม่พบบัญชีที่ตรงกับรหัส o14 1111-00 หรือ 1113-01 ในผังของบริษัท %s "
+                                  "(ดูช่อง \"รหัสบัญชี o14\" ในผังบัญชี)" % company.name))
 
             journal = self.env['account.journal'].search(
                 [('type', '=', 'cash'), ('company_id', '=', company.id)], limit=1)

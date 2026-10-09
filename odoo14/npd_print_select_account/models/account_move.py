@@ -44,11 +44,8 @@ class AccountMove(models.Model):
         ], limit=1)
 
     def _psa_account(self, code):
-        company = self._psa_company()
-        return self.env['account.account'].with_company(company).search([
-            ('code', '=', code),
-            ('company_ids', 'in', company.id),
-        ], limit=1)
+        # รหัสในตารางข้างบนเป็นรหัส o14 ผังใหม่รันรหัสใหม่ จึงหาผ่านรหัส o14 ที่ลงไว้ในบัญชี
+        return self.env['account.account']._npd_o14_account(code, self._psa_company())
 
     def _psa_undue_vat_tax(self):
         company = self._psa_company()

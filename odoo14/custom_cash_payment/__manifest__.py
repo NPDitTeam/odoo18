@@ -1,11 +1,11 @@
 {
     'name': 'Custom Cash Payment',
-    'version': '18.0.1.0.0',
+    'version': '18.0.1.1.0',
     'summary': 'ชำระเงินสด',
     'category': 'Accounting',
     'author': 'Your Company',
     'license': 'LGPL-3',
-    'depends': ['account', 'mail', 'account_payment_invoice', 'multi_branch_management_aagam'],
+    'depends': ['account', 'mail', 'account_payment_invoice', 'multi_branch_management_aagam', 'npd_o14_account_code'],
     'data': [
         'security/ir.model.access.csv',
         'security/cash_payment_security.xml',
