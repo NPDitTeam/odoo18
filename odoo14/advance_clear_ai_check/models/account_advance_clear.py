@@ -1924,7 +1924,8 @@ class AccountAdvanceClearAI(models.Model):
 
     def _check_cash_bill_match_detail(self, tolerance=1.0):
         u"""ตรวจบิลเงินสด (เงื่อนไขใหม่):
-        จับคู่ amount ของ cash_bill_ids แต่ละรายการ กับ price_unit ใน clear_ids
+        จับคู่ cash_bill_ids แต่ละรายการ กับ clear_ids: amount = price_unit, หรือ amount+VAT = ยอดบรรทัดรวม VAT,
+        หรือ amount = ยอดบรรทัดก่อน VAT (ราคา x จำนวน)
         ถ้าทุกรายการ register มี detail line ที่ยอดตรงกัน → ผ่าน
         Returns: {pass, matched, unmatched, message, detail_unused}
         """
@@ -1942,7 +1943,17 @@ class AccountAdvanceClearAI(models.Model):
             price = line.price_unit or 0
             if price > 0:
                 pname = (line.product_id.display_name if line.product_id else '') or line.name or ''
-                detail_pool.append({'id': line.id, 'price': price, 'product': pname})
+                qty = line.quantity or 1.0
+                # ยอดทั้งบรรทัด (ราคา x จำนวน) ทั้งแบบรวม VAT และก่อน VAT — รองรับบิลเงินสด
+                # ที่ซื้อหลายชิ้น หรือออกเป็นใบกำกับภาษีลายมือแยก VAT (เคส AD-261010-0001)
+                try:
+                    taxes = line.tax_ids.compute_all(price, self.currency_id, qty, product=line.product_id)
+                    total_incl = taxes['total_included']
+                    total_excl = taxes['total_excluded']
+                except Exception:
+                    total_incl = total_excl = price * qty
+                detail_pool.append({'id': line.id, 'price': price, 'product': pname,
+                                    'total_incl': total_incl, 'total_excl': total_excl})
         matched = []
         unmatched = []
         used_ids = set()
@@ -1950,11 +1961,16 @@ class AccountAdvanceClearAI(models.Model):
             amt = cb.amount or 0
             if amt <= 0:
                 continue
+            amt_incl = amt + (cb.vat_amount or 0)
             found = None
             for d in detail_pool:
                 if d['id'] in used_ids:
                     continue
-                if abs(amt - d['price']) < tolerance:
+                # 1) จำนวนเงิน = ราคาต่อหน่วย (แบบเดิม)  2) จำนวนเงิน+VAT = ยอดบรรทัดรวม VAT
+                # 3) จำนวนเงิน = ยอดบรรทัดก่อน VAT
+                if (abs(amt - d['price']) < tolerance
+                        or abs(amt_incl - d['total_incl']) < tolerance
+                        or abs(amt - d['total_excl']) < tolerance):
                     used_ids.add(d['id'])
                     found = d
                     break
