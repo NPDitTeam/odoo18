@@ -41,7 +41,9 @@ class RentalOrderImport(models.Model):
 
     # ------------------------------------------------------------------
     def _fetch_orders(self, date_from, date_to, limit=None, names=None):
-        domain = [('npd_so_type', '=', 'rent'),
+        # ช่องประเภทใบที่ o14 ใช้จริงคือ pfb_so_type — npd_so_type เกือบทั้งหมดเป็น sale
+        # (เดิมกรองด้วย npd_so_type: กรุงเทพ/เอส กรุ๊ปหาไม่เจอสักใบ อินเตอร์เจอ 77 จาก 5,286)
+        domain = [('pfb_so_type', '=', 'rent'),
                   ('renewal_bill_status', '=', 'renew')]
         if names:
             domain.append(('name', 'in', list(names)))

@@ -89,7 +89,7 @@ class RentalImportConfig(models.Model):
     def action_test_connection(self):
         self.ensure_one()
         count = self.execute_kw('sale.order', 'search_count', [[
-            ('npd_so_type', '=', 'rent'),
+            ('pfb_so_type', '=', 'rent'),  # ช่องประเภทใบที่ o14 ใช้จริง (npd_so_type เกือบทั้งหมดเป็น sale)
             ('renewal_bill_status', '=', 'renew'),
         ]])
         message = _('ต่อได้ — ฐาน %s มีใบเช่าต่ออายุ %s ใบ') % (self.db_name, count)
