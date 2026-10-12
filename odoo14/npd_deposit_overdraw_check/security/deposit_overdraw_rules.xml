@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- o18 ทุกบริษัทอยู่ฐานเดียว เห็นเฉพาะบริษัทที่เลือกอยู่ -->
+    <record id="rule_npd_deposit_overdraw_company" model="ir.rule">
+        <field name="name">ตรวจสอบเงินประกันเบิกเกิน: เฉพาะบริษัทที่เลือก</field>
+        <field name="model_id" ref="model_npd_deposit_overdraw"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+    </record>
+</odoo>

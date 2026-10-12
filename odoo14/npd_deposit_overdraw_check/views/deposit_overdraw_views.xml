@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_npd_deposit_overdraw_tree" model="ir.ui.view">
+        <field name="name">npd.deposit.overdraw.list</field>
+        <field name="model">npd.deposit.overdraw</field>
+        <field name="arch" type="xml">
+            <list create="false" edit="false" delete="false"
+                  decoration-danger="state == 'over'" decoration-muted="state == 'settled'">
+                <field name="date"/>
+                <field name="move_name"/>
+                <field name="move_ref" optional="show"/>
+                <field name="invoice_origin" optional="show"/>
+                <field name="partner_id"/>
+                <field name="line_name" optional="hide"/>
+                <field name="account_id" optional="hide"/>
+                <field name="company_id" optional="show" groups="base.group_multi_company"/>
+                <field name="currency_id" invisible="1"/>
+                <field name="debit" sum="รวม"/>
+                <field name="cumulated" sum="รวม"/>
+                <field name="partner_balance" optional="show"/>
+                <field name="state" widget="badge"
+                       decoration-danger="state == 'over'" decoration-success="state == 'settled'"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_npd_deposit_overdraw_form" model="ir.ui.view">
+        <field name="name">npd.deposit.overdraw.form</field>
+        <field name="model">npd.deposit.overdraw</field>
+        <field name="arch" type="xml">
+            <form create="false" edit="false" delete="false">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="move_id"/>
+                            <field name="date"/>
+                            <field name="move_ref"/>
+                            <field name="invoice_origin"/>
+                            <field name="line_name"/>
+                        </group>
+                        <group>
+                            <field name="partner_id"/>
+                            <field name="account_id"/>
+                            <field name="currency_id" invisible="1"/>
+                            <field name="debit"/>
+                            <field name="cumulated"/>
+                            <field name="partner_balance"/>
+                            <field name="state"/>
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_npd_deposit_overdraw_search" model="ir.ui.view">
+        <field name="name">npd.deposit.overdraw.search</field>
+        <field name="model">npd.deposit.overdraw</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="move_name"/>
+                <field name="partner_id"/>
+                <field name="invoice_origin"/>
+                <filter name="still_over" string="ยังเกินอยู่" domain="[('state', '=', 'over')]"/>
+                <filter name="settled" string="ปรับยอดแล้ว" domain="[('state', '=', 'settled')]"/>
+                <separator/>
+                <filter name="date" string="วันที่" date="date"/>
+                <group>
+                    <filter name="group_partner" string="คู่ค้า" context="{'group_by': 'partner_id'}"/>
+                    <filter name="group_state" string="สถานะ" context="{'group_by': 'state'}"/>
+                    <filter name="group_month" string="เดือน" context="{'group_by': 'date:month'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_npd_deposit_overdraw" model="ir.actions.act_window">
+        <field name="name">ตรวจสอบเงินประกันการเช่าเบิกเกิน</field>
+        <field name="res_model">npd.deposit.overdraw</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_npd_deposit_overdraw_search"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">ไม่พบรายการเงินประกันการเช่าที่เบิกเกิน</p>
+            <p>รายการที่คืน/ใช้เงินประกันแล้วยอดสะสมของลูกค้าเป็นบวก (เกินกว่าที่รับไว้) จะแสดงที่นี่</p>
+        </field>
+    </record>
+
+    <menuitem id="menu_npd_deposit_overdraw"
+              name="ตรวจสอบเงินประกันการเช่าเบิกเกิน"
+              parent="sale.sale_menu_root"
+              action="action_npd_deposit_overdraw"
+              sequence="40"
+              groups="sales_team.group_sale_salesman"/>
+</odoo>
