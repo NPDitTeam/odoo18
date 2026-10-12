@@ -96,6 +96,8 @@ class RentalOrderImport(models.Model):
     def _prepare_order_values(self, row, partner, branch):
         Order = self.env['sale.order']
         values = {
+            # ใช้เลขใบเดิมของ o14 (เลขย้อนหลัง อ้างอิงกับลูกค้า/เอกสารเดิม) ไม่ออกเลขใหม่
+            'name': row.get('name'),
             'partner_id': partner.id,
             'date_order': row.get('date_order'),
             'company_id': self.company_id.id,
@@ -126,7 +128,7 @@ class RentalOrderImport(models.Model):
             values['note'] = row['note']
         return values
 
-    def _prepare_line_values(self, row, code_index):
+    def _prepare_line_values(self, row, code_index, tax_names=None):
         product = self._map_product(row.get('product_id'), code_index)
         display_type = row.get('display_type')
         values = {
@@ -147,7 +149,7 @@ class RentalOrderImport(models.Model):
             _uom_field_name(self.env): uom.id,
             'price_unit': row.get('price_unit') or 0.0,
             'discount': row.get('discount') or 0.0,
-            'tax_id': [(6, 0, self._map_taxes(row.get('tax_id')).ids)],
+            'tax_id': [(6, 0, self._map_taxes(row.get('tax_id'), tax_names).ids)],
         })
         return values, None
 
@@ -171,10 +173,19 @@ class RentalOrderImport(models.Model):
                        if line.get('product_id')}
         code_index = self._product_code_index(product_ids)
         partner_vat = self._partner_vat_index(rows)
+        # search_read ของ many2many ส่งมาแค่ id ต้องขอชื่อภาษีมาเอง ไม่งั้นจับคู่ภาษีมั่ว
+        tax_names = self._tax_name_index({
+            t for lines in lines_by_order.values() for line in lines
+            for t in (line.get('tax_id') or []) if isinstance(t, int)})
 
         Order = self.env['sale.order'].sudo().with_context(
             allowed_company_ids=self._all_companies())
         created, updated, blocked, failed, mismatched = [], [], [], [], []
+
+        # สินค้าที่ใบใช้แต่ฝั่ง 18 ยังไม่มี: คัดลอกจาก o14 พร้อมลงสต็อกตาม o14
+        new_products, product_failed = self._ensure_products_from_o14(
+            sorted(product_ids), code_index)
+        new_partners, price_updates = [], 0
 
         for row in rows:
             name = row.get('name')
@@ -187,10 +198,22 @@ class RentalOrderImport(models.Model):
             partner = self._map_partner(
                 row.get('partner_id'), vat=partner_vat.get(row['id']))
             if not partner:
-                blocked.append(_('%s ไม่พบลูกค้า "%s" ฝั่ง 18')
-                               % (name, (row.get('partner_id') or ['', '-'])[1]))
-                continue
+                # ฝั่ง 18 ไม่มีจริง (ไม่เจอทั้งเลขผู้เสียภาษีและชื่อ) คัดลอกจาก o14
+                try:
+                    with self.env.cr.savepoint():
+                        partner = self._ensure_partner_from_o14(row.get('partner_id'))
+                        new_partners.append('%s (%s)' % (partner.name, partner.vat or '-'))
+                except Exception as error:
+                    partner = self.env['res.partner'].browse()
+                    blocked.append(_('%s สร้างลูกค้า "%s" ไม่ได้: %s')
+                                   % (name, (row.get('partner_id') or ['', '-'])[1], str(error)[:150]))
+                    continue
             branch = self._map_branch(row.get('branch_id'))
+            clash = self._name_clash(row)
+            if clash:
+                blocked.append(_('%s เลขซ้ำกับใบ %s ที่มีอยู่แล้วในบริษัทเดียวกันฝั่ง 18')
+                               % (name, clash.display_name))
+                continue
 
             try:
                 with self.env.cr.savepoint():
@@ -198,11 +221,19 @@ class RentalOrderImport(models.Model):
                                              ('o14_source_db', '=', self.db_name)],
                                             limit=1)
                     values = self._prepare_order_values(row, partner, branch)
+                    # ราคาในรายการราคาของสาขาต้องตรง o14 ด้วย (ใบหลังย้ายจะดึงราคาจากตรงนี้)
+                    pricelist = self.env['product.pricelist'].browse(values.get('pricelist_id'))
+                    if pricelist and self._pricelist_matches(row, pricelist):
+                        o14_pids = {l['product_id'][0] for l in lines_by_order.get(row['id'], [])
+                                    if l.get('product_id')}
+                        price_updates += self._sync_pricelist_prices(
+                            pricelist, self._o14_pricelist_prices(row.get('pricelist_id'), o14_pids),
+                            code_index)
                     line_commands, problem = [], None
                     for line_row in sorted(lines_by_order.get(row['id'], []),
                                            key=lambda r: r.get('sequence') or 0):
                         line_values, problem = self._prepare_line_values(
-                            line_row, code_index)
+                            line_row, code_index, tax_names)
                         if problem:
                             break
                         line_commands.append((0, 0, line_values))
@@ -232,7 +263,7 @@ class RentalOrderImport(models.Model):
                         npd_skip_round=True)._npd_recalc_amounts()
                     order.invalidate_recordset(
                         ['amount_untaxed', 'amount_tax', 'amount_total'])
-                    diff = self._compare_amounts(order, row)
+                    diff = self._compare_amounts(order, row, lines_by_order.get(row['id'], []))
                     if diff:
                         mismatched.append('%s %s' % (name, diff))
             except Exception as error:
@@ -242,11 +273,52 @@ class RentalOrderImport(models.Model):
         self.env.cr.commit()
         text = self._import_report(rows, created, updated, blocked,
                                    failed, mismatched)
+        if new_partners:
+            text += '\n\n' + _('สร้างลูกค้าใหม่จาก o14 (%s ราย):') % len(new_partners) \
+                + '\n  ' + '\n  '.join(new_partners[:50])
+        if price_updates:
+            text += '\n\n' + _('ปรับราคาในรายการราคาให้ตรง o14: %s รายการ') % price_updates
+        if new_products:
+            text += '\n\n' + _('สร้างสินค้าใหม่จาก o14 (%s ตัว):') % len(new_products) \
+                + '\n  ' + '\n  '.join(new_products[:50])
+        if product_failed:
+            text += '\n\n' + _('สร้างสินค้าไม่ได้:') + '\n  ' + '\n  '.join(product_failed[:20])
         self._note(text)
         return text
 
-    def _compare_amounts(self, order, row):
-        """คืนข้อความบอกส่วนต่าง ถ้ายอดตรงหมดคืนค่าว่าง"""
+    def _name_clash(self, row):
+        """ใบฝั่ง 18 ที่ใช้เลขเดียวกันในบริษัทเดียวกัน และไม่ใช่ใบที่ยกมาจากใบนี้เอง"""
+        return self.env['sale.order'].sudo().with_context(
+            allowed_company_ids=self._all_companies()).search([
+                ('name', '=', row.get('name')),
+                ('company_id', '=', self.company_id.id),
+                '|', ('o14_order_name', '!=', row.get('name')),
+                ('o14_source_db', '!=', self.db_name),
+            ], limit=1)
+
+    def _pricelist_matches(self, row, pricelist):
+        """รายการราคาฝั่ง 18 ที่ได้ ตรงชื่อกับของ o14 จริง (ไม่ใช่ตัวสำรอง "เริ่มต้น")"""
+        o14 = ((row.get('pricelist_id') or [0, ''])[1] or '').strip()
+        if o14.endswith(')') and '(' in o14:
+            o14 = o14[:o14.rfind('(')].strip()
+        return bool(o14) and pricelist.with_context(lang='th_TH').name.strip().startswith(o14)
+
+    def _o14_line_amounts(self, o14_lines):
+        lines = [l for l in o14_lines if not l.get('display_type')]
+        untaxed = round(sum(l.get('price_subtotal') or 0.0 for l in lines), 2)
+        total = round(sum(l.get('price_total') or 0.0 for l in lines), 2)
+        return {'amount_untaxed': untaxed, 'amount_tax': round(total - untaxed, 2), 'amount_total': total}
+
+    def _compare_amounts(self, order, row, o14_lines=None):
+        """คืนข้อความบอกส่วนต่าง ถ้ายอดตรงหมดคืนค่าว่าง
+
+        เทียบกับยอดหัวใบ o14 ก่อน ถ้าไม่ตรงแต่ตรงกับยอดรวมของรายการ o14 ถือว่าตรง
+        (หัวใบ o14 ค้างได้ เช่นเปลี่ยนวันเช่าแล้วหัวใบไม่คำนวณใหม่)
+        """
+        if o14_lines:
+            want = self._o14_line_amounts(o14_lines)
+            if all(abs(round(order[f] or 0.0, 2) - want[f]) < 0.01 for f in want):
+                return ''
         parts = []
         for field_name, label in (('amount_untaxed', 'ก่อนภาษี'),
                                   ('amount_tax', 'ภาษี'),

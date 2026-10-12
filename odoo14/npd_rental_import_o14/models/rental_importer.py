@@ -44,7 +44,13 @@ ORDER_FIELDS = [
 LINE_FIELDS = [
     'product_id', 'name', 'product_uom_qty', 'product_uom', 'price_unit',
     'discount', 'tax_id', 'sequence', 'display_type',
+    # ยอดรายบรรทัด ใช้เทียบแทนยอดหัวใบ o14 ที่อาจค้าง
+    'price_subtotal', 'price_tax', 'price_total',
 ]
+
+# ช่องลูกค้าที่คัดลอกจาก o14 เมื่อฝั่ง 18 ยังไม่มีลูกค้ารายนี้
+PARTNER_FIELDS = ['name', 'vat', 'is_company', 'street', 'street2', 'city', 'zip',
+                  'phone', 'mobile', 'email', 'branch']
 
 
 class RentalImporter(models.Model):
@@ -109,6 +115,81 @@ class RentalImporter(models.Model):
                 return (same or found)[0]
         return Partner.browse()
 
+    def _ensure_partner_from_o14(self, o14_value):
+        """ลูกค้าที่ฝั่ง 18 ไม่มีจริง (ไม่เจอทั้งเลขผู้เสียภาษีและชื่อ) — คัดลอกจาก o14"""
+        if not o14_value:
+            return self.env['res.partner'].browse()
+        o14_id = o14_value[0] if isinstance(o14_value, (list, tuple)) else o14_value
+        available = set(self.execute_kw('res.partner', 'fields_get', [[], ['type']]).keys())
+        rows = self.execute_kw('res.partner', 'read',
+                               [[o14_id], [f for f in PARTNER_FIELDS if f in available]])
+        if not rows:
+            return self.env['res.partner'].browse()
+        row = rows[0]
+        Partner = self.env['res.partner'].sudo()
+        values = {}
+        for f in PARTNER_FIELDS:
+            if f in row and f in Partner._fields and row[f] not in (False, None):
+                values[f] = row[f].strip() if isinstance(row[f], str) else row[f]
+        values['name'] = (values.get('name') or (o14_value[1] if isinstance(o14_value, (list, tuple)) else '')).strip()
+        values['company_type'] = 'company' if row.get('is_company') else 'person'
+        values.pop('is_company', None)
+        # o18 บังคับเลขผู้เสียภาษีเป็นตัวเลข 13 หลักขึ้นไป (ไม่รู้ให้ใส่ 0000000000000)
+        # เลขใน o14 ที่ไม่ผ่านกติกา เก็บของเดิมไว้ในหมายเหตุ ให้ฝ่ายขายตามแก้
+        vat = values.get('vat') or ''
+        if not (vat.isdigit() and len(vat) >= 13):
+            if vat and 'comment' in Partner._fields:
+                values['comment'] = _('เลขผู้เสียภาษีใน Odoo 14: %s (ไม่ผ่านกติกา 13 หลัก ต้องตามแก้)') % vat
+            values['vat'] = '0000000000000'
+        return Partner.with_context(skip_email_required=True).create(values)
+
+    def _o14_pricelist_prices(self, o14_pricelist, o14_product_ids):
+        """ราคาในรายการราคาของ o14 ต่อสินค้า (product.product id) — {id: ราคา}"""
+        if not o14_pricelist or not o14_product_ids:
+            return {}
+        pl_id = o14_pricelist[0] if isinstance(o14_pricelist, (list, tuple)) else o14_pricelist
+        prods = self.execute_kw('product.product', 'read', [sorted(o14_product_ids), ['product_tmpl_id']])
+        tmpl_of = {p['id']: p['product_tmpl_id'][0] for p in prods if p.get('product_tmpl_id')}
+        items = self.execute_kw('product.pricelist.item', 'search_read', [
+            [('pricelist_id', '=', pl_id), ('product_tmpl_id', 'in', sorted(set(tmpl_of.values())))],
+            ['product_tmpl_id', 'fixed_price']])
+        price_of_tmpl = {i['product_tmpl_id'][0]: i.get('fixed_price') or 0.0 for i in items
+                         if i.get('product_tmpl_id')}
+        return {pid: price_of_tmpl[t] for pid, t in tmpl_of.items() if t in price_of_tmpl}
+
+    def _pricelist_diffs(self, pricelist, o14_prices, code_index):
+        """เทียบราคาในรายการราคาฝั่ง 18 กับ o14 — คืน [(product, ราคา o14, ราคา 18 หรือ None)]"""
+        Item = self.env['product.pricelist.item'].sudo()
+        out = []
+        for pid, price in o14_prices.items():
+            product = self._map_product([pid, ''], code_index)
+            if not product:
+                out.append((None, pid, price, None))
+                continue
+            item = Item.search([('pricelist_id', '=', pricelist.id),
+                                ('product_tmpl_id', '=', product.product_tmpl_id.id)], limit=1)
+            out.append((product, pid, price, item.fixed_price if item else None))
+        return out
+
+    def _sync_pricelist_prices(self, pricelist, o14_prices, code_index):
+        """ตั้งราคาในรายการราคาฝั่ง 18 ให้ตรง o14 เฉพาะสินค้าที่ส่งมา — คืนจำนวนที่แก้/เพิ่ม"""
+        Item = self.env['product.pricelist.item'].sudo()
+        changed = 0
+        for product, _pid, price, current in self._pricelist_diffs(pricelist, o14_prices, code_index):
+            if not product:
+                continue
+            if current is None:
+                Item.create({'pricelist_id': pricelist.id, 'applied_on': '1_product',
+                             'product_tmpl_id': product.product_tmpl_id.id,
+                             'compute_price': 'fixed', 'fixed_price': price})
+                changed += 1
+            elif abs(current - price) > 0.0001:
+                Item.search([('pricelist_id', '=', pricelist.id),
+                             ('product_tmpl_id', '=', product.product_tmpl_id.id)], limit=1).write(
+                    {'fixed_price': price, 'compute_price': 'fixed'})
+                changed += 1
+        return changed
+
     @staticmethod
     def _strip_branch_suffix(name):
         """ตัดวงเล็บท้ายชื่อนิติบุคคลออก เช่น "(สำนักงานใหญ่)" หรือ "(สาขาที่ 1)" """
@@ -137,9 +218,12 @@ class RentalImporter(models.Model):
     def _map_pricelist(self, o14_value, branch):
         """รายการราคา — ฝั่ง 14 ชื่อซ้ำทุกสาขา ฝั่ง 18 เอาชื่อสาขาต่อท้าย"""
         Pricelist = self.env['product.pricelist'].sudo().with_context(
-            allowed_company_ids=self._all_companies())
+            allowed_company_ids=self._all_companies(), lang='th_TH')
         name = ((o14_value[1] if isinstance(o14_value, (list, tuple))
                  else o14_value) or '').strip()
+        # ชื่อที่ได้จาก o14 เป็นชื่อแสดงผล ต่อท้ายสกุลเงิน "เรทเดือน (THB)" ต้องตัดออก
+        if name.endswith(')') and '(' in name:
+            name = name[:name.rfind('(')].strip()
         if name and branch:
             found = Pricelist.search(
                 [('name', '=', '%s %s' % (name, branch.name))], limit=1)
@@ -160,15 +244,17 @@ class RentalImporter(models.Model):
         label = o14_value[1] if isinstance(o14_value, (list, tuple)) else ''
         Product = self.env['product.product'].sudo().with_context(
             allowed_company_ids=self._all_companies(), active_test=False)
+        # รหัส PR/xxxxx ระบบแต่ละฐานออกเอง รหัสเดียวกันอีกฐานอาจเป็นคนละสินค้า
+        # จึงไม่ใช้จับคู่ (ตรงกับปุ่มยกสินค้า ที่สร้างสินค้า PR/ โดยไม่ใส่รหัส)
         code = (o14_code_by_id or {}).get(o14_id)
-        if code:
+        if code and not code.startswith('PR/'):
             found = Product.search([('default_code', '=', code)], limit=1)
             if found:
                 return found
         # ป้ายฝั่ง 14 มาในรูป "[รหัส] ชื่อ" แกะรหัสออกมาใช้ก่อน
         if label.startswith('['):
             code = label[1:label.find(']')] if ']' in label else ''
-            if code:
+            if code and not code.startswith('PR/'):
                 found = Product.search([('default_code', '=', code)], limit=1)
                 if found:
                     return found
@@ -185,10 +271,13 @@ class RentalImporter(models.Model):
             tax_id = value[0] if isinstance(value, (list, tuple)) else value
             name = (value[1] if isinstance(value, (list, tuple))
                     else (o14_tax_names or {}).get(tax_id, ''))
+            if not name:
+                # ไม่รู้ชื่อภาษีต้นทาง ห้ามเดา (เดิมได้ภาษีขายตัวแรกของบริษัทมาแทน)
+                continue
             found = Tax.search([('name', '=', name),
                                 ('company_id', '=', self.company_id.id)], limit=1)
             if not found:
-                found = Tax.search([('name', 'like', name.split()[0] if name else ''),
+                found = Tax.search([('name', 'like', name.split()[0]),
                                     ('company_id', '=', self.company_id.id),
                                     ('type_tax_use', '=', 'sale')], limit=1)
             result |= found
@@ -197,6 +286,102 @@ class RentalImporter(models.Model):
     # ==================================================================
     # 1) สินค้า
     # ==================================================================
+    def _find_template_for_o14(self, row):
+        """สินค้าฝั่ง 18 ที่ตรงกับแถว product.template ของ o14 (รหัสจริงก่อน PR/ ใช้ชื่อ)"""
+        Template = self.env['product.template'].sudo().with_context(
+            allowed_company_ids=self._all_companies(), active_test=False)
+        code = (row.get('default_code') or '').strip()
+        name = (row.get('name') or '').strip()
+        if code and not code.startswith('PR/'):
+            return Template.search([('default_code', '=', code)], limit=1)
+        return Template.search([('name', '=', name)], limit=1)
+
+    def _template_values_from_o14(self, row):
+        """ค่าสินค้าฝั่ง 18 คัดลอกจากที่ตั้งไว้ใน o14 — คืน (values, ปัญหา)"""
+        code = (row.get('default_code') or '').strip()
+        name = (row.get('name') or '').strip()
+        kind, storable = PRODUCT_TYPE_MAP.get(row.get('type'), ('consu', True))
+        uom = self._map_uom(row.get('uom_id'))
+        if not uom:
+            return None, '%s (ไม่พบหน่วยนับ %s)' % (name, row.get('uom_id'))
+        values = {
+            'name': name,
+            'type': kind,
+            'is_storable': storable,
+            'uom_id': uom.id,
+            'uom_po_id': (self._map_uom(row.get('uom_po_id')) or uom).id,
+            'categ_id': self._map_category(row.get('categ_id')).id,
+            'list_price': row.get('list_price') or 0.0,
+            'standard_price': row.get('standard_price') or 0.0,
+            'sale_ok': bool(row.get('sale_ok')),
+            'purchase_ok': bool(row.get('purchase_ok')),
+        }
+        # รหัสที่ระบบออกให้เอง (PR/xxxxx) ไม่ตรงกันสองฝั่ง ไม่ใส่
+        if code and not code.startswith('PR/'):
+            values['default_code'] = code
+        return values, None
+
+    def _missing_o14_products(self, o14_product_ids, code_index):
+        """id สินค้าฝั่ง 14 ที่ฝั่ง 18 ยังไม่มี"""
+        return [pid for pid in o14_product_ids
+                if not self._map_product([pid, ''], code_index)]
+
+    def _ensure_products_from_o14(self, o14_product_ids, code_index):
+        """สร้างสินค้าที่ใบเช่าใช้แต่ฝั่ง 18 ยังไม่มี โดยคัดลอกจาก o14 พร้อมลงสต็อกตาม o14
+
+        คืน (สร้างแล้ว [ข้อความ], สร้างไม่ได้ [ข้อความ])
+        """
+        created, failed = [], []
+        missing = self._missing_o14_products(o14_product_ids, code_index)
+        if not missing:
+            return created, failed
+        prows = self.execute_kw('product.product', 'read',
+                                [sorted(missing), ['product_tmpl_id', 'qty_available']])
+        tmpl_ids = sorted({r['product_tmpl_id'][0] for r in prows if r.get('product_tmpl_id')})
+        available = set(self.execute_kw('product.template', 'fields_get',
+                                        [[], ['type']]).keys())
+        trows = {r['id']: r for r in self.execute_kw(
+            'product.template', 'read',
+            [tmpl_ids, [f for f in PRODUCT_FIELDS if f in available]])}
+        Template = self.env['product.template'].sudo().with_context(
+            allowed_company_ids=self._all_companies(), active_test=False)
+        for prow in prows:
+            trow = trows.get(prow['product_tmpl_id'][0]) if prow.get('product_tmpl_id') else None
+            if not trow:
+                failed.append(_('อ่านสินค้า id %s จาก o14 ไม่ได้') % prow['id'])
+                continue
+            template = self._find_template_for_o14(trow)
+            if not template:
+                values, problem = self._template_values_from_o14(trow)
+                if problem:
+                    failed.append(problem)
+                    continue
+                template = Template.create(values)
+            qty = prow.get('qty_available') or 0.0
+            if template.is_storable:
+                self._set_stock_qty(template.product_variant_id, qty)
+            created.append(_('%s %s (สต็อกตาม o14 %s)') % (
+                trow.get('default_code') or '-', trow.get('name'),
+                '{:,.2f}'.format(qty) if template.is_storable else '-'))
+        return created, failed
+
+    def _set_stock_qty(self, product, qty):
+        """ตั้งยอดคงเหลือในคลังหลักของบริษัทปลายทาง = qty"""
+        warehouse = self.env['stock.warehouse'].sudo().search(
+            [('company_id', '=', self.company_id.id)], limit=1)
+        if not warehouse:
+            raise UserError(_('บริษัท %s ยังไม่มีคลังสินค้าฝั่ง 18') % self.company_id.name)
+        location = warehouse.lot_stock_id
+        Quant = self.env['stock.quant'].sudo().with_context(
+            inventory_mode=True, allowed_company_ids=self._all_companies())
+        quant = Quant.search([('product_id', '=', product.id),
+                              ('location_id', '=', location.id)], limit=1)
+        if quant:
+            quant.write({'inventory_quantity': qty})
+        else:
+            quant = Quant.create({'product_id': product.id, 'location_id': location.id,
+                                  'inventory_quantity': qty})
+        quant.action_apply_inventory()
     def action_sync_products(self):
         """สร้างสินค้าเช่าที่ฝั่ง 18 ยังไม่มี — จับคู่ด้วยรหัสสินค้า"""
         self.ensure_one()
@@ -209,30 +394,11 @@ class RentalImporter(models.Model):
         for row in rows:
             code = (row.get('default_code') or '').strip()
             name = (row.get('name') or '').strip()
-            # รหัสที่ระบบออกให้เอง (PR/xxxxx) ไม่ตรงกันสองฝั่ง ใช้ชื่อแทน
-            usable_code = code and not code.startswith('PR/')
-            domain = ([('default_code', '=', code)] if usable_code
-                      else [('name', '=', name)])
-            existing = Template.search(domain, limit=1)
-            kind, storable = PRODUCT_TYPE_MAP.get(row.get('type'), ('consu', True))
-            uom = self._map_uom(row.get('uom_id'))
-            if not uom:
-                skipped.append('%s (ไม่พบหน่วยนับ %s)' % (name, row.get('uom_id')))
+            existing = self._find_template_for_o14(row)
+            values, problem = self._template_values_from_o14(row)
+            if problem:
+                skipped.append(problem)
                 continue
-            values = {
-                'name': name,
-                'type': kind,
-                'is_storable': storable,
-                'uom_id': uom.id,
-                'uom_po_id': (self._map_uom(row.get('uom_po_id')) or uom).id,
-                'categ_id': self._map_category(row.get('categ_id')).id,
-                'list_price': row.get('list_price') or 0.0,
-                'standard_price': row.get('standard_price') or 0.0,
-                'sale_ok': bool(row.get('sale_ok')),
-                'purchase_ok': bool(row.get('purchase_ok')),
-            }
-            if usable_code:
-                values['default_code'] = code
             if existing:
                 existing.write(values)
                 updated.append(name)

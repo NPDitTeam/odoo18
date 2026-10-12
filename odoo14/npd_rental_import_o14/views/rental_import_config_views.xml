@@ -31,6 +31,8 @@
                     <button name="action_sync_stock" type="object"
                             string="3. ยกสต็อก" class="btn-primary"
                             confirm="ปรับยอดคงเหลือฝั่ง 18 ให้ตรงฝั่ง 14 ดำเนินการต่อไหม"/>
+                    <button name="action_open_check_wizard" type="object"
+                            string="4. ตรวจ/ดึงรายใบ" class="btn-secondary"/>
                 </header>
                 <sheet>
                     <group>
@@ -56,6 +58,30 @@
                                widget="text"/>
                     </group>
                 </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_rental_import_check_wizard_form" model="ir.ui.view">
+        <field name="name">npd.rental.import.check.wizard.form</field>
+        <field name="model">npd.rental.import.check.wizard</field>
+        <field name="arch" type="xml">
+            <form>
+                <group>
+                    <field name="config_id"/>
+                    <field name="names" placeholder="เช่น SO-26100100018 SO-26100500003 (หลายใบคั่นด้วยเว้นวรรค/ขึ้นบรรทัดใหม่)"/>
+                </group>
+                <div class="alert alert-info" role="alert">
+                    "ตรวจ" ไล่ให้ดูว่าใบติดอะไร (ลูกค้า สินค้า ภาษี ยอดเงิน) โดยไม่บันทึกอะไรลงระบบ
+                    เมื่อตรวจผ่านแล้วค่อยกด "ยกจริงเฉพาะใบนี้"
+                </div>
+                <field name="result" nolabel="1" readonly="1"/>
+                <footer>
+                    <button name="action_check" type="object" string="ตรวจ (ไม่บันทึก)" class="btn-primary"/>
+                    <button name="action_import" type="object" string="ยกจริงเฉพาะใบนี้" class="btn-secondary"
+                            confirm="ยกใบที่กรอกเข้า Odoo 18 จริง (ใบที่เคยยกแล้วจะถูกอัปเดตทับ) ดำเนินการต่อไหม"/>
+                    <button string="ปิด" class="btn-link" special="cancel"/>
+                </footer>
             </form>
         </field>
     </record>
