@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'ขนส่ง',
-    'version': '18.0.1.2.2',
+    'version': '18.0.1.2.3',
     'category': 'Operations/Inventory',
     'summary': 'ระบบจัดการขนส่งและซิงค์ข้อมูลจาก Odoo 14',
     'description': """
