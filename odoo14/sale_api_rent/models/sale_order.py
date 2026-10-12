@@ -48,12 +48,18 @@ class SaleOrder(models.Model):
             )
 
     def action_fetch_rental_data(self):
-        """ เปิด popup (wizard) ให้เลือกบริษัทแหล่งดึง + กรอกเลข SO """
+        """ ดึงข้อมูลการเช่า — กรอกบริษัท + เลข SO บนฟอร์มครบแล้วดึงเลยเหมือน o14
+            ยังกรอกไม่ครบค่อยเปิด popup ให้เลือก """
         self.ensure_one()
 
         # ใช้ได้เฉพาะใบสั่งขายของบริษัท เอ็นพีดี โลจิสติกส์ จำกัด เท่านั้น
         if self.company_id.company_registry != NPD_LOGISTICS_REGISTRY:
             raise UserError(_("❌ ฟังก์ชันนี้ใช้ได้เฉพาะบริษัท เอ็นพีดี โลจิสติกส์ จำกัด เท่านั้น"))
+
+        so_number = (self.so_number or "").strip()
+        if self.source_company_id and so_number:
+            self._fetch_rental_data(self.source_company_id, so_number)
+            return True
 
         return {
             "type": "ir.actions.act_window",
