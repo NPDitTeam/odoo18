@@ -40,6 +40,35 @@ class SaleOrder(models.Model):
         compute="_compute_is_npd_logistics_company",
     )
 
+    # ------------------------------------------------------------------
+    # โลจิสติกส์เปิดแค่ SO สำหรับงานขนส่ง ไม่ผ่านใบเสนอราคา (o14 ฐานโลจิสติกส์ไม่มีใบเสนอราคาแยก)
+    # กด "สร้าง" จากเมนูใบกำกับการเช่า -> เป็นใบสั่งขาย (order_sequence) เลขรัน SO ทันที
+    # บริษัทอื่นยังต้องเปิดใบเสนอราคาแล้ว Convert to Order เหมือนเดิม
+    # ------------------------------------------------------------------
+    def _is_logistics_direct_order(self, company_id=None):
+        if self.env.context.get("menu_name") != "Sales Orders Rent":
+            return False
+        company = self.env["res.company"].browse(company_id) if company_id else self.env.company
+        return company.company_registry == NPD_LOGISTICS_REGISTRY
+
+    @api.model
+    def default_get(self, fields_list):
+        res = super().default_get(fields_list)
+        # ให้ฟอร์มใบใหม่แสดงหัวแบบใบสั่งขาย (ปุ่มยืนยัน) ไม่ใช่หัวใบเสนอราคา
+        if "order_sequence" in self._fields and self._is_logistics_direct_order(res.get("company_id")):
+            res["order_sequence"] = True
+        return res
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        # order_sequence เป็นช่องอ่านอย่างเดียว ฟอร์มไม่ส่งมาตอนบันทึก จึงตั้งที่นี่
+        # ต้องตั้งก่อน sale_isolated_quotation.create ไม่งั้นได้เลข QT
+        if "order_sequence" in self._fields:
+            for vals in vals_list:
+                if "order_sequence" not in vals and self._is_logistics_direct_order(vals.get("company_id")):
+                    vals["order_sequence"] = True
+        return super().create(vals_list)
+
     @api.depends("company_id", "company_id.company_registry")
     def _compute_is_npd_logistics_company(self):
         for order in self:
