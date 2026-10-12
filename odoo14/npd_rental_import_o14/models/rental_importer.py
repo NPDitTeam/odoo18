@@ -6,6 +6,7 @@
 พอถึงวันย้ายก็กดใหม่ทับได้เลย ไม่ต้องล้างของเก่าทิ้งก่อน
 """
 import logging
+import re
 from datetime import date
 
 from odoo import fields, models, _
@@ -53,8 +54,30 @@ PARTNER_FIELDS = ['name', 'vat', 'is_company', 'street', 'street2', 'city', 'zip
                   'phone', 'mobile', 'email', 'branch']
 
 
+def product_name_key(name):
+    """กุญแจเทียบชื่อสินค้าข้ามฐาน: ไม่สนตัวพิมพ์ ช่องว่าง ขีด และ "ชุด" ที่ o14 ใช้แทนขีด
+
+    o14 มีชื่อที่ขีดกลายเป็นคำว่า "ชุด" เช่น "HชุดFrame" = "H-Frame", "250ชุด620" = "250-620"
+    """
+    text = (name or '').lower()
+    if text.startswith('['):
+        text = text.split(']', 1)[-1]
+    text = re.sub(r'(?<=[0-9a-z.])ชุด(?=[0-9a-z(])', '-', text)
+    return re.sub(r'[\s\-]+', '', text)
+
+
 class RentalImporter(models.Model):
     _inherit = 'npd.rental.import.config'
+
+    def _product_name_conflict(self, o14_label, product):
+        """รหัสตรงแต่เป็นคนละสินค้า — คืนชื่อฝั่ง 18 ที่ขัดกัน หรือค่าว่างถ้าตรงกัน"""
+        if not product or not o14_label:
+            return ''
+        key14 = product_name_key(o14_label)
+        names18 = {product.with_context(lang=l).name for l in ('th_TH', 'en_US')}
+        if any(product_name_key(n) == key14 for n in names18 if n):
+            return ''
+        return product.with_context(lang='th_TH').name
 
     # ==================================================================
     # ตัวช่วยจับคู่ข้ามฐาน

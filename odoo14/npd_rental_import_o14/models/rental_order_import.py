@@ -141,6 +141,11 @@ class RentalOrderImport(models.Model):
             return values, None
         if not product:
             return None, _('ไม่พบสินค้า %s') % (row.get('product_id') or '-')
+        o14_label = (row.get('product_id') or [0, ''])[1]
+        conflict = self._product_name_conflict(o14_label, product)
+        if conflict:
+            # รหัสเดียวกันแต่ฝั่ง 18 เป็นคนละสินค้า ยกไปจะได้สินค้า/ราคาผิด ต้องแก้รหัสก่อน
+            return None, _('รหัสเดียวกันแต่เป็นคนละสินค้า: ฝั่ง 14 "%s" / ฝั่ง 18 "%s"') % (o14_label, conflict)
         uom = self._map_uom(row.get('product_uom')) or product.uom_id
         values.update({
             'product_id': product.id,

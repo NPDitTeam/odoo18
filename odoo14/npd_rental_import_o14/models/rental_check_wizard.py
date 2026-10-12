@@ -207,11 +207,12 @@ class RentalImportCheckWizard(models.TransientModel):
             if not product:
                 icon = WARN
             else:
-                o14_name = o14_prod.split(']', 1)[1].strip() if o14_prod.startswith('[') else o14_prod
-                if o14_name and o14_name != product.name:
-                    icon = WARN
-                    head.append((WARN, _('รหัสเดียวกันแต่ชื่อต่างกัน: ฝั่ง 14 "%s" / ฝั่ง 18 "%s" — ตรวจว่าเป็นสินค้าตัวเดียวกัน')
-                                 % (o14_name, product.name)))
+                conflict = cfg._product_name_conflict(o14_prod, product)
+                if conflict:
+                    icon = BAD
+                    line_ok = False
+                    head.append((BAD, _('รหัสเดียวกันแต่เป็นคนละสินค้า: ฝั่ง 14 "%s" / ฝั่ง 18 "%s" — ต้องแก้รหัสสินค้าก่อนยก')
+                                 % (o14_prod, conflict)))
             pid = (l.get('product_id') or [0])[0]
             p14 = o14_prices.get(pid)
             p18 = o18_prices.get(pid)
