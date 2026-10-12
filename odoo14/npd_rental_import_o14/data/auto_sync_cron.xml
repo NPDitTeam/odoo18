@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        <!-- ซิงก์ถึงวันย้ายระบบเช่า (เวลาไทย) หลังจากนั้นงานจะปิดตัวเอง -->
+        <record id="param_rental_auto_sync_until" model="ir.config_parameter">
+            <field name="key">npd_rental_import_o14.auto_sync_until</field>
+            <field name="value">2026-12-31</field>
+        </record>
+
+        <!-- เซิร์ฟเวอร์เป็น UTC: อาทิตย์ 19:00 UTC = จันทร์ 02:00 เวลาไทย -->
+        <record id="ir_cron_rental_auto_sync" model="ir.cron">
+            <field name="name">NPD: ซิงก์สินค้าเช่า/รายการราคาจาก Odoo 14 (รายสัปดาห์)</field>
+            <field name="model_id" ref="model_npd_rental_import_config"/>
+            <field name="state">code</field>
+            <field name="code">model._cron_auto_sync()</field>
+            <field name="interval_number">1</field>
+            <field name="interval_type">weeks</field>
+            <field name="nextcall">2026-10-18 19:00:00</field>
+            <field name="user_id" ref="base.user_root"/>
+            <field name="active" eval="True"/>
+        </record>
+    </data>
+
+    <function model="npd.rental.import.config" name="_init_auto_sync_flags"/>
+</odoo>

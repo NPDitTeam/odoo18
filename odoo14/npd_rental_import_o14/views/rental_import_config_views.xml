@@ -48,6 +48,10 @@
                             <field name="company_id"/>
                             <field name="last_run" readonly="1"/>
                         </group>
+                        <group string="ซิงก์อัตโนมัติ (ทุกวันจันทร์ 02:00 น. ถึง 31/12/2569)">
+                            <field name="auto_sync_products"/>
+                            <field name="auto_sync_pricelists"/>
+                        </group>
                     </group>
                     <div class="alert alert-info" role="alert">
                         กดตามลำดับ 1 → 2 → 3 ก่อนยกใบเช่า เพราะใบต้องอ้างถึงสินค้าและราคาที่มีอยู่แล้ว

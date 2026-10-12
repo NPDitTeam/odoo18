@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'NPD ยกข้อมูลใบเช่าจาก Odoo 14',
-    'version': '18.0.1.1.0',
+    'version': '18.0.1.2.0',
     'category': 'Sales',
     'summary': 'ยกใบเช่าต่ออายุ สินค้า รายการราคา และสต็อก จากฐาน ERP ฝั่ง Odoo 14',
     'description': """
@@ -41,6 +41,7 @@
     ],
     'data': [
         'security/ir.model.access.csv',
+        'data/auto_sync_cron.xml',
         'views/rental_import_config_views.xml',
         'views/sale_order_views.xml',
         'views/menus.xml',
