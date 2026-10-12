@@ -1,6 +1,6 @@
 {
     'name': 'PFB NPD : all Customs',
-    'version': '18.0.1.11.0',
+    'version': '18.0.1.12.0',
     'author': 'PP',
     'license': 'AGPL-3',
     'website': '',
@@ -8,7 +8,9 @@
     'depends': ['sale_management', 'sale_stock', 'product', 'account',
                 'npd_npd_all_customs', 'sale_invoice_plan', 'sale_order_line_menu',
                 # ปุ่ม Add Debit Note บนฟอร์มใบแจ้งหนี้ (views/account_move.xml)
-                'account_debit_note'],
+                'account_debit_note',
+                # บริษัท/สาขาต่อจากสถานะการตรวจสอบ (views/sale_order.xml)
+                'multi_branch_management_aagam'],
     'data': [
         'security/ir.model.access.csv',
         'security/invoice_journal_config_rules.xml',

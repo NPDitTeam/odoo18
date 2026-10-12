@@ -282,4 +282,21 @@
             </xpath>
         </field>
     </record>
+
+    <!-- บริษัท + สาขา ต่อจาก "สถานะการตรวจสอบ" ให้พนักงานเห็นว่าใบนี้อยู่บริษัท/สาขาไหน
+         (o18 รวมทุกบริษัทในฐานเดียว ต่างจาก o14 ที่แยกฐานจนดูจากฐานที่เข้าก็รู้)
+         อ่านอย่างเดียว: ย้ายบริษัท/สาขาของใบที่ออกแล้วกระทบเลขเอกสารและบัญชี -->
+    <record id="view_order_form_company_branch" model="ir.ui.view">
+        <field name="name">sale.order.form.npd.company.branch</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="pfb_npd_all_customs.view_order_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='state_sale']" position="after">
+                <field name="company_id" string="บริษัท" readonly="1"
+                       options="{'no_open': True}"/>
+                <field name="branch_id" string="Branch Name" readonly="1"
+                       options="{'no_open': True}"/>
+            </xpath>
+        </field>
+    </record>
 </odoo>
