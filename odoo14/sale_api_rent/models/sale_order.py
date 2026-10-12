@@ -59,7 +59,8 @@ class SaleOrder(models.Model):
         so_number = (self.so_number or "").strip()
         if self.source_company_id and so_number:
             self._fetch_rental_data(self.source_company_id, so_number)
-            return True
+            return self._fetch_rental_done_notification(
+                {"type": "ir.actions.client", "tag": "soft_reload"})
 
         return {
             "type": "ir.actions.act_window",
@@ -71,6 +72,25 @@ class SaleOrder(models.Model):
                 "default_order_id": self.id,
                 "default_source_company_id": self.source_company_id.id or False,
                 "default_so_number": self.so_number or "",
+            },
+        }
+
+    def _fetch_rental_done_notification(self, next_action):
+        """ แจ้งผลหลังดึงสำเร็จ — พนักงานจะได้รู้ว่าดึงมาจริงและได้กี่รายการ """
+        self.ensure_one()
+        return {
+            "type": "ir.actions.client",
+            "tag": "display_notification",
+            "params": {
+                "title": _("ดึงข้อมูลการเช่าสำเร็จ"),
+                "message": _("ดึงจาก %(so)s (%(company)s) ได้ %(count)s รายการสินค้า") % {
+                    "so": self.so_number,
+                    "company": self.source_company_id.name,
+                    "count": len(self.order_line),
+                },
+                "type": "success",
+                "sticky": False,
+                "next": next_action,
             },
         }
 

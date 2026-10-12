@@ -254,8 +254,13 @@ class SaleOrder(models.Model):
         for order in self.filtered('transfer_ref_id'):
             if not order._sp_is_logistics():
                 continue
+            # ใบเสนอราคากับใบสั่งขายที่ Convert มาจากกันเป็นงานเดียวกัน ใช้ใบโยกร่วมกันได้
+            linked = order.ids
+            for name in ('quote_id', 'order_id'):
+                if name in order._fields:
+                    linked += order[name].ids
             other = self.sudo().search([
-                ('id', '!=', order.id),
+                ('id', 'not in', linked),
                 ('transfer_ref_id', '=', order.transfer_ref_id.id),
                 ('state', '!=', 'cancel'),
             ], limit=1)
@@ -275,11 +280,30 @@ class SaleOrder(models.Model):
         return super().action_confirm()
 
     # ------------------------------------------------------------------
+    # Convert to Order (sale_isolated_quotation) สร้างใบสั่งขายด้วย copy() ซึ่งข้ามช่อง copy=False
+    # ช่องงานขนส่งต้องตามไปด้วย ไม่งั้นใบสั่งขายไม่มีประเภท/หมายเหตุ/ผล AI ของใบเสนอราคา
+    # (ส่วนการทำสำเนาปกติยังล้างช่องเหล่านี้ เพราะงานใหม่ต้องกรอกและตรวจใหม่)
+    _CONVERT_CARRY_FIELDS = ('shipment_purpose', 'shipment_note', 'shipment_note_ai_state',
+                             'shipment_note_ai_feedback', 'transfer_ref_id')
+
+    def copy_data(self, default=None):
+        vals_list = super().copy_data(default=default)
+        if default and default.get('quote_id'):
+            for order, vals in zip(self, vals_list):
+                for name in self._CONVERT_CARRY_FIELDS:
+                    if name not in vals:
+                        value = order[name]
+                        vals[name] = value.id if isinstance(value, models.BaseModel) else value
+        return vals_list
+
     @api.model_create_multi
     def create(self, vals_list):
         vals_list = [self._sync_shipment_purpose_fields(vals) for vals in vals_list]
         orders = super().create(vals_list)
-        orders._run_shipment_note_ai_check()
+        # ใบที่ยกผล AI มาจากใบเสนอราคา (Convert to Order) ตรวจแล้ว ไม่ต้องเรียก AI ซ้ำ
+        checked = orders.browse([order.id for order, vals in zip(orders, vals_list)
+                                 if vals.get('shipment_note_ai_state')])
+        (orders - checked)._run_shipment_note_ai_check()
         return orders
 
     def write(self, vals):

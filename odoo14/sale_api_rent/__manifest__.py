@@ -1,7 +1,7 @@
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl.html).
 {
     "name": "Sale Api Rent",
-    "version": "18.0.1.0.1",
+    "version": "18.0.1.0.2",
     "author": "NPD",
     "category": "Sales",
     "summary": "ดึงข้อมูลการเช่าจากบริษัทอื่น (popup) มายังใบสั่งขายของบริษัท เอ็นพีดี โลจิสติกส์ ภายในฐานข้อมูลเดียวกัน",

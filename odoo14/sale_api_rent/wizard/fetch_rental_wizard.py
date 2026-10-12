@@ -29,4 +29,5 @@ class SaleRentFetchWizard(models.TransientModel):
         if not self.order_id:
             raise UserError(_("ไม่พบใบสั่งขายปลายทาง"))
         self.order_id._fetch_rental_data(self.source_company_id, self.so_number)
-        return {"type": "ir.actions.act_window_close"}
+        return self.order_id._fetch_rental_done_notification(
+            {"type": "ir.actions.act_window_close"})
