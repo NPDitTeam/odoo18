@@ -62,12 +62,52 @@ def product_name_key(name):
     text = (name or '').lower()
     if text.startswith('['):
         text = text.split(']', 1)[-1]
+    # o14 มีสินค้าที่ถูกเปลี่ยนชื่อเป็น "... (สำเนา)" แต่เป็นตัวเดียวกับฝั่ง 18
+    text = text.replace('(สำเนา)', '')
     text = re.sub(r'(?<=[0-9a-z.])ชุด(?=[0-9a-z(])', '-', text)
     return re.sub(r'[\s\-]+', '', text)
 
 
+class _DryRun(Exception):
+    """ใช้ย้อน savepoint ตอนทดลอง"""
+
+
 class RentalImporter(models.Model):
     _inherit = 'npd.rental.import.config'
+
+    def _o14_product_fields(self):
+        """ช่องสินค้าที่ผู้ใช้เชื่อมต่อฝั่ง 14 อ่านได้จริง
+
+        ผู้ใช้ที่ใช้เชื่อมต่อบางฐานไม่มีสิทธิ์ "Access to product costs" อ่าน standard_price
+        แล้วทั้งคำสั่งล้ม — ตัดช่องที่อ่านไม่ได้ออก ดีกว่ายกสินค้าไม่ได้ทั้งหมด
+        """
+        available = set(self.execute_kw('product.template', 'fields_get', [[], ['type']]).keys())
+        fields_ = [f for f in PRODUCT_FIELDS if f in available]
+        try:
+            self.execute_kw('product.template', 'search_read', [[], fields_], {'limit': 1})
+        except Exception as error:  # noqa: BLE001
+            if 'standard_price' not in str(error):
+                raise
+            fields_ = [f for f in fields_ if f != 'standard_price']
+        return fields_
+
+    def _template_from_o14_label(self, label):
+        """สินค้าฝั่ง 18 จากป้าย "[รหัส] ชื่อ" ของ o14: รหัส (ที่ชื่อตรงกัน) ก่อน แล้วชื่อ"""
+        Template = self.env['product.template'].sudo().with_context(
+            allowed_company_ids=self._all_companies(), active_test=False)
+        code = label[1:label.find(']')] if label.startswith('[') and ']' in label else ''
+        key = product_name_key(label)
+        if code and not code.startswith('PR/'):
+            found = Template.search([('default_code', '=', code)], limit=1)
+            if found and any(product_name_key(found.with_context(lang=l).name) == key
+                             for l in ('en_US', 'th_TH')):
+                return found
+        name = label.split(']', 1)[-1].strip() if label.startswith('[') else label
+        head = name[:6]
+        for cand in Template.search([('name', 'ilike', head)]) if head else []:
+            if any(product_name_key(cand.with_context(lang=l).name) == key for l in ('en_US', 'th_TH')):
+                return cand
+        return Template.browse()
 
     def _product_name_conflict(self, o14_label, product):
         """รหัสตรงแต่เป็นคนละสินค้า — คืนชื่อฝั่ง 18 ที่ขัดกัน หรือค่าว่างถ้าตรงกัน"""
@@ -282,7 +322,11 @@ class RentalImporter(models.Model):
                 if found:
                     return found
             label = label.split(']', 1)[1].strip()
-        return Product.search([('name', '=', label.strip())], limit=1)
+        found = Product.search([('name', '=', label.strip())], limit=1)
+        if found:
+            return found
+        # ชื่อเขียนต่างกันเล็กน้อย (ตัวพิมพ์ ขีด/"ชุด") ใช้กุญแจชื่อเทียบ
+        return self._template_from_o14_label(label).product_variant_id
 
     def _map_taxes(self, o14_values, o14_tax_names=None):
         """ภาษีต้องเป็นของบริษัทเดียวกัน ไม่งั้น Odoo ตีกลับตอนบันทึก"""
@@ -361,11 +405,8 @@ class RentalImporter(models.Model):
         prows = self.execute_kw('product.product', 'read',
                                 [sorted(missing), ['product_tmpl_id', 'qty_available']])
         tmpl_ids = sorted({r['product_tmpl_id'][0] for r in prows if r.get('product_tmpl_id')})
-        available = set(self.execute_kw('product.template', 'fields_get',
-                                        [[], ['type']]).keys())
         trows = {r['id']: r for r in self.execute_kw(
-            'product.template', 'read',
-            [tmpl_ids, [f for f in PRODUCT_FIELDS if f in available]])}
+            'product.template', 'read', [tmpl_ids, self._o14_product_fields()])}
         Template = self.env['product.template'].sudo().with_context(
             allowed_company_ids=self._all_companies(), active_test=False)
         for prow in prows:
@@ -405,114 +446,202 @@ class RentalImporter(models.Model):
             quant = Quant.create({'product_id': product.id, 'location_id': location.id,
                                   'inventory_quantity': qty})
         quant.action_apply_inventory()
-    def action_sync_products(self):
-        """สร้างสินค้าเช่าที่ฝั่ง 18 ยังไม่มี — จับคู่ด้วยรหัสสินค้า"""
+    def action_sync_products(self, dry_run=False):
+        """ยกสินค้าเช่าให้ตรงฝั่ง 14 — จับคู่ด้วย "ชื่อ" ก่อน แล้วแก้รหัสฝั่ง 18 ให้ตรง o14
+
+        เดิมจับคู่ด้วยรหัสแล้วเขียนทับทั้งตัว แต่รหัสฝั่ง 18 หลายตัวไม่ตรง o14
+        (เช่นชุด REE-0133..0152 เลื่อนไป 1) การเขียนทับตามรหัสจะเปลี่ยนสินค้าที่ใบเช่า/สต็อก
+        ฝั่ง 18 ผูกอยู่ให้กลายเป็นคนละขนาด จึงยึดชื่อเป็นตัวตน แล้วย้ายรหัสให้ถูกแทน
+
+        * ชื่อตรง (ไม่สนตัวพิมพ์/ช่องว่าง/ขีด) → แก้รหัสให้ตรง o14 + ราคา/ต้นทุน/หมวด
+          (ไม่แก้ชื่อ ไม่แก้หน่วยนับ: สินค้าที่มีสต็อกแล้ว Odoo ไม่ให้เปลี่ยนหน่วย)
+        * ไม่เจอชื่อ → สร้างใหม่ ถ้ารหัสถูกสินค้าอื่นฝั่ง 18 ถืออยู่และไม่ได้ถูกย้ายออก → ข้าม+รายงาน
+        dry_run=True ทำทุกอย่างแล้วย้อนทิ้ง คืนรายงานอย่างเดียว
+        """
         self.ensure_one()
+        fields_ = self._o14_product_fields()
         rows = self.search_read_all(
             'product.template',
-            [('name', 'like', '(R)')], PRODUCT_FIELDS)
+            [('name', 'like', '(R)')], fields_)
         Template = self.env['product.template'].sudo().with_context(
-            allowed_company_ids=self._all_companies(), active_test=False)
-        created, updated, skipped = [], [], []
+            allowed_company_ids=self._all_companies(), active_test=False, lang='en_US')
+        all18 = Template.search([])
+        by_key = {}
+        for tmpl in all18:
+            for lang in ('en_US', 'th_TH'):
+                key = product_name_key(tmpl.with_context(lang=lang).name)
+                if key:
+                    by_key.setdefault(key, tmpl)
+        by_code = {(t.default_code or '').strip(): t for t in all18 if t.default_code}
+
+        recode, update, create, skipped, conflicts = [], [], [], [], []
+        claimed = set()
         for row in rows:
             code = (row.get('default_code') or '').strip()
-            name = (row.get('name') or '').strip()
-            existing = self._find_template_for_o14(row)
+            usable = bool(code) and not code.startswith('PR/')
             values, problem = self._template_values_from_o14(row)
             if problem:
                 skipped.append(problem)
                 continue
-            if existing:
-                existing.write(values)
-                updated.append(name)
+            tmpl = by_key.get(product_name_key(row.get('name')))
+            if tmpl and tmpl.id in claimed:
+                skipped.append(_('%s %s (ชื่อซ้ำกับสินค้าอื่นในฝั่ง 14)') % (code or '-', row.get('name')))
+                continue
+            if tmpl:
+                claimed.add(tmpl.id)
+                if usable and (tmpl.default_code or '') != code:
+                    recode.append((tmpl, tmpl.default_code or '', code, row.get('name')))
+                update.append((tmpl, values))
             else:
-                Template.create(values)
-                created.append('%s %s' % (code or '-', name))
-        text = (_('สินค้าเช่า: ฝั่ง 14 มี %s ตัว | สร้างใหม่ %s | อัปเดต %s | ข้าม %s')
-                % (len(rows), len(created), len(updated), len(skipped)))
-        if created:
-            text += '\n' + _('สร้างใหม่:') + '\n  ' + '\n  '.join(created[:50])
+                create.append((row, values, code if usable else ''))
+
+        # รหัสปลายทางต้องว่าง: ถือโดยสินค้าที่ถูกย้ายรหัสออกไปเองในรอบนี้ หรือไม่มีใครถือ
+        moving = {r[0].id for r in recode}
+        final_recode = []
+        for tmpl, old, new, name in recode:
+            holder = by_code.get(new)
+            if holder and holder.id != tmpl.id and holder.id not in moving:
+                conflicts.append(_('%s: "%s" ใช้รหัสนี้อยู่แล้ว ฝั่ง 18 จะย้ายให้ "%s" ไม่ได้')
+                                 % (new, holder.name, name))
+                continue
+            final_recode.append((tmpl, old, new, name))
+        final_create = []
+        taken = {new for _t, _o, new, _n in final_recode}
+        for row, values, code in create:
+            holder = by_code.get(code) if code else None
+            if code and ((holder and holder.id not in moving) or code in taken):
+                conflicts.append(_('%s: สร้าง "%s" ไม่ได้ เพราะรหัสนี้เป็นของ "%s" ฝั่ง 18')
+                                 % (code, row.get('name'), holder.name if holder else '?'))
+                continue
+            final_create.append((row, values, code))
+
+        try:
+            with self.env.cr.savepoint():
+                # ย้ายรหัส 2 จังหวะ กันชนกันเองระหว่างย้าย (เช่น 0151→0152 ขณะที่ 0152→0144)
+                for tmpl, _old, _new, _name in final_recode:
+                    tmpl.write({'default_code': 'TMP-%s' % tmpl.id})
+                for tmpl, _old, new, _name in final_recode:
+                    tmpl.write({'default_code': new})
+                # สินค้าที่มีอยู่แล้วแก้แค่รหัส: หมวดสินค้ากำหนดบัญชีที่ใช้ลง และราคาตั้งต้นแต่ละฐาน o14
+                # ไม่เท่ากัน ยกทีละฐานจะเขียนทับกันไปมา (ราคาเช่าจริงอยู่ในรายการราคา ยกแยก)
+                for row, values, code in final_create:
+                    values = dict(values)
+                    if code:
+                        values['default_code'] = code
+                    else:
+                        values.pop('default_code', None)
+                    Template.create(values)
+                if dry_run:
+                    raise _DryRun()
+        except _DryRun:
+            pass
+
+        head = _('ทดลอง (ไม่บันทึก) — ') if dry_run else ''
+        text = head + (_('สินค้าเช่า %s: ฝั่ง 14 มี %s ตัว | มีแล้วฝั่ง 18 %s | แก้รหัสให้ตรง o14 %s | '
+                         'สร้างใหม่ %s | ข้าม %s | รหัสชนกัน %s')
+                       % (self.db_name, len(rows), len(update), len(final_recode),
+                          len(final_create), len(skipped), len(conflicts)))
+        if final_recode:
+            text += '\n' + _('แก้รหัส (รหัสเดิมฝั่ง 18 → รหัส o14):') + '\n  ' + '\n  '.join(
+                '%s → %s  %s' % (old or '-', new, name) for _t, old, new, name in final_recode)
+        if final_create:
+            text += '\n' + _('สร้างใหม่:') + '\n  ' + '\n  '.join(
+                '%s %s' % (code or '-', row.get('name')) for row, _v, code in final_create)
+        if conflicts:
+            text += '\n' + _('รหัสชนกัน (ข้าม ต้องตัดสินเอง):') + '\n  ' + '\n  '.join(conflicts)
         if skipped:
-            text += '\n' + _('ข้าม:') + '\n  ' + '\n  '.join(skipped[:20])
-        self._note(text)
+            text += '\n' + _('ข้าม:') + '\n  ' + '\n  '.join(skipped[:30])
+        if not dry_run:
+            self._note(text)
         return text
 
     # ==================================================================
     # 2) รายการราคา
     # ==================================================================
-    def action_sync_pricelists(self):
+    def action_sync_pricelists(self, dry_run=False):
         """ยกราคาต่อสาขาให้ตรงฝั่ง 14
 
         ฝั่ง 14 ตั้งชื่อรายการราคาซ้ำกันทุกสาขา ("เรทวัน"/"เรทเดือน") แล้วแยก
         ด้วยช่องสาขา ส่วนฝั่ง 18 เอาชื่อสาขาต่อท้ายชื่อรายการ จึงต้องแปลงชื่อ
+        (ชื่อภาษาอังกฤษฝั่ง 18 บางรายการไม่มีชื่อสาขา จึงค้นเป็นภาษาไทย และตัดช่องว่างท้าย)
+        dry_run=True ทำแล้วย้อนทิ้ง คืนรายงานอย่างเดียว
         """
         self.ensure_one()
         lists14 = self.search_read_all(
             'product.pricelist', [], ['name', 'pricelist_branch_id', 'currency_id'])
         Pricelist = self.env['product.pricelist'].sudo().with_context(
-            allowed_company_ids=self._all_companies())
+            allowed_company_ids=self._all_companies(), lang='th_TH')
         Item = self.env['product.pricelist.item'].sudo()
-        Template = self.env['product.template'].sudo().with_context(
-            allowed_company_ids=self._all_companies(), active_test=False)
 
-        made, changed, missing_products, missing_lists = 0, 0, [], []
-        for row in lists14:
-            branch = self._map_branch(row.get('pricelist_branch_id'))
-            if not branch:
-                missing_lists.append('%s (ไม่พบสาขา %s)'
-                                     % (row['name'], row.get('pricelist_branch_id')))
-                continue
-            target_name = '%s %s' % (row['name'], branch.name)
-            pricelist = Pricelist.search([('name', '=', target_name)], limit=1)
-            if not pricelist:
-                missing_lists.append(_('ไม่พบรายการราคา "%s" ฝั่ง 18') % target_name)
-                continue
+        made, changed, same, missing_products, missing_lists = 0, 0, 0, [], []
+        try:
+            with self.env.cr.savepoint():
+                for row in lists14:
+                    branch = self._map_branch(row.get('pricelist_branch_id'))
+                    if not branch:
+                        missing_lists.append('%s (ไม่พบสาขา %s)'
+                                             % (row['name'], row.get('pricelist_branch_id')))
+                        continue
+                    target_name = '%s %s' % (row['name'].strip(), branch.name.strip())
+                    pricelist = Pricelist.search([('name', '=', target_name)], limit=1)
+                    if not pricelist:
+                        pricelist = Pricelist.search([('name', 'ilike', target_name)]).filtered(
+                            lambda pl: ' '.join(pl.name.split()) == ' '.join(target_name.split()))[:1]
+                    if not pricelist:
+                        missing_lists.append(_('ไม่พบรายการราคา "%s" ฝั่ง 18') % target_name)
+                        continue
 
-            items14 = self.search_read_all(
-                'product.pricelist.item', [('pricelist_id', '=', row['id'])],
-                ['product_tmpl_id', 'fixed_price', 'applied_on', 'min_quantity'])
-            existing = {i.product_tmpl_id.id: i
-                        for i in Item.search([('pricelist_id', '=', pricelist.id)])
-                        if i.product_tmpl_id}
-            for item in items14:
-                tmpl_ref = item.get('product_tmpl_id')
-                if not tmpl_ref:
-                    continue
-                name = tmpl_ref[1] if isinstance(tmpl_ref, (list, tuple)) else ''
-                if name.startswith('['):
-                    name = name.split(']', 1)[-1].strip()
-                template = Template.search([('name', '=', name)], limit=1)
-                if not template:
-                    missing_products.append(name)
-                    continue
-                price = item.get('fixed_price') or 0.0
-                found = existing.get(template.id)
-                if found:
-                    if abs((found.fixed_price or 0.0) - price) > 0.0001:
-                        found.write({'fixed_price': price,
-                                     'compute_price': 'fixed'})
-                        changed += 1
-                else:
-                    Item.create({
-                        'pricelist_id': pricelist.id,
-                        'applied_on': '1_product',
-                        'product_tmpl_id': template.id,
-                        'compute_price': 'fixed',
-                        'fixed_price': price,
-                        'min_quantity': item.get('min_quantity') or 0,
-                    })
-                    made += 1
+                    items14 = self.search_read_all(
+                        'product.pricelist.item', [('pricelist_id', '=', row['id'])],
+                        ['product_tmpl_id', 'fixed_price', 'applied_on', 'min_quantity'])
+                    existing = {i.product_tmpl_id.id: i
+                                for i in Item.search([('pricelist_id', '=', pricelist.id)])
+                                if i.product_tmpl_id}
+                    for item in items14:
+                        tmpl_ref = item.get('product_tmpl_id')
+                        if not tmpl_ref:
+                            continue
+                        label = tmpl_ref[1] if isinstance(tmpl_ref, (list, tuple)) else ''
+                        name = label.split(']', 1)[-1].strip() if label.startswith('[') else label
+                        template = self._template_from_o14_label(label)
+                        if not template:
+                            missing_products.append(name)
+                            continue
+                        price = item.get('fixed_price') or 0.0
+                        found = existing.get(template.id)
+                        if found:
+                            if abs((found.fixed_price or 0.0) - price) > 0.0001:
+                                found.write({'fixed_price': price, 'compute_price': 'fixed'})
+                                changed += 1
+                            else:
+                                same += 1
+                        else:
+                            existing[template.id] = Item.create({
+                                'pricelist_id': pricelist.id,
+                                'applied_on': '1_product',
+                                'product_tmpl_id': template.id,
+                                'compute_price': 'fixed',
+                                'fixed_price': price,
+                                'min_quantity': item.get('min_quantity') or 0,
+                            })
+                            made += 1
+                if dry_run:
+                    raise _DryRun()
+        except _DryRun:
+            pass
 
-        text = (_('รายการราคา: ฝั่ง 14 มี %s รายการ | เพิ่มราคา %s | แก้ราคา %s')
-                % (len(lists14), made, changed))
+        head = _('ทดลอง (ไม่บันทึก) — ') if dry_run else ''
+        text = head + (_('รายการราคา %s: ฝั่ง 14 มี %s รายการ | เพิ่มราคา %s | แก้ราคา %s | ตรงอยู่แล้ว %s')
+                       % (self.db_name, len(lists14), made, changed, same))
         if missing_lists:
             text += '\n' + _('รายการที่จับคู่ไม่ได้:') + '\n  ' \
-                + '\n  '.join(sorted(set(missing_lists))[:20])
+                + '\n  '.join(sorted(set(missing_lists))[:30])
         if missing_products:
             text += '\n' + _('สินค้าที่ยังไม่มีฝั่ง 18 (%s ตัว) — กดยกสินค้าก่อน:') \
                 % len(set(missing_products)) + '\n  ' \
-                + '\n  '.join(sorted(set(missing_products))[:20])
-        self._note(text)
+                + '\n  '.join(sorted(set(missing_products))[:30])
+        if not dry_run:
+            self._note(text)
         return text
 
     # ==================================================================
