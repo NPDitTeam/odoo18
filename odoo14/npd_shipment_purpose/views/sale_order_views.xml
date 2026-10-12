@@ -45,6 +45,9 @@
                  (ระบบยังเติมเลขใบโยกลงช่องนี้เบื้องหลัง เพื่อส่งต่อไปงานขนส่ง) -->
             <xpath expr="//field[@name='so_number']" position="attributes">
                 <attribute name="invisible">not is_npd_logistics_company or shipment_purpose == 'branch_transfer'</attribute>
+                <!-- กรอกเองได้เหมือน o14 (sale_api_rent ตั้ง readonly="1" ไว้ เพราะเดิมให้กรอกใน popup เท่านั้น) -->
+                <attribute name="readonly">state in ['sale', 'done', 'cancel'] or is_renew_green_house or shipment_purpose == 'help_branch'</attribute>
+                <attribute name="required">is_npd_logistics_company and shipment_purpose in ['to_customer', 'from_customer']</attribute>
             </xpath>
 
             <!-- เลขโยกสินค้า: เลือกจากใบโยกในระบบ กรองตามบริษัทต้นทาง + เฉพาะใบที่ยืนยันแล้ว -->
