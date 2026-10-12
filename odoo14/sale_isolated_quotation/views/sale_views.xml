@@ -70,8 +70,8 @@
                        context="{'order_sequence': False}"/>
                 <field name="order_id" invisible="order_sequence"
                        context="{'order_sequence': True}"/>
-                <field name="approver_id" string="Order อนุมัติ" readonly="1"/>
-                <field name="state_sale" string="สถานะการตรวจสอบ" readonly="1"/>
+                <!-- approver_id / state_sale แสดงโดย pfb_npd_all_customs แล้ว (ต่อด้วยบริษัท/สาขา)
+                     o18 รวมฐานเดียว ใส่ซ้ำตรงนี้จะขึ้นสองชุด -->
                 <field name="pfb_amount_insurance" invisible="1"/>
                 <field name="button_visible" invisible="1"/>
                 <field name="button_convert_visible" invisible="1"/>
