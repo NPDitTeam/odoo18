@@ -1,6 +1,6 @@
 {
     'name': 'Custom Shipping Invoice',
-    'version': '18.0.1.0.0',
+    'version': '18.0.1.0.1',
     'summary': 'Add shipping cost button and invoice integration',
     'author': 'NPD',
     'category': 'Sales',

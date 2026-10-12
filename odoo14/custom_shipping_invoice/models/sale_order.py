@@ -86,6 +86,9 @@ class PopupShippingInvoice(models.TransientModel):
                 'name': self.shipping_product_id.name,
                 'quantity': 1,
                 'price_unit': self.shipping_cost,
+                # ค่าขนส่งไม่คิด VAT (o14 สินค้าค่าขนส่งไม่ได้ตั้งภาษี) แต่ o18 สินค้าตัวเดียวกัน
+                # ติด VAT 7% ไว้ทุกบริษัท ถ้าปล่อยให้ดึงจากสินค้าใบจะคิด VAT จึงล้างภาษีที่นี่
+                'tax_ids': [(6, 0, [])],
             })],
         })
         self.order_id.write({'shipping_invoice_id': invoice.id})
