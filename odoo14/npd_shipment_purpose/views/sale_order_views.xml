@@ -11,7 +11,15 @@
             <!-- ปุ่ม "ดึงข้อมูลการเช่า" (ของ sale_api_rent) ใช้กับงานเช่าเท่านั้น
                  งานโยกระหว่างสาขา/ส่งรถไปช่วยสาขา ให้ซ่อนไว้ กันพนักงานกดผิด -->
             <xpath expr="//button[@name='action_fetch_rental_data']" position="attributes">
-                <attribute name="invisible">not is_npd_logistics_company or shipment_purpose in ['branch_transfer', 'help_branch']</attribute>
+                <attribute name="invisible">not is_npd_logistics_company or shipment_purpose in ['branch_transfer', 'help_branch'] or state in ['sale', 'done', 'cancel']</attribute>
+            </xpath>
+
+            <!-- โลจิสติกส์ไม่ออกใบแจ้งหนี้จากใบสั่งขาย (ค่าขนส่งออกผ่านใบค่าขนส่งแยก) ซ่อนกันกดผิด -->
+            <xpath expr="//button[@id='create_invoice']" position="attributes">
+                <attribute name="invisible">invoice_status != 'to invoice' or is_npd_logistics_company</attribute>
+            </xpath>
+            <xpath expr="//button[@id='create_invoice_percentage']" position="attributes">
+                <attribute name="invisible">invoice_status != 'no' or state != 'sale' or is_npd_logistics_company</attribute>
             </xpath>
 
             <!-- ปุ่มดึงสินค้าจากใบโยก (o18 อยู่ฐานเดียวกัน อ่านตรงได้เลย) -->
