@@ -383,11 +383,13 @@ class TransportOrder(models.Model):
         """ลบ records ที่มี name ซ้ำกัน (เก็บไว้เฉพาะ record ที่มี id น้อยที่สุด)
            ✅ ข้าม record ที่ถูกนำไปใช้แล้ว (การจองรถ / ประวัติเที่ยววิ่ง)
         """
+        # แยกตามแหล่ง: เลข SO ของโลจิสติกส์ o14 กับ o18 รันรูปแบบเดียวกัน (SO-ปีเดือนวัน-ลำดับ)
+        # ชื่อจึงชนกันได้ทั้งที่เป็นคนละงาน ถ้านับรวมกัน ใบที่ส่งจาก o18 (id ใหม่กว่า) จะถูกลบทิ้ง
         self.env.cr.execute("""
             SELECT name, COUNT(*), array_agg(id ORDER BY id)
             FROM transport_order
             WHERE name IS NOT NULL
-            GROUP BY name
+            GROUP BY name, COALESCE(is_from_odoo18, false)
             HAVING COUNT(*) > 1
         """)
         duplicates = self.env.cr.fetchall()

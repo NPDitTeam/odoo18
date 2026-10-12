@@ -128,6 +128,9 @@ class SaleOrder(models.Model):
         return {
             'id': order.id,
             'name': order.name,
+            # เลขเอกสาร SO ต้นทาง (ช่อง "เลขเอกสาร SO" บนใบ) — ไม่ส่งแล้วใบขนส่งจะว่าง
+            # และหาใบคู่ไป/กลับ (trip_direction) ไม่เจอ
+            'so_number': _g(order, 'so_number'),
             'branch_id': order.branch_id.name if _g(order, 'branch_id') else None,
             'state': order.state,
             'date_order': order.date_order.strftime('%Y-%m-%d %H:%M:%S') if order.date_order else None,
@@ -150,6 +153,82 @@ class SaleOrder(models.Model):
             'order_lines': order_lines,
             'order_lines_count': len(order_lines),
         }
+
+    # ------------------------------------------------------------------
+    # ใบที่ส่งเข้าระบบขนส่งแล้วถูกนำไปจองคิวรถ ห้ามลบ/ยกเลิกใบสั่งขาย
+    # ต้องยกเลิกการจองคิวรถก่อน (หรือยังไม่ได้จอง) ถึงจะลบ/ยกเลิกได้
+    # ------------------------------------------------------------------
+    def _transport_active_bookings(self):
+        """การจองคิวรถที่ยังไม่ยกเลิก ของคำสั่งขนส่งที่สร้างจากใบเหล่านี้ -> [(ใบสั่งขาย, เลขจอง, สถานะ)]
+
+        ใช้ SQL ตรง เพราะ vehicle.booking กรองตามสาขาของผู้ใช้ใน _search (sudo ก็ยังโดนกรอง)
+        คนต่างสาขาจะมองไม่เห็นการจองแล้วลบผ่าน ทั้งที่รถถูกจองไปแล้ว
+        """
+        names = [n for n in self.mapped('name') if n]
+        if not names:
+            return []
+        self.env.cr.execute("SELECT to_regclass('vehicle_booking') IS NOT NULL")
+        if not self.env.cr.fetchone()[0]:
+            return []
+        self.env['vehicle.booking'].flush_model() if 'vehicle.booking' in self.env else None
+        self.env.cr.execute("""
+            SELECT t.name, b.name, b.state
+              FROM vehicle_booking b
+              JOIN transport_order t ON t.id = b.transport_order_id
+             WHERE t.is_from_odoo18 AND t.name = ANY(%s) AND b.state != 'cancelled'
+             ORDER BY b.id
+        """, (names,))
+        return self.env.cr.fetchall()
+
+    def _check_transport_booking_lock(self, action_label):
+        rows = self._transport_active_bookings()
+        if not rows:
+            return
+        states = {}
+        if 'vehicle.booking' in self.env:
+            states = dict(self.env['vehicle.booking']._fields['state']._description_selection(self.env))
+        lines = '\n'.join('• %s → การจองคิวรถ %s (สถานะ: %s)' % (so, booking or '-', states.get(state, state))
+                          for so, booking, state in rows)
+        raise UserError(_(
+            '❌ %(action)sไม่ได้ เพราะใบสั่งขายถูกนำไปจองคิวรถขนส่งแล้ว\n\n%(lines)s\n\n'
+            'ต้องยกเลิกการจองคิวรถขนส่งก่อน จึงจะ%(action)sใบสั่งขายได้'
+        ) % {'action': action_label, 'lines': lines})
+
+    def _remove_transport_orders(self, names):
+        """ลบ/ยกเลิกใบสั่งขาย -> ลบคำสั่งขนส่งที่สร้างจากใบนั้นออกด้วย (ข้อมูลขนส่งค้างจะถูกจองผิด)
+
+        ถ้ายังมีการจองคิวรถที่ "ยกเลิกแล้ว" อ้างถึงอยู่ ลบไม่ได้ (ช่องบังคับ) -> ตั้งเป็นยกเลิกแทน
+        """
+        names = [n for n in names if n]
+        if not names:
+            return
+        Transport = self.env['transport.order'].sudo().with_context(transport_sync_all_branches=True)
+        transports = Transport.search([('name', 'in', names), ('is_from_odoo18', '=', True)])
+        so_numbers = [n for n in transports.mapped('so_number') if n]
+        for transport in transports:
+            try:
+                with self.env.cr.savepoint():
+                    transport.unlink()
+            except Exception as error:  # noqa: BLE001
+                _logger.info("คำสั่งขนส่ง %s ลบไม่ได้ (%s) -> ตั้งเป็นยกเลิก", transport.name, error)
+                transport.write({'state': 'cancel'})
+        # ใบคู่ที่ใช้เลข SO เดียวกันอาจเคยเป็น "ไปกลับ" เพราะใบนี้ -> คำนวณใหม่
+        if so_numbers:
+            Transport._recompute_trip_direction_siblings(so_numbers)
+
+    def unlink(self):
+        self._check_transport_booking_lock(_('ลบ'))
+        names = self.mapped('name')
+        res = super().unlink()
+        self._remove_transport_orders(names)
+        return res
+
+    def _action_cancel(self):
+        self._check_transport_booking_lock(_('ยกเลิก'))
+        res = super()._action_cancel()
+        self._remove_transport_orders(self.mapped('name'))
+        self.filtered('transport_sent').write({'transport_sent': False})
+        return res
 
     def action_send_to_transport(self):
         """ ส่งข้อมูลใบสั่งขายไปยังระบบขนส่งโดยตรง (ไม่ผ่าน API เพราะ db เดียวกัน)
