@@ -62,6 +62,12 @@
                        invisible="shipment_purpose != 'branch_transfer' or not transfer_product_summary"/>
             </xpath>
 
+            <!-- รายการราคา: โลจิสติกส์ไม่ใช้ ซ่อนและไม่บังคับ บริษัทอื่นยังบังคับเหมือนเดิม -->
+            <xpath expr="//field[@name='pricelist_id']" position="attributes">
+                <attribute name="required">not is_npd_logistics_company</attribute>
+                <attribute name="invisible">is_npd_logistics_company</attribute>
+            </xpath>
+
             <!-- หมายเหตุ: ต่อจากช่อง "ประเภทการรับชำระหนี้" -->
             <xpath expr="//field[@name='debt_payment_type']" position="after">
                 <field name="shipment_note"

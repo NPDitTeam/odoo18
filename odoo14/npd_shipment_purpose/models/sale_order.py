@@ -74,6 +74,10 @@ class SaleOrder(models.Model):
         string='สินค้าที่โยก', compute='_compute_transfer_product_summary',
     )
 
+    # pfb_npd_add_date_quatation_order บังคับรายการราคาทุกบริษัท และกรองตามสาขาของบริษัทเช่า
+    # โลจิสติกส์ไม่ใช้รายการราคา จึงปลดบังคับระดับโมเดล แล้วไปบังคับในฟอร์มเฉพาะบริษัทอื่นแทน
+    pricelist_id = fields.Many2one(required=False)
+
     shipment_note = fields.Text(string='หมายเหตุ', copy=False)
     shipment_note_ai_state = fields.Selection([
         ('pending', 'ยังไม่ผ่านการตรวจ'),
