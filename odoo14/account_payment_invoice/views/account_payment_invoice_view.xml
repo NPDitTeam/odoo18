@@ -69,10 +69,15 @@
                        options="{'no_create': True}"/>
                 <!-- ซ่อนตามที่ผู้ใช้ขอ (เช็คระบุรายบรรทัดในตารางการชำระเงินแทน) -->
                 <field name="cheque_id" string="เช็ค" invisible="1"/>
-                <field name="cash_status" string="สถานะเงินสด"/>
-                <field name="overpaid_refund_status" string="สถานะคืนเงินโอนเกิน"/>
-                <field name="wtax_refund_status" string="สถานะคืนหัก ณ ที่จ่าย"/>
-                <field name="rental_difference_status" string="สถานะโอนคืนค่าเช่าส่วนต่าง"/>
+                <!-- สถานะ 4 ช่องนี้ระบบตั้งเองตอนทำรายการคืนเงิน/ส่งต่อ ห้ามระบุเอง (o14 ล็อก readonly ไว้) -->
+                <field name="cash_status" string="สถานะเงินสด" readonly="1"
+                       decoration-success="cash_status == 'returned'"/>
+                <field name="overpaid_refund_status" string="สถานะคืนเงินโอนเกิน" readonly="1"
+                       decoration-success="overpaid_refund_status == 'refunded'" decoration-warning="overpaid_refund_status == 'to_refund'"/>
+                <field name="wtax_refund_status" string="สถานะคืนหัก ณ ที่จ่าย" readonly="1"
+                       decoration-success="wtax_refund_status == 'refunded'" decoration-warning="wtax_refund_status == 'to_refund'"/>
+                <field name="rental_difference_status" string="สถานะโอนคืนค่าเช่าส่วนต่าง" readonly="1"
+                       decoration-success="rental_difference_status == 'done'" decoration-warning="rental_difference_status == 'pending'"/>
                 <field name="pfb_date_of_rent" string="Day of Rent"/>
                 <!-- ซ่อนตามที่ผู้ใช้ขอ -->
                 <field name="pfb_objective_id" string="วัตถุประสงค์" invisible="1"/>
