@@ -1,0 +1,4 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_wht_category_user,wht.category.user,model_wht_category,base.group_user,1,0,0,0
+access_wht_category_manager,wht.category.manager,model_wht_category,account.group_account_manager,1,1,1,1
+access_npd_wt_cert_link_wizard_user,npd.wt.cert.link.wizard.user,model_npd_wt_cert_link_wizard,account.group_account_invoice,1,1,1,1

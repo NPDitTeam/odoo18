@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="wht_category_form_view" model="ir.ui.view">
+        <field name="name">wht.category.form</field>
+        <field name="model">wht.category</field>
+        <field name="arch" type="xml">
+            <form string="หมวดหมู่ WHT">
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="name" placeholder="ชื่อหมวดหมู่"/></h1>
+                    </div>
+                    <group>
+                        <group string="ข้อมูลทั่วไป">
+                            <field name="code"/>
+                            <field name="sequence"/>
+                            <field name="active"/>
+                        </group>
+                        <group string="ข้อมูล WHT">
+                            <field name="wht_rate"/>
+                            <field name="wt_cert_income_type"/>
+                            <field name="income_description"/>
+                        </group>
+                    </group>
+                    <group>
+                        <field name="note" placeholder="หมายเหตุ"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="wht_category_tree_view" model="ir.ui.view">
+        <field name="name">wht.category.list</field>
+        <field name="model">wht.category</field>
+        <field name="arch" type="xml">
+            <list string="หมวดหมู่ WHT">
+                <field name="sequence" widget="handle"/>
+                <field name="code"/>
+                <field name="name"/>
+                <field name="wht_rate"/>
+                <field name="wt_cert_income_type"/>
+                <field name="income_description"/>
+                <field name="note"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="action_wht_category" model="ir.actions.act_window">
+        <field name="name">หมวดหมู่ WHT</field>
+        <field name="res_model">wht.category</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">สร้างหมวดหมู่ภาษีหัก ณ ที่จ่าย</p>
+            <p>กำหนดอัตรา WHT ตามประเภทค่าใช้จ่าย เช่น ค่าบริการ 3%, ค่าเช่า 5%, ค่าขนส่ง 1%</p>
+        </field>
+    </record>
+
+    <menuitem id="menu_wht_category"
+              name="หมวดหมู่ WHT"
+              parent="account.account_management_menu"
+              action="action_wht_category"
+              sequence="99"/>
+</odoo>

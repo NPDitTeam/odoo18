@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- o18 ไม่มี group properties แบบ o14 วางต่อจากบัญชีค่าใช้จ่ายในแท็บบัญชีของสินค้าแทน -->
+    <record id="product_template_form_view_wht" model="ir.ui.view">
+        <field name="name">product.template.form.wht</field>
+        <field name="model">product.template</field>
+        <field name="inherit_id" ref="account.product_template_form_view"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='property_account_expense_id']" position="after">
+                <field name="wht_category_id" string="หมวดหมู่ WHT"/>
+                <field name="wht_rate_display" invisible="not wht_category_id"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

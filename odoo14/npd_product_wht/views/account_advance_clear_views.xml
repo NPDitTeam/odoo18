@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="account_advance_clear_form_view_wht" model="ir.ui.view">
+        <field name="name">account.advance.clear.form.wht</field>
+        <field name="model">account.advance.clear</field>
+        <field name="inherit_id" ref="account_advance.account_advance_clear_form_view"/>
+        <field name="arch" type="xml">
+            <!-- ปุ่มสร้าง WHT อัตโนมัติ แสดงเฉพาะสถานะยืนยัน (เหมือน o14) -->
+            <xpath expr="//button[@name='confirm']" position="before">
+                <button name="action_auto_create_wht_cert" string="สร้าง WHT อัตโนมัติ"
+                        type="object" class="btn-secondary" invisible="state != 'confirm'"/>
+            </xpath>
+            <xpath expr="//field[@name='clear_ids']" position="before">
+                <field name="npd_is_logistics" invisible="1"/>
+            </xpath>
+            <xpath expr="//field[@name='clear_ids']/list/field[@name='account_id']" position="after">
+                <field name="wht_category_id" optional="show" options="{'no_create': True}"/>
+                <field name="wht_rate_display" optional="show"/>
+            </xpath>
+            <!-- "หัก VAT" ใช้เฉพาะบริษัทโลจิสติกส์ (o14 ฐาน NPD_Logistics_New) -->
+            <xpath expr="//field[@name='clear_ids']/list/field[@name='price_unit']" position="after">
+                <field name="is_deduct_vat" column_invisible="not parent.npd_is_logistics"/>
+                <field name="wht_total"/>
+                <field name="wht_status" widget="badge" optional="show"
+                       decoration-success="wht_status == 'eligible'"
+                       decoration-muted="wht_status == 'no_category'"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

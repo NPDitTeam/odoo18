@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+
+        <!-- ============================================ -->
+        <!-- หมวดหมู่ WHT: ค่าบริการ 3% -->
+        <!-- ============================================ -->
+        <record id="wht_cat_service" model="wht.category">
+            <field name="name">ค่าบริการทั่วไป</field>
+            <field name="code">SERVICE</field>
+            <field name="sequence">10</field>
+            <field name="wht_rate">3</field>
+            <field name="wt_cert_income_type">6</field>
+            <field name="income_description">ค่าบริการ</field>
+            <field name="note">ค่าจ้างทำงาน, ค่าที่ปรึกษา, ค่าฟรีแลนซ์, ค่าจ้างทำของ, ค่าบริการซ่อม (3%)</field>
+        </record>
+
+        <!-- ค่าจ้างและค่าบริการ (จ้างบุคคล/บริษัท) -->
+        <record id="wht_cat_hire" model="wht.category">
+            <field name="name">ค่าจ้างและค่าบริการ</field>
+            <field name="code">HIRE</field>
+            <field name="sequence">11</field>
+            <field name="wht_rate">3</field>
+            <field name="wt_cert_income_type">6</field>
+            <field name="income_description">ค่าจ้างและค่าบริการ</field>
+            <field name="note">จ้างบุคคล/บริษัท (3%)</field>
+        </record>
+
+        <!-- ค่าซ่อมแซม/บำรุง -->
+        <record id="wht_cat_repair" model="wht.category">
+            <field name="name">ค่าซ่อมแซม/บำรุง</field>
+            <field name="code">REPAIR</field>
+            <field name="sequence">12</field>
+            <field name="wht_rate">3</field>
+            <field name="wt_cert_income_type">6</field>
+            <field name="income_description">ค่าซ่อมแซม/บำรุง</field>
+            <field name="note">ซ่อมทั่วไป (3%)</field>
+        </record>
+
+        <!-- ============================================ -->
+        <!-- หมวดหมู่ WHT: วิชาชีพอิสระ 3% -->
+        <!-- ============================================ -->
+        <record id="wht_cat_professional" model="wht.category">
+            <field name="name">ค่าวิชาชีพอิสระ</field>
+            <field name="code">PROFESSIONAL</field>
+            <field name="sequence">20</field>
+            <field name="wht_rate">3</field>
+            <field name="wt_cert_income_type">6</field>
+            <field name="income_description">ค่าวิชาชีพอิสระ</field>
+            <field name="note">ค่าทำบัญชี, ค่าสอบบัญชี, ค่าทนาย, ค่าหมอ, วิศวกร, สถาปนิก (3%)</field>
+        </record>
+
+        <!-- ค่าบริการทางการตลาด -->
+        <record id="wht_cat_marketing" model="wht.category">
+            <field name="name">ค่าบริการทางการตลาด</field>
+            <field name="code">MARKETING</field>
+            <field name="sequence">25</field>
+            <field name="wht_rate">3</field>
+            <field name="wt_cert_income_type">6</field>
+            <field name="income_description">บริการการตลาด</field>
+            <field name="note">ค่าบริการทางการตลาด (3%)</field>
+        </record>
+
+        <!-- ============================================ -->
+        <!-- หมวดหมู่ WHT: ค่าโฆษณา 2% -->
+        <!-- ============================================ -->
+        <record id="wht_cat_advertising" model="wht.category">
+            <field name="name">ค่าโฆษณาในประเทศ</field>
+            <field name="code">ADS_LOCAL</field>
+            <field name="sequence">30</field>
+            <field name="wht_rate">2</field>
+            <field name="wt_cert_income_type">6</field>
+            <field name="income_description">ค่าโฆษณาในประเทศ</field>
+            <field name="note">ค่าโฆษณา, ค่าสื่อโฆษณา (2%)</field>
+        </record>
+
+        <!-- Google Marketing (2%-3% ขึ้นอยู่กับว่าในหรือต่างประเทศ) -->
+        <record id="wht_cat_google_ads" model="wht.category">
+            <field name="name">Google Marketing</field>
+            <field name="code">GOOGLE_ADS</field>
+            <field name="sequence">31</field>
+            <field name="wht_rate">2</field>
+            <field name="wt_cert_income_type">6</field>
+            <field name="income_description">Google Marketing</field>
+            <field name="note">ในประเทศ 2% / ต่างประเทศ ดู ภ.พ.36 (ปกติ 2-3%)</field>
+        </record>
+
+        <!-- ============================================ -->
+        <!-- หมวดหมู่ WHT: ค่าขนส่ง 1% -->
+        <!-- ============================================ -->
+        <record id="wht_cat_transport" model="wht.category">
+            <field name="name">ค่าขนส่ง</field>
+            <field name="code">TRANSPORT</field>
+            <field name="sequence">40</field>
+            <field name="wht_rate">1</field>
+            <field name="wt_cert_income_type">6</field>
+            <field name="income_description">ค่าขนส่ง</field>
+            <field name="note">ค่าขนส่ง-สาขา, ค่าขนส่งระหว่างสาขา, ค่าขนส่งออก, ค่าขนส่ง-สนง. (1%)</field>
+        </record>
+
+        <!-- ============================================ -->
+        <!-- หมวดหมู่ WHT: ค่าเช่า 5% -->
+        <!-- ============================================ -->
+        <record id="wht_cat_rental" model="wht.category">
+            <field name="name">ค่าเช่า</field>
+            <field name="code">RENTAL</field>
+            <field name="sequence">50</field>
+            <field name="wht_rate">5</field>
+            <field name="wt_cert_income_type">6</field>
+            <field name="income_description">ค่าเช่า</field>
+            <field name="note">ค่าเช่าที่จอดรถ, ค่าเช่าที่ดิน, ค่าเช่าที่พัก, ค่าเช่าเครื่องถ่ายเอกสาร, ค่าเช่าสำนักงาน (5%)</field>
+        </record>
+
+        <!-- ============================================ -->
+        <!-- หมวดหมู่ WHT: ไม่หัก WHT -->
+        <!-- ============================================ -->
+        <record id="wht_cat_goods" model="wht.category">
+            <field name="name">ค่าซื้อสินค้า (ไม่หัก WHT)</field>
+            <field name="code">GOODS</field>
+            <field name="sequence">90</field>
+            <field name="wht_rate">0</field>
+            <field name="wt_cert_income_type">6</field>
+            <field name="income_description">ค่าซื้อสินค้า</field>
+            <field name="note">ซื้ออุปกรณ์, ซื้อสินค้าเพื่อขาย, ค่าน้ำ, ค่าไฟฟ้า - ไม่หัก WHT</field>
+        </record>
+
+    </data>
+</odoo>

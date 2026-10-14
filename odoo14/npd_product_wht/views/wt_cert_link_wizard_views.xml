@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="npd_wt_cert_link_wizard_form" model="ir.ui.view">
+        <field name="name">npd.wt.cert.link.wizard.form</field>
+        <field name="model">npd.wt.cert.link.wizard</field>
+        <field name="arch" type="xml">
+            <form string="เลือกใบหัก ณ ที่จ่ายที่มีอยู่">
+                <p class="text-muted">แสดงเฉพาะใบที่ยังไม่ผูกกับเอกสารใด และยังไม่ถูกยกเลิก ของคู่ค้าในเอกสารนี้</p>
+                <field name="res_model" invisible="1"/>
+                <field name="res_id" invisible="1"/>
+                <field name="available_cert_ids" invisible="1"/>
+                <field name="cert_ids" domain="[('id', 'in', available_cert_ids)]" options="{'no_create': True}">
+                    <list>
+                        <field name="number"/>
+                        <field name="date"/>
+                        <field name="partner_id"/>
+                        <field name="income_tax_form"/>
+                        <field name="tax_amount" sum="Total"/>
+                        <field name="state"/>
+                    </list>
+                </field>
+                <footer>
+                    <button name="action_link" string="ผูกกับเอกสาร" type="object" class="btn-primary"/>
+                    <button string="ยกเลิก" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <!-- Advance Clear: แถบ Withholding Tax แก้ได้เฉพาะร่าง -->
+    <record id="account_advance_clear_form_view_wt_link" model="ir.ui.view">
+        <field name="name">account.advance.clear.form.wt.link</field>
+        <field name="model">account.advance.clear</field>
+        <field name="inherit_id" ref="account_advance.account_advance_clear_form_view"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='wt_cert_ids']" position="before">
+                <button name="action_open_wt_cert_link_wizard" string="เลือกใบ WT ที่มีอยู่"
+                        type="object" class="btn-secondary mb-2" invisible="state != 'draft'"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- ใบสำคัญ: แถบ Withholding Tax แก้ได้จนกว่าจะลงรายการ -->
+    <record id="view_purchase_receipt_form_wt_link" model="ir.ui.view">
+        <field name="name">account.voucher.purchase.form.wt.link</field>
+        <field name="model">account.voucher</field>
+        <field name="inherit_id" ref="account_voucher_npd.view_purchase_receipt_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='wt_cert_ids']" position="before">
+                <button name="action_open_wt_cert_link_wizard" string="เลือกใบ WT ที่มีอยู่"
+                        type="object" class="btn-secondary mb-2" invisible="state == 'posted'"/>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_sale_receipt_form_wt_link" model="ir.ui.view">
+        <field name="name">account.voucher.sale.form.wt.link</field>
+        <field name="model">account.voucher</field>
+        <field name="inherit_id" ref="account_voucher_npd.view_sale_receipt_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='wt_cert_ids']" position="before">
+                <button name="action_open_wt_cert_link_wizard" string="เลือกใบ WT ที่มีอยู่"
+                        type="object" class="btn-secondary mb-2" invisible="state == 'posted'"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>
