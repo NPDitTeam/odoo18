@@ -280,7 +280,7 @@ class AccountAdvance(models.Model):
         return True
 
     def open(self):
-        self.name = self.env["ir.sequence"].next_by_code("account.advance")
+        self.name = self.env["ir.sequence"].with_company(self.company_id).next_by_code("account.advance")  # เลขแยกตามบริษัทของเอกสาร (ไม่ใช่บริษัทที่เลือกบนแถบ)
         self.create_account_move()
         self.state = "submit"
         self.advance_request_id.update({"advance_id": self.id, "state": "receipt"})

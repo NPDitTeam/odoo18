@@ -267,9 +267,9 @@ class AccountAdvanceClear(models.Model):
 
     def submit(self):
         if self.name == "/":
-            self.name = self.env["ir.sequence"].next_by_code(
+            self.name = self.env["ir.sequence"].with_company(self.company_id).next_by_code(
                 "account.advance.clear"
-            )
+            )  # เลขแยกตามบริษัทของเอกสาร (ไม่ใช่บริษัทที่เลือกบนแถบ)
         if self.clear_amount != 0 and not self.payment_method_id:
             raise UserError(_("Please Select Payment method Clear."))
         self.state = "confirm"

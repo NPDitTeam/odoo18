@@ -99,7 +99,7 @@ class AccountAdvanceRequest(models.Model):
     )
 
     def submit(self):
-        self.name = self.env["ir.sequence"].next_by_code("account.advance.request")
+        self.name = self.env["ir.sequence"].with_company(self.company_id).next_by_code("account.advance.request")  # เลขแยกตามบริษัทของเอกสาร (ไม่ใช่บริษัทที่เลือกบนแถบ)
         self.state = "submit"
 
     def approve(self):

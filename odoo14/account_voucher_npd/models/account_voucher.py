@@ -1270,9 +1270,9 @@ class AccountVoucher(models.Model):
         if self.number:
             return self.number
         elif self.voucher_type == "sale":
-            return self.env["ir.sequence"].next_by_code("sale.receipt", sequence_date=self.date)
+            return self.env["ir.sequence"].with_company(self.company_id).next_by_code("sale.receipt", sequence_date=self.date)  # เลขแยกตามบริษัทของเอกสาร (ไม่ใช่บริษัทที่เลือกบนแถบ)
         elif self.voucher_type == "purchase":
-            return self.env["ir.sequence"].next_by_code("purchase.receipt", sequence_date=self.date)
+            return self.env["ir.sequence"].with_company(self.company_id).next_by_code("purchase.receipt", sequence_date=self.date)  # เลขแยกตามบริษัทของเอกสาร (ไม่ใช่บริษัทที่เลือกบนแถบ)
 
     def account_move_get(self):
         move = {

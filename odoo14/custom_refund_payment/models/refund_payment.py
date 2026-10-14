@@ -355,7 +355,7 @@ class RefundPayment(models.Model):
                     raise UserError(_("กรุณาระบุจำนวนเงิน ให้มากกว่า 0 ในรายการ: %s" % line.payment_name))
 
             if not rec.name or rec.name in ['New', '/']:
-                rec.name = self.env['ir.sequence'].with_context(
+                rec.name = self.env['ir.sequence'].with_company(rec.company_id).with_context(
                     ir_sequence_date=rec.date or fields.Date.context_today(self)
                 ).next_by_code('overpaid_refund.payment') or '/'
 
