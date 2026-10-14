@@ -367,7 +367,7 @@ class AccountPayment(models.Model):
                         if key not in seen_accounts:
                             seen_accounts.add(key)
                             parts = [x for x in [
-                                company_name, bank_name,
+                                bank_name,  # ไม่ใส่ชื่อบริษัท (มีที่หัวเอกสารแล้ว) ข้อความยาวจนเลขบัญชีถูกตัด
                                 'เลขที่บัญชี ' + acc_number if acc_number else '',
                             ] if x]
                             if parts:
@@ -400,8 +400,7 @@ class AccountPayment(models.Model):
                     acc_number = _safe_get(acc, 'name', '') or ''
                     acc_number = acc_number[-13:] if acc_number else ''
                     parts = [x for x in [
-                        company_name,
-                        bank_name or method_label,
+                        bank_name or method_label,  # ไม่ใส่ชื่อบริษัท (มีที่หัวเอกสาร) เลขบัญชีถูกตัด
                         'เลขที่บัญชี ' + acc_number if acc_number else '',
                     ] if x]
                     bank_info = ' '.join(parts)
@@ -435,7 +434,7 @@ class AccountPayment(models.Model):
                                 bank_acc = _safe_get(journal, 'bank_account_id', False)
                                 acc_number = _safe_get(bank_acc, 'acc_number', '') or ''
                                 parts = [x for x in [
-                                    company_name, bank_name,
+                                    bank_name,  # ไม่ใส่ชื่อบริษัท (มีที่หัวเอกสารแล้ว) ข้อความยาวจนเลขบัญชีถูกตัด
                                     'เลขที่บัญชี ' + acc_number if acc_number else '',
                                 ] if x]
                                 bank_info = ' '.join(parts)
