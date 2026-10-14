@@ -154,15 +154,14 @@ class AccountPayment(models.Model):
 
     @api.depends('amount')
     def _compute_jasper_baht_text(self):
-        try:
-            from bahttext import bahttext
-        except ImportError:
-            bahttext = None
+        # o18 ไม่มีไลบรารี bahttext (เดิมตกไปพิมพ์เป็นตัวเลข) ใช้ตัวแปลงภาษาไทยของ l10n_th แทน
+        # ช่องนี้ใช้ร่วมกับ pfb_npd_payment_tax_invoice_jasper (โมดูลนี้โหลดทีหลังจึงเป็นตัวที่ทำงานจริง)
         for rec in self:
             amount = rec.amount or 0.0
-            if bahttext:
-                rec.jasper_baht_text = bahttext(amount)
-            else:
+            currency = rec.currency_id or rec.company_id.currency_id
+            try:
+                rec.jasper_baht_text = currency.with_context(lang='th_TH').amount_to_text(amount)
+            except Exception:  # noqa: BLE001
                 rec.jasper_baht_text = '{:,.2f}'.format(amount)
 
     @api.depends('date')

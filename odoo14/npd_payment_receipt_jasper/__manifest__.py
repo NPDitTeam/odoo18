@@ -1,6 +1,6 @@
 {
     'name': 'ใบเสร็จรับเงินค่าขนส่ง (Jasper)',
-    'version': '18.0.1.0.0',
+    'version': '18.0.1.0.1',
     'summary': 'Jasper Report for Payment Receipt (Transport)',
     'description': """
         Payment Receipt Report using JasperReports.

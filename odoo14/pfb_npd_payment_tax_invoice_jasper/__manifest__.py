@@ -1,6 +1,6 @@
 {
     'name': 'ใบกำกับภาษี - ใบรับเงิน (Jasper)',
-    'version': '18.0.1.0.0',
+    'version': '18.0.1.0.1',
     'summary': 'Jasper Report for Tax Invoice from Payment',
     'description': """
         Tax Invoice Report using JasperReports, printed from account.payment.
