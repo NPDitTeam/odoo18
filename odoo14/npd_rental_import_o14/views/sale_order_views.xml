@@ -5,13 +5,9 @@
         <field name="model">sale.order</field>
         <field name="inherit_id" ref="sale.view_order_form"/>
         <field name="arch" type="xml">
-            <xpath expr="//sheet" position="before">
-                <widget name="web_ribbon" title="ยกมาจาก Odoo 14"
-                        bg_color="text-bg-info"
-                        invisible="not o14_imported"/>
-            </xpath>
+            <!-- เดิมเป็นแถบเฉียง (web_ribbon) แต่บังแถบสถานะ จึงแสดงเป็นช่องแทน -->
             <xpath expr="//field[@name='client_order_ref']" position="after">
-                <field name="o14_imported" invisible="1"/>
+                <field name="o14_imported" invisible="not o14_imported"/>
                 <field name="o14_source_db" invisible="not o14_imported"/>
                 <field name="o14_order_name" invisible="not o14_imported"/>
                 <field name="npd_o14_invoice_refs" invisible="not npd_o14_invoice_refs"/>
