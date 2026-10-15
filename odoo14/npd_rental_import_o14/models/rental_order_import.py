@@ -8,6 +8,7 @@
 * **ไม่สร้างใบส่งของ** ตั้งสถานะตรง ๆ เพราะสต็อกยกมาจากยอดคงเหลือจริง
   ของฝั่ง 14 ซึ่งหักของที่ปล่อยเช่าออกไปแล้ว ถ้าปล่อยให้สร้างใบส่งของจะตัดซ้ำ
 """
+import json
 import logging
 
 from odoo import fields, models, _
@@ -278,7 +279,7 @@ class RentalOrderImport(models.Model):
                     inv = invoice_status.get(row['id'])
                     if inv:
                         order.write(inv)
-                        if inv['npd_o14_paid_amount'] > 0.005:
+                        if inv['npd_o14_paid_amount'] > 0.005 or inv.get('npd_o14_open_others'):
                             partly_paid.append(_('%s ชำระแล้ว %s ค้าง %s (%s)') % (
                                 name, '{:,.2f}'.format(inv['npd_o14_paid_amount']),
                                 '{:,.2f}'.format(inv['npd_o14_outstanding']), inv['npd_o14_invoice_refs']))
@@ -333,12 +334,16 @@ class RentalOrderImport(models.Model):
                     ('move_type', '=', 'out_invoice')]]))
             so_inv[r['id']] = sorted(set(so_inv[r['id']]) | extra)
         inv_ids = sorted({i for v in so_inv.values() for i in v})
-        moves = {m['id']: m for m in self.execute_kw('account.move', 'read', [inv_ids, [
-            'name', 'move_type', 'state', 'amount_total', 'amount_residual']])} if inv_ids else {}
+        head_fields = [f for f in ('name', 'move_type', 'state', 'amount_total', 'amount_residual',
+                                   'reason_code_id', 'document_type', 'pfb_so_type', 'contact_type',
+                                   'closing_type', 'debt_payment_type', 'journal_id', 'ref')
+                       if f in mfields]
+        moves = {m['id']: m for m in self.execute_kw('account.move', 'read', [inv_ids, head_fields])} \
+            if inv_ids else {}
         totals = {r['id']: r.get('amount_total') or 0.0 for r in rows}
         for oid in ids:
-            inv_total = residual = 0.0
-            refs = []
+            inv_total = main_residual = 0.0
+            refs, open_others = [], []
             for mid in so_inv.get(oid, []):
                 m = moves.get(mid)
                 if not m or m['state'] != 'posted':
@@ -346,22 +351,79 @@ class RentalOrderImport(models.Model):
                 sign = 1 if m['move_type'] == 'out_invoice' else -1 if m['move_type'] == 'out_refund' else 0
                 if not sign:
                     continue
-                if sign > 0 and mid in linked.get(oid, ()):
-                    inv_total += m['amount_total'] or 0.0
-                residual += sign * (m['amount_residual'] or 0.0)
                 refs.append(m['name'])
+                if sign < 0:
+                    # ใบลดหนี้ที่ยังไม่ได้ใช้ (ลูกค้ามีเครดิตค้าง) → ออกใบลดหนี้ฝั่ง 18 แยกใบ
+                    if (m['amount_residual'] or 0.0) > 0.005:
+                        open_others.append(m)
+                elif mid in linked.get(oid, ()):
+                    # ใบหลักที่ออกจากบรรทัดใบเช่า
+                    inv_total += m['amount_total'] or 0.0
+                    main_residual += m['amount_residual'] or 0.0
+                elif (m['amount_residual'] or 0.0) > 0.005:
+                    # ใบประเภทอื่นที่ค้าง (เช่น ค่าเช่าส่วนต่าง สินค้าหาย/ชำรุด) ออกแยกใบตามประเภทเดิม
+                    open_others.append(m)
             so_total = totals.get(oid, 0.0)
             uninvoiced = so_total - inv_total
             if refs and uninvoiced < 1.0:
                 uninvoiced = 0.0  # ยอดใบกับใบแจ้งหนี้ต่างกันแค่เศษปัด VAT ไม่ใช่ส่วนที่ยังไม่ออกใบ
-            outstanding = round(max(uninvoiced, 0.0) + residual, 2)
+            main_outstanding = round(max(uninvoiced, 0.0) + main_residual, 2)
+            if main_outstanding < 1.0:
+                main_outstanding = 0.0  # ค้างไม่ถึงบาท = เศษปัด ไม่ออกใบแจ้งหนี้
+            others = self._o14_open_invoice_payload(open_others)
             result[oid] = {
                 'npd_o14_invoice_refs': ', '.join(refs) or False,
                 'npd_o14_invoiced_total': round(inv_total, 2),
-                'npd_o14_paid_amount': round(max(so_total - outstanding, 0.0), 2) if refs else 0.0,
-                'npd_o14_outstanding': outstanding,
+                'npd_o14_main_outstanding': main_outstanding,
+                'npd_o14_paid_amount': round(max(so_total - main_outstanding, 0.0), 2) if refs else 0.0,
+                'npd_o14_outstanding': round(main_outstanding + sum(
+                    o['residual'] * (-1 if o['move_type'] == 'out_refund' else 1) for o in others), 2),
+                'npd_o14_open_others': json.dumps(others, ensure_ascii=False) if others else False,
             }
         return result
+
+    def _o14_open_invoice_payload(self, moves):
+        """ใบที่ค้างนอกจากใบหลัก → ข้อมูลพอสำหรับออกใบแจ้งหนี้ฝั่ง 18 แยกตามประเภทเดิม"""
+        if not moves:
+            return []
+        lines = self.execute_kw('account.move.line', 'search_read', [[
+            ('move_id', 'in', [m['id'] for m in moves]), ('exclude_from_invoice_tab', '=', False),
+            ('display_type', '=', False)], ['move_id', 'product_id', 'name', 'tax_ids']])
+        tax_names = self._tax_name_index({t for l in lines for t in (l.get('tax_ids') or [])})
+        Journal = self.env['account.journal'].sudo().with_context(lang='th_TH')
+        Reason = self.env['scrap.reason.code'].sudo() if 'scrap.reason.code' in self.env else None
+        payload = []
+        for m in moves:
+            mine = [l for l in lines if l['move_id'][0] == m['id']]
+            first = mine[0] if mine else {}
+            product = self._map_product(first.get('product_id')) if first.get('product_id') else None
+            taxes = self._map_taxes(first.get('tax_ids') or [], tax_names)
+            journal = Journal.browse()
+            if m.get('journal_id'):
+                jname = m['journal_id'][1]
+                journal = Journal.search([('company_id', '=', self.company_id.id), ('type', '=', 'sale')]) \
+                    .filtered(lambda j: ' '.join((j.name or '').split()) == ' '.join(jname.split()))[:1]
+            reason = None
+            if Reason is not None and m.get('reason_code_id'):
+                reason = Reason.search([('name', '=', m['reason_code_id'][1])], limit=1)
+            payload.append({
+                'o14_name': m['name'],
+                'move_type': m['move_type'],
+                'residual': round(m['amount_residual'] or 0.0, 2),
+                'total': round(m['amount_total'] or 0.0, 2),
+                'type_name': m['reason_code_id'][1] if m.get('reason_code_id') else '',
+                'reason_code_id': reason.id if reason else False,
+                'document_type': m.get('document_type') or False,
+                'pfb_so_type': m.get('pfb_so_type') or False,
+                'contact_type': m.get('contact_type') or False,
+                'closing_type': m.get('closing_type') or False,
+                'debt_payment_type': m.get('debt_payment_type') or False,
+                'journal_id': journal.id or False,
+                'product_id': product.id if product else False,
+                'line_name': first.get('name') or m.get('ref') or m['name'],
+                'tax_ids': taxes.ids,
+            })
+        return payload
 
     def _name_clash(self, row):
         """ใบฝั่ง 18 ที่ใช้เลขเดียวกันในบริษัทเดียวกัน และไม่ใช่ใบที่ยกมาจากใบนี้เอง"""

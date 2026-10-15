@@ -10,6 +10,8 @@ import re
 
 from markupsafe import Markup, escape
 
+import json
+
 from odoo import api, fields, models, _
 from odoo.exceptions import UserError
 
@@ -237,27 +239,37 @@ class RentalImportCheckWizard(models.TransientModel):
 
         # ลองสร้างใบจริงใน savepoint แล้วย้อนทิ้ง เพื่อเทียบยอดกับฝั่ง 14
         inv = cfg._fetch_o14_invoice_status([row]).get(row['id']) or {}
+        expected = []  # (ประเภท/ใบ, ยอดค้าง) ที่ฝั่ง 18 ต้องออกใบแจ้งหนี้
         if inv.get('npd_o14_invoice_refs'):
-            head.append((WARN if inv['npd_o14_paid_amount'] > 0.005 else OK, _(
-                'ฝั่ง 14 ออกใบแจ้งหนี้แล้ว: %(refs)s (ใบเช่า %(inv)s) | ยอดค้างรวม %(left)s → ใบแจ้งหนี้จาก SO ฝั่ง 18 จะหัก %(paid)s ให้เหลือ %(left)s') % {
-                'refs': inv['npd_o14_invoice_refs'], 'inv': '{:,.2f}'.format(inv['npd_o14_invoiced_total']),
-                'paid': '{:,.2f}'.format(inv['npd_o14_paid_amount']),
-                'left': '{:,.2f}'.format(inv['npd_o14_outstanding'])}))
-            if inv['npd_o14_outstanding'] <= 0.005:
+            head.append((OK, _('ฝั่ง 14 ออกใบแจ้งหนี้แล้ว: %(refs)s | ยอดค้างรวม %(left)s') % {
+                'refs': inv['npd_o14_invoice_refs'], 'left': '{:,.2f}'.format(inv['npd_o14_outstanding'])}))
+            if inv['npd_o14_main_outstanding'] > 0.005:
+                expected.append((_('ใบหลัก (ใบแจ้งหนี้ค่าเช่า)'), inv['npd_o14_main_outstanding']))
+            for other in json.loads(inv.get('npd_o14_open_others') or '[]'):
+                kind = _('ใบลดหนี้') if other.get('move_type') == 'out_refund' else ''
+                expected.append(('%s %s %s' % (other['o14_name'], kind, other.get('type_name') or ''), other['residual']))
+            for label, amount in expected:
+                head.append((WARN, _('ค้าง: %s = %s') % (label, '{:,.2f}'.format(amount))))
+            if not expected:
                 head.append((OK, _('ชำระครบแล้วในระบบเดิม — ฝั่ง 18 จะไม่ยอมออกใบแจ้งหนี้จากใบนี้ซ้ำ')))
         if ready:
-            diff, error, invoiced = self._simulate(row, line_rows, partner, branch, code_index, tax_names, inv)
+            diff, error, invoiced = self._simulate(row, line_rows, partner, branch, code_index, tax_names,
+                                                   inv if expected else None)
             if invoiced is not None:
-                expect = inv.get('npd_o14_outstanding') or 0.0
                 if isinstance(invoiced, str):
                     head.append((BAD, _('ลองออกใบแจ้งหนี้จากใบนี้ไม่ผ่าน: %s') % invoiced))
                     ready = False
-                elif abs(invoiced - expect) < 0.005:
-                    head.append((OK, _('ลองออกใบแจ้งหนี้จากใบนี้ฝั่ง 18 ได้ยอด %s = ยอดค้างพอดี') % '{:,.2f}'.format(invoiced)))
                 else:
-                    head.append((BAD, _('ลองออกใบแจ้งหนี้จากใบนี้ได้ยอด %s แต่ยอดค้างคือ %s') % (
-                        '{:,.2f}'.format(invoiced), '{:,.2f}'.format(expect))))
-                    ready = False
+                    got = sorted(round(a, 2) for _l, a in invoiced)
+                    want = sorted(round(a, 2) for _l, a in expected)
+                    ok = got == want
+                    head.append((OK if ok else BAD, _('ลองกดสร้างใบแจ้งหนี้ฝั่ง 18 ได้ %(n)s ใบ: %(list)s%(res)s') % {
+                        'n': len(invoiced),
+                        'list': ' | '.join('%s = %s' % (l, '{:,.2f}'.format(a)) for l, a in invoiced),
+                        'res': _(' — ตรงยอดค้างแยกตามประเภท') if ok else _(' — ไม่ตรงยอดค้าง'),
+                    }))
+                    if not ok:
+                        ready = False
             if error:
                 head.append((BAD, _('ลองสร้างใบไม่ผ่าน: %s') % error))
                 ready = False
@@ -304,12 +316,15 @@ class RentalImportCheckWizard(models.TransientModel):
                 order.invalidate_recordset(['amount_untaxed', 'amount_tax', 'amount_total'])
                 result['diff'] = cfg._compare_amounts(order, row, line_rows)
                 # ใบที่ชำระบางส่วนในฝั่ง 14: ลองออกใบแจ้งหนี้ (ร่าง ไม่ออกเลข) ดูว่าได้แค่ยอดค้าง
-                if inv and inv.get('npd_o14_paid_amount', 0) > 0.005 and inv.get('npd_o14_outstanding', 0) > 0.005:
+                if inv:
                     order.write(dict(inv, state='sale'))
                     try:
                         with self.env.cr.savepoint():
                             moves = order._create_invoices()
-                            result['invoiced'] = sum(moves.mapped('amount_total'))
+                            result['invoiced'] = [
+                                ((_('ใบลดหนี้ ') if m.move_type == 'out_refund' else '')
+                                 + ((m.reason_code_id.name if 'reason_code_id' in m._fields and m.reason_code_id else '')
+                                    or (m.ref or _('ใบหลัก'))), m.amount_total) for m in moves]
                     except Exception as error:  # noqa: BLE001
                         result['invoiced'] = str(error)[:200]
                 raise _Rollback()

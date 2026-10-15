@@ -16,7 +16,9 @@
                 <field name="o14_order_name" invisible="not o14_imported"/>
                 <field name="npd_o14_invoice_refs" invisible="not npd_o14_invoice_refs"/>
                 <field name="npd_o14_paid_amount" invisible="npd_o14_paid_amount == 0"/>
-                <field name="npd_o14_outstanding" invisible="npd_o14_paid_amount == 0"/>
+                <field name="npd_o14_outstanding" invisible="not npd_o14_invoice_refs"/>
+                <field name="npd_o14_main_outstanding" invisible="not npd_o14_invoice_refs"/>
+                <field name="npd_o14_open_others" invisible="not npd_o14_open_others" widget="text"/>
             </xpath>
         </field>
     </record>
