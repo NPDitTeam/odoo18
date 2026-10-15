@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_account_payment_form_npd_wht_receivable" model="ir.ui.view">
+        <field name="name">account.payment.form.npd.wht.receivable</field>
+        <field name="model">account.payment</field>
+        <field name="inherit_id" ref="account_payment_invoice.view_account_payment_form_inherit"/>
+        <field name="arch" type="xml">
+            <xpath expr="//header" position="inside">
+                <button name="action_npd_open_wht_file_wizard" type="object" string="เพิ่มใบหัก ณ ที่จ่าย"
+                        class="btn-primary"
+                        invisible="state not in ('in_process', 'paid') or not npd_other_receivable_amount"/>
+            </xpath>
+            <xpath expr="//field[@name='rental_difference_status']" position="after">
+                <field name="npd_other_receivable_amount" invisible="1"/>
+                <field name="npd_wht_file_state" readonly="1" invisible="not npd_wht_file_state"
+                       widget="badge"
+                       decoration-success="npd_wht_file_state == 'done'"
+                       decoration-warning="npd_wht_file_state == 'pending'"/>
+            </xpath>
+            <xpath expr="//page[@name='wt_certs']" position="after">
+                <page string="ไฟล์ใบหัก ณ ที่จ่าย" name="npd_wht_files" invisible="not npd_other_receivable_amount">
+                    <field name="npd_wht_file_ids">
+                        <list editable="bottom" create="0" delete="0">
+                            <field name="file" widget="binary" filename="file_name"/>
+                            <field name="file_name"/>
+                            <field name="note"/>
+                            <field name="create_date" string="แนบเมื่อ" readonly="1"/>
+                            <field name="create_uid" string="แนบโดย" readonly="1"/>
+                        </list>
+                    </field>
+                </page>
+            </xpath>
+        </field>
+    </record>
+</odoo>

@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_npd_payment_wht_file_wizard_form" model="ir.ui.view">
+        <field name="name">npd.payment.wht.file.wizard.form</field>
+        <field name="model">npd.payment.wht.file.wizard</field>
+        <field name="arch" type="xml">
+            <form>
+                <group>
+                    <field name="payment_id"/>
+                    <field name="amount"/>
+                    <field name="currency_id" invisible="1"/>
+                    <field name="reclassed" invisible="1"/>
+                    <field name="attachment_ids" widget="many2many_binary" string="ไฟล์ (แนบได้หลายไฟล์)"/>
+                    <field name="note"/>
+                </group>
+                <div class="alert alert-info" role="alert" invisible="reclassed">
+                    กดบันทึกแล้ว รายการบันทึกบัญชีของใบนี้จะเพิ่ม Dr ภาษีเงินได้ถูกหัก ณ ที่จ่าย / Cr ลูกหนี้อื่น
+                    ตามยอดด้านบน และไฟล์ที่แนบจะลบไม่ได้ (แก้ไข/เปลี่ยนไฟล์ได้)
+                </div>
+                <div class="alert alert-secondary" role="alert" invisible="not reclassed">
+                    ใบนี้ลงบัญชีโอนเป็นภาษีถูกหัก ณ ที่จ่ายไปแล้ว — แนบไฟล์เพิ่มได้ ไม่ลงบัญชีซ้ำ
+                </div>
+                <footer>
+                    <button name="action_confirm" type="object" string="บันทึก" class="btn-primary"/>
+                    <button string="ยกเลิก" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+</odoo>

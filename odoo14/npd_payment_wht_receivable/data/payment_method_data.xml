@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ติดป้ายวิธีชำระภาษีถูกหัก ณ ที่จ่ายเดิม + สร้าง "ลูกหนี้อื่น" รายบริษัท (เรียกซ้ำได้ ไม่สร้างซ้ำ) -->
+    <function model="custom.payment.method" name="_npd_setup_wht_receivable"/>
+</odoo>
