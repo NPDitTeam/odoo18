@@ -110,6 +110,12 @@ class RentalOrderImport(models.Model):
         }
         if branch and 'branch_id' in Order._fields:
             values['branch_id'] = branch.id
+        # พนักงานขาย / Sales ที่ติดต่อ (ไม่มีฝั่ง 18 → สร้างผู้ใช้แบบปิดใช้งานให้)
+        for fname in ('user_id', 'sales_contact'):
+            if fname in Order._fields and row.get(fname):
+                user, _new = self._map_user(row[fname])
+                if user:
+                    values[fname] = user.id
         # ใบที่ยกมาเป็นใบสั่งขายแล้ว ไม่ใช่ใบเสนอราคา (sale_isolated_quotation แยกด้วย order_sequence)
         # ไม่ตั้ง ฟอร์มจะขึ้นหัวใบเสนอราคา + ปุ่ม Convert to Order
         if 'order_sequence' in Order._fields:

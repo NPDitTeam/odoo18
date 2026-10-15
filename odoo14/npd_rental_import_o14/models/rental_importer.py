@@ -32,7 +32,7 @@ ORDER_FIELDS = [
     # ช่องบังคับกรอกของฝั่ง 18 ถ้าไม่ส่งไปจะติด NOT NULL ตอนบันทึก
     'contact_type', 'delivery_type', 'on_site', 'pfb_so_type',
     'customer_channel_id', 'pricelist_id', 'partner_invoice_id',
-    'partner_shipping_id', 'picking_policy', 'user_id',
+    'partner_shipping_id', 'picking_policy', 'user_id', 'sales_contact',
     'npd_so_type', 'renewal_bill_status', 'deposit_ref', 'rental_status',
     'start_rent_date', 'end_rent_date', 'pfb_date_of_rent',
     'rental_contract_no', 'rental_contract_prefix', 'is_in_rent',
@@ -263,6 +263,39 @@ class RentalImporter(models.Model):
             if 'สำนักงานใหญ่' in tail or 'สาขา' in tail:
                 return head
         return text
+
+    def _map_user(self, o14_value, create=True):
+        """ผู้ใช้ (พนักงานขาย / Sales ที่ติดต่อ) — ชื่อล็อกอินก่อน แล้วชื่อ
+
+        ไม่มีฝั่ง 18 → สร้างให้แบบปิดใช้งาน (ล็อกอินไม่ได้ ไม่ได้สิทธิ์เข้าระบบ)
+        ให้ใบเช่าอ้างถึงคนเดิมได้ ส่วนการเปิดใช้งาน/ให้สิทธิ์ แอดมินเปิดเองภายหลัง
+        คืน (ผู้ใช้, สร้างใหม่หรือไม่)
+        """
+        Users = self.env['res.users'].sudo().with_context(active_test=False)
+        if not o14_value:
+            return Users.browse(), False
+        o14_id = o14_value[0] if isinstance(o14_value, (list, tuple)) else o14_value
+        cache = self.env.context.get('npd_user_cache')
+        if cache is not None and o14_id in cache:
+            return Users.browse(cache[o14_id]), False
+        row = (self.execute_kw('res.users', 'read', [[o14_id], ['login', 'name']]) or [{}])[0]
+        login = (row.get('login') or '').strip()
+        name = (row.get('name') or (o14_value[1] if isinstance(o14_value, (list, tuple)) else '') or '').strip()
+        found = (login and Users.search([('login', '=', login)], limit=1)) or \
+            (name and Users.search([('name', '=', name), ('share', '=', False)], limit=1)) or Users.browse()
+        created = False
+        if not found and create and name:
+            found = Users.with_context(no_reset_password=True, mail_create_nolog=True).create({
+                'name': name,
+                'login': login or ('o14-user-%s' % o14_id),
+                'active': False,
+                'company_id': self.company_id.id,
+                'company_ids': [(6, 0, [self.company_id.id])],
+            })
+            created = True
+        if cache is not None and found:
+            cache[o14_id] = found.id
+        return found, created
 
     def _map_channel(self, o14_value):
         """ช่องทางลูกค้า — ฝั่ง 18 บังคับกรอก แต่รายการสองฝั่งไม่เหมือนกัน

@@ -147,6 +147,11 @@ class RentalImportCheckWizard(models.TransientModel):
             head.append((WARN, _('ไม่พบสาขา "%s" ฝั่ง 18 ใบจะไม่มีสาขา') % row['branch_id'][1]))
         elif branch:
             head.append((OK, _('สาขา: %s') % branch.name))
+        for fname, label in (('sales_contact', _('Sales ที่ติดต่อ')), ('user_id', _('พนักงานขาย'))):
+            if row.get(fname):
+                user, _new = cfg._map_user(row[fname], create=False)
+                head.append((OK if user else WARN, '%s: %s → %s' % (
+                    label, row[fname][1], user.name if user else _('ยังไม่มีฝั่ง 18 — ตอนยกจะสร้างผู้ใช้ให้ (ปิดใช้งาน)'))))
         pricelist = cfg._map_pricelist(row.get('pricelist_id'), branch)
         o14_pl = (row.get('pricelist_id') or [0, ''])[1]
         pl_match = bool(pricelist) and cfg._pricelist_matches(row, pricelist)

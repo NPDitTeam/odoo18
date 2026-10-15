@@ -60,6 +60,18 @@ class SaleOrder(models.Model):
         return self.env['account.move'].sudo().search([
             ('npd_o14_reissue_order_id', '=', self.id), ('state', '!=', 'cancel')])
 
+    @api.depends('order_line.invoice_lines', 'npd_o14_reissued')
+    def _get_invoiced(self):
+        """ปุ่ม "ใบแจ้งหนี้" บนใบสั่งขาย นับรวมใบยอดค้างประเภทอื่นที่ออกจากใบนี้
+        (ใบค่าเช่าส่วนต่าง / สินค้าหาย ฯลฯ ไม่ได้ผูกกับบรรทัดใบเช่า ระบบเดิมจึงมองไม่เห็น)"""
+        super()._get_invoiced()
+        Move = self.env['account.move'].sudo()
+        for order in self.filtered(lambda o: o.id and o.npd_o14_reissued):
+            extra = Move.search([('npd_o14_reissue_order_id', '=', order.id)])
+            if extra:
+                order.invoice_ids = (order.invoice_ids | extra.with_env(self.env)).ids
+                order.invoice_count = len(order.invoice_ids)
+
     @api.depends('state', 'order_line.invoice_status', 'npd_o14_reissued')
     def _compute_invoice_status(self):
         super()._compute_invoice_status()
