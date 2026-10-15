@@ -383,8 +383,12 @@ class SaleOrder(models.Model):
 
         # ตั้งค่าอื่นๆ
         default['start_rent_date'] = fields.Date.today()
-        default['end_rent_date'] = False
-        default['pfb_date_of_rent'] = 0
+        # เหมือน o14: ซ้ำเอกสารแล้วจำนวนวันเช่าคงเดิม วันสิ้นสุด = วันนี้ + จำนวนวันเดิม
+        # (เดิมล้างเป็น 0 ใบแจ้งหนี้/หน้ารับชำระของใบที่ซ้ำมาเลยได้จำนวนวันเช่า 0)
+        default.setdefault('pfb_date_of_rent', self.pfb_date_of_rent or 0)
+        if 'end_rent_date' not in default:
+            default['end_rent_date'] = (fields.Date.today() + timedelta(days=self.pfb_date_of_rent)
+                                        if self.pfb_date_of_rent else False)
         default['return_greenhome_state'] = 'none'
 
         if is_convert_to_order:
