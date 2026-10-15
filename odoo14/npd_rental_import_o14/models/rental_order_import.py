@@ -110,6 +110,10 @@ class RentalOrderImport(models.Model):
         }
         if branch and 'branch_id' in Order._fields:
             values['branch_id'] = branch.id
+        # ใบที่ยกมาเป็นใบสั่งขายแล้ว ไม่ใช่ใบเสนอราคา (sale_isolated_quotation แยกด้วย order_sequence)
+        # ไม่ตั้ง ฟอร์มจะขึ้นหัวใบเสนอราคา + ปุ่ม Convert to Order
+        if 'order_sequence' in Order._fields:
+            values['order_sequence'] = True
         # ช่องบังคับกรอกของฝั่ง 18 ที่ต้องแปลงข้ามฐาน ไม่ใช่ก็อปค่าดิบ
         if 'customer_channel_id' in Order._fields:
             values['customer_channel_id'] = self._map_channel(
