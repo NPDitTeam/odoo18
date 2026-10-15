@@ -27,14 +27,28 @@ class CustomPaymentMethod(models.Model):
                                  ('npd_kind', '=', False)])
             if wht:
                 wht.write({'npd_kind': 'wht'})
-            if Method.search_count([('company_id', '=', company.id), ('npd_kind', '=', 'other_receivable')]):
+            existing = Method.search([('company_id', '=', company.id), ('npd_kind', '=', 'other_receivable')], limit=1)
+            if existing:
+                # บัญชีที่เพิ่มรุ่นแรกเก็บชื่อแค่ภาษาตั้งต้น ให้มีชื่อไทยเหมือนบริษัทอื่น
+                self.env.cr.execute("""
+                    UPDATE account_account SET name = name || jsonb_build_object('th_TH', name->>'en_US')
+                    WHERE id = %s AND NOT name ? 'th_TH'""", [existing.account_id.id])
+                existing.account_id.invalidate_recordset(['name'])
                 continue
-            account = self.env['account.account'].sudo().with_company(company).search([
-                ('code', '=', OTHER_RECEIVABLE_CODE), ('company_ids', 'in', company.id)], limit=1)
+            Account = self.env['account.account'].sudo().with_company(company)
+            account = Account.search([('code', '=', OTHER_RECEIVABLE_CODE), ('company_ids', 'in', company.id)], limit=1)
             if not account:
-                _logger.warning('npd_payment_wht_receivable: %s ไม่มีบัญชี %s ไม่ได้สร้างวิธีชำระลูกหนี้อื่น',
-                                company.name, OTHER_RECEIVABLE_CODE)
-                continue
+                # ผังของบริษัทนี้ยังไม่มีลูกหนี้อื่น (เอส กรุ๊ป) → เพิ่มตามแบบของบริษัทอื่น
+                account = Account.create({
+                    'code': OTHER_RECEIVABLE_CODE,
+                    'name': 'ลูกหนี้อื่น ๆ',
+                    'account_type': 'asset_current',
+                    'reconcile': False,
+                    'company_ids': [(6, 0, [company.id])],
+                })
+                self.env.cr.execute("UPDATE account_account SET name = name || jsonb_build_object('th_TH', name->>'en_US') WHERE id = %s", [account.id])
+                _logger.info('npd_payment_wht_receivable: เพิ่มบัญชี %s ลูกหนี้อื่น ๆ ให้ %s',
+                             OTHER_RECEIVABLE_CODE, company.name)
             Method.create({
                 'name': 'ลูกหนี้อื่น',
                 'type': 'other',
