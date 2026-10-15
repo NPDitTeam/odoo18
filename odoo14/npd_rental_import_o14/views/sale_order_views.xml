@@ -14,6 +14,9 @@
                 <field name="o14_imported" invisible="1"/>
                 <field name="o14_source_db" invisible="not o14_imported"/>
                 <field name="o14_order_name" invisible="not o14_imported"/>
+                <field name="npd_o14_invoice_refs" invisible="not npd_o14_invoice_refs"/>
+                <field name="npd_o14_paid_amount" invisible="npd_o14_paid_amount == 0"/>
+                <field name="npd_o14_outstanding" invisible="npd_o14_paid_amount == 0"/>
             </xpath>
         </field>
     </record>

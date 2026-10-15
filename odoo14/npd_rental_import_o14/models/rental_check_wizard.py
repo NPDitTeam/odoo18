@@ -119,8 +119,8 @@ class RentalImportCheckWizard(models.TransientModel):
             head.append((BAD, _('ไม่ใช่ใบเช่า (ประเภท %s) ตัวยกจะข้าม') % (row.get('pfb_so_type') or '-')))
             ready = False
         if row.get('renewal_bill_status') != 'renew':
-            head.append((BAD, _('ไม่ใช่ใบต่ออายุบิล (ไม่มีเลขอ้างอิงเงินประกัน) ตัวยกจะข้าม')))
-            ready = False
+            # ยกรายใบไม่บังคับบิลต่ออายุ (ยกตามช่วงวันที่ยังเอาเฉพาะบิลต่ออายุเหมือนเดิม)
+            head.append((WARN, _('ไม่ใช่ใบต่ออายุบิล — ยกรายใบได้ (ยกตามช่วงวันที่จะไม่รวมใบนี้)')))
         if row.get('x_round_enabled'):
             head.append((BAD, _('ตั้งปัดยอดรวมเอง (x_round) ยังพอร์ตไม่ได้ ตัวยกจะกันไว้')))
             ready = False
@@ -236,8 +236,28 @@ class RentalImportCheckWizard(models.TransientModel):
             ready = False
 
         # ลองสร้างใบจริงใน savepoint แล้วย้อนทิ้ง เพื่อเทียบยอดกับฝั่ง 14
+        inv = cfg._fetch_o14_invoice_status([row]).get(row['id']) or {}
+        if inv.get('npd_o14_invoice_refs'):
+            head.append((WARN if inv['npd_o14_paid_amount'] > 0.005 else OK, _(
+                'ฝั่ง 14 ออกใบแจ้งหนี้แล้ว: %(refs)s ยอด %(inv)s | ชำระ/ลดหนี้แล้ว %(paid)s | ค้าง %(left)s') % {
+                'refs': inv['npd_o14_invoice_refs'], 'inv': '{:,.2f}'.format(inv['npd_o14_invoiced_total']),
+                'paid': '{:,.2f}'.format(inv['npd_o14_paid_amount']),
+                'left': '{:,.2f}'.format(inv['npd_o14_outstanding'])}))
+            if inv['npd_o14_outstanding'] <= 0.005:
+                head.append((OK, _('ชำระครบแล้วในระบบเดิม — ฝั่ง 18 จะไม่ยอมออกใบแจ้งหนี้จากใบนี้ซ้ำ')))
         if ready:
-            diff, error = self._simulate(row, line_rows, partner, branch, code_index, tax_names)
+            diff, error, invoiced = self._simulate(row, line_rows, partner, branch, code_index, tax_names, inv)
+            if invoiced is not None:
+                expect = inv.get('npd_o14_outstanding') or 0.0
+                if isinstance(invoiced, str):
+                    head.append((BAD, _('ลองออกใบแจ้งหนี้จากใบนี้ไม่ผ่าน: %s') % invoiced))
+                    ready = False
+                elif abs(invoiced - expect) < 0.005:
+                    head.append((OK, _('ลองออกใบแจ้งหนี้จากใบนี้ฝั่ง 18 ได้ยอด %s = ยอดค้างพอดี') % '{:,.2f}'.format(invoiced)))
+                else:
+                    head.append((BAD, _('ลองออกใบแจ้งหนี้จากใบนี้ได้ยอด %s แต่ยอดค้างคือ %s') % (
+                        '{:,.2f}'.format(invoiced), '{:,.2f}'.format(expect))))
+                    ready = False
             if error:
                 head.append((BAD, _('ลองสร้างใบไม่ผ่าน: %s') % error))
                 ready = False
@@ -248,12 +268,12 @@ class RentalImportCheckWizard(models.TransientModel):
                 head.append((OK, _('ลองสร้างใบแล้ว ยอดตรงฝั่ง 14 ทุกบาท — พร้อมยก')))
         return head, items, ready
 
-    def _simulate(self, row, line_rows, partner, branch, code_index, tax_names):
+    def _simulate(self, row, line_rows, partner, branch, code_index, tax_names, inv=None):
         cfg = self.config_id
         Order = self.env['sale.order'].sudo().with_context(
             allowed_company_ids=cfg._all_companies(), tracking_disable=True,
             mail_create_nolog=True, npd_no_line_tracking=True)
-        result = {'diff': '', 'error': ''}
+        result = {'diff': '', 'error': '', 'invoiced': None}
         try:
             with self.env.cr.savepoint():
                 if not partner:
@@ -283,12 +303,21 @@ class RentalImportCheckWizard(models.TransientModel):
                 order.order_line.with_context(npd_skip_round=True)._npd_recalc_amounts()
                 order.invalidate_recordset(['amount_untaxed', 'amount_tax', 'amount_total'])
                 result['diff'] = cfg._compare_amounts(order, row, line_rows)
+                # ใบที่ชำระบางส่วนในฝั่ง 14: ลองออกใบแจ้งหนี้ (ร่าง ไม่ออกเลข) ดูว่าได้แค่ยอดค้าง
+                if inv and inv.get('npd_o14_paid_amount', 0) > 0.005 and inv.get('npd_o14_outstanding', 0) > 0.005:
+                    order.write(dict(inv, state='sale'))
+                    try:
+                        with self.env.cr.savepoint():
+                            moves = order._create_invoices()
+                            result['invoiced'] = sum(moves.mapped('amount_total'))
+                    except Exception as error:  # noqa: BLE001
+                        result['invoiced'] = str(error)[:200]
                 raise _Rollback()
         except _Rollback:
             pass
         except Exception as error:  # noqa: BLE001 - แสดงให้ผู้ใช้เห็นว่าติดอะไร
             result['error'] = str(error)[:300]
-        return result['diff'], result['error']
+        return result['diff'], result['error'], result['invoiced']
 
 
 class RentalImportConfig(models.Model):

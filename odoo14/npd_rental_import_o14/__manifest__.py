@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'NPD ยกข้อมูลใบเช่าจาก Odoo 14',
-    'version': '18.0.1.2.0',
+    'version': '18.0.1.3.0',
     'category': 'Sales',
     'summary': 'ยกใบเช่าต่ออายุ สินค้า รายการราคา และสต็อก จากฐาน ERP ฝั่ง Odoo 14',
     'description': """

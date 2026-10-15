@@ -43,11 +43,12 @@ class RentalOrderImport(models.Model):
     def _fetch_orders(self, date_from, date_to, limit=None, names=None):
         # ช่องประเภทใบที่ o14 ใช้จริงคือ pfb_so_type — npd_so_type เกือบทั้งหมดเป็น sale
         # (เดิมกรองด้วย npd_so_type: กรุงเทพ/เอส กรุ๊ปหาไม่เจอสักใบ อินเตอร์เจอ 77 จาก 5,286)
-        domain = [('pfb_so_type', '=', 'rent'),
-                  ('renewal_bill_status', '=', 'renew')]
+        domain = [('pfb_so_type', '=', 'rent')]
         if names:
+            # ระบุเลขใบมาเอง (ปุ่ม 4) ไม่บังคับว่าต้องเป็นบิลต่ออายุ ผู้ใช้เลือกใบเองแล้ว
             domain.append(('name', 'in', list(names)))
         else:
+            domain.append(('renewal_bill_status', '=', 'renew'))
             domain += [('date_order', '>=', '%s 00:00:00' % date_from),
                        ('date_order', '<=', '%s 23:59:59' % date_to)]
         available = set(self.execute_kw('sale.order', 'fields_get',
@@ -186,6 +187,9 @@ class RentalOrderImport(models.Model):
         Order = self.env['sale.order'].sudo().with_context(
             allowed_company_ids=self._all_companies())
         created, updated, blocked, failed, mismatched = [], [], [], [], []
+        # ใบแจ้งหนี้/การชำระฝั่ง 14 → ใบแจ้งหนี้จากใบนี้ฝั่ง 18 ต้องเป็นแค่ยอดค้าง
+        invoice_status = self._fetch_o14_invoice_status(rows)
+        partly_paid = []
 
         # สินค้าที่ใบใช้แต่ฝั่ง 18 ยังไม่มี: คัดลอกจาก o14 พร้อมลงสต็อกตาม o14
         new_products, product_failed = self._ensure_products_from_o14(
@@ -271,6 +275,13 @@ class RentalOrderImport(models.Model):
                     diff = self._compare_amounts(order, row, lines_by_order.get(row['id'], []))
                     if diff:
                         mismatched.append('%s %s' % (name, diff))
+                    inv = invoice_status.get(row['id'])
+                    if inv:
+                        order.write(inv)
+                        if inv['npd_o14_paid_amount'] > 0.005:
+                            partly_paid.append(_('%s ชำระแล้ว %s ค้าง %s (%s)') % (
+                                name, '{:,.2f}'.format(inv['npd_o14_paid_amount']),
+                                '{:,.2f}'.format(inv['npd_o14_outstanding']), inv['npd_o14_invoice_refs']))
             except Exception as error:
                 _logger.exception('[RENTAL IMPORT] %s ล้มเหลว', name)
                 failed.append('%s: %s' % (name, str(error)[:200]))
@@ -278,6 +289,9 @@ class RentalOrderImport(models.Model):
         self.env.cr.commit()
         text = self._import_report(rows, created, updated, blocked,
                                    failed, mismatched)
+        if partly_paid:
+            text += '\n\n' + _('ใบที่ชำระแล้วในระบบเดิม — ใบแจ้งหนี้จากใบเหล่านี้จะหักยอดชำระเดิมให้เหลือยอดค้าง (%s ใบ):') \
+                % len(partly_paid) + '\n  ' + '\n  '.join(partly_paid[:50])
         if new_partners:
             text += '\n\n' + _('สร้างลูกค้าใหม่จาก o14 (%s ราย):') % len(new_partners) \
                 + '\n  ' + '\n  '.join(new_partners[:50])
@@ -290,6 +304,50 @@ class RentalOrderImport(models.Model):
             text += '\n\n' + _('สร้างสินค้าไม่ได้:') + '\n  ' + '\n  '.join(product_failed[:20])
         self._note(text)
         return text
+
+    def _fetch_o14_invoice_status(self, rows):
+        """ใบแจ้งหนี้ของแต่ละใบฝั่ง 14 → ยอดออกใบ / ชำระแล้ว / ค้าง
+
+        ยอดค้าง = (ยอดใบ - ยอดออกใบแจ้งหนี้) + ยอดค้างสุทธิของใบแจ้งหนี้ (ใบลดหนี้หักออก)
+        ชำระแล้ว (ส่วนที่จะหักตอนออกใบแจ้งหนี้ฝั่ง 18) = ยอดใบ - ยอดค้าง
+        นับเฉพาะใบที่ลงรายการแล้ว
+        """
+        result = {}
+        ids = [r['id'] for r in rows]
+        if not ids:
+            return result
+        so_inv = {r['id']: r.get('invoice_ids') or [] for r in self.execute_kw(
+            'sale.order', 'read', [ids, ['invoice_ids']])}
+        inv_ids = sorted({i for v in so_inv.values() for i in v})
+        moves = {m['id']: m for m in self.execute_kw('account.move', 'read', [inv_ids, [
+            'name', 'move_type', 'state', 'amount_total', 'amount_residual']])} if inv_ids else {}
+        totals = {r['id']: r.get('amount_total') or 0.0 for r in rows}
+        for oid in ids:
+            inv_total = residual = 0.0
+            refs = []
+            for mid in so_inv.get(oid, []):
+                m = moves.get(mid)
+                if not m or m['state'] != 'posted':
+                    continue
+                sign = 1 if m['move_type'] == 'out_invoice' else -1 if m['move_type'] == 'out_refund' else 0
+                if not sign:
+                    continue
+                if sign > 0:
+                    inv_total += m['amount_total'] or 0.0
+                residual += sign * (m['amount_residual'] or 0.0)
+                refs.append(m['name'])
+            so_total = totals.get(oid, 0.0)
+            uninvoiced = so_total - inv_total
+            if refs and uninvoiced < 1.0:
+                uninvoiced = 0.0  # ยอดใบกับใบแจ้งหนี้ต่างกันแค่เศษปัด VAT ไม่ใช่ส่วนที่ยังไม่ออกใบ
+            outstanding = round(max(uninvoiced, 0.0) + residual, 2)
+            result[oid] = {
+                'npd_o14_invoice_refs': ', '.join(refs) or False,
+                'npd_o14_invoiced_total': round(inv_total, 2),
+                'npd_o14_paid_amount': round(max(so_total - outstanding, 0.0), 2) if refs else 0.0,
+                'npd_o14_outstanding': outstanding,
+            }
+        return result
 
     def _name_clash(self, row):
         """ใบฝั่ง 18 ที่ใช้เลขเดียวกันในบริษัทเดียวกัน และไม่ใช่ใบที่ยกมาจากใบนี้เอง"""
