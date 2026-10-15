@@ -250,6 +250,8 @@ class RentalImportCheckWizard(models.TransientModel):
                 expected.append(('%s %s %s' % (other['o14_name'], kind, other.get('type_name') or ''), other['residual']))
             for label, amount in expected:
                 head.append((WARN, _('ค้าง: %s = %s') % (label, '{:,.2f}'.format(amount))))
+            if expected:
+                head.append((OK, _('ตอนกด "ยกจริงเฉพาะใบนี้" ระบบจะสร้างใบแจ้งหนี้ (ร่าง) ยอดค้างแยกตามประเภทให้ทันที')))
             if not expected:
                 head.append((OK, _('ชำระครบแล้วในระบบเดิม — ฝั่ง 18 จะไม่ยอมออกใบแจ้งหนี้จากใบนี้ซ้ำ')))
         if ready:

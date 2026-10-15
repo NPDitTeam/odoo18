@@ -230,6 +230,11 @@ class RentalOrderImport(models.Model):
                     existing = Order.search([('o14_order_name', '=', name),
                                              ('o14_source_db', '=', self.db_name)],
                                             limit=1)
+                    if existing and existing._npd_o14_active_reissue():
+                        blocked.append(_('%s ออกใบแจ้งหนี้ยอดค้างไปแล้ว (%s) ไม่ยกทับ — ถ้าต้องยกใหม่ให้ยกเลิกใบแจ้งหนี้ก่อน')
+                                       % (name, ', '.join(existing._npd_o14_active_reissue().mapped(
+                                           lambda m: m.name if m.name and m.name != '/' else _('ร่าง')))))
+                        continue
                     values = self._prepare_order_values(row, partner, branch)
                     # ราคาในรายการราคาของสาขาต้องตรง o14 ด้วย (ใบหลังย้ายจะดึงราคาจากตรงนี้)
                     pricelist = self.env['product.pricelist'].browse(values.get('pricelist_id'))
@@ -279,10 +284,18 @@ class RentalOrderImport(models.Model):
                     inv = invoice_status.get(row['id'])
                     if inv:
                         order.write(inv)
-                        if inv['npd_o14_paid_amount'] > 0.005 or inv.get('npd_o14_open_others'):
-                            partly_paid.append(_('%s ชำระแล้ว %s ค้าง %s (%s)') % (
-                                name, '{:,.2f}'.format(inv['npd_o14_paid_amount']),
-                                '{:,.2f}'.format(inv['npd_o14_outstanding']), inv['npd_o14_invoice_refs']))
+                        # มียอดค้าง (บางส่วน) → สร้างใบแจ้งหนี้ยอดค้างแยกตามประเภทให้เลย (ฉบับร่าง)
+                        has_due = inv['npd_o14_main_outstanding'] > 0.005 or inv.get('npd_o14_open_others')
+                        if has_due and order.state == 'sale':
+                            moves = order._create_invoices()
+                            partly_paid.append(_('%s → สร้างใบแจ้งหนี้ (ร่าง) %s ใบ: %s') % (
+                                name, len(moves), ' | '.join('%s %s' % (
+                                    (m.reason_code_id.name if 'reason_code_id' in m._fields and m.reason_code_id
+                                     else _('ใบแจ้งหนี้')) + (_(' (ลดหนี้)') if m.move_type == 'out_refund' else ''),
+                                    '{:,.2f}'.format(m.amount_total)) for m in moves)))
+                        elif has_due:
+                            partly_paid.append(_('%s ยอดค้าง %s แต่ใบยังไม่ยืนยัน (สถานะ %s) ไม่ได้สร้างใบแจ้งหนี้') % (
+                                name, '{:,.2f}'.format(inv['npd_o14_outstanding']), order.state))
             except Exception as error:
                 _logger.exception('[RENTAL IMPORT] %s ล้มเหลว', name)
                 failed.append('%s: %s' % (name, str(error)[:200]))
@@ -291,7 +304,7 @@ class RentalOrderImport(models.Model):
         text = self._import_report(rows, created, updated, blocked,
                                    failed, mismatched)
         if partly_paid:
-            text += '\n\n' + _('ใบที่ชำระแล้วในระบบเดิม — ใบแจ้งหนี้จากใบเหล่านี้จะหักยอดชำระเดิมให้เหลือยอดค้าง (%s ใบ):') \
+            text += '\n\n' + _('ใบที่มียอดค้างจากระบบเดิม — สร้างใบแจ้งหนี้ยอดค้างแยกตามประเภทให้แล้ว (%s ใบ):') \
                 % len(partly_paid) + '\n  ' + '\n  '.join(partly_paid[:50])
         if new_partners:
             text += '\n\n' + _('สร้างลูกค้าใหม่จาก o14 (%s ราย):') % len(new_partners) \
