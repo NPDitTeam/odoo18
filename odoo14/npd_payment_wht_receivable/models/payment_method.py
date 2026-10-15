@@ -8,7 +8,9 @@ _logger = logging.getLogger(__name__)
 OTHER_RECEIVABLE_CODE = '1130-03'
 # บัญชีรับโอนที่ o14 ใช้คู่กับภาษีถูกหัก ณ ที่จ่ายแทบทุกใบ (นับจากใบรับชำระปี 2569)
 # กรุงเทพ SCB 7739 (1,147 ใบ) / อินเตอร์ SCB 1071 (1,385) / เอส กรุ๊ป SCB 160-2 (1,151)
-DEFAULT_WHT_BANK_NAMES = ('เงินโอนธนาคาร SCB 7739', 'เงินโอนธนาคาร SCB 1071', 'เงินโอนธนาคาร SCB 160-2')
+# โลจิสติกส์ SCB 8116 (509)
+DEFAULT_WHT_BANK_NAMES = ('เงินโอนธนาคาร SCB 7739', 'เงินโอนธนาคาร SCB 1071', 'เงินโอนธนาคาร SCB 160-2',
+                          'เงินโอนธนาคาร SCB 8116')
 
 
 class CustomPaymentMethod(models.Model):
