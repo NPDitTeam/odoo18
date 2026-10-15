@@ -171,6 +171,16 @@ class RentalOrderImport(models.Model):
         })
         return values, None
 
+    def _set_o14_amounts(self, order, line_rows):
+        """เก็บยอดใบตามฝั่ง 14 (ผลรวมรายการ) — หัวใบ/สรุปยอดจะใช้ยอดนี้ถ้าต่างแค่เศษปัด"""
+        want = self._o14_line_amounts(line_rows)
+        order.write({
+            'npd_o14_amount_untaxed': want['amount_untaxed'],
+            'npd_o14_amount_tax': want['amount_tax'],
+            'npd_o14_amount_total': want['amount_total'],
+        })
+        order.invalidate_recordset(['amount_untaxed', 'amount_tax', 'amount_total', 'tax_totals'])
+
     def _set_rent_qty(self, order, line_rows):
         """จำนวนเช่า (pfb_quantity) ตามฝั่ง 14 — เขียนลงตารางตรง ๆ หลังยอดเงินลงตัวแล้ว
 
@@ -405,6 +415,7 @@ class RentalOrderImport(models.Model):
                     order.invalidate_recordset(
                         ['amount_untaxed', 'amount_tax', 'amount_total'])
                     self._set_rent_qty(order, lines_by_order.get(row['id'], []))
+                    self._set_o14_amounts(order, lines_by_order.get(row['id'], []))
                     diff = self._compare_amounts(order, row, lines_by_order.get(row['id'], []))
                     if diff:
                         mismatched.append('%s %s' % (name, diff))

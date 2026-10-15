@@ -46,6 +46,86 @@ class SaleOrder(models.Model):
         help='ใบเพิ่มหนี้ เช่น ค่าเช่าส่วนต่าง / สินค้าหาย / ชำรุด ที่ยังค้าง ออกแยกใบตามประเภทเดิม')
     npd_o14_reissued = fields.Boolean(
         string='ออกใบแจ้งหนี้ยอดค้างแล้ว', readonly=True, copy=False)
+    # ยอดใบตามฝั่ง 14 (ผลรวมรายการ) — ใช้แทนยอดที่ o18 คิดเฉพาะตอนต่างกันแค่เศษปัด
+    npd_o14_amount_untaxed = fields.Monetary(string='ยอดก่อนภาษี (ฝั่ง 14)', readonly=True, copy=False,
+                                             currency_field='currency_id')
+    npd_o14_amount_tax = fields.Monetary(string='ภาษี (ฝั่ง 14)', readonly=True, copy=False,
+                                         currency_field='currency_id')
+    npd_o14_amount_total = fields.Monetary(string='ยอดรวม (ฝั่ง 14)', readonly=True, copy=False,
+                                           currency_field='currency_id')
+
+    # ------------------------------------------------------------------
+    # ยอดใบที่ยกจาก o14: o18 ปัดภาษีทั้งใบ o14 ปัดรายบรรทัด → ต่างกันได้ 1-2 สตางค์
+    # ใบที่ยกมาให้แสดงยอดตาม o14 เฉพาะตอนต่างแค่เศษปัด (ใบที่ถูกแก้รายการแล้วยอดต่างมาก
+    # จะกลับไปใช้สูตรปกติเอง) ใบที่สร้างใน o18 ไม่เกี่ยว
+    _NPD_O14_ROUND_TOLERANCE = 0.05
+
+    def _npd_o14_amounts(self, untaxed, tax, total):
+        """คืนยอดฝั่ง 14 ถ้าใช้แทนได้ ไม่งั้น None"""
+        self.ensure_one()
+        if not (self.o14_imported and self.npd_o14_amount_total):
+            return None
+        want = (self.npd_o14_amount_untaxed, self.npd_o14_amount_tax, self.npd_o14_amount_total)
+        got = (untaxed, tax, total)
+        if all(abs(g - w) < 0.005 for g, w in zip(got, want)):
+            return None
+        if any(abs(g - w) > self._NPD_O14_ROUND_TOLERANCE for g, w in zip(got, want)):
+            return None
+        return want
+
+    @api.depends('npd_o14_amount_total', 'npd_o14_amount_untaxed', 'npd_o14_amount_tax')
+    def _compute_amounts(self):
+        super()._compute_amounts()
+        for order in self:
+            want = order._npd_o14_amounts(order.amount_untaxed, order.amount_tax, order.amount_total)
+            if want:
+                order.amount_untaxed, order.amount_tax, order.amount_total = want
+
+    @api.depends('npd_o14_amount_total', 'npd_o14_amount_untaxed', 'npd_o14_amount_tax')
+    def _compute_tax_totals(self):
+        super()._compute_tax_totals()
+        for order in self:
+            tt = order.tax_totals
+            if not tt:
+                continue
+            want = order._npd_o14_amounts(tt.get('base_amount_currency') or 0.0,
+                                          tt.get('tax_amount_currency') or 0.0,
+                                          tt.get('total_amount_currency') or 0.0)
+            subtotals = tt.get('subtotals') or []
+            if not want or len(subtotals) > 1 or any(len(s.get('tax_groups') or []) > 1 for s in subtotals):
+                continue
+            untaxed, tax, total = want
+            tt = dict(tt)
+            for key, val in (('base_amount', untaxed), ('tax_amount', tax), ('total_amount', total)):
+                for k in (key, key + '_currency'):
+                    if k in tt:
+                        tt[k] = val
+            new_subs = []
+            for sub in subtotals:
+                sub = dict(sub)
+                for k in ('base_amount', 'base_amount_currency'):
+                    if k in sub:
+                        sub[k] = untaxed
+                for k in ('tax_amount', 'tax_amount_currency'):
+                    if k in sub:
+                        sub[k] = tax
+                groups = []
+                for g in sub.get('tax_groups') or []:
+                    g = dict(g)
+                    for k in ('tax_amount', 'tax_amount_currency'):
+                        if k in g:
+                            g[k] = tax
+                    for k in ('base_amount', 'base_amount_currency',
+                              'display_base_amount', 'display_base_amount_currency'):
+                        if k in g:
+                            g[k] = untaxed
+                    groups.append(g)
+                if 'tax_groups' in sub:
+                    sub['tax_groups'] = groups
+                new_subs.append(sub)
+            if 'subtotals' in tt:
+                tt['subtotals'] = new_subs
+            order.tax_totals = tt
 
     def _npd_o14_others(self):
         self.ensure_one()

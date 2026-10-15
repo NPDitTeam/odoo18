@@ -387,6 +387,8 @@ class RentalImportCheckWizard(models.TransientModel):
                 order.order_line.with_context(npd_skip_round=True)._npd_recalc_amounts()
                 order.invalidate_recordset(['amount_untaxed', 'amount_tax', 'amount_total'])
                 cfg._set_rent_qty(order, line_rows)
+                order.o14_imported = True  # ใบทดลองต้องได้กติกาเดียวกับใบที่ยกจริง
+                cfg._set_o14_amounts(order, line_rows)
                 result['diff'] = cfg._compare_amounts(order, row, line_rows)
                 # ใบที่ชำระบางส่วนในฝั่ง 14: ลองออกใบแจ้งหนี้ (ร่าง ไม่ออกเลข) ดูว่าได้แค่ยอดค้าง
                 if inv:
