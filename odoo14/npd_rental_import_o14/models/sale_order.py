@@ -191,6 +191,12 @@ class SaleOrder(models.Model):
              'so': self.name, 'left': '{:,.2f}'.format(move.amount_total)})
 
 
+class SaleOrderLine(models.Model):
+    _inherit = 'sale.order.line'
+
+    o14_line_id = fields.Integer(string='id บรรทัดฝั่ง 14', readonly=True, copy=False, index=True)
+
+
 class AccountMoveLine(models.Model):
     _inherit = 'account.move.line'
 

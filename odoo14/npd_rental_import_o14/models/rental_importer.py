@@ -47,6 +47,8 @@ LINE_FIELDS = [
     'discount', 'tax_id', 'sequence', 'display_type',
     # ยอดรายบรรทัด ใช้เทียบแทนยอดหัวใบ o14 ที่อาจค้าง
     'price_subtotal', 'price_tax', 'price_total',
+    # จำนวนเช่า (Quantity Rent) — ใช้ตัดสต็อก/คืนสินค้า ไม่ยกมา = ตัดสต็อกไม่ได้
+    'pfb_quantity',
 ]
 
 # ช่องลูกค้าที่คัดลอกจาก o14 เมื่อฝั่ง 18 ยังไม่มีลูกค้ารายนี้

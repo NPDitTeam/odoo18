@@ -22,17 +22,8 @@
                 <header>
                     <button name="action_test_connection" type="object"
                             string="ทดสอบการเชื่อมต่อ" class="btn-secondary"/>
-                    <button name="action_sync_products" type="object"
-                            string="1. ยกสินค้าเช่า" class="btn-primary"
-                            confirm="สร้างสินค้าเช่าที่ฝั่ง 18 ยังไม่มี และอัปเดตตัวที่มีแล้ว ดำเนินการต่อไหม"/>
-                    <button name="action_sync_pricelists" type="object"
-                            string="2. ยกรายการราคา" class="btn-primary"
-                            confirm="ปรับราคาในรายการราคาฝั่ง 18 ให้ตรงฝั่ง 14 ดำเนินการต่อไหม"/>
-                    <button name="action_sync_stock" type="object"
-                            string="3. ยกสต็อก" class="btn-primary"
-                            confirm="ปรับยอดคงเหลือฝั่ง 18 ให้ตรงฝั่ง 14 ดำเนินการต่อไหม"/>
                     <button name="action_open_check_wizard" type="object"
-                            string="4. ตรวจ/ดึงรายใบ" class="btn-secondary"/>
+                            string="ตรวจ/ดึงใบเช่า" class="btn-primary"/>
                 </header>
                 <sheet>
                     <group>
@@ -54,8 +45,9 @@
                         </group>
                     </group>
                     <div class="alert alert-info" role="alert">
-                        กดตามลำดับ 1 → 2 → 3 ก่อนยกใบเช่า เพราะใบต้องอ้างถึงสินค้าและราคาที่มีอยู่แล้ว
-                        ทุกปุ่มกดซ้ำได้ ของที่มีแล้วจะถูกอัปเดตทับ ไม่สร้างซ้ำ
+                        ใช้ปุ่ม "ตรวจ/ดึงใบเช่า" ปุ่มเดียว: เลือกกรอกเลข SO หรือดึงบิลต่ออายุทั้งเดือน
+                        สินค้า/รายการราคาที่ขาดจะถูกสร้าง/ปรับให้ตอนยกใบ และตัดสต็อกตามของที่ยังอยู่กับลูกค้าฝั่ง 14
+                        (รายการราคายังซิงก์อัตโนมัติทุกวันจันทร์ตามเดิม)
                     </div>
                     <group string="ผลการทำงานล่าสุด">
                         <field name="last_result" nolabel="1" readonly="1"
@@ -73,17 +65,21 @@
             <form>
                 <group>
                     <field name="config_id"/>
-                    <field name="names" placeholder="เช่น SO-26100100018 SO-26100500003 (หลายใบคั่นด้วยเว้นวรรค/ขึ้นบรรทัดใหม่)"/>
+                    <field name="mode" widget="radio" options="{'horizontal': true}"/>
+                    <field name="date_from" invisible="mode != 'period'" required="mode == 'period'"/>
+                    <field name="date_to" invisible="mode != 'period'" required="mode == 'period'"/>
+                    <field name="names" invisible="mode != 'names'" placeholder="เช่น SO-26100100018 SO-26100500003 (หลายใบคั่นด้วยเว้นวรรค/ขึ้นบรรทัดใหม่)"/>
                 </group>
                 <div class="alert alert-info" role="alert">
                     "ตรวจ" ไล่ให้ดูว่าใบติดอะไร (ลูกค้า สินค้า ภาษี ยอดเงิน) โดยไม่บันทึกอะไรลงระบบ
-                    เมื่อตรวจผ่านแล้วค่อยกด "ยกจริงเฉพาะใบนี้"
+                    เมื่อตรวจผ่านแล้วค่อยกด "ยกจริง" — ใบที่ของยังอยู่กับลูกค้าจะถูกตัดสต็อกตามฝั่ง 14
+                    และใบที่มียอดค้างจะได้ใบแจ้งหนี้ (ร่าง) แยกตามประเภท
                 </div>
                 <field name="result" nolabel="1" readonly="1"/>
                 <footer>
                     <button name="action_check" type="object" string="ตรวจ (ไม่บันทึก)" class="btn-primary"/>
-                    <button name="action_import" type="object" string="ยกจริงเฉพาะใบนี้" class="btn-secondary"
-                            confirm="ยกใบที่กรอกเข้า Odoo 18 จริง (ใบที่เคยยกแล้วจะถูกอัปเดตทับ) ดำเนินการต่อไหม"/>
+                    <button name="action_import" type="object" string="ยกจริง" class="btn-secondary"
+                            confirm="ยกใบเข้า Odoo 18 จริง (ใบที่เคยยกแล้วจะถูกอัปเดตทับ ใบที่ตัดสต็อกแล้วจะข้าม) ดำเนินการต่อไหม"/>
                     <button string="ปิด" class="btn-link" special="cancel"/>
                 </footer>
             </form>

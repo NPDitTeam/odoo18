@@ -33,6 +33,12 @@ class RentalImportCheckWizard(models.TransientModel):
 
     config_id = fields.Many2one('npd.rental.import.config', string='การเชื่อมต่อ',
                                 required=True, readonly=True)
+    mode = fields.Selection([
+        ('names', 'กรอกเลข SO'),
+        ('period', 'ดึงทั้งหมด (บิลต่ออายุ ธ.ค. 68)'),
+    ], string='วิธีดึง', default='names', required=True)
+    date_from = fields.Date(string='วันที่สั่ง ตั้งแต่', default=lambda s: fields.Date.to_date('2025-12-01'))
+    date_to = fields.Date(string='ถึง', default=lambda s: fields.Date.to_date('2025-12-31'))
     names = fields.Text(string='เลขเอกสาร (ฝั่ง 14)',
                         help='กรอกได้หลายใบ คั่นด้วยเว้นวรรค จุลภาค หรือขึ้นบรรทัดใหม่')
     result = fields.Html(string='ผล', readonly=True, sanitize=False)
@@ -53,9 +59,53 @@ class RentalImportCheckWizard(models.TransientModel):
         }
 
     # ------------------------------------------------------------------
+    def _period(self):
+        if not (self.date_from and self.date_to) or self.date_from > self.date_to:
+            raise UserError(_('กรุณาระบุช่วงวันที่ให้ถูกต้อง'))
+        return str(self.date_from), str(self.date_to)
+
+    def _check_period(self):
+        """ดึงทั้งหมดตามช่วง: แสดงรายการบิลต่ออายุที่จะยก + ใบที่ยกแล้ว/ตัดสต็อกแล้ว (ไม่บันทึก)"""
+        cfg = self.config_id
+        date_from, date_to = self._period()
+        rows = cfg._fetch_orders(date_from, date_to)
+        Order = self.env['sale.order'].sudo().with_context(allowed_company_ids=cfg._all_companies())
+        existing = {o.o14_order_name: o for o in Order.search([
+            ('o14_order_name', 'in', [r['name'] for r in rows]), ('o14_source_db', '=', cfg.db_name)])} \
+            if rows else {}
+        delivered = cfg._fetch_o14_net_delivered([r['id'] for r in rows]) if rows else {}
+        lines_by_order = cfg._fetch_lines([r['id'] for r in rows]) if rows else {}
+        html = Markup('<table class="table table-sm" style="font-size:12px"><thead><tr><th></th>'
+                      '<th>เลขที่</th><th>วันที่</th><th>ลูกค้า</th><th>ยอดรวม</th>'
+                      '<th>ของอยู่กับลูกค้า (จะตัดสต็อก)</th><th>ฝั่ง 18</th></tr></thead><tbody>')
+        n_new = n_done = 0
+        for r in rows:
+            out = sum(delivered.get(l['id'], 0.0) for l in lines_by_order.get(r['id'], []))
+            ex = existing.get(r['name'])
+            if ex and ex.picking_ids.filtered(lambda p: p.state == 'done'):
+                icon, note = WARN, _('ยกแล้ว+ตัดสต็อกแล้ว (%s) จะข้าม') % ex.name
+                n_done += 1
+            elif ex:
+                icon, note = OK, _('เคยยกแล้ว (%s) จะอัปเดตทับ') % ex.name
+            else:
+                icon, note = OK, _('ยังไม่ยก')
+                n_new += 1
+            html += Markup('<tr><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td></tr>') % (
+                icon, r['name'], (r.get('date_order') or '')[:10], (r.get('partner_id') or [0, '-'])[1],
+                '{:,.2f}'.format(r.get('amount_total') or 0.0), '{:,.0f}'.format(out) if out else '-', note)
+        html += Markup('</tbody></table>')
+        title = Markup('<p><b>%s</b></p>') % (
+            _('บิลต่ออายุ %(f)s ถึง %(t)s ในฐาน %(db)s: %(n)s ใบ — ยังไม่ยก %(new)s | ตัดสต็อกแล้ว (ข้าม) %(done)s '
+              '(ไม่ได้บันทึกอะไร — ถ้าต้องดูรายละเอียดลูกค้า/สินค้า/ยอดเงินรายใบ ให้สลับไปกรอกเลข SO)')
+            % {'f': date_from, 't': date_to, 'db': cfg.db_name, 'n': len(rows), 'new': n_new, 'done': n_done})
+        self.result = title + (html if rows else Markup(''))
+        return self._reopen()
+
     def action_check(self):
         """ตรวจอย่างเดียว ไม่บันทึก"""
         self.ensure_one()
+        if self.mode == 'period':
+            return self._check_period()
         cfg = self.config_id
         names = self._parse_names()
         # อ่านตามเลขใบอย่างเดียว ไม่กรองประเภท จะได้บอกได้ว่าใบไหนไม่ใช่ใบเช่าต่ออายุ
@@ -92,7 +142,11 @@ class RentalImportCheckWizard(models.TransientModel):
     def action_import(self):
         """ยกจริงเฉพาะใบที่กรอก (ใบที่ติดปัญหาจะถูกกันไว้ตามกฎเดิมของตัวยก)"""
         self.ensure_one()
-        text = self.config_id.action_import_orders(names=self._parse_names())
+        if self.mode == 'period':
+            date_from, date_to = self._period()
+            text = self.config_id.action_import_orders(date_from=date_from, date_to=date_to)
+        else:
+            text = self.config_id.action_import_orders(names=self._parse_names())
         self.result = Markup('<pre style="white-space:pre-wrap">%s</pre>') % (text or '')
         return self._reopen()
 
@@ -256,9 +310,20 @@ class RentalImportCheckWizard(models.TransientModel):
             for label, amount in expected:
                 head.append((WARN, _('ค้าง: %s = %s') % (label, '{:,.2f}'.format(amount))))
             if expected:
-                head.append((OK, _('ตอนกด "ยกจริงเฉพาะใบนี้" ระบบจะสร้างใบแจ้งหนี้ (ร่าง) ยอดค้างแยกตามประเภทให้ทันที')))
+                head.append((OK, _('ตอนกด "ยกจริง" ระบบจะสร้างใบแจ้งหนี้ (ร่าง) ยอดค้างแยกตามประเภทให้ทันที')))
             if not expected:
                 head.append((OK, _('ชำระครบแล้วในระบบเดิม — ฝั่ง 18 จะไม่ยอมออกใบแจ้งหนี้จากใบนี้ซ้ำ')))
+        # ตัดสต็อกตามฝั่ง 14: ของที่ยังอยู่กับลูกค้า (ส่งออก - รับคืน)
+        delivered = cfg._fetch_o14_net_delivered([row['id']])
+        out_lines = [(l, delivered[l['id']]) for l in line_rows if l['id'] in delivered]
+        if out_lines:
+            head.append((OK, _('ของยังอยู่กับลูกค้า (ตอนยกจะตัดสต็อกสาขาให้ คงเหลือในคลังเท่าเดิม): %s') % ', '.join(
+                '%s × %s' % ((l.get('product_id') or [0, '-'])[1], '{:,.0f}'.format(q)) for l, q in out_lines)))
+        else:
+            head.append((OK, _('ไม่มีของค้างอยู่กับลูกค้าในฝั่ง 14 (คืนครบ/ยังไม่ส่ง) — ไม่ต้องตัดสต็อก')))
+        if existing and existing.picking_ids.filtered(lambda p: p.state == 'done'):
+            head.append((BAD, _('ใบ %s ตัดสต็อกไปแล้ว ตัวยกจะไม่ยกทับ') % existing.name))
+            ready = False
         if ready:
             diff, error, invoiced = self._simulate(row, line_rows, partner, branch, code_index, tax_names,
                                                    inv if expected else None)
@@ -321,6 +386,7 @@ class RentalImportCheckWizard(models.TransientModel):
                 order.order_line._npd_normalize_vat_price()
                 order.order_line.with_context(npd_skip_round=True)._npd_recalc_amounts()
                 order.invalidate_recordset(['amount_untaxed', 'amount_tax', 'amount_total'])
+                cfg._set_rent_qty(order, line_rows)
                 result['diff'] = cfg._compare_amounts(order, row, line_rows)
                 # ใบที่ชำระบางส่วนในฝั่ง 14: ลองออกใบแจ้งหนี้ (ร่าง ไม่ออกเลข) ดูว่าได้แค่ยอดค้าง
                 if inv:

@@ -167,8 +167,118 @@ class RentalOrderImport(models.Model):
             'price_unit': row.get('price_unit') or 0.0,
             'discount': row.get('discount') or 0.0,
             'tax_id': [(6, 0, self._map_taxes(row.get('tax_id'), tax_names).ids)],
+            'o14_line_id': row.get('id') or 0,
         })
         return values, None
+
+    def _set_rent_qty(self, order, line_rows):
+        """จำนวนเช่า (pfb_quantity) ตามฝั่ง 14 — เขียนลงตารางตรง ๆ หลังยอดเงินลงตัวแล้ว
+
+        เขียนผ่าน ORM แล้ว pfb_npd_all_customs จะคำนวณจำนวน (วัน × ชิ้น) ใหม่
+        ซึ่งไปปลุกให้ราคาดึงจากรายการราคาใหม่ ราคา VAT ใน ถูกถอด VAT ซ้ำ ยอดใบผิด
+        """
+        if 'pfb_quantity' not in order.order_line._fields:
+            return
+        qty = {r['id']: int(r.get('pfb_quantity') or 0) for r in line_rows if r.get('pfb_quantity')}
+        lines = order.order_line.filtered(lambda l: l.o14_line_id in qty)
+        if not lines:
+            return
+        order.flush_recordset()
+        lines.flush_recordset()
+        for line in lines:
+            self.env.cr.execute('UPDATE sale_order_line SET pfb_quantity = %s WHERE id = %s',
+                                (qty[line.o14_line_id], line.id))
+        lines.invalidate_recordset(['pfb_quantity'])
+
+    # ------------------------------------------------------------------
+    def _fetch_o14_net_delivered(self, order_ids):
+        """ของที่ยังอยู่กับลูกค้าต่อบรรทัดใบเช่าฝั่ง 14 = ส่งออก - รับคืน (ใบส่ง/รับที่ทำเสร็จแล้ว)"""
+        if not order_ids:
+            return {}
+        orders = self.execute_kw('sale.order', 'read', [list(order_ids), ['picking_ids']])
+        picking_ids = sorted({p for r in orders for p in (r.get('picking_ids') or [])})
+        if not picking_ids:
+            return {}
+        moves = self.execute_kw('stock.move', 'search_read', [[
+            ('picking_id', 'in', picking_ids), ('state', '=', 'done'), ('sale_line_id', '!=', False)],
+            ['sale_line_id', 'quantity_done', 'location_id', 'location_dest_id']])
+        loc_ids = sorted({m['location_id'][0] for m in moves} | {m['location_dest_id'][0] for m in moves})
+        usage = {l['id']: l['usage'] for l in self.execute_kw('stock.location', 'read', [loc_ids, ['usage']])} \
+            if loc_ids else {}
+        net = {}
+        for m in moves:
+            src, dst = usage.get(m['location_id'][0]), usage.get(m['location_dest_id'][0])
+            qty = m.get('quantity_done') or 0.0
+            sl = m['sale_line_id'][0]
+            if dst == 'customer' and src != 'customer':
+                net[sl] = net.get(sl, 0.0) + qty
+            elif src == 'customer' and dst != 'customer':
+                net[sl] = net.get(sl, 0.0) - qty
+        return {k: v for k, v in net.items() if v > 0.0001}
+
+    def _cut_stock_from_o14(self, order, net_by_o14_line):
+        """ตัดสต็อกให้ตรงฝั่ง 14: สร้างใบส่งของ (เสร็จแล้ว) ของที่ยังอยู่กับลูกค้า ผูกกับบรรทัดใบเช่า
+
+        ยอดคงเหลือฝั่ง 14 หักของที่อยู่กับลูกค้าไปแล้ว จึงเติมเข้าคลังก่อนแล้วค่อยส่งออก
+        คงเหลือในคลังเท่าเดิม แต่ใบเช่าฝั่ง 18 มีใบส่งของ/จำนวนส่งแล้วเหมือนฝั่ง 14
+        คืน (ชื่อใบส่งของ, จำนวนรายการ) หรือ None ถ้าไม่มีอะไรต้องตัด
+        """
+        lines = order.order_line.filtered(
+            lambda l: l.o14_line_id in net_by_o14_line and l.product_id and l.product_id.type == 'consu')
+        if not lines or order.picking_ids.filtered(lambda p: p.state == 'done'):
+            return None
+        env = self.env
+        company = order.company_id
+        warehouse = env['stock.warehouse'].sudo().search([('company_id', '=', company.id)], limit=1)
+        if not warehouse:
+            raise UserError(_('บริษัท %s ยังไม่มีคลังสินค้าฝั่ง 18') % company.name)
+        source = env['stock.location']
+        if 'stock.cut.confirm.wizard' in env and order.branch_id:
+            source = env['stock.cut.confirm.wizard'].sudo()._get_branch_internal_location(
+                order.branch_id, lines.mapped('product_id').ids)
+        source = source or warehouse.lot_stock_id
+        dest = env.ref('stock.stock_location_customers')
+        Quant = env['stock.quant'].sudo()
+        move_vals = []
+        for line in lines:
+            qty = net_by_o14_line[line.o14_line_id]
+            # เติมคืนก่อน (ฝั่ง 14 หักของที่อยู่กับลูกค้าออกจากคงเหลือแล้ว) กันตัดซ้ำ
+            Quant._update_available_quantity(line.product_id, source, qty)
+            move_vals.append((0, 0, {
+                'name': line.product_id.display_name,
+                'product_id': line.product_id.id,
+                'product_uom_qty': qty,
+                'product_uom': line.product_id.uom_id.id,
+                'location_id': source.id,
+                'location_dest_id': dest.id,
+                'sale_line_id': line.id,
+                'company_id': company.id,
+            }))
+        picking_vals = {
+            'picking_type_id': warehouse.out_type_id.id,
+            'location_id': source.id,
+            'location_dest_id': dest.id,
+            'partner_id': order.partner_shipping_id.id,
+            'origin': order.name,
+            'sale_id': order.id,
+            'company_id': company.id,
+            'move_ids': move_vals,
+        }
+        Picking = env['stock.picking'].sudo().with_company(company)
+        if 'branch_id' in Picking._fields and order.branch_id:
+            picking_vals['branch_id'] = order.branch_id.id
+        picking = Picking.create(picking_vals)
+        picking.action_confirm()
+        picking.action_assign()
+        for move in picking.move_ids:
+            move._set_quantity_done(move.product_uom_qty)
+            move.picked = True
+        picking.with_context(skip_backorder=True, cancel_backorder=True, skip_sms=True,
+                             skip_immediate=True).button_validate()
+        if picking.state != 'done':
+            raise UserError(_('ตัดสต็อกไม่สำเร็จ (ใบส่งของ %s สถานะ %s)') % (picking.name, picking.state))
+        picking.message_post(body=_('ตัดสต็อกตามฝั่ง 14 ตอนยกใบเช่า (ของที่ยังอยู่กับลูกค้า)'))
+        return picking.name, len(lines)
 
     # ------------------------------------------------------------------
     def action_import_orders(self, date_from=None, date_to=None,
@@ -201,6 +311,8 @@ class RentalOrderImport(models.Model):
         # ใบแจ้งหนี้/การชำระฝั่ง 14 → ใบแจ้งหนี้จากใบนี้ฝั่ง 18 ต้องเป็นแค่ยอดค้าง
         invoice_status = self._fetch_o14_invoice_status(rows)
         partly_paid = []
+        delivered = self._fetch_o14_net_delivered([r['id'] for r in rows])
+        stock_cut = []
 
         # สินค้าที่ใบใช้แต่ฝั่ง 18 ยังไม่มี: คัดลอกจาก o14 พร้อมลงสต็อกตาม o14
         new_products, product_failed = self._ensure_products_from_o14(
@@ -240,6 +352,10 @@ class RentalOrderImport(models.Model):
                     existing = Order.search([('o14_order_name', '=', name),
                                              ('o14_source_db', '=', self.db_name)],
                                             limit=1)
+                    if existing and existing.picking_ids.filtered(lambda p: p.state == 'done'):
+                        blocked.append(_('%s ตัดสต็อกไปแล้ว (%s) ไม่ยกทับ') % (
+                            name, ', '.join(existing.picking_ids.filtered(lambda p: p.state == 'done').mapped('name'))))
+                        continue
                     if existing and existing._npd_o14_active_reissue():
                         blocked.append(_('%s ออกใบแจ้งหนี้ยอดค้างไปแล้ว (%s) ไม่ยกทับ — ถ้าต้องยกใหม่ให้ยกเลิกใบแจ้งหนี้ก่อน')
                                        % (name, ', '.join(existing._npd_o14_active_reissue().mapped(
@@ -288,9 +404,15 @@ class RentalOrderImport(models.Model):
                         npd_skip_round=True)._npd_recalc_amounts()
                     order.invalidate_recordset(
                         ['amount_untaxed', 'amount_tax', 'amount_total'])
+                    self._set_rent_qty(order, lines_by_order.get(row['id'], []))
                     diff = self._compare_amounts(order, row, lines_by_order.get(row['id'], []))
                     if diff:
                         mismatched.append('%s %s' % (name, diff))
+                    # ตัดสต็อกตามฝั่ง 14 (ของที่ยังอยู่กับลูกค้า) ก่อนออกใบแจ้งหนี้
+                    if order.state == 'sale':
+                        cut = self._cut_stock_from_o14(order, delivered)
+                        if cut:
+                            stock_cut.append(_('%s → ตัดสต็อก %s (%s รายการ)') % (name, cut[0], cut[1]))
                     inv = invoice_status.get(row['id'])
                     if inv:
                         order.write(inv)
@@ -313,6 +435,9 @@ class RentalOrderImport(models.Model):
         self.env.cr.commit()
         text = self._import_report(rows, created, updated, blocked,
                                    failed, mismatched)
+        if stock_cut:
+            text += '\n\n' + _('ตัดสต็อกตามฝั่ง 14 (ของที่ยังอยู่กับลูกค้า) %s ใบ:') % len(stock_cut) \
+                + '\n  ' + '\n  '.join(stock_cut[:50])
         if partly_paid:
             text += '\n\n' + _('ใบที่มียอดค้างจากระบบเดิม — สร้างใบแจ้งหนี้ยอดค้างแยกตามประเภทให้แล้ว (%s ใบ):') \
                 % len(partly_paid) + '\n  ' + '\n  '.join(partly_paid[:50])
