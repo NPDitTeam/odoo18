@@ -287,17 +287,25 @@ class RentalImporter(models.Model):
         # ชื่อที่ได้จาก o14 เป็นชื่อแสดงผล ต่อท้ายสกุลเงิน "เรทเดือน (THB)" ต้องตัดออก
         if name.endswith(')') and '(' in name:
             name = name[:name.rfind('(')].strip()
+        # จำกัดเฉพาะของบริษัทนี้ (หรือใช้ร่วม) — ชื่อ "เรทวัน" มีหลายบริษัท
+        # และชื่อฝั่ง 18 บางรายการมีช่องว่างท้าย จึงเทียบแบบตัดช่องว่างซ้ำ/ท้าย
+        own = [('company_id', 'in', (False, self.company_id.id))]
+
+        def _find(target):
+            norm = ' '.join(target.split())
+            cands = Pricelist.search(own + [('name', 'ilike', norm)])
+            exact = cands.filtered(lambda pl: ' '.join((pl.name or '').split()) == norm)
+            return (exact.filtered(lambda pl: pl.company_id == self.company_id) or exact)[:1]
+
         if name and branch:
-            found = Pricelist.search(
-                [('name', '=', '%s %s' % (name, branch.name))], limit=1)
+            found = _find('%s %s' % (name, branch.name))
             if found:
                 return found
         if name:
-            found = Pricelist.search([('name', '=', name)], limit=1)
+            found = _find(name)
             if found:
                 return found
-        return Pricelist.search(
-            [('company_id', 'in', (False, self.company_id.id))], limit=1)
+        return Pricelist.search(own, limit=1)
 
     def _map_product(self, o14_value, o14_code_by_id=None):
         """จับคู่สินค้าด้วยรหัสก่อน แล้วค่อยชื่อ — รหัสเชื่อถือได้กว่า"""

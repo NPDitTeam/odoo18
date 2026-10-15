@@ -1,6 +1,6 @@
 {
     'name': 'PFB NPD : all Customs',
-    'version': '18.0.1.12.0',
+    'version': '18.0.1.13.0',
     'author': 'PP',
     'license': 'AGPL-3',
     'website': '',

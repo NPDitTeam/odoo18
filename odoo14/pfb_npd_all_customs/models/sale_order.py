@@ -261,6 +261,12 @@ class SaleOrder(models.Model):
         if due_term:
             invoice_vals['invoice_payment_term_id'] = due_term.id
 
+        # วันที่ใบแจ้งหนี้ = วันที่ของใบสั่งขาย (วันที่ตามเวลาไทย) เมื่อสร้างจากหน้าใบสั่งขาย
+        # เดิมว่างไว้ ระบบใส่วันที่วันที่กดลงรายการ (o14 ตรงวันที่ใบสั่งขาย 98% เพราะพนักงานออกวันเดียวกัน)
+        if self.date_order:
+            invoice_vals['invoice_date'] = fields.Date.context_today(
+                self.with_context(tz='Asia/Bangkok'), self.date_order)
+
         return invoice_vals
 
     def _get_invoice_journal_by_so_type(self):

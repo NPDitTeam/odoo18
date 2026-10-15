@@ -316,8 +316,22 @@ class RentalOrderImport(models.Model):
         ids = [r['id'] for r in rows]
         if not ids:
             return result
-        so_inv = {r['id']: r.get('invoice_ids') or [] for r in self.execute_kw(
-            'sale.order', 'read', [ids, ['invoice_ids']])}
+        so_rows = self.execute_kw('sale.order', 'read', [ids, ['invoice_ids', 'name']])
+        so_inv = {r['id']: list(r.get('invoice_ids') or []) for r in so_rows}
+        # ใบที่ผูกกับบรรทัดใบเช่า = ส่วนที่ออกใบแจ้งหนี้จากใบเช่าแล้ว
+        linked = {oid: set(v) for oid, v in so_inv.items()}
+        # ใบเพิ่มหนี้ (เช่น ค่าเช่าส่วนต่าง) สร้างจากใบแจ้งหนี้ ไม่ได้ผูกบรรทัดใบเช่า แต่ยอดค้างเป็นของใบนี้
+        Move = 'account.move'
+        mfields = set(self.execute_kw(Move, 'fields_get', [[], ['type']]).keys())
+        for r in so_rows:
+            extra = set()
+            # ค้นเฉพาะใบเพิ่มหนี้ที่สร้างจากใบแจ้งหนี้ของใบนี้ ไม่ค้นจาก "เอกสารต้นทาง"
+            # เพราะใบรับเงินประกัน (INS-) ก็ใส่เลขใบเช่าไว้ แต่เป็นเงินประกัน ไม่ใช่ค่าเช่า
+            if 'debit_origin_id' in mfields and so_inv[r['id']]:
+                extra |= set(self.execute_kw(Move, 'search', [[
+                    ('debit_origin_id', 'in', so_inv[r['id']]), ('state', '=', 'posted'),
+                    ('move_type', '=', 'out_invoice')]]))
+            so_inv[r['id']] = sorted(set(so_inv[r['id']]) | extra)
         inv_ids = sorted({i for v in so_inv.values() for i in v})
         moves = {m['id']: m for m in self.execute_kw('account.move', 'read', [inv_ids, [
             'name', 'move_type', 'state', 'amount_total', 'amount_residual']])} if inv_ids else {}
@@ -332,7 +346,7 @@ class RentalOrderImport(models.Model):
                 sign = 1 if m['move_type'] == 'out_invoice' else -1 if m['move_type'] == 'out_refund' else 0
                 if not sign:
                     continue
-                if sign > 0:
+                if sign > 0 and mid in linked.get(oid, ()):
                     inv_total += m['amount_total'] or 0.0
                 residual += sign * (m['amount_residual'] or 0.0)
                 refs.append(m['name'])

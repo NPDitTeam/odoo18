@@ -239,7 +239,7 @@ class RentalImportCheckWizard(models.TransientModel):
         inv = cfg._fetch_o14_invoice_status([row]).get(row['id']) or {}
         if inv.get('npd_o14_invoice_refs'):
             head.append((WARN if inv['npd_o14_paid_amount'] > 0.005 else OK, _(
-                'ฝั่ง 14 ออกใบแจ้งหนี้แล้ว: %(refs)s ยอด %(inv)s | ชำระ/ลดหนี้แล้ว %(paid)s | ค้าง %(left)s') % {
+                'ฝั่ง 14 ออกใบแจ้งหนี้แล้ว: %(refs)s (ใบเช่า %(inv)s) | ยอดค้างรวม %(left)s → ใบแจ้งหนี้จาก SO ฝั่ง 18 จะหัก %(paid)s ให้เหลือ %(left)s') % {
                 'refs': inv['npd_o14_invoice_refs'], 'inv': '{:,.2f}'.format(inv['npd_o14_invoiced_total']),
                 'paid': '{:,.2f}'.format(inv['npd_o14_paid_amount']),
                 'left': '{:,.2f}'.format(inv['npd_o14_outstanding'])}))
