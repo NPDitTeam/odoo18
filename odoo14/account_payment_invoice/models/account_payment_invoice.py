@@ -599,6 +599,15 @@ class AccountPayment(models.Model):
     # Onchange methods
     # ================================================================
 
+    def _npd_set_so_type_from_invoices(self):
+        """ประเภท (ขาย/เช่า/อื่นๆ) ตามใบแจ้งหนี้ที่รับชำระ — o14 ใบรับชำระใช้ช่องเดียวกับใบแจ้งหนี้
+        (account.payment สืบทอด account.move) ค่าจึงตามมาเอง o18 แยกกันแล้วต้องตั้งให้"""
+        if self.pfb_so_type:
+            return
+        types = [t for t in self.custom_invoice_ids.mapped('move_id.pfb_so_type') if t]
+        if types:
+            self.pfb_so_type = max(set(types), key=types.count)
+
     @api.onchange('partner_id', 'search_invoice_name')
     def _onchange_partner_invoice_search(self):
         """ค้นหาใบแจ้งหนี้จาก partner และ/หรือเลขใบแจ้งหนี้"""
@@ -664,6 +673,7 @@ class AccountPayment(models.Model):
             )
             if payment_journal:
                 self.journal_id = payment_journal.id
+            self._npd_set_so_type_from_invoices()
 
     @api.onchange('date')
     def _onchange_date_check_allowed(self):
@@ -720,6 +730,7 @@ class AccountPayment(models.Model):
             )
             if payment_journal:
                 self.journal_id = payment_journal.id
+            self._npd_set_so_type_from_invoices()
 
     # ================================================================
     # Action methods
@@ -772,6 +783,7 @@ class AccountPayment(models.Model):
         for rec in self:
             if not rec.custom_invoice_ids:
                 continue
+            rec._npd_set_so_type_from_invoices()
 
             # Validation
             if rec.amount == 0:

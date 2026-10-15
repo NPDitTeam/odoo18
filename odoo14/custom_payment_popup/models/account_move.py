@@ -66,6 +66,11 @@ class AccountMove(models.Model):
             'default_partner_type': partner_type,
             'default_currency_id': self.currency_id.id,
         }
+        # ประเภท (ขาย/เช่า) ตามใบแจ้งหนี้ / ใบสั่งขาย (o14 ได้มาเองเพราะใบรับชำระใช้ช่องเดียวกับใบแจ้งหนี้)
+        so_type = getattr(self, 'pfb_so_type', False) or next(
+            (o.pfb_so_type for o in self.line_ids.sale_line_ids.order_id if getattr(o, 'pfb_so_type', False)), False)
+        if so_type:
+            ctx['default_pfb_so_type'] = so_type
         if journal:
             ctx['default_journal_id'] = journal.id
 
