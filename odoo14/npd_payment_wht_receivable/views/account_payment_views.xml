@@ -17,6 +17,10 @@
                        decoration-success="npd_wht_file_state == 'done'"
                        decoration-warning="npd_wht_file_state == 'pending'"/>
             </xpath>
+            <!-- ต้องอยู่ในวิว ไม่งั้นหน้าจอไม่ส่งค่ากลับ ระบบแยกบรรทัดที่ใส่ให้เองกับที่ผู้ใช้กรอกไม่ได้ -->
+            <xpath expr="//field[@name='paid_ids']/list/field[@name='payment_method_id']" position="after">
+                <field name="npd_auto" column_invisible="True"/>
+            </xpath>
             <xpath expr="//page[@name='wt_certs']" position="after">
                 <page string="ไฟล์ใบหัก ณ ที่จ่าย" name="npd_wht_files" invisible="not npd_other_receivable_amount">
                     <field name="npd_wht_file_ids">

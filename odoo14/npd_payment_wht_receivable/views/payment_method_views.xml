@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="payment_method_view_tree_npd_wht" model="ir.ui.view">
+        <field name="name">custom.payment.method.list.npd.wht</field>
+        <field name="model">custom.payment.method</field>
+        <field name="inherit_id" ref="payment_method.payment_method_view_tree"/>
+        <field name="arch" type="xml">
+            <field name="is_active" position="after">
+                <field name="npd_kind" optional="show"/>
+                <field name="npd_wht_default_bank" optional="show"/>
+            </field>
+        </field>
+    </record>
+</odoo>

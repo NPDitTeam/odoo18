@@ -1,3 +1,5 @@
+from decimal import Decimal, ROUND_HALF_UP
+
 from odoo import _, api, fields, models
 from odoo.exceptions import UserError
 
@@ -30,6 +32,67 @@ class AccountPayment(models.Model):
                 pay.npd_wht_file_state = False
             else:
                 pay.npd_wht_file_state = 'done' if pay.npd_wht_file_ids else 'pending'
+
+    # ------------------------------------------------------------------
+    # ใส่ Payment Information ให้เองจากการติ๊ก "ใช้ภาษีหัก ณ ที่จ่ายใบแจ้งหนี้/ใบวางบิล หัก 5%"
+    # ------------------------------------------------------------------
+    @staticmethod
+    def _npd_round(value):
+        return float(Decimal(str(value or 0.0)).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP))
+
+    def _npd_billing_wht(self):
+        """(ยอดรับรวม, ภาษีหัก 5%) — สูตรเดียวกับใบแจ้งหนี้/ใบวางบิล:
+        5% ของค่าเช่าก่อน VAT (ไม่รวมค่าประกัน) เฉพาะลูกค้านิติบุคคล และใบสั่งขายติ๊กหัก 5%
+        จ่ายไม่เต็มใบ คิดตามสัดส่วนที่จ่าย"""
+        self.ensure_one()
+        total = wht = 0.0
+        for line in self.custom_invoice_ids:
+            inv = line.move_id
+            if not inv or not line.select:
+                continue
+            pay = line.paid_total or line.amount_due or 0.0
+            sign = -1 if inv.move_type in ('out_refund', 'in_refund') else 1
+            total += sign * pay
+            if (inv.move_type != 'out_invoice' or not pay
+                    or inv.commercial_partner_id.company_type != 'company'
+                    or not inv.use_wht_billing_sheet_invoice()):
+                continue
+            base = inv.amount_untaxed
+            if inv.amount_total and abs(pay - inv.amount_total) > 0.005:
+                base = inv.amount_untaxed * pay / inv.amount_total
+            wht += self._npd_round(self._npd_round(base) * 0.05)
+        return self._npd_round(total), self._npd_round(wht)
+
+    @api.onchange('custom_invoice_ids', 'partner_id')
+    def _onchange_npd_billing_wht(self):
+        if self.state != 'draft' or self.payment_type != 'inbound':
+            return
+        paid = self.paid_ids
+        if paid and not all(paid.mapped('npd_auto')):
+            return  # ผู้ใช้กรอกวิธีชำระเองแล้ว ไม่ทับ
+        total, wht = self._npd_billing_wht()
+        if not wht or total <= wht:
+            if paid:
+                self.paid_ids = [(5, 0, 0)]
+            return
+        Method = self.env['custom.payment.method']
+        company = self.company_id or self.env.company
+        other = Method.search([('company_id', '=', company.id), ('npd_kind', '=', 'other_receivable'),
+                               ('is_active', '=', True)], limit=1)
+        if not other:
+            return
+        bank = Method.search([('company_id', '=', company.id), ('npd_wht_default_bank', '=', True),
+                              ('is_active', '=', True)], limit=1)
+        # ลำดับเหมือน o14: ภาษีหัก (ตอนนี้เป็นลูกหนี้อื่น) ก่อน แล้วค่อยบัญชีรับโอน
+        lines = [(0, 0, {'payment_method_id': other.id, 'amount': wht, 'date': self.date,
+                         'npd_auto': True, 'sequence': 1,
+                         'communication': _('ภาษีหัก ณ ที่จ่าย 5% รอใบจากลูกค้า')})]
+        if bank:
+            lines.append((0, 0, {'payment_method_id': bank.id, 'amount': self._npd_round(total - wht),
+                                 'date': self.date, 'npd_auto': True, 'sequence': 2}))
+        self.is_payment_multi = True
+        self.paid_ids = [(5, 0, 0)] + lines
+        self.amount = self._npd_round(sum(c[2]['amount'] for c in lines))
 
     # ------------------------------------------------------------------
     def _npd_other_receivable_lines(self):
