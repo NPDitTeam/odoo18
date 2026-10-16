@@ -253,7 +253,6 @@
                             </group>
                             <group>
                                 <group string="ประกันสังคม">
-                                    <field name="enable_social_security"/>
                                     <field name="social_security_condition"
                                            invisible="not enable_social_security"/>
                                     <field name="social_security_fixed_amount"
@@ -272,7 +271,7 @@
                             <group>
                                 <group string="การยื่นแบบ">
                                     <field name="file_pnd1"/>
-                                    <field name="file_social_security"/>
+                                    <field name="enable_social_security"/>
                                 </group>
                             </group>
                             <group string="การจ่ายเงิน">

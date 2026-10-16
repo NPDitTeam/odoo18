@@ -168,8 +168,9 @@ class EmployeeSalary(models.Model):
         help='ถ้าติ๊ก ระบบจะคำนวณเงินเดือนให้อัตโนมัติ ถ้าไม่ติ๊ก ต้องทำมือ')
 
     # ประกันสังคม
+    # ติ๊ก = คิดประกันสังคมในสลิปและยื่น สปส. (เดิมชื่อ "ประกันสังคม")
     enable_social_security = fields.Boolean(
-        string='ประกันสังคม', default=True,
+        string='ยื่นประกันสังคม', default=True,
         groups='npd_hrms_base.group_hrms_payroll')
     social_security_condition = fields.Selection([
         ('คิดตามฐานเงินเดือนจริงที่ได้รับ', 'คิดตามฐานเงินเดือนจริงที่ได้รับ'),
@@ -196,9 +197,6 @@ class EmployeeSalary(models.Model):
     file_pnd1 = fields.Boolean(
         string='ยื่นภ.ง.ด.1', default=True, groups='npd_hrms_base.group_hrms_payroll',
         help='ไม่ติ๊ก = ไม่เข้ารายงาน ภ.ง.ด.1 และไม่ออกหนังสือรับรองหัก ณ ที่จ่าย (50 ทวิ)')
-    file_social_security = fields.Boolean(
-        string='ยื่นประกันสังคม', default=True, groups='npd_hrms_base.group_hrms_payroll',
-        help='ไม่ติ๊ก = หน้าทำเงินเดือนไม่คิดประกันสังคม (ยกเว้นกรอกยอดเองบนสลิป)')
 
     # ------------------------------------------------------------------
     # การจ้างงาน

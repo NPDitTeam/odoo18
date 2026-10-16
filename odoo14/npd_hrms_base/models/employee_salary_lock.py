@@ -39,6 +39,7 @@ LOCKED_SALARY_FIELDS = HIDDEN_SALARY_FIELDS + (
     'tax_condition',
     'tax_exception',
     'tax_start_date_condition',
+    'file_pnd1',
 )
 
 
