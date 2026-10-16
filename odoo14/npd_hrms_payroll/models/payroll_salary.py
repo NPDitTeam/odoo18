@@ -767,7 +767,8 @@ class PayrollSalary(models.Model):
         else:
             wage = prorated if policy.sso_prorate_with_salary else (self.base_salary or 0.0)
             sso_base = max(policy.sso_min_wage, min(wage, policy.sso_max_wage))
-            sso_amount = float(round_half_up(sso_base * (policy.sso_rate / 100.0)))
+            # ปัดเป็นบาทเต็มตามกฎ สปส. เหมือน o14 (int(n + 0.5)) — round_half_up ของโมดูลนี้ปัด 2 ตำแหน่ง
+            sso_amount = float(int(sso_base * (policy.sso_rate / 100.0) + 0.5))
         self.sso_total = sso_amount
         self.sso_base_used = sso_base
 
