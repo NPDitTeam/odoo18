@@ -15,11 +15,15 @@ class SaleOrder(models.Model):
         string='สถานะต่ออายุบิล',
         compute='_compute_renewal_bill_status',
         store=True,
-        help='คำนวณจาก "เลขอ้างอิงเงินประกัน": ถ้ามีเลขอ้างอิง = ต่ออายุบิล, ถ้าไม่มี = ว่าง',
+        help='คำนวณจาก "เลขอ้างอิงเงินประกัน": ถ้ามีเลขอ้างอิง = ต่ออายุบิล, ถ้าไม่มี = ว่าง '
+             '(เฉพาะใบเช่า ใบขายว่างเสมอ)',
     )
 
-    @api.depends('deposit_ref')
+    @api.depends('deposit_ref', 'pfb_so_type')
     def _compute_renewal_bill_status(self):
         for order in self:
+            if order.pfb_so_type != 'rent':
+                order.renewal_bill_status = False
+                continue
             refs = [r.strip() for r in (order.deposit_ref or '').split(',') if r.strip()]
             order.renewal_bill_status = 'renew' if len(refs) >= RENEWAL_MIN_REF_COUNT else False

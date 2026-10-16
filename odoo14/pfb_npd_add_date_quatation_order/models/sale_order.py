@@ -364,6 +364,9 @@ class SaleOrder(models.Model):
         # บริษัท เอ็นพีดี โลจิสติกส์ (company_registry '5') และ เอ็นพีดี สตีลเทค ('4')
         # ไม่ใช้ฟังก์ชันสะสมเลขอ้างอิงเงินประกัน (deposit_ref) ต่อกันเมื่อกดซ้ำ
         skip_deposit_ref = self.company_id.company_registry in ('4', '5')
+        # เลขอ้างอิงเงินประกัน / สถานะต่ออายุบิล ใช้กับใบเช่าเท่านั้น ใบขาย (Sales) กดซ้ำไม่สะสม
+        if self.pfb_so_type != 'rent':
+            skip_deposit_ref = True
 
         # กรองเฉพาะค่าใน deposit_ref ที่ขึ้นต้นด้วย "SO"
         deposit_list = []
