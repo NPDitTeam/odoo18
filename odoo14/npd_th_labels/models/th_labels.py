@@ -20,6 +20,14 @@ SCOPE_MODELS = {
     'payment.provider',
 }
 VIEW_TYPES = ['form', 'list', 'search', 'kanban', 'pivot', 'graph', 'calendar']
+
+# ชื่อเมนูภาษาไทยที่ผู้ใช้กำหนดเอง — เขียนทับคำแปลมาตรฐานของ Odoo ทุกครั้งที่อัปเกรดโมดูลนี้
+# (ส่วนข้างล่างเติมเฉพาะคำที่ยังไม่มีคำแปล จึงเปลี่ยนชื่อที่ Odoo แปลไว้แล้วไม่ได้)
+MENU_TH_OVERRIDES = {
+    # เมนูขาย: แยกให้ชัดจากใบเสนอราคาเช่า / ใบกำกับการเช่า (16 ต.ค. 2569)
+    'sale.menu_sale_quotations': 'ใบเสนอราคาขาย',
+    'sale.menu_sale_order': 'คำสั่งขาย',
+}
 TAG_RE = re.compile(r'(<[^>]*>)')
 
 
@@ -136,6 +144,13 @@ class NpdThLabels(models.AbstractModel):
                 continue
             res['views'] += 1
             res['view_terms'] += len(todo)
+
+        res['menu_overrides'] = 0
+        for xmlid, th in MENU_TH_OVERRIDES.items():
+            menu = env.ref(xmlid, raise_if_not_found=False)
+            if menu and menu.with_context(lang=lang).name != th:
+                menu.with_context(lang=lang).write({'name': th})
+                res['menu_overrides'] += 1
 
         env.invalidate_all()
         self.env.registry.clear_all_caches()
