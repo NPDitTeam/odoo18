@@ -192,6 +192,14 @@ class EmployeeSalary(models.Model):
     tax_start_date_condition = fields.Date(
         string='เงื่อนไขที่เริ่มคำนวณภาษี', groups='npd_hrms_base.group_hrms_payroll')
 
+    # การยื่นแบบ — ชื่อเดียวกับฝั่ง 14 ตัวซิงก์จึงยกค่ามาให้เอง
+    file_pnd1 = fields.Boolean(
+        string='ยื่นภ.ง.ด.1', default=True, groups='npd_hrms_base.group_hrms_payroll',
+        help='ไม่ติ๊ก = ไม่เข้ารายงาน ภ.ง.ด.1 และไม่ออกหนังสือรับรองหัก ณ ที่จ่าย (50 ทวิ)')
+    file_social_security = fields.Boolean(
+        string='ยื่นประกันสังคม', default=True, groups='npd_hrms_base.group_hrms_payroll',
+        help='ไม่ติ๊ก = หน้าทำเงินเดือนไม่คิดประกันสังคม (ยกเว้นกรอกยอดเองบนสลิป)')
+
     # ------------------------------------------------------------------
     # การจ้างงาน
     # ------------------------------------------------------------------

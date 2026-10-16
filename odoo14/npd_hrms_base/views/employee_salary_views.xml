@@ -269,6 +269,12 @@
                                            invisible="not enable_tax"/>
                                 </group>
                             </group>
+                            <group>
+                                <group string="การยื่นแบบ">
+                                    <field name="file_pnd1"/>
+                                    <field name="file_social_security"/>
+                                </group>
+                            </group>
                             <group string="การจ่ายเงิน">
                                 <group>
                                     <field name="payment_channel"/>

@@ -761,6 +761,9 @@ class PayrollSalary(models.Model):
             sso_amount = 0.0
         elif self.manual_override_sso or (self.manual_sso_amount or 0) > 0:
             sso_amount = self.manual_sso_amount
+        elif not employee.file_social_security:
+            # ไม่ติ๊ก "ยื่นประกันสังคม" ที่ข้อมูลพนักงาน → ไม่คิดประกันสังคม
+            sso_amount = 0.0
         else:
             wage = prorated if policy.sso_prorate_with_salary else (self.base_salary or 0.0)
             sso_base = max(policy.sso_min_wage, min(wage, policy.sso_max_wage))

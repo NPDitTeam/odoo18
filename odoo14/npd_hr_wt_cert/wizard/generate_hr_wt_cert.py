@@ -46,7 +46,8 @@ class GenerateHRWTCert(models.TransientModel):
             raise UserError(_('ไม่พบข้อมูลเงินเดือนในปี %s') % year)
 
         created = updated = skipped = 0
-        for employee in payrolls.mapped('employee_id'):
+        # ไม่ติ๊ก "ยื่นภ.ง.ด.1" ที่ข้อมูลพนักงาน → ไม่ออกหนังสือรับรอง (50 ทวิ)
+        for employee in payrolls.mapped('employee_id').sudo().filtered('file_pnd1').with_env(self.env):
             existing = Cert.search([
                 ('employee_id', '=', employee.id),
                 ('report_year', '=', year),

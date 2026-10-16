@@ -72,6 +72,8 @@ class HRWithholdingTaxCert(models.Model):
     # ------------------------------------------------------------------
     employee_id = fields.Many2one(
         'employee.salary', string='ชื่อพนักงาน', required=True,
+        # เลือกได้เฉพาะคนที่ติ๊ก "ยื่นภ.ง.ด.1" (ใบเดิมของคนที่เลิกติ๊กยังเปิดดูได้)
+        domain=[('file_pnd1', '=', True)],
         ondelete='restrict', tracking=True)
     employee_firstname = fields.Char(
         string='ชื่อ', related='employee_id.firstname', store=True, readonly=True)
