@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_npd_sso_report_wizard_form" model="ir.ui.view">
+        <field name="name">npd.sso.report.wizard.form</field>
+        <field name="model">npd.sso.report.wizard</field>
+        <field name="arch" type="xml">
+            <form>
+                <group>
+                    <group>
+                        <field name="company_id" options="{'no_create': True}"/>
+                    </group>
+                    <group>
+                        <field name="month"/>
+                        <field name="year"/>
+                    </group>
+                </group>
+                <field name="preview" nolabel="1"/>
+                <group invisible="not file_data">
+                    <field name="file_name" invisible="1"/>
+                    <field name="file_data" filename="file_name"/>
+                </group>
+                <footer>
+                    <button name="action_preview" type="object" string="ดูตัวอย่าง" class="btn-primary"/>
+                    <button name="action_export" type="object" string="สร้างไฟล์ยื่น สปส. (.xlsx)" class="btn-secondary"/>
+                    <button string="ปิด" class="btn-link" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_npd_sso_report_wizard" model="ir.actions.act_window">
+        <field name="name">รายงานประกันสังคม</field>
+        <field name="res_model">npd.sso.report.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+</odoo>

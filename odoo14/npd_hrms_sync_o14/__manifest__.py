@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'NPD HRMS - ดึงข้อมูลจาก Odoo 14',
-    'version': '18.0.1.0.0',
+    'version': '18.0.1.0.1',
     'summary': 'ซิงก์ข้อมูล HR จาก Odoo 14 (ฐาน HRMS) มาที่ Odoo 18 ทางเดียว',
     'description': """
 ดึงข้อมูล HR จาก Odoo 14 มาไว้ที่ Odoo 18 ให้ตามกันตลอดช่วงก่อนย้ายระบบจริง

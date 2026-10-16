@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_npd_sso_report_config_list" model="ir.ui.view">
+        <field name="name">npd.sso.report.config.list</field>
+        <field name="model">npd.sso.report.config</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="company_id"/>
+                <field name="employer_account"/>
+                <field name="wage_source"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_npd_sso_report_config_form" model="ir.ui.view">
+        <field name="name">npd.sso.report.config.form</field>
+        <field name="model">npd.sso.report.config</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="company_id"/>
+                            <field name="employer_account" placeholder="10 หลัก"/>
+                        </group>
+                        <group>
+                            <field name="wage_source" widget="radio"/>
+                        </group>
+                    </group>
+                    <div class="alert alert-info" role="alert">
+                        แต่ละรหัสสาขา สปส. จะเป็นหนึ่งชีตในไฟล์ พนักงานที่สาขาไม่ได้จับคู่ไว้จะเข้ารหัสที่ติ๊ก "สาขาตั้งต้น" (ปกติ 000000)
+                        — ระหว่างยังใช้ Odoo 14 ค่านี้ถูกซิงก์ทับจาก Odoo 14 ให้แก้ที่ Odoo 14
+                    </div>
+                    <field name="branch_line_ids">
+                        <list editable="bottom">
+                            <field name="sso_branch_code"/>
+                            <field name="branch_ids" widget="many2many_tags"/>
+                            <field name="is_default"/>
+                            <field name="note"/>
+                        </list>
+                    </field>
+                    <field name="note" placeholder="หมายเหตุ"/>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_npd_sso_report_config" model="ir.actions.act_window">
+        <field name="name">กำหนดค่ารายงานประกันสังคม</field>
+        <field name="res_model">npd.sso.report.config</field>
+        <field name="view_mode">list,form</field>
+    </record>
+</odoo>

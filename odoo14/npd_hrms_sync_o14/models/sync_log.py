@@ -90,6 +90,8 @@ class HrmsSyncLogLine(models.Model):
     updated_count = fields.Integer(string='แก้ไข', default=0)
     skipped_count = fields.Integer(string='ข้าม', default=0)
     error_count = fields.Integer(string='ผิดพลาด', default=0)
+    # หัวข้อที่ตั้ง sync_deletes (เช่น ภ.ง.ด.1) — เดิมไม่มีช่องนี้ ทำให้หัวข้อนั้นล้มทุกรอบ
+    removed_count = fields.Integer(string='ลบตามต้นทาง', default=0)
 
     state = fields.Selection([
         ('done', 'สำเร็จ'),

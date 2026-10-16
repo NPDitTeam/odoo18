@@ -1,0 +1,5 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_npd_sso_report_config,npd.sso.report.config,model_npd_sso_report_config,npd_hrms_base.group_hrms_payroll,1,1,1,1
+access_npd_sso_report_branch,npd.sso.report.branch,model_npd_sso_report_branch,npd_hrms_base.group_hrms_payroll,1,1,1,1
+access_npd_sso_report_wizard,npd.sso.report.wizard,model_npd_sso_report_wizard,npd_hrms_base.group_hrms_payroll,1,1,1,1
+access_npd_payroll_monthly_summary,npd.payroll.monthly.summary,model_npd_payroll_monthly_summary,npd_hrms_base.group_hrms_payroll,1,0,0,0

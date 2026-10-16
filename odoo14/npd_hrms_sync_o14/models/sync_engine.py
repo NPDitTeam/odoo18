@@ -915,6 +915,93 @@ class HrmsSyncEngine(models.AbstractModel):
             counters['message'] = '\n'.join(notes)
         return counters
 
+    def _sync_sso_report_config(self, config, spec, incremental):
+        """กำหนดค่ารายงานประกันสังคม — ฝั่ง 14 เก็บบริษัทเป็นข้อความและสาขาเป็น hr.branch.custom
+        ฝั่ง 18 เป็น res.company / res.branch จึงแปลงเองทั้งใบ แล้วเขียนรหัสสาขาใหม่ทั้งชุด
+        (ฝั่ง 14 เป็นตัวหลัก ค่าที่แก้บนฝั่ง 18 ระหว่างนี้จะถูกทับ)"""
+        counters = {'fetched': 0, 'created_count': 0, 'updated_count': 0,
+                    'skipped_count': 0, 'error_count': 0}
+        if 'npd.sso.report.config' not in self.env:
+            counters['message'] = 'ฝั่ง 18 ยังไม่ได้ติดตั้งโมดูล npd_sso_report'
+            return counters
+        Config = self._writable('npd.sso.report.config')
+        Branch = self._writable('res.branch')
+        Map = self.env['npd.hrms.sync.map']
+        CompanyMap = self.env['npd.hrms.sync.company.map']
+        errors, skipped = [], []
+
+        rows = config.execute_kw(spec['o14_model'], 'search_read', [[], [
+            'company', 'employer_account', 'wage_source', 'note', 'branch_line_ids', 'write_date']])
+        counters['fetched'] = len(rows)
+        line_ids = sorted({i for r in rows for i in (r.get('branch_line_ids') or [])})
+        lines = {l['id']: l for l in config.execute_kw('npd.sso.report.branch', 'read', [
+            line_ids, ['sso_branch_code', 'branch_ids', 'is_default', 'note']])} if line_ids else {}
+        o14_branch_ids = sorted({b for l in lines.values() for b in (l.get('branch_ids') or [])})
+        o14_branch_names = {b['id']: (b.get('name') or '').strip() for b in config.execute_kw(
+            'hr.branch.custom', 'read', [o14_branch_ids, ['name']])} if o14_branch_ids else {}
+
+        for row in rows:
+            company_id = CompanyMap.resolve((row.get('company') or '').strip())
+            if not company_id:
+                counters['skipped_count'] += 1
+                skipped.append(row.get('company') or 'id %s' % row['id'])
+                continue
+            try:
+                with self.env.cr.savepoint():
+                    cmds = [(5, 0, 0)]
+                    missing = []
+                    for lid in row.get('branch_line_ids') or []:
+                        line = lines.get(lid)
+                        if not line:
+                            continue
+                        branches = Branch.browse()
+                        for bid in line.get('branch_ids') or []:
+                            branch = Branch.browse(Map.lookup('hr.branch.custom', bid)).exists()
+                            if not branch and o14_branch_names.get(bid):
+                                branch = Branch.search([('name', '=', o14_branch_names[bid])], limit=1)
+                            if branch:
+                                branches |= branch
+                            else:
+                                missing.append(o14_branch_names.get(bid) or str(bid))
+                        cmds.append((0, 0, {
+                            'sso_branch_code': line.get('sso_branch_code'),
+                            'is_default': line.get('is_default'),
+                            'note': line.get('note') or False,
+                            'branch_ids': [(6, 0, branches.ids)],
+                        }))
+                    values = {
+                        'company_id': company_id,
+                        'employer_account': row.get('employer_account') or False,
+                        'wage_source': row.get('wage_source') or 'salary',
+                        'note': row.get('note') or False,
+                        'branch_line_ids': cmds,
+                    }
+                    record = Config.search([('company_id', '=', company_id)], limit=1)
+                    if record:
+                        record.write(values)
+                        counters['updated_count'] += 1
+                    else:
+                        record = Config.create(values)
+                        counters['created_count'] += 1
+                    Map.remember(spec['o14_model'], row['id'], record,
+                                 natural_key=row.get('company'),
+                                 o14_write_date=row.get('write_date'))
+                    if missing:
+                        skipped.append('%s: ไม่พบสาขา %s' % (row.get('company'), ', '.join(missing)))
+            except Exception as error:
+                counters['error_count'] += 1
+                errors.append('%s: %s' % (row.get('company'), error))
+        self.env.cr.commit()
+
+        notes = []
+        if skipped:
+            notes.append('ข้าม/ไม่ครบ: ' + '; '.join(skipped))
+        if errors:
+            notes.append('\n'.join(errors))
+        if notes:
+            counters['message'] = '\n'.join(notes)
+        return counters
+
     def _sync_checkin_distance(self, config, spec, incremental):
         """ระยะเช็คอินรายสาขา — ฝั่ง 14 เป็นตารางแยก ฝั่ง 18 เป็นช่องบนตัวสาขา
 

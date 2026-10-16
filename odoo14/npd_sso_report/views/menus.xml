@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <menuitem id="menu_npd_sso_report_config" name="กำหนดค่ารายงานประกันสังคม"
+              parent="npd_hrms_payroll.menu_hrms_payroll_root"
+              action="action_npd_sso_report_config" sequence="51"/>
+    <menuitem id="menu_npd_sso_report" name="รายงานประกันสังคม"
+              parent="npd_hrms_payroll.menu_hrms_payroll_root"
+              action="action_npd_sso_report_wizard" sequence="52"/>
+    <menuitem id="menu_npd_payroll_monthly_summary" name="รายงานสรุปรายได้ต่อเดือน"
+              parent="npd_hrms_payroll.menu_hrms_payroll_root"
+              action="action_npd_payroll_monthly_summary" sequence="53"/>
+</odoo>
