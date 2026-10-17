@@ -122,6 +122,7 @@
                                 <group string="ค่าคอมมิชชั่น">
                                     <field name="income_commission"/>
                                     <field name="income_commission_sale"/>
+                                    <field name="income_commission_support"/>
                                 </group>
                                 <group string="รายได้อื่นๆ">
                                     <field name="income_other_manual"/>

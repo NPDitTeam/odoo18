@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'NPD HRMS - Payroll',
-    'version': '18.0.1.0.2',
+    'version': '18.0.1.0.3',
     'summary': 'คำนวณเงินเดือน ภาษี ประกันสังคม OT และเงินประกันการทำงาน',
     'description': """
 NPD HRMS - Payroll

@@ -109,6 +109,9 @@ class PayrollSalary(models.Model):
     income_fuel = fields.Float(string='อินเซนทีฟ', default=0.0)
     income_commission = fields.Float(string='ค่าคอมมิชชั่นสาขา', default=0.0)
     income_commission_sale = fields.Float(string='ค่าคอมมิชชั่น Sale', default=0.0)
+    # กรอกเอง — รวมเข้า "รายได้อื่นๆ (รวมทั้งหมด)" (ชื่อเดียวกับ o14 ตัวซิงก์ยกมาเอง)
+    # copy=False: สร้างเดือนถัดไปไม่ยกยอดตาม (กรอกใหม่ทุกเดือน กันจ่ายซ้ำ)
+    income_commission_support = fields.Float(string='ค่าคอม Sales Support', default=0.0, copy=False)
 
     income_other_manual = fields.Float(string='รายได้อื่นๆ (ใส่เพิ่ม)', default=0.0)
     income_manual_request = fields.Float(
@@ -133,7 +136,8 @@ class PayrollSalary(models.Model):
     income_other = fields.Float(
         string='รายได้อื่นๆ (รวมทั้งหมด)', compute='_compute_income_other',
         store=True, readonly=True,
-        help='รวม: ใส่เพิ่ม + ค่าตัวนักแสดง + โบนัส + เงินตกหล่น + เมนูเงินได้อื่นๆ + คืนเงินประกัน')
+        help='รวม: ใส่เพิ่ม + ค่าคอม Sales Support + ค่าตัวนักแสดง + โบนัส + เงินตกหล่น '
+             '+ เมนูเงินได้อื่นๆ + คืนเงินประกัน')
 
     # OT
     ot_line_ids = fields.One2many('payroll.ot.line', 'payroll_id', string='รายการ OT')
@@ -394,13 +398,15 @@ class PayrollSalary(models.Model):
         return sum(logs.mapped('amount'))
 
     @api.depends('income_manual_request',
-                 'income_other_manual', 'actor_content_total', 'income_bonus',
+                 'income_other_manual', 'income_commission_support',
+                 'actor_content_total', 'income_bonus',
                  'bonus_active', 'income_missed_payment', 'other_income_total',
                  'income_deposit_refund_total')
     def _compute_income_other(self):
         for rec in self:
             rec.income_other = (
                 (rec.income_other_manual or 0.0)
+                + (rec.income_commission_support or 0.0)
                 + (rec.income_manual_request or 0.0)
                 + (rec.actor_content_total or 0.0)
                 + ((rec.income_bonus or 0.0) if rec.bonus_active else 0.0)
