@@ -8,9 +8,6 @@
         <field name="model">account.voucher</field>
         <field name="inherit_id" ref="account_voucher_npd.view_purchase_receipt_general_form"/>
         <field name="arch" type="xml">
-            <field name="date" position="after">
-                <field name="branch_id" options="{'no_create': True}" readonly="state != 'draft'"/>
-            </field>
             <!-- สองช่องนี้แก้ได้แม้ลงบัญชีแล้ว (ปุ่มด้านบน) เพราะเป็นข้อมูลประกอบรายงาน
                  ไม่กระทบยอดบัญชี และมักกรอกตกหล่นจนมารู้ตอนปิดค่าคอม -->
             <xpath expr="//field[@name='line_ids']/list/field[@name='account_id']" position="after">
@@ -28,6 +25,18 @@
                         type="object" class="btn-secondary"
                         invisible="state != 'posted'"/>
             </xpath>
+        </field>
+    </record>
+
+    <!-- สาขา: ใส่ที่ฟอร์มคืนเงินประกันค่าเช่า (ฟอร์มการรับสืบจากฟอร์มนี้ จึงได้ด้วย) -->
+    <record id="view_purchase_receipt_form_branch" model="ir.ui.view">
+        <field name="name">account.voucher.purchase.form.branch</field>
+        <field name="model">account.voucher</field>
+        <field name="inherit_id" ref="account_voucher_npd.view_purchase_receipt_form"/>
+        <field name="arch" type="xml">
+            <field name="date" position="after">
+                <field name="branch_id" options="{'no_create': True}" readonly="state != 'draft'"/>
+            </field>
         </field>
     </record>
 
