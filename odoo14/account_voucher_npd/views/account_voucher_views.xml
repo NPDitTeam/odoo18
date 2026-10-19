@@ -578,6 +578,31 @@
     <menuitem id="menu_action_purchase_receipt"
             name="คืนเงินประกันค่าเช่า" action="action_purchase_receipt" parent="account.menu_finance_payables" sequence="80"/>
 
+    <!-- การรับ (ใบสำคัญซื้อทั่วไป) — o14 มีเมนูนี้แยกจากคืนเงินประกันค่าเช่า (account_voucher.menu_action_purchase_receipt)
+         ตอนพอร์ตเมนูเดิมถูกเปลี่ยนเป็นคืนเงินประกันค่าเช่า ใบที่ไม่ใช่คืนเงินประกันจึงไม่มีเมนูเปิด — ใช้ฟอร์มเดียวกับ o14 -->
+    <record id="action_purchase_receipt_general" model="ir.actions.act_window">
+        <field name="name">การรับ</field>
+        <field name="view_mode">list,kanban,form,pivot,graph</field>
+        <field name="res_model">account.voucher</field>
+        <field name="domain">[('journal_id.type','=','payable'), ('voucher_type','=','purchase'), ('check_show','=',False)]</field>
+        <field name="context">{'default_voucher_type': 'purchase', 'voucher_type': 'purchase','default_cheque_type':'outbound', 'default_check_show': False}</field>
+        <field name="view_id" ref="view_voucher_tree_purchase"/>
+        <field name="search_view_id" ref="view_voucher_filter_vendor"/>
+    </record>
+    <record id="action_purchase_receipt_general_tree" model="ir.actions.act_window.view">
+        <field eval="1" name="sequence"/>
+        <field name="view_mode">list</field>
+        <field name="act_window_id" ref="action_purchase_receipt_general"/>
+    </record>
+    <record id="action_purchase_receipt_general_form" model="ir.actions.act_window.view">
+        <field eval="2" name="sequence"/>
+        <field name="view_mode">form</field>
+        <field name="view_id" ref="view_purchase_receipt_form"/>
+        <field name="act_window_id" ref="action_purchase_receipt_general"/>
+    </record>
+    <menuitem id="menu_action_purchase_receipt_general"
+            name="การรับ" action="action_purchase_receipt_general" parent="account.menu_finance_payables" sequence="79"/>
+
     <record id="view_move_form_voucher" model="ir.ui.view">
         <field name="name">account.move.form.voucher.register.button</field>
         <field name="model">account.move</field>
