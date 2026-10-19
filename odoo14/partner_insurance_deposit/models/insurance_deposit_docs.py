@@ -122,7 +122,7 @@ class AccountPaymentInsuranceDeposit(models.Model):
             invoices = self.env['account.move'].sudo().search([('name', 'in', names)])
         else:
             # ยังไม่ได้สร้างเลขใบแจ้งหนี้ → ใช้แถวในตาราง Invoice ที่มียอดชำระ
-            invoices = self.custom_invoice_ids.filtered(lambda l: l.paid_total).mapped('invoice_id')  # o18: custom_invoice_ids (o14 = invoice_ids)
+            invoices = self.custom_invoice_ids.filtered(lambda l: l.paid_total).mapped('move_id')  # o18: custom_invoice_ids.move_id (o14 = invoice_ids.invoice_id)
         return [so for so in dict.fromkeys(invoices.mapped('invoice_origin')) if so and so.startswith('SO')]
 
     @api.constrains('partner_id', 'amount', 'is_payment_multi', 'payment_method_one_id', 'paid_ids')

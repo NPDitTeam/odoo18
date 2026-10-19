@@ -4,7 +4,7 @@
 
 {
     'name': 'Partner Insurance Deposit',
-    'version': '18.0.1.3.2',
+    'version': '18.0.1.3.3',
     'category': 'Sales',
     'summary': 'เพิ่มฟิลด์ค่าประกันสะสมและประเภทลูกค้าในข้อมูลคู่ค้า',
     'description': """
