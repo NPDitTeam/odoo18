@@ -35,7 +35,19 @@
         </field>
     </record>
 
-    <!-- View 2 (ประเภทลูกค้าใต้ priority_id) ไม่ได้พอร์ต: o18 ไม่ได้ติดตั้ง partner_priority
-         และ crm.lead ยังไม่มีฟิลด์ customer_status -->
-    
+    <!--
+        View 2: เพิ่มฟิลด์ประเภทลูกค้าใต้ priority_id
+        ใช้ priority สูงกว่าเพื่อให้โหลดหลัง partner_priority module
+    -->
+    <record id="view_partner_form_inherit_customer_status" model="ir.ui.view">
+        <field name="name">res.partner.form.inherit.customer.status</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="base.view_partner_form"/>
+        <field name="priority">60</field>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='priority_id']" position="after">
+                <field name="customer_status" readonly="1"/>
+            </xpath>
+        </field>
+    </record>    
 </odoo>

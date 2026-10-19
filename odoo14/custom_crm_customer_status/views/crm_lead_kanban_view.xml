@@ -1,0 +1,29 @@
+<odoo>
+  <record id="crm_lead_kanban_inherit_customer_status" model="ir.ui.view">
+    <field name="name">crm.lead.kanban.customer.status</field>
+    <field name="model">crm.lead</field>
+    <field name="inherit_id" ref="crm.crm_case_kanban_view_leads"/>
+    <field name="arch" type="xml">
+
+      <!-- ✅ โหลดฟิลด์ customer_status เพื่อใช้งาน -->
+      
+
+      <!-- ✅ แทรกข้อความในจุดที่แสดงผลจริง -->
+      <!-- o18: การ์ด kanban เป็น <t t-name="card"> แทรกก่อน footer -->
+      <xpath expr="//t[@t-name='card']/footer" position="before">
+        <field name="customer_status" invisible="1"/>
+        <t t-if="record.customer_status.raw_value == 'old'">
+          <div class="oe_kanban_details" style="background-color: #ffc107; color: black; padding: 4px; margin-top: 5px; border-radius: 4px;">
+            🧾 ประเภทลูกค้า: <strong>ลูกค้าเก่า</strong>
+          </div>
+        </t>
+        <t t-if="record.customer_status.raw_value == 'new'">
+          <div class="oe_kanban_details" style="background-color: #28a745; color: white; padding: 4px; margin-top: 5px; border-radius: 4px;">
+            🧾 ประเภทลูกค้า: <strong>ลูกค้าใหม่</strong>
+          </div>
+        </t>
+      </xpath>
+
+    </field>
+  </record>
+</odoo>

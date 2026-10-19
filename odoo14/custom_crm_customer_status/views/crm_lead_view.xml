@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Form View - เพิ่มฟิลด์ใหม่ -->
+    <record id="view_crm_lead_form_inherit_status" model="ir.ui.view">
+        <field name="name">crm.lead.form.inherit.customer.status</field>
+        <field name="model">crm.lead</field>
+        <field name="inherit_id" ref="crm.crm_lead_view_form"/>
+        <field name="arch" type="xml">
+
+             <!-- ===== เพิ่มส่วนนี้ - สร้างปุ่มใน header ===== -->
+        <xpath expr="//header" position="inside">
+            <!-- ปุ่มเช็คเครดิตค้างชำระ -->
+            <button name="action_check_overdue_credit"
+                    string="เช็คเครดิตค้างชำระ"
+                    type="object"
+                    class="btn-primary"
+                    icon="fa-credit-card"
+                    invisible="not partner_id"/>
+        </xpath>
+        <!-- ===== จบส่วนที่เพิ่ม ===== -->
+
+
+            <xpath expr="(//sheet/group)[1]" position="inside">
+                <group string="เลือกประเภทลูกค้า 🎯">
+                    <field name="customer_status"/>
+                </group>
+                <group string="ผู้รับผิดชอบและแหล่งที่มา 🧭">
+                    <field name="position_owner" required="1"/>
+                    <field name="source_user_id" readonly="1"/>
+                </group>
+                <group string="มูลค่่ายอดเช่า 💸">
+                    <field name="net_amount" widget="monetary"/>
+                </group>
+
+                <!-- ===== แก้ไขส่วนนี้ - เปลี่ยนจาก Char เป็น Monetary และเพิ่ม field จำนวนบิล ===== -->
+                <group string="ยอดสะสมของลูกค้า 📊" colspan="2">
+                    <!-- เพิ่ม widget="monetary" เพื่อแสดงรูปแบบเงินพร้อมสกุลเงิน -->
+                    <field name="total_amount_customer"
+                           widget="monetary"
+                           options="{'currency_field': 'company_currency'}"/>
+                    <!-- เพิ่ม field แสดงจำนวนบิลขาย -->
+                    <field name="partner_sale_count"
+                           string="จำนวนบิลขาย"/>
+                </group>
+                <!-- ===== จบส่วนที่แก้ไข ===== -->
+
+            </xpath>
+
+            <!-- ===== เพิ่มส่วนนี้ใหม่ทั้งหมด - สำหรับแสดงตารางรายละเอียดแต่ละบิล ===== -->
+            <!-- แทรก notebook หลังจาก group ทั้งหมด เพื่อให้แสดงเต็มความกว้าง -->
+            <xpath expr="(//sheet/group)[1]" position="after">
+                <notebook>
+                    <!-- สร้าง tab ใหม่ชื่อ "รายละเอียดบิลขาย" -->
+                    <page string="รายละเอียดบิลขาย 📋">
+                        <!-- แสดง field sale_order_details ที่เป็น HTML table -->
+                        <!-- widget="html" บอกให้ Odoo แสดงเป็น HTML -->
+                        <!-- nolabel="1" ไม่แสดง label ของ field -->
+                        <!-- colspan="2" ให้ field นี้ใช้พื้นที่เต็มความกว้าง -->
+                        <field name="sale_order_details"
+                               nolabel="1"
+                               colspan="2"
+                               widget="html"/>
+                    </page>
+                </notebook>
+            </xpath>
+            <!-- ===== จบส่วนที่เพิ่มใหม่ ===== -->
+
+        </field>
+    </record>
+
+    <!-- Search View - Inherit จาก Opportunities Filter -->
+    <record id="crm_lead_search_inherit_date_filter" model="ir.ui.view">
+        <field name="name">crm.lead.search.date.filter</field>
+        <field name="model">crm.lead</field>
+        <field name="inherit_id" ref="crm.view_crm_case_opportunities_filter"/>
+        <field name="arch" type="xml">
+            <!-- แทรกหลัง filter Creation Date -->
+            <xpath expr="//filter[@name='creation_date']" position="after">
+                <separator/>
+                <filter string="เดือนนี้"
+                        name="this_month"
+                        domain="[]"
+                        context="{'filter_this_month': 1}"/>
+                <filter string="เดือนที่แล้ว"
+                        name="last_month"
+                        domain="[]"
+                        context="{'filter_last_month': 1}"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- ===== เพิ่มส่วนนี้ (Optional) ===== -->
+    <!-- Tree View - แสดงยอดสะสมในหน้า list view -->
+    <record id="view_crm_lead_tree_inherit_total_amount" model="ir.ui.view">
+        <field name="name">crm.lead.tree.inherit.total.amount</field>
+        <field name="model">crm.lead</field>
+        <field name="inherit_id" ref="crm.crm_case_tree_view_oppor"/>
+        <field name="arch" type="xml">
+            <!-- เพิ่มคอลัมน์ยอดสะสมใน tree view (ถ้าต้องการ) -->
+            <xpath expr="//field[@name='expected_revenue']" position="after">
+                <field name="total_amount_customer"
+                       widget="monetary"
+                       optional="hide"
+                       sum="Total Customer Amount"/>
+                <field name="partner_sale_count"
+                       optional="hide"/>
+            </xpath>
+        </field>
+    </record>
+    <!-- ===== จบส่วนที่เพิ่ม (Optional) ===== -->
+
+</odoo>

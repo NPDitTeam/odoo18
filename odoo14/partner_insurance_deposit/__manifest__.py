@@ -4,7 +4,7 @@
 
 {
     'name': 'Partner Insurance Deposit',
-    'version': '18.0.1.3.0',
+    'version': '18.0.1.3.1',
     'category': 'Sales',
     'summary': 'เพิ่มฟิลด์ค่าประกันสะสมและประเภทลูกค้าในข้อมูลคู่ค้า',
     'description': """
@@ -37,9 +37,9 @@
     # - account_payment_invoice: หน้าการรับชำระ (payment_method_one_id / paid_ids)
     # - account_voucher_npd: หน้าคืนเงินประกันค่าเช่า
     # - npd_deposit_overdraw_check: เมนูตรวจสอบเงินประกันการเช่าเบิกเกิน (เพิ่มสาเหตุ + สาย SO ที่มีปัญหา)
-    # o18: ไม่มี partner_priority (ไม่ได้ติดตั้ง) จึงไม่แสดงประเภทลูกค้าใต้ priority_id
+    # partner_priority: ช่อง Priority (priority_id) / custom_crm_customer_status: ประเภทลูกค้าใน CRM
     # pfb_npd_all_customs: หาสินค้าเงินประกันแยกบริษัท (npd.invoice.journal.config)
-    'depends': ['base', 'account', 'crm', 'account_payment_invoice', 'account_voucher_npd',
+    'depends': ['base', 'account', 'crm', 'partner_priority', 'custom_crm_customer_status', 'account_payment_invoice', 'account_voucher_npd',
                 'npd_deposit_overdraw_check', 'pfb_npd_all_customs', 'l10n_th_partner'],
 
     # data: ไฟล์ XML ที่ต้องโหลด

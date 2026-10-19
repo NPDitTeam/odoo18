@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Popup Form View สำหรับแสดงบิลค้างชำระ -->
+    <record id="view_crm_lead_overdue_popup" model="ir.ui.view">
+        <field name="name">crm.lead.overdue.popup.form</field>
+        <field name="model">crm.lead</field>
+        <field name="arch" type="xml">
+            <form string="เช็คเครดิตค้างชำระ">
+                <!-- ซ่อน header ไม่ให้แสดงปุ่มอื่นๆ -->
+                <header/>
+
+                <sheet>
+                    <!-- ส่วนหัวแสดงชื่อลูกค้า -->
+                    <div class="oe_title">
+                        <h1>
+                            <field name="partner_id"
+                                   readonly="1"
+                                   nolabel="1"
+                                   options="{'no_open': True}"/>
+                        </h1>
+                    </div>
+
+                    <!-- แสดงสรุปยอดเงิน -->
+                    <group>
+                        <group string="📊 สรุปข้อมูล">
+                            <field name="overdue_invoice_count"
+                                   string="จำนวนบิลค้างชำระ"
+                                   readonly="1"/>
+                            <field name="overdue_amount_total"
+                                   widget="monetary"
+                                   options="{'currency_field': 'company_currency'}"
+                                   readonly="1"/>
+                        </group>
+
+                        <group string="💰 ข้อมูลอื่นๆ">
+                            <field name="total_amount_customer"
+                                   widget="monetary"
+                                   string="ยอดสะสมทั้งหมด"
+                                   readonly="1"/>
+                            <field name="partner_sale_count"
+                                   string="จำนวนบิลขายทั้งหมด"
+                                   readonly="1"/>
+                        </group>
+                    </group>
+
+                    <notebook>
+                        <!-- Tab แสดงรายละเอียดบิลค้างชำระ -->
+                        <page string="🚨 บิลค้างชำระ"
+                              decoration-danger="overdue_invoice_count > 0">
+                            <field name="overdue_invoice_details"
+                                   widget="html"
+                                   nolabel="1"
+                                   colspan="2"/>
+                        </page>
+
+                        <!-- Tab แสดงบิลขายทั้งหมด (ถ้าต้องการ) -->
+                        <page string="📋 ประวัติบิลขายทั้งหมด">
+                            <field name="sale_order_details"
+                                   widget="html"
+                                   nolabel="1"
+                                   colspan="2"/>
+                        </page>
+                    </notebook>
+
+                </sheet>
+
+                <!-- ปุ่มด้านล่าง -->
+                <footer>
+                    <button string="ปิด"
+                            class="btn-secondary"
+                            special="cancel"/>
+
+                    <!-- ปุ่มดูใบแจ้งหนี้ทั้งหมด (Optional) -->
+
+                </footer>
+            </form>
+        </field>
+    </record>
+</odoo>
