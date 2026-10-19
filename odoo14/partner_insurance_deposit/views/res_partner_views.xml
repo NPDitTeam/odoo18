@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 
+    views/res_partner_views.xml
+    ไฟล์นี้ทำหน้าที่กำหนดการแสดงผลฟิลด์ใหม่ในหน้า form ของ res.partner
+    
+    ฟิลด์ที่เพิ่ม:
+    1. ค่าประกันสะสม (accumulated_insurance_deposit) - ต่อจาก Tax Branch
+    2. ประเภทลูกค้า (customer_status) - ใต้ priority_id
+-->
+<odoo>
+
+    <!--
+        View 1: เพิ่มฟิลด์ค่าประกันสะสมต่อจาก Tax Branch
+    -->
+    <record id="view_partner_form_inherit_insurance_deposit" model="ir.ui.view">
+        <field name="name">res.partner.form.inherit.insurance.deposit</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="base.view_partner_form"/>
+        <field name="priority">50</field>
+        <field name="arch" type="xml">
+
+           <xpath expr="//field[@name='branch']" position="after">
+
+                     <separator string="ค่าประกันสะสมของลูกค้า"/>
+                    <field name="accumulated_insurance_deposit"/>
+                <!--
+                    เพิ่มฟิลด์ค่าประกันสะสม
+                    - name: ชื่อฟิลด์ที่กำหนดใน model
+                    - readonly="1": ทำให้ฟิลด์เป็นแบบอ่านอย่างเดียว (เพราะเป็น compute field)
+                    - ฟิลด์นี้จะแสดงต่อจาก Tax Branch
+                -->
+<!--                <field name="accumulated_insurance_deposit" readonly="1"/>-->
+            </xpath>
+
+        </field>
+    </record>
+
+    <!-- View 2 (ประเภทลูกค้าใต้ priority_id) ไม่ได้พอร์ต: o18 ไม่ได้ติดตั้ง partner_priority
+         และ crm.lead ยังไม่มีฟิลด์ customer_status -->
+    
+</odoo>

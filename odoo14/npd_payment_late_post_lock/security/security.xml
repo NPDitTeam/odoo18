@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ผู้ใช้ในกลุ่มนี้ยืนยันใบรับชำระที่เลยกำหนดได้ ไม่สนเงื่อนไข -->
+    <record id="group_late_post_bypass" model="res.groups">
+        <field name="name">Payment Late Post Lock - รับชำระย้อนหลังได้ (ฝ่ายการเงิน)</field>
+        <field name="category_id" ref="base.module_category_accounting_and_finance"/>
+        <field name="comment">ยืนยันใบรับชำระที่วันที่โอนตามสลิปเลยวันที่ 10 ของเดือนถัดไปแล้วได้</field>
+    </record>
+</odoo>

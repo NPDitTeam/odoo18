@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    views/insurance_deposit_docs_views.xml
+    แสดงค่าประกันคงเหลือของลูกค้า
+    1. หน้าการรับชำระ: แสดงเมื่อเลือก Payment Method = หักเงินประกันค่าเช่า (ต่อจาก Payment Method)
+    2. หน้าคืนเงินประกันค่าเช่า: ต่อจากยอดหนี้ค้างชำระรวม
+-->
+<odoo>
+
+    <record id="view_account_payment_form_insurance_deposit" model="ir.ui.view">
+        <field name="name">account.payment.form.insurance.deposit</field>
+        <field name="model">account.payment</field>
+        <field name="inherit_id" ref="account_payment_invoice.view_account_payment_form_inherit"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='payment_method_one_id']" position="after">
+                <field name="is_insurance_deduct" invisible="1"/>
+                <field name="insurance_balance_before"
+                       invisible="not is_insurance_deduct"/>
+                <field name="insurance_deduct_amount"
+                       invisible="not is_insurance_deduct"/>
+                <field name="insurance_balance_after"
+                       decoration-danger="insurance_balance_after &lt; 0"
+                       decoration-bf="1"
+                       invisible="not is_insurance_deduct"/>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_purchase_receipt_form_insurance_deposit" model="ir.ui.view">
+        <field name="name">account.voucher.purchase.form.insurance.deposit</field>
+        <field name="model">account.voucher</field>
+        <field name="inherit_id" ref="account_voucher_npd.view_purchase_receipt_form"/>
+        <field name="arch" type="xml">
+            <!-- กล่องสาเหตุที่คืนเงินประกันผิด ด้านบนฟอร์ม -->
+            <xpath expr="//sheet" position="before">
+                <field name="insurance_problem_level" invisible="1"/>
+                <div class="alert alert-danger mb-0" role="alert" style="white-space: pre-line;"
+                     invisible="insurance_problem_level != 'danger'">
+                    <strong>สาเหตุที่คืนเงินประกันผิด</strong><br/>
+                    <field name="insurance_problem_reason" readonly="1"/>
+                </div>
+                <div class="alert alert-warning mb-0" role="alert" style="white-space: pre-line;"
+                     invisible="insurance_problem_level != 'warning'">
+                    <strong>ตรวจสอบการคืนเงินประกัน</strong><br/>
+                    <field name="insurance_problem_reason" readonly="1"/>
+                </div>
+            </xpath>
+            <xpath expr="//field[@name='total_outstanding']" position="after">
+                <field name="insurance_balance_before"
+                       invisible="not check_show"/>
+                <field name="insurance_refund_amount"
+                       invisible="not check_show"/>
+                <field name="insurance_balance_after"
+                       decoration-danger="insurance_balance_after &lt; 0"
+                       decoration-bf="1"
+                       invisible="not check_show"/>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>

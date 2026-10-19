@@ -1,0 +1,181 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    views/insurance_chain_views.xml
+    รายงานกระทบยอดเงินประกันตามสาย SO
+    - ปุ่ม "ตรวจเงินประกัน" ในหน้าลูกค้า
+    - เมนู บัญชี > รายงาน > กระทบยอดเงินประกัน (ทุกลูกค้า)
+-->
+<odoo>
+
+    <record id="view_npd_insurance_chain_tree" model="ir.ui.view">
+        <field name="name">npd.insurance.chain.tree</field>
+        <field name="model">npd.insurance.chain</field>
+        <field name="arch" type="xml">
+            <list decoration-danger="status in ('wrong_partner', 'no_ins', 'over')" decoration-warning="status in ('unpaid', 'unmapped')"
+                  decoration-muted="status == 'ok'" create="0" edit="0" delete="0">
+                <field name="partner_id"/>
+                <field name="chain_label"/>
+                <field name="status"/>
+                <field name="received" sum="รวม"/>
+                <field name="deducted" sum="รวม"/>
+                <field name="refunded" sum="รวม"/>
+                <field name="balance" sum="รวม"/>
+                <field name="reason"/>
+                <field name="currency_id" column_invisible="1"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_npd_insurance_chain_form" model="ir.ui.view">
+        <field name="name">npd.insurance.chain.form</field>
+        <field name="model">npd.insurance.chain</field>
+        <field name="arch" type="xml">
+            <form create="0" edit="0" delete="0">
+                <sheet>
+                    <div class="oe_title">
+                        <h2><field name="chain_label"/></h2>
+                        <field name="status" widget="badge"
+                               decoration-danger="status in ('wrong_partner', 'no_ins', 'over')"
+                               decoration-warning="status in ('unpaid', 'unmapped')"
+                               decoration-success="status == 'ok'"/>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="partner_id"/>
+                            <field name="so_names"/>
+                            <field name="computed_at"/>
+                        </group>
+                        <group>
+                            <field name="received"/>
+                            <field name="deducted"/>
+                            <field name="refunded"/>
+                            <field name="balance" decoration-danger="balance &lt; 0" decoration-bf="1"/>
+                            <field name="currency_id" invisible="1"/>
+                        </group>
+                    </group>
+                    <group invisible="status == 'ok'">
+                        <field name="reason"/>
+                        <field name="action_todo"/>
+                    </group>
+                    <field name="line_ids">
+                        <list decoration-danger="running &lt; 0">
+                            <field name="date"/>
+                            <field name="move_id"/>
+                            <field name="doc_type"/>
+                            <field name="so_name"/>
+                            <field name="invoice_ref"/>
+                            <field name="voucher_id"/>
+                            <field name="amount_in" sum="รวม"/>
+                            <field name="amount_out" sum="รวม"/>
+                            <field name="running"/>
+                            <field name="currency_id" column_invisible="1"/>
+                        </list>
+                    </field>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_npd_insurance_chain_search" model="ir.ui.view">
+        <field name="name">npd.insurance.chain.search</field>
+        <field name="model">npd.insurance.chain</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="partner_id"/>
+                <field name="so_names" string="SO"/>
+                <filter name="problem" string="มีปัญหา" domain="[('status', '!=', 'ok')]"/>
+                <filter name="wrong_partner" string="เลือกชื่อลูกค้าผิด" domain="[('status', '=', 'wrong_partner')]"/>
+                <filter name="no_ins" string="เงินประกันไม่เคยเข้าระบบ" domain="[('status', '=', 'no_ins')]"/>
+                <filter name="over" string="ใช้เกินยอดที่รับ" domain="[('status', '=', 'over')]"/>
+                <filter name="unpaid" string="INS ยังไม่รับชำระ" domain="[('status', '=', 'unpaid')]"/>
+                <filter name="unmapped" string="ไม่ทราบ SO" domain="[('status', '=', 'unmapped')]"/>
+                <separator/>
+                <filter name="has_balance" string="มีเงินประกันคงเหลือ" domain="[('balance', '>', 0)]"/>
+                <group expand="0" string="จัดกลุ่ม">
+                    <filter name="group_status" string="สถานะ" context="{'group_by': 'status'}"/>
+                    <filter name="group_partner" string="ลูกค้า" context="{'group_by': 'partner_id'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- ต่อยอดเมนู "ตรวจสอบเงินประกันการเช่าเบิกเกิน" (npd_deposit_overdraw_check) แทนการมีเมนูซ้ำ -->
+    <record id="view_npd_deposit_overdraw_tree_chain" model="ir.ui.view">
+        <field name="name">npd.deposit.overdraw.tree.chain</field>
+        <field name="model">npd.deposit.overdraw</field>
+        <field name="inherit_id" ref="npd_deposit_overdraw_check.view_npd_deposit_overdraw_tree"/>
+        <field name="arch" type="xml">
+            <xpath expr="//list" position="attributes">
+                <attribute name="decoration-warning">state == 'chain'</attribute>
+            </xpath>
+            <xpath expr="//field[@name='state']" position="attributes">
+                <attribute name="decoration-warning">state == 'chain'</attribute>
+            </xpath>
+            <xpath expr="//field[@name='state']" position="after">
+                <field name="source" invisible="1"/>
+                <field name="reason"/>
+                <button name="action_open_chain" type="object" string="ดูสาย SO" icon="fa-search" class="btn-link"/>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_npd_deposit_overdraw_form_chain" model="ir.ui.view">
+        <field name="name">npd.deposit.overdraw.form.chain</field>
+        <field name="model">npd.deposit.overdraw</field>
+        <field name="inherit_id" ref="npd_deposit_overdraw_check.view_npd_deposit_overdraw_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//sheet" position="before">
+                <header>
+                    <button name="action_open_chain" type="object" string="ดูสาย SO" class="btn-primary"/>
+                </header>
+            </xpath>
+            <xpath expr="//sheet/group" position="after">
+                <group>
+                    <field name="source"/>
+                    <field name="chain_id"/>
+                    <field name="reason"/>
+                    <field name="chain_action_todo" invisible="not chain_action_todo"/>
+                </group>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_npd_deposit_overdraw_search_chain" model="ir.ui.view">
+        <field name="name">npd.deposit.overdraw.search.chain</field>
+        <field name="model">npd.deposit.overdraw</field>
+        <field name="inherit_id" ref="npd_deposit_overdraw_check.view_npd_deposit_overdraw_search"/>
+        <field name="arch" type="xml">
+            <xpath expr="//filter[@name='settled']" position="after">
+                <filter name="chain_problem" string="สาย SO มีปัญหา" domain="[('state', '=', 'chain')]"/>
+                <filter name="wrong_partner" string="เลือกชื่อลูกค้าผิด" domain="[('chain_status', '=', 'wrong_partner')]"/>
+                <filter name="no_ins" string="เงินประกันไม่เคยเข้าระบบ" domain="[('chain_status', '=', 'no_ins')]"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- ปุ่มในหน้าลูกค้า ต่อจากค่าประกันสะสม -->
+    <record id="view_partner_form_insurance_chain_button" model="ir.ui.view">
+        <field name="name">res.partner.form.insurance.chain.button</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="partner_insurance_deposit.view_partner_form_inherit_insurance_deposit"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='accumulated_insurance_deposit']" position="after">
+                <button name="action_open_insurance_chains" type="object" string="ตรวจเงินประกัน"
+                        class="btn-link" icon="fa-search" colspan="2"/>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="ir_cron_npd_insurance_chain_refresh" model="ir.cron">
+        <field name="name">คำนวณรายงานกระทบยอดเงินประกัน</field>
+        <field name="model_id" ref="model_npd_insurance_chain"/>
+        <field name="state">code</field>
+        <field name="code">model._cron_refresh_all()</field>
+        <field name="interval_number">1</field>
+        <field name="interval_type">days</field>
+        <!-- 19:00 UTC = 02:00 เวลาไทย -->
+        <field name="nextcall" eval="(DateTime.utcnow() + timedelta(days=1)).strftime('%Y-%m-%d 19:00:00')"/>
+        <field name="active" eval="True"/>
+    </record>
+
+</odoo>

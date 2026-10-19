@@ -1,0 +1,5 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_npd_insurance_chain_user,npd.insurance.chain user,model_npd_insurance_chain,base.group_user,1,0,0,0
+access_npd_insurance_chain_line_user,npd.insurance.chain.line user,model_npd_insurance_chain_line,base.group_user,1,0,0,0
+access_npd_insurance_chain_manager,npd.insurance.chain manager,model_npd_insurance_chain,account.group_account_manager,1,1,1,1
+access_npd_insurance_chain_line_manager,npd.insurance.chain.line manager,model_npd_insurance_chain_line,account.group_account_manager,1,1,1,1

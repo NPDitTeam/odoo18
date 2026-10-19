@@ -281,12 +281,24 @@ class AccountVoucher(models.Model):
                 rec.payment_ref_id = False
                 continue
 
-            invoices = self.env['account.move'].search([
-                ('invoice_origin', '=', rec.reference),
-                ('move_type', '=', 'out_invoice'),
-                ('state', '=', 'posted'),
-                ('name', 'ilike', 'INS-'),
-            ], limit=1)
+            # บิลต่ออายุไม่มี INS- ของตัวเอง (เงินประกันเก็บไว้ที่ SO ใบแรก)
+            # → ไล่หาตาม deposit_ref ของ SO (ตัวแรกใน list = SO ใบแรกที่เปิด) — ทีม o14 19 ต.ค. 2569
+            origins = [rec.reference]
+            sale_order = self.env['sale.order'].search([('name', '=', rec.reference)], limit=1)
+            if sale_order.deposit_ref:
+                origins += [r.strip() for r in sale_order.deposit_ref.split(',')
+                            if r.strip() and r.strip() != rec.reference]
+
+            invoices = self.env['account.move']
+            for origin in origins:
+                invoices = self.env['account.move'].search([
+                    ('invoice_origin', '=', origin),
+                    ('move_type', '=', 'out_invoice'),
+                    ('state', '=', 'posted'),
+                    ('name', 'ilike', 'INS-'),
+                ], limit=1)
+                if invoices:
+                    break
 
             if not invoices:
                 rec.payment_ref_id = False
@@ -314,6 +326,33 @@ class AccountVoucher(models.Model):
         for rec in self:
             rec.show_payment_button = bool(rec.invoice_ids) and rec.state == 'draft' and rec.total_outstanding > 0
 
+    def _check_reference_partner(self):
+        """Bill Reference (เลข SO) ต้องเป็น SO ของคู่ค้าที่เลือกไว้เท่านั้น (เฉพาะคืนเงินประกัน check_show)"""
+        for rec in self:
+            if not (rec.check_show and rec.reference and rec.partner_id):
+                continue
+            sale_order = rec.env['sale.order'].search([('name', '=', rec.reference.strip())], limit=1)
+            if sale_order and sale_order.partner_id.commercial_partner_id != rec.partner_id.commercial_partner_id:
+                raise ValidationError(
+                    _("เลขที่ %s เป็นใบ SO ของคู่ค้า %s\nไม่ใช่ของ %s กรุณาเลือก SO ของคู่ค้าที่ถูกต้อง")
+                    % (sale_order.name, sale_order.partner_id.display_name, rec.partner_id.display_name))
+
+    @api.constrains('reference', 'partner_id')
+    def _constrains_reference_partner(self):
+        self._check_reference_partner()
+
+    def _clear_wrong_reference(self):
+        """ใช้ใน onchange: ถ้า SO ใน Bill Reference ไม่ใช่ของคู่ค้า → ล้างช่องให้ว่าง + แจ้งเตือน
+        (raise ใน onchange จะล้างค่าไม่ได้ เพราะทุกอย่างถูก rollback)"""
+        try:
+            self._check_reference_partner()
+        except ValidationError as e:
+            self.reference = False
+            self.rental_return_select_id = False
+            self.rental_return_id = False
+            return {'warning': {'title': _('Bill Reference ไม่ถูกต้อง'), 'message': e.args[0]}}
+        return None
+
     @api.onchange('partner_id', 'reference')
     def _onchange_rental_return_domain(self):
         """คำนวณ domain สำหรับ rental_return_select_id"""
@@ -323,6 +362,9 @@ class AccountVoucher(models.Model):
         ]
 
         if self.reference and self.check_show:
+            warning = self._clear_wrong_reference()
+            if warning:
+                return warning
             sale_order = self.env['sale.order'].search([
                 ('name', '=', self.reference),
                 ('rental_status', '!=', 'done')
@@ -349,6 +391,9 @@ class AccountVoucher(models.Model):
         """กรอง Invoice ที่แสดงใน Dropdown แบบเข้มงวด + อัปเดต Picking"""
 
         if self.reference and self.check_show:
+            warning = self._clear_wrong_reference()
+            if warning:
+                return warning
             sale_order = self.env['sale.order'].search([
                 ('name', '=', self.reference),
                 ('rental_status', '!=', 'done')
@@ -602,6 +647,9 @@ class AccountVoucher(models.Model):
     @api.onchange('reference')
     def _onchange_reference(self):
         if self.reference and self.check_show:
+            warning = self._clear_wrong_reference()
+            if warning:
+                return warning
             sale_order = self.env['sale.order'].search([
                 ('name', '=', self.reference),
                 ('rental_status', '!=', 'done')

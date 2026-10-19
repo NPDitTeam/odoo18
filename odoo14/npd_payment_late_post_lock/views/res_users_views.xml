@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- res.users form - toggle สิทธิ์ฝ่ายการเงินในแท็บ Preferences -->
+    <record id="view_users_form_late_post_lock" model="ir.ui.view">
+        <field name="name">res.users.form.late.post.lock</field>
+        <field name="model">res.users</field>
+        <field name="inherit_id" ref="base.view_users_form"/>
+        <field name="priority">99</field>
+        <field name="arch" type="xml">
+            <xpath expr="//page[@name='preferences']" position="inside">
+                <group string="สิทธิ์รับชำระย้อนหลัง" name="late_post_lock_grp">
+                    <field name="allow_late_payment_post"
+                           widget="boolean_toggle"/>
+                </group>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>
