@@ -18,6 +18,10 @@
                        options="{'no_quick_create': True, 'no_create_edit': True, 'no_open': True}"/>
                 <field name="payment_date" required="1"/>
             </xpath>
+            <!-- บังคับบัญชีวิเคราะห์เมื่อเป็นใบการรับ (check_type_show_selection = 'false') เหมือน o14 -->
+            <xpath expr="//field[@name='line_ids']/list/field[@name='account_analytic_id']" position="attributes">
+                <attribute name="required">parent.check_type_show_selection == 'false'</attribute>
+            </xpath>
             <xpath expr="//header/button[@name='action_cancel_draft']" position="before">
                 <button name="action_edit_sales_contact"
                         string="แก้ไข Sales ที่ติดต่อ/วันที่กำหนดจ่าย"
@@ -36,6 +40,12 @@
                 <field name="sales_contact_id"
                        options="{'no_quick_create': True, 'no_create_edit': True, 'no_open': True}"/>
                 <field name="payment_date" required="1"/>
+            </xpath>
+            <xpath expr="//field[@name='line_ids']" position="before">
+                <field name="check_type_show_selection" invisible="1"/>
+            </xpath>
+            <xpath expr="//field[@name='line_ids']/list/field[@name='account_analytic_id']" position="attributes">
+                <attribute name="required">parent.check_type_show_selection == 'false'</attribute>
             </xpath>
             <xpath expr="//header/button[@name='action_cancel_draft']" position="before">
                 <button name="action_edit_sales_contact"

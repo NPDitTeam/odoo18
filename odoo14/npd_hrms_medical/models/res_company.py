@@ -13,7 +13,6 @@ _logger = logging.getLogger(__name__)
 
 MEDICAL_REASON_CODE = 'medical_expense'
 MEDICAL_REASON_NAME = 'ค่ารักษาพยาบาล'
-MEDICAL_SEQUENCE_CODE = 'hrms.medical.voucher'
 DEFAULT_ANNUAL_LIMIT = 10000.0
 
 
@@ -151,21 +150,10 @@ class ResCompany(models.Model):
         )
 
     def _hrms_medical_get_sequence(self):
-        """เลขที่ใบสำคัญจ่ายค่ารักษาพยาบาล รูปแบบเดียวกับ Odoo 14 (CP-260811-0004)
+        """เลขที่ใบสำคัญจ่ายค่ารักษาพยาบาล = ลำดับ CP ของเมนู "การรับ" ของบริษัทนั้น
 
-        Odoo 18 มีลำดับ purchase.receipt ตัวเดียว (PA… ชื่อ "คืนเงินประกันค่าเช่า")
-        ใช้ร่วมทุกบริษัท — ถ้าไม่แยก ใบค่ารักษาพยาบาลจะได้เลขชุดคืนเงินประกัน
+        Odoo 14 ใบค่ารักษาพยาบาลเป็นใบการรับ ใช้เลข CP ชุดเดียวกัน (CP-260811-0004)
+        ถ้าแยกตัวนับ เลข CP จะชนกันระหว่างใบค่ารักษาพยาบาลกับใบการรับที่กรอกเอง
         """
         self.ensure_one()
-        Sequence = self.env['ir.sequence'].sudo()
-        sequence = Sequence.search([
-            ('code', '=', MEDICAL_SEQUENCE_CODE), ('company_id', '=', self.id)], limit=1)
-        if not sequence:
-            sequence = Sequence.create({
-                'name': 'ใบสำคัญจ่ายค่ารักษาพยาบาล - %s' % self.name,
-                'code': MEDICAL_SEQUENCE_CODE,
-                'prefix': 'CP-%(y)s%(month)s%(day)s-',
-                'padding': 4,
-                'company_id': self.id,
-            })
-        return sequence
+        return self.env['account.voucher']._npd_general_purchase_sequence(self)

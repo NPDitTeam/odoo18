@@ -32,3 +32,25 @@ class ResUsers(models.Model):
         employees = self.env['employee.salary'].sudo().search(
             [('employee_code', operator, value)])
         return [('id', 'in', employees.mapped('user_id').ids)]
+
+    npd_is_sales = fields.Boolean(
+        string='เป็นพนักงานขาย', compute='_compute_npd_is_sales', search='_search_npd_is_sales',
+        help='อยู่แผนก Sales ในทะเบียนพนักงาน (hr.employee) — ใช้เลือก "Sales ที่ติดต่อ" แบบ Odoo 14\n'
+             'ค้นแบบ sudo เพราะพนักงานอยู่คนละบริษัทกับผู้ที่กำลังกรอกเอกสาร')
+
+    @api.model
+    def _npd_sales_user_ids(self):
+        employees = self.env['hr.employee'].sudo().with_context(active_test=False).search(
+            [('department_id.name', 'ilike', 'Sales'), ('user_id', '!=', False)])
+        return set(employees.mapped('user_id').ids)
+
+    def _compute_npd_is_sales(self):
+        sales_ids = self._npd_sales_user_ids()
+        for user in self:
+            user.npd_is_sales = user.id in sales_ids
+
+    @api.model
+    def _search_npd_is_sales(self, operator, value):
+        ids = list(self._npd_sales_user_ids())
+        positive = (operator == '=') == bool(value)
+        return [('id', 'in' if positive else 'not in', ids)]

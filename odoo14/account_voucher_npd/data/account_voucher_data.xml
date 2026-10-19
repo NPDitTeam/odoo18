@@ -26,4 +26,7 @@
         </record>
 
     </data>
+
+    <!-- เลข CP ของ "การรับ" แยกตามบริษัท (รันทุกครั้งที่อัปเดต — สร้างเฉพาะบริษัทที่ยังไม่มี) -->
+    <function model="account.voucher" name="_npd_setup_general_purchase_sequences"/>
 </odoo>

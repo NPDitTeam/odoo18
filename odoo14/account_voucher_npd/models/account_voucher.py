@@ -3,7 +3,7 @@
 
 from odoo import fields, models, api, _
 from odoo.exceptions import UserError, ValidationError
-from datetime import datetime
+from datetime import date, datetime, timedelta
 import logging
 
 _logger = logging.getLogger(__name__)
@@ -1272,7 +1272,80 @@ class AccountVoucher(models.Model):
         elif self.voucher_type == "sale":
             return self.env["ir.sequence"].with_company(self.company_id).next_by_code("sale.receipt", sequence_date=self.date)  # เลขแยกตามบริษัทของเอกสาร (ไม่ใช่บริษัทที่เลือกบนแถบ)
         elif self.voucher_type == "purchase":
+            if not self.check_show:
+                # การรับ (ไม่ใช่คืนเงินประกัน) ใช้เลข CP แยกตามบริษัท — ชุดเดียวกับใบค่ารักษาพยาบาล
+                return self._npd_general_purchase_sequence(self.company_id).next_by_id(sequence_date=self.date)
             return self.env["ir.sequence"].with_company(self.company_id).next_by_code("purchase.receipt", sequence_date=self.date)  # เลขแยกตามบริษัทของเอกสาร (ไม่ใช่บริษัทที่เลือกบนแถบ)
+
+    # ------------------------------------------------------------------
+    # เลขที่ใบ "การรับ" (CP) แยกจาก "คืนเงินประกันค่าเช่า" (PA)
+    # o14 ทั้งสองเมนูใช้ CP ร่วมกัน; o18 ให้คืนเงินประกันใช้ PA แยกไป
+    # ------------------------------------------------------------------
+    GENERAL_PURCHASE_SEQ_CODE = 'purchase.receipt.general'
+
+    @api.model
+    def _npd_general_purchase_sequence(self, company):
+        """ลำดับ CP ของบริษัท — ไม่มีก็สร้าง (รับช่วงลำดับ CP ของค่ารักษาพยาบาลที่มีอยู่ก่อน
+        เพื่อให้ใบค่ารักษาพยาบาลกับการรับใช้ตัวนับเดียวกัน เลขไม่ชนกัน)"""
+        Sequence = self.env['ir.sequence'].sudo()
+        seq = Sequence.search([('code', '=', self.GENERAL_PURCHASE_SEQ_CODE),
+                               ('company_id', '=', company.id)], limit=1)
+        if seq:
+            return seq
+        name = 'การรับ (ใบจ่ายเงินการจัดซื้อ) - %s' % company.name
+        legacy = Sequence.search([('code', '=', 'hrms.medical.voucher'),
+                                  ('company_id', '=', company.id)], limit=1)
+        if legacy:
+            legacy.write({'code': self.GENERAL_PURCHASE_SEQ_CODE, 'name': name})
+            return legacy
+        return Sequence.create({
+            'name': name,
+            'code': self.GENERAL_PURCHASE_SEQ_CODE,
+            'prefix': 'CP-%(y)s%(month)s%(day)s-',
+            'padding': 4,
+            'company_id': company.id,
+        })
+
+    # รูปแบบเลขแบบ date_range รายวัน (Sub Sequences) เหมือนเอกสารอื่นของ o18 และเลข CP ของ o14
+    # ช่วงละวัน prefix ของช่วง = ปีเดือนวัน (261019) → CP-261019-0001 เริ่ม 0001 ใหม่ทุกวัน
+    NPD_DAILY_SEQ_PREFIX = {
+        GENERAL_PURCHASE_SEQ_CODE: 'CP-%(prefix)s-',
+        'purchase.receipt': 'PA%(prefix)s-',
+    }
+
+    @api.model
+    def _npd_switch_to_daily_range(self, seq, seq_prefix):
+        """เปลี่ยนเป็น date_range รายวันของปีปัจจุบัน — ทำเฉพาะลำดับที่ยังไม่เคยออกเลข"""
+        DateRange = self.env['ir.sequence.date_range'].sudo()
+        if 'prefix' not in DateRange._fields:
+            return False  # ไม่ได้ติดตั้ง npd_generate_subsequences — %(prefix)s ใช้ไม่ได้
+        if seq.use_date_range and seq.prefix == seq_prefix:
+            return False
+        used = seq.number_next_actual > 1 or any(
+            r.number_next_actual > 1 for r in seq.date_range_ids)
+        if used:
+            _logger.warning('ข้ามการเปลี่ยน %s เป็น date_range เพราะออกเลขไปแล้ว', seq.name)
+            return False
+        seq.date_range_ids.unlink()
+        seq.write({'prefix': seq_prefix, 'use_date_range': True, 'implementation': 'no_gap'})
+        year = fields.Date.context_today(self).year
+        day = date(year, 1, 1)
+        vals = []
+        while day.year == year:
+            vals.append({'sequence_id': seq.id, 'date_from': day, 'date_to': day,
+                         'prefix': day.strftime('%y%m%d')})
+            day += timedelta(days=1)
+        DateRange.create(vals)
+        return True
+
+    @api.model
+    def _npd_setup_general_purchase_sequences(self):
+        Sequence = self.env['ir.sequence'].sudo()
+        for company in self.env['res.company'].sudo().search([]):
+            self._npd_general_purchase_sequence(company)
+            for code, seq_prefix in self.NPD_DAILY_SEQ_PREFIX.items():
+                for seq in Sequence.search([('code', '=', code), ('company_id', '=', company.id)]):
+                    self._npd_switch_to_daily_range(seq, seq_prefix)
 
     def account_move_get(self):
         move = {

@@ -65,7 +65,8 @@ class SaleOrder(models.Model):
                 'domain': {'sales_contact': [('id', '=', self.env.user.id)]}  # บังคับเลือกเฉพาะผู้ใช้ที่ล็อกอิน
             }
         elif self.contact_type == 'sale':
-            sales_users = self.env['hr.employee'].search([
+            # sudo: เซลล์อยู่คนละบริษัทกับผู้กรอก และผู้ใช้ฝ่ายขายไม่มีสิทธิ์อ่านทะเบียนพนักงาน
+            sales_users = self.env['hr.employee'].sudo().search([
                 ('department_id.name', '=', 'Sales'),
                 ('user_id', '!=', False)
             ]).mapped('user_id')

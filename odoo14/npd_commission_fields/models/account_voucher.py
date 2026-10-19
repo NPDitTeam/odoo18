@@ -9,7 +9,9 @@
 from odoo import fields, models
 
 # เหมือน Odoo 14 (account_advance_sales_contact) — เลือกได้เฉพาะผู้ใช้ที่เป็นพนักงานแผนก Sales
-SALES_USER_DOMAIN = "[('employee_ids.department_id.name', 'ilike', 'Sales')]"
+# o14 ใช้ employee_ids.department_id ตรง ๆ แต่ o18 อยู่ DB เดียวหลายบริษัท กฎบริษัทของ hr.employee
+# จะซ่อนเซลล์ที่อยู่บริษัทอื่น จึงค้นผ่านฟิลด์ npd_is_sales (sudo) แทน
+SALES_USER_DOMAIN = "[('npd_is_sales', '=', True)]"
 
 
 class AccountVoucher(models.Model):
