@@ -23,7 +23,7 @@
         <field name="search_view_id" ref="account_voucher_npd.view_voucher_filter_vendor"/>
         <field name="view_ids" eval="[(5, 0, 0),
             (0, 0, {'view_mode': 'list', 'view_id': ref('account_voucher_npd.view_voucher_tree_purchase')}),
-            (0, 0, {'view_mode': 'form', 'view_id': ref('account_voucher_npd.view_purchase_receipt_form')})]"/>
+            (0, 0, {'view_mode': 'form', 'view_id': ref('account_voucher_npd.view_purchase_receipt_general_form')})]"/>
         <field name="help" type="html">
             <p class="o_view_nocontent_smiling_face">ยังไม่มีใบสำคัญจ่ายค่ารักษาพยาบาล</p>
             <p>ใบจะถูกสร้างอัตโนมัติเมื่อฝ่ายบุคคลกด "อนุมัติส่งเข้าการรับ"</p>

@@ -8,6 +8,9 @@
 """
 from odoo import fields, models
 
+# เหมือน Odoo 14 (account_advance_sales_contact) — เลือกได้เฉพาะผู้ใช้ที่เป็นพนักงานแผนก Sales
+SALES_USER_DOMAIN = "[('employee_ids.department_id.name', 'ilike', 'Sales')]"
+
 
 class AccountVoucher(models.Model):
     _inherit = 'account.voucher'
@@ -16,12 +19,25 @@ class AccountVoucher(models.Model):
         'res.branch', string='สาขา', copy=True, index=True,
         help='สาขาที่รับผิดชอบรายจ่ายใบนี้ ใช้จัดกลุ่มในรายงานค่าคอม')
 
+    def action_edit_sales_contact(self):
+        """แก้ Sales ที่ติดต่อ / วันที่กำหนดจ่าย หลังลงบัญชีแล้ว (ปุ่มเดียวกับ Odoo 14)"""
+        self.ensure_one()
+        return {
+            'name': 'แก้ไข Sales และ วันที่กำหนดจ่าย',
+            'type': 'ir.actions.act_window',
+            'res_model': 'wizard.edit.sales.contact',
+            'view_mode': 'form',
+            'target': 'new',
+            'context': {'default_voucher_id': self.id},
+        }
+
 
 class AccountVoucherLine(models.Model):
     _inherit = 'account.voucher.line'
 
     sales_contact_id = fields.Many2one(
         'res.users', string='Sales ที่ติดต่อ', copy=True, index=True,
+        domain=SALES_USER_DOMAIN,
         help='เซลล์ที่รับผิดชอบรายการนี้ — ค่าขนส่งจะถูกหักออกจากยอดของเซลล์คนนี้')
 
     payment_date = fields.Date(

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'ฟิลด์ต้นทางของรายงานค่าคอมมิชชั่น',
-    'version': '18.0.1.1.0',
+    'version': '18.0.1.2.0',
     'summary': 'เซลล์ผู้ติดต่อบนใบแจ้งหนี้/ใบสำคัญจ่าย และฟิลด์อื่นที่รายงานค่าคอมต้องใช้',
     'description': """
 ฟิลด์ต้นทางของรายงานค่าคอมมิชชั่น
@@ -33,8 +33,10 @@
         'npd_hrms_base',
     ],
     'data': [
+        'security/ir.model.access.csv',
         'views/account_move_views.xml',
         'views/account_voucher_views.xml',
+        'views/wizard_edit_sales_contact_views.xml',
     ],
     'installable': True,
     'application': False,

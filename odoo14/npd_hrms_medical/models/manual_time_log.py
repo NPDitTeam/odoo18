@@ -397,7 +397,7 @@ class HrManualTimeLog(models.Model):
             'res_model': 'account.voucher',
             'res_id': self.voucher_id.id,
             'view_mode': 'form',
-            'views': [(self.env.ref('account_voucher_npd.view_purchase_receipt_form').id,
+            'views': [(self.env.ref('account_voucher_npd.view_purchase_receipt_general_form').id,
                        'form')],
             'target': 'current',
         }

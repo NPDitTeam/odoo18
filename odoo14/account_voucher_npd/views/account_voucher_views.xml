@@ -580,6 +580,69 @@
 
     <!-- การรับ (ใบสำคัญซื้อทั่วไป) — o14 มีเมนูนี้แยกจากคืนเงินประกันค่าเช่า (account_voucher.menu_action_purchase_receipt)
          ตอนพอร์ตเมนูเดิมถูกเปลี่ยนเป็นคืนเงินประกันค่าเช่า ใบที่ไม่ใช่คืนเงินประกันจึงไม่มีเมนูเปิด — ใช้ฟอร์มเดียวกับ o14 -->
+    <!-- ฟอร์มการรับ: o14 ใช้ฟอร์มของโมดูล account_voucher (ใบจ่ายเงินการจัดซื้อ) แยกจากฟอร์มคืนเงินประกัน
+         o18 มีแค่ฟอร์มคืนเงินประกัน จึงทำ primary view สืบจากฟอร์มนั้น (ส่วนขยายของโมดูลอื่นยังตามมาครบ)
+         แล้วซ่อนส่วนของการคืนเงินประกันทั้งหมด -->
+    <record id="view_purchase_receipt_general_form" model="ir.ui.view">
+        <field name="name">account.voucher.purchase.general.form</field>
+        <field name="model">account.voucher</field>
+        <field name="inherit_id" ref="view_purchase_receipt_form"/>
+        <field name="mode">primary</field>
+        <field name="priority">20</field>
+        <field name="arch" type="xml">
+            <!-- Validate ของ o14 ไม่ต้องมีสิทธิ์การเงินส่วนกลาง (refund_of_rental) -->
+            <xpath expr="//header/button[@name='proforma_voucher']" position="attributes">
+                <attribute name="invisible">state != 'draft'</attribute>
+            </xpath>
+            <xpath expr="//header/button[@name='action_create_payment_from_outstanding']" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+            <xpath expr="//label[@for='number']" position="attributes">
+                <attribute name="string">ใบจ่ายเงินการจัดซื้อ</attribute>
+            </xpath>
+            <xpath expr="//field[@name='no_deduction']" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+            <xpath expr="//field[@name='rental_return_select_id']" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+            <xpath expr="//field[@name='payment_ref_id']" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+            <xpath expr="//field[@name='invoice_ids']" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+            <xpath expr="//field[@name='total_outstanding']" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+            <xpath expr="//label[@for='invoice_ref_ids']/preceding-sibling::separator[1]" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+            <xpath expr="//label[@for='invoice_ref_ids']" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+            <xpath expr="//field[@name='invoice_ref_ids']" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+            <xpath expr="//label[@for='payment_t_ids']" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+            <xpath expr="//field[@name='payment_t_ids']" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+            <xpath expr="//field[@name='outstanding_amount_snapshot']" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+            <!-- จำนวน/ราคาล็อกตามสิทธิ์แก้ใบคืนเงินประกัน — ฟอร์ม o14 ไม่ล็อก -->
+            <xpath expr="//field[@name='line_ids']/list/field[@name='quantity']" position="attributes">
+                <attribute name="readonly">0</attribute>
+            </xpath>
+            <xpath expr="//field[@name='line_ids']/list/field[@name='price_unit']" position="attributes">
+                <attribute name="readonly">0</attribute>
+            </xpath>
+        </field>
+    </record>
+
     <record id="action_purchase_receipt_general" model="ir.actions.act_window">
         <field name="name">การรับ</field>
         <field name="view_mode">list,kanban,form,pivot,graph</field>
@@ -597,7 +660,7 @@
     <record id="action_purchase_receipt_general_form" model="ir.actions.act_window.view">
         <field eval="2" name="sequence"/>
         <field name="view_mode">form</field>
-        <field name="view_id" ref="view_purchase_receipt_form"/>
+        <field name="view_id" ref="view_purchase_receipt_general_form"/>
         <field name="act_window_id" ref="action_purchase_receipt_general"/>
     </record>
     <menuitem id="menu_action_purchase_receipt_general"
