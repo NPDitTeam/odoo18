@@ -9,7 +9,7 @@
         <field name="inherit_id" ref="account_voucher_npd.view_purchase_receipt_general_form"/>
         <field name="arch" type="xml">
             <field name="date" position="after">
-                <field name="branch_id" options="{'no_create': True}"/>
+                <field name="branch_id" options="{'no_create': True}" readonly="state != 'draft'"/>
             </field>
             <!-- สองช่องนี้แก้ได้แม้ลงบัญชีแล้ว (ปุ่มด้านบน) เพราะเป็นข้อมูลประกอบรายงาน
                  ไม่กระทบยอดบัญชี และมักกรอกตกหล่นจนมารู้ตอนปิดค่าคอม -->
@@ -36,6 +36,9 @@
         <field name="model">account.voucher</field>
         <field name="inherit_id" ref="account_voucher_npd.view_sale_receipt_form"/>
         <field name="arch" type="xml">
+            <field name="date" position="after">
+                <field name="branch_id" options="{'no_create': True}" readonly="state != 'draft'"/>
+            </field>
             <xpath expr="//field[@name='line_ids']/list/field[@name='account_id']" position="after">
                 <field name="sales_contact_id"
                        options="{'no_quick_create': True, 'no_create_edit': True, 'no_open': True}"/>

@@ -6,7 +6,7 @@
 * ``sales_contact_id``  จับคู่ค่าขนส่งเข้าเซลล์ (หักออกจากยอดเซลล์)
 * ``payment_date``    รายจ่ายนับตาม "วันที่กำหนดจ่าย" ไม่ใช่วันที่ออกเอกสาร
 """
-from odoo import fields, models
+from odoo import api, fields, models
 
 # เหมือน Odoo 14 (account_advance_sales_contact) — เลือกได้เฉพาะผู้ใช้ที่เป็นพนักงานแผนก Sales
 # o14 ใช้ employee_ids.department_id ตรง ๆ แต่ o18 อยู่ DB เดียวหลายบริษัท กฎบริษัทของ hr.employee
@@ -20,6 +20,17 @@ class AccountVoucher(models.Model):
     branch_id = fields.Many2one(
         'res.branch', string='สาขา', copy=True, index=True,
         help='สาขาที่รับผิดชอบรายจ่ายใบนี้ ใช้จัดกลุ่มในรายงานค่าคอม')
+
+    @api.model
+    def default_get(self, fields_list):
+        """สาขาเริ่มต้น = สาขาใน context หรือสาขาหลักของผู้ใช้ (เหมือน Odoo 14
+        account_invoice_sale_purchase_receipt_branch)"""
+        res = super().default_get(fields_list)
+        if 'branch_id' in fields_list and not res.get('branch_id'):
+            branch_id = self.env.context.get('branch_id') or self.env.user.branch_id.id
+            if branch_id:
+                res['branch_id'] = branch_id
+        return res
 
     def action_edit_sales_contact(self):
         """แก้ Sales ที่ติดต่อ / วันที่กำหนดจ่าย หลังลงบัญชีแล้ว (ปุ่มเดียวกับ Odoo 14)"""
