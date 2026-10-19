@@ -50,21 +50,19 @@ class ResPartnerInherit(models.Model):
         """ผังเงินประกันการเช่าของบริษัทปัจจุบัน
         ใช้บัญชีรายได้ของสินค้า "เงินประกันค่าเช่า" ของบริษัท (o18 ตั้งแยกบริษัทที่เมนูสมุดรายวันออกใบแจ้งหนี้
         ตัวเดียวกับปุ่มรับเงินประกัน และเมนูตรวจสอบเงินประกันการเช่าเบิกเกิน)
-        ถ้าไม่มีค่อยใช้บัญชีที่รหัส o14 = 2133-01 (ผังใหม่ o18 เลขไม่ตรง o14)"""
+
+        ไม่ถอยไปหาด้วยเลขบัญชี 2133-01: ผังใหม่ o18 เลขนี้ของโลจิสติกส์/สตีลเทค คือ
+        "รายได้รับล่วงหน้า" ไม่ใช่เงินประกัน (สองบริษัทนี้ไม่มีเงินประกันการเช่า o14 ก็ไม่ได้ติดตั้งโมดูลนี้)
+        บริษัทที่ไม่มีสินค้าเงินประกัน → ไม่มีผังเงินประกัน ยอดเป็น 0"""
         company = self.env.company
+        Account = self.env['account.account']
         product = self.env['npd.invoice.journal.config'].sudo()._get_insurance_product(company)
         if product:
             prod = product.sudo().with_company(company)
             account = prod.property_account_income_id or prod.categ_id.property_account_income_categ_id
             if account and company in account.company_ids:
                 return account
-        Account = self.env['account.account'].sudo().with_company(company)
-        domain = [('company_ids', 'in', company.id)]
-        if 'npd_o14_code' in Account._fields:
-            found = Account.search(domain + [('npd_o14_code', '=', INSURANCE_ACCOUNT_CODE)])
-            if found:
-                return found
-        return Account.search(domain + [('code', '=', INSURANCE_ACCOUNT_CODE)])
+        return Account
 
     def _get_insurance_deposit_balance(self, exclude_move_ids=None):
         """
