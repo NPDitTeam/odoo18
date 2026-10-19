@@ -117,3 +117,43 @@ class AccountAdvanceRequest(models.Model):
 
     def cancel(self):
         self.state = "cancel"
+
+
+class IrSequenceAdvanceDaily(models.Model):
+    """เลขเอกสารระบบเงินทดรองแบบ Odoo 14: date_range รายวัน แยกบริษัท
+
+    ขอเบิกเงินทดรอง  ADR-261019-0001
+    เงินทดรองจ่าย     AD-261019-0001
+    เคลียร์เงินทดรอง  AD-261019-0001  (o14 ใช้ AD เหมือนกัน แต่คนละตัวนับ)
+    prefix ของแต่ละวันมาจาก date_range (npd_generate_subsequences) — ปีถัดไป
+    npd_sequence_auto_year_range สร้างช่วงให้เองตามรูปแบบเดิม
+    """
+    _inherit = 'ir.sequence'
+
+    NPD_ADVANCE_DAILY_PREFIX = {
+        'account.advance.request': 'ADR-%(prefix)s-',
+        'account.advance': 'AD-%(prefix)s-',
+        'account.advance.clear': 'AD-%(prefix)s-',
+    }
+
+    @api.model
+    def _npd_setup_advance_daily_sequences(self):
+        from datetime import date, timedelta
+        DateRange = self.env['ir.sequence.date_range'].sudo()
+        if 'prefix' not in DateRange._fields:
+            return  # ไม่มี npd_generate_subsequences — %(prefix)s ใช้ไม่ได้
+        year = fields.Date.context_today(self).year
+        for code, seq_prefix in self.NPD_ADVANCE_DAILY_PREFIX.items():
+            for seq in self.sudo().search([('code', '=', code), ('company_id', '!=', False)]):
+                if seq.use_date_range and seq.prefix == seq_prefix:
+                    continue
+                # เลขเดิม (ADR202605-0009) รูปแบบไม่ซ้ำกับแบบใหม่ จึงเปลี่ยนได้แม้เคยออกเลขแล้ว
+                seq.write({'prefix': seq_prefix, 'use_date_range': True})
+                have = set(seq.date_range_ids.mapped('date_from'))
+                day, vals = date(year, 1, 1), []
+                while day.year == year:
+                    if day not in have:
+                        vals.append({'sequence_id': seq.id, 'date_from': day, 'date_to': day,
+                                     'prefix': day.strftime('%y%m%d')})
+                    day += timedelta(days=1)
+                DateRange.create(vals)

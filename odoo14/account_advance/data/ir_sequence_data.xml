@@ -23,4 +23,7 @@
             <field name="company_id" eval="False"/>
         </record>
     </data>
+
+    <!-- เลขแบบ o14 (date_range รายวัน แยกบริษัท) — รันทุกครั้งที่อัปเดต ข้ามลำดับที่เปลี่ยนแล้ว -->
+    <function model="ir.sequence" name="_npd_setup_advance_daily_sequences"/>
 </odoo>
