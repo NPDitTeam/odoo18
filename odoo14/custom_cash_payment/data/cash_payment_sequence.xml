@@ -9,4 +9,7 @@
             <field name="number_increment">1</field>
         </record>
     </data>
+
+    <!-- เลขแยกตามบริษัทแบบ o14 — สร้างลำดับให้ทุกบริษัทตอนอัปเดต (มีแล้วข้าม) -->
+    <function model="cash.payment" name="_npd_setup_company_sequences"/>
 </odoo>

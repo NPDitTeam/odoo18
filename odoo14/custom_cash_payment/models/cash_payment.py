@@ -92,45 +92,41 @@ class CashPayment(models.Model):
         for record in self:
             record.total_amount = sum(record.payment_lines.mapped('amount'))
 
-    def _next_document_number(self):
-        """รันเลขเอกสารแยกตามสาขา (และบริษัท).
-
-        ใช้ ir.sequence หนึ่งชุดต่อ (branch_id, company_id) โดย code = 'cash.payment'
-        ถ้ายังไม่มีจะสร้างให้อัตโนมัติ พร้อม prefix ที่ระบุชื่อสาขา เพื่อให้แต่ละสาขา
-        มีเลขรันของตัวเองเป็นอิสระจากกัน. ถ้าเอกสารไม่มีสาขา จะถอยไปใช้ sequence กลาง.
-        """
-        self.ensure_one()
+    @api.model
+    def _npd_company_sequence(self, company):
         Sequence = self.env['ir.sequence'].sudo()
-        company = self.company_id or self.env.company
-        branch = self.branch_id
-        if not branch:
-            # ไม่มีสาขา -> ใช้ sequence กลาง (branch_id ว่าง) ที่ติดตั้งจาก data
-            base_seq = Sequence.search([
-                ('code', '=', 'cash.payment'),
-                ('branch_id', '=', False),
-            ], limit=1)
-            if base_seq:
-                return base_seq.next_by_id() or "CP/%s/0001" % fields.Date.today().year
-            return Sequence.with_company(company).next_by_code('cash.payment') \
-                or "CP/%s/0001" % fields.Date.today().year
-
         seq = Sequence.search([
             ('code', '=', 'cash.payment'),
-            ('branch_id', '=', branch.id),
-            ('company_id', 'in', (company.id, False)),
+            ('company_id', '=', company.id),
+            ('branch_id', '=', False),
         ], limit=1)
         if not seq:
             seq = Sequence.create({
-                'name': 'Cash Payment - %s' % (branch.name or ''),
+                'name': 'Cash Payment - %s' % company.name,
                 'code': 'cash.payment',
-                'branch_id': branch.id,
                 'company_id': company.id,
-                'prefix': 'CP/' + (branch.name or '') + '/%(year)s/%(month)s/',
+                'prefix': 'CP/%(year)s/%(month)s/%(day)s/',
                 'padding': 4,
-                'number_next': 1,
-                'number_increment': 1,
+                'implementation': 'no_gap',
             })
-        return seq.next_by_id() or "CP/%s/0001" % fields.Date.today().year
+        return seq
+
+    @api.model
+    def _npd_setup_company_sequences(self):
+        for company in self.env['res.company'].sudo().search([]):
+            self._npd_company_sequence(company)
+
+    def _next_document_number(self):
+        """รันเลขเอกสารแยกตามบริษัท แบบ Odoo 14 (CP/2026/10/19/0001)
+
+        o14 แต่ละบริษัทอยู่คนละฐาน มีลำดับ cash.payment ฐานละตัว ไม่แยกสาขา
+        o18 อยู่ฐานเดียว จึงใช้ ir.sequence หนึ่งชุดต่อบริษัท (branch_id ว่าง) — ไม่มีก็สร้าง
+        """
+        self.ensure_one()
+        company = self.company_id or self.env.company
+        seq = self._npd_company_sequence(company)
+        date = getattr(self, 'date', False) or fields.Date.context_today(self)
+        return seq.next_by_id(sequence_date=date) or "CP/%s/0001" % fields.Date.today().year
 
     def action_reset_to_draft(self):
         for rec in self:
