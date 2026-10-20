@@ -42,6 +42,8 @@ class RefundPayment(models.Model):
         ('overpaid_refund', 'คืนเงินโอนเกิน'),
         ('wtax_refund', 'คืนหัก ณ ที่จ่าย'),
         ('rental_difference', 'โอนคืนค่าเช่าส่วนต่าง'),
+        # ลูกค้าโอนผิด/ยกเลิก: ไม่มีใบรับชำระ ระบุลูกค้า/ยอด/วันที่ตามสลิปเอง
+        ('wrong_transfer', 'คืนเงินโอนผิด/ยกเลิก'),
     ], string='ประเภทการโอน', required=True, default='')
 
     show_fleet_refund_button = fields.Boolean(
@@ -84,6 +86,8 @@ class RefundPayment(models.Model):
 
     move_id = fields.Many2one('account.move', string='รายการบันทึกบัญชี', readonly=True)
     reversed_wtax_move_id = fields.Many2one('account.move', string='รายการบันทึกบัญชีกลับขา (Wtax)', readonly=True)
+    refund_out_move_id = fields.Many2one('account.move', string='รายการบันทึกบัญชีโอนคืน', readonly=True,
+                                         copy=False)
 
     payment_ids = fields.Many2many(
         'account.payment',
@@ -189,6 +193,11 @@ class RefundPayment(models.Model):
                     except Exception as e:
                         raise UserError(_("ไม่สามารถเปลี่ยนสถานะเอกสารบัญชีให้เป็นร่างได้: %s" % str(e)))
 
+            if rec.refund_out_move_id and rec.refund_out_move_id.state == 'posted':
+                try:
+                    rec.refund_out_move_id.button_draft()
+                except Exception as e:
+                    raise UserError(_("ไม่สามารถเปลี่ยนสถานะรายการโอนคืนให้เป็นร่างได้: %s" % str(e)))
             rec.state = 'cancelled'
             rec.show_state = False
 
@@ -211,6 +220,11 @@ class RefundPayment(models.Model):
                     except Exception as e:
                         raise UserError(_("ไม่สามารถเปลี่ยนสถานะเอกสารบัญชีให้เป็นร่างได้: %s" % str(e)))
 
+            if rec.refund_out_move_id and rec.refund_out_move_id.state == 'posted':
+                try:
+                    rec.refund_out_move_id.button_draft()
+                except Exception as e:
+                    raise UserError(_("ไม่สามารถเปลี่ยนสถานะรายการโอนคืนให้เป็นร่างได้: %s" % str(e)))
             rec.state = 'draft'
             rec.show_state = False
 
@@ -371,6 +385,14 @@ class RefundPayment(models.Model):
             elif rec.transfer_type == 'rental_difference':
                 debit_account = rec._refund_account('refund_rental_income_account_id')
                 credit_account = rec._refund_account('refund_bank_current_account_id')
+            elif rec.transfer_type == 'wrong_transfer':
+                # 2.1 รับเงิน (วันที่ตรงกับสลิป): Dr เงินฝากออมทรัพย์ / Cr เจ้าหนี้อื่นๆ
+                if not rec.payment_lines:
+                    raise UserError(_("กรุณาเพิ่มรายการ: ลูกค้า ยอดเงิน และวันที่ตามสลิป"))
+                if rec.payment_lines.filtered(lambda l: not l.partner_id):
+                    raise UserError(_("กรุณาระบุลูกค้าในทุกรายการ"))
+                debit_account = rec._refund_account('refund_bank_savings_account_id')
+                credit_account = rec._refund_account('refund_other_payable_account_id')
             else:
                 raise UserError("กรุณาเลือกประเภทการโอน")
 
@@ -427,6 +449,39 @@ class RefundPayment(models.Model):
                 for p in rec.payment_ids:
                     if hasattr(p, 'rental_difference_status'):
                         p.rental_difference_status = 'done'
+
+    def action_refund_wrong_transfer(self):
+        """2.2 โอนคืนเงินที่ลูกค้าโอนผิด/ยกเลิก: Dr เจ้าหนี้อื่นๆ / Cr เงินฝากกระแสรายวัน"""
+        for rec in self:
+            if rec.transfer_type != 'wrong_transfer':
+                raise UserError(_("ปุ่มนี้ใช้ได้เฉพาะกรณีคืนเงินโอนผิด/ยกเลิกเท่านั้น"))
+            if rec.state != 'confirmed':
+                raise UserError(_("ต้องยืนยันรับเงินก่อน จึงจะโอนคืนได้"))
+            if rec.refund_out_move_id:
+                raise UserError(_("เอกสารนี้โอนคืนไปแล้ว: %s") % rec.refund_out_move_id.name)
+            if not rec.env.user.can_confirm_refund_payment:
+                raise UserError(_("คุณไม่มีสิทธิ์โอนคืนเงิน"))
+
+            journal = rec._get_journal()
+            debit_account = rec._refund_account('refund_other_payable_account_id')
+            credit_account = rec._refund_account('refund_bank_current_account_id')
+            lines = []
+            for line in rec.payment_lines:
+                label = 'โอนคืนเงินโอนผิด: %s' % (line.payment_name or rec.name)
+                lines.append((0, 0, {'account_id': debit_account.id, 'name': label,
+                                     'debit': line.amount, 'credit': 0, 'partner_id': line.partner_id.id}))
+                lines.append((0, 0, {'account_id': credit_account.id, 'name': label,
+                                     'debit': 0, 'credit': line.amount, 'partner_id': line.partner_id.id}))
+            move = self.env['account.move'].create({
+                'journal_id': journal.id,
+                'date': fields.Date.context_today(self),
+                'ref': rec.name + '-REFUND',
+                'line_ids': lines,
+            })
+            move.action_post()
+            rec.refund_out_move_id = move.id
+            rec.show_state = True
+            rec.message_post(body='โอนคืนเงินโอนผิด/ยกเลิกสำเร็จ: %s' % move.name)
 
 
 class RefundPaymentLine(models.Model):

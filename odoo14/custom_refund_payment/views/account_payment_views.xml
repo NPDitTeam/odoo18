@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ปุ่ม "คืนเงินโอนเกิน" ในหน้ารับชำระ (ขาบัญชีการเงินข้อ 1.6) -->
+    <record id="view_account_payment_form_overpaid_refund" model="ir.ui.view">
+        <field name="name">account.payment.form.overpaid.refund</field>
+        <field name="model">account.payment</field>
+        <field name="inherit_id" ref="account_payment_invoice.view_account_payment_form_inherit"/>
+        <field name="arch" type="xml">
+            <xpath expr="//header" position="inside">
+                <field name="overpaid_refund_status" invisible="1"/>
+                <button name="action_open_overpaid_refund" type="object" string="คืนเงินโอนเกิน"
+                        class="btn-warning"
+                        invisible="payment_type != 'inbound' or state not in ('in_process', 'paid') or overpaid_refund_status == 'refunded'"/>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>

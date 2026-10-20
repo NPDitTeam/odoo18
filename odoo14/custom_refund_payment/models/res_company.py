@@ -12,8 +12,14 @@ REFUND_ACCOUNT_RULES = {
     'refund_rental_income_account_id': {
         'names': ['รายได้ค่าเช่า', 'รายได้จากการให้เช่า'],
     },
+    # ขาบัญชีที่การเงินกำหนด (ต.ค. 2569): คืนเงินโอนเกิน/คืนหัก ณ ที่จ่าย พักไว้ที่ "หนี้สินอื่นๆ"
+    # บริษัทที่ผังยังไม่มีหนี้สินอื่นๆ (เอส กรุ๊ป) ถอยไปใช้บัญชีพักแบบ o14
     'refund_suspense_account_id': {
-        'names': ['บัญชีพัก'],
+        'names': ['หนี้สินอื่น ๆ', 'หนี้สินอื่นๆ', 'บัญชีพัก'],
+    },
+    # คืนเงินโอนผิด/ยกเลิก: รับเงินเข้า Cr เจ้าหนี้อื่นๆ แล้วโอนคืน Dr เจ้าหนี้อื่นๆ
+    'refund_other_payable_account_id': {
+        'names': ['เจ้าหนี้อื่นๆ', 'เจ้าหนี้อื่น ๆ'],
     },
     # บัญชีธนาคาร ชื่อใน o14 มีเลขบัญชีต่อท้าย (1112-01 / 1113-01 ของแต่ละฐาน)
     # ผังใหม่ยังเป็นชื่อกลาง "เงินฝากกระแสรายวัน - ธ." หลายบัญชี จึงจับเลขบัญชีก่อน
@@ -44,8 +50,11 @@ class ResCompany(models.Model):
         'account.journal', string='สมุดรายวันโอนคืนเงิน',
         help='สมุดที่ใช้ลงบัญชีเอกสารโอนคืนเงินลูกค้า')
     refund_suspense_account_id = fields.Many2one(
-        'account.account', string='บัญชีพัก (คืนเงินโอนเกิน/คืนหัก ณ ที่จ่าย)',
-        help='เดิม o14 คือ 9999-99 บัญชีพัก')
+        'account.account', string='บัญชีหนี้สินอื่นๆ (คืนเงินโอนเกิน/คืนหัก ณ ที่จ่าย)',
+        help='ขาบัญชีที่การเงินกำหนด: หนี้สินอื่นๆ (เดิม o14 ใช้ 9999-99 บัญชีพัก)')
+    refund_other_payable_account_id = fields.Many2one(
+        'account.account', string='บัญชีเจ้าหนี้อื่นๆ (คืนเงินโอนผิด/ยกเลิก)',
+        help='รับเงินที่ลูกค้าโอนผิด/ยกเลิก: Dr เงินฝากออมทรัพย์ / Cr เจ้าหนี้อื่นๆ แล้วโอนคืน')
     refund_bank_current_account_id = fields.Many2one(
         'account.account', string='บัญชีธนาคารจ่ายคืนค่าเช่าส่วนต่าง',
         help='เดิม o14 คือ 1112-01 เงินฝากกระแสรายวัน (ใช้กับค่าเช่าส่วนต่างและการกลับขา)')
@@ -110,4 +119,26 @@ class ResCompany(models.Model):
 
     @api.model
     def _npd_refund_fill_defaults_all(self):
-        self.sudo().search([])._npd_refund_fill_defaults()
+        companies = self.sudo().search([])
+        companies._npd_refund_switch_suspense_to_other_liability()
+        companies._npd_refund_fill_defaults()
+
+    def _npd_refund_switch_suspense_to_other_liability(self):
+        """ย้ายจากบัญชีพักไปหนี้สินอื่นๆ ตามขาบัญชีที่การเงินกำหนด
+        ทำเฉพาะบริษัทที่ยังไม่เคยยืนยันเอกสารคืนเงินโอนเกิน/คืนหัก ณ ที่จ่าย
+        (ใบที่ยืนยันแล้วต้องกลับขาด้วยบัญชีเดิม ห้ามเปลี่ยนกลางทาง)"""
+        Account = self.env['account.account'].sudo()
+        Refund = self.env['refund.payment'].sudo()
+        for company in self:
+            current = company.refund_suspense_account_id
+            if not current or (current.name or '').strip() != 'บัญชีพัก':
+                continue
+            if Refund.search_count([('company_id', '=', company.id), ('state', '=', 'confirmed'),
+                                    ('transfer_type', 'in', ('overpaid_refund', 'wtax_refund'))]):
+                continue
+            accounts = Account.with_company(company).search([('company_ids', 'in', company.id),
+                                                             ('deprecated', '=', False)])
+            target = company._npd_refund_match_account(
+                accounts, {'names': ['หนี้สินอื่น ๆ', 'หนี้สินอื่นๆ']})
+            if target:
+                company.sudo().refund_suspense_account_id = target

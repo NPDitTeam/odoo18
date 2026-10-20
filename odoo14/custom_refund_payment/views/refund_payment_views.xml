@@ -57,6 +57,13 @@
                             confirm="คุณแน่ใจหรือไม่ว่าต้องการกลับขาบัญชีหัก ณ ที่จ่าย?"
                             invisible="transfer_type != 'wtax_refund' or state != 'confirmed' or not can_confirm_cancel or reversed_wtax_move_id"/>
 
+                    <button name="action_refund_wrong_transfer"
+                            string="โอนคืน"
+                            type="object"
+                            class="btn-info"
+                            confirm="ยืนยันโอนคืนเงินให้ลูกค้า?"
+                            invisible="transfer_type != 'wrong_transfer' or state != 'confirmed' or not can_confirm_cancel or refund_out_move_id"/>
+
                     <field name="state" widget="statusbar" statusbar_visible="draft,confirmed,cancelled"/>
                 </header>
 
@@ -85,14 +92,20 @@
                                domain="payment_ids_domain"
                                widget="many2many_tags"
                                options="{'no_create_edit': True}"
+                               invisible="transfer_type == 'wrong_transfer'"
                                readonly="state in ('confirmed', 'cancelled')"/>
                         <field name="move_id" readonly="1"/>
                         <field name="reversed_wtax_move_id" readonly="1" invisible="not reversed_wtax_move_id"/>
+                        <field name="refund_out_move_id" readonly="1" invisible="not refund_out_move_id"/>
                         <field name="date" readonly="state in ('confirmed', 'cancelled') or is_date_readonly"/>
                     </group>
 
                     <notebook>
                         <page string="รายละเอียดการชำระเงิน">
+                            <div class="text-muted mb-2" invisible="transfer_type != 'wrong_transfer'">
+                                คืนเงินโอนผิด/ยกเลิก: เพิ่มรายการเอง ระบุเลขอ้างอิงสลิป ลูกค้า ยอด
+                                และตั้ง "วันที่" ด้านบนให้ตรงกับวันที่ในสลิป
+                            </div>
                             <group string="รายละเอียดรายการที่เลือก">
                                 <field name="payment_lines" readonly="state in ('confirmed', 'cancelled')">
                                     <list editable="bottom">
