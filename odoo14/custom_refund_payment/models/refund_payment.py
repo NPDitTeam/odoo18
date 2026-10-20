@@ -233,11 +233,13 @@ class RefundPayment(models.Model):
         self.payment_lines = [(5, 0, 0)]
         line_vals = []
         for p in self.payment_ids:
+            # o18: ใน onchange ระเบียนเป็น NewId อ่านค่าจากใบจริง (_origin) ไม่งั้นเลขที่/วันที่/ลิงก์ว่าง
+            src = p._origin or p
             line_vals.append((0, 0, {
-                'payment_name': p.name,
-                'payment_id': p.id,
-                'partner_id': p.partner_id.id,
-                'payment_date': p.date,
+                'payment_name': src.name,
+                'payment_id': src.id,
+                'partner_id': src.partner_id.id,
+                'payment_date': src.date,
             }))
         self.payment_lines = line_vals
 
