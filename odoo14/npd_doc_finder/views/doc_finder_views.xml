@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_npd_doc_finder_wizard_form" model="ir.ui.view">
+        <field name="name">npd.doc.finder.wizard.form</field>
+        <field name="model">npd.doc.finder.wizard</field>
+        <field name="arch" type="xml">
+            <form string="ค้นหาเลขเอกสาร">
+                <div class="text-muted mb-2">
+                    พิมพ์เลขเอกสาร (บางส่วนก็ได้) ระบบจะแสดงรายการที่ตรงพร้อมบอกว่ามาจากเมนูไหน
+                    คลิกเลือกแล้วระบบพาไปหน้าเอกสารนั้นทันที (มีมากกว่า 15 รายการ กด "ค้นหาเพิ่มเติม..." ดูทั้งหมด)
+                </div>
+                <field name="doc_id" widget="npd_doc_finder" nolabel="1" class="w-100"
+                       placeholder="เช่น INV-1019, CN-10192600, RV2610, PO0012 ..."
+                       options="{'no_create': True, 'no_open': True}"/>
+                <footer>
+
+                    <button string="ปิด" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_npd_doc_finder_line_tree" model="ir.ui.view">
+        <field name="name">npd.doc.finder.line.tree</field>
+        <field name="model">npd.doc.finder.line</field>
+        <field name="arch" type="xml">
+            <list string="เลขเอกสาร">
+                <field name="name"/>
+                <field name="menu_label"/>
+                <field name="date"/>
+                <field name="partner_id"/>
+                <field name="state"/>
+                <field name="company_id" groups="base.group_multi_company"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_npd_doc_finder_line_search" model="ir.ui.view">
+        <field name="name">npd.doc.finder.line.search</field>
+        <field name="model">npd.doc.finder.line</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="name"/>
+                <field name="menu_label"/>
+                <field name="partner_id"/>
+                <group expand="0" string="จัดกลุ่ม">
+                    <filter name="group_menu" string="เมนู" context="{'group_by': 'menu_label'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_npd_doc_finder" model="ir.actions.act_window">
+        <field name="name">ค้นหาเลขเอกสาร</field>
+        <field name="res_model">npd.doc.finder.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+
+    <menuitem id="menu_npd_doc_finder" name="ค้นหาเลขเอกสาร"
+              parent="account.menu_finance" action="action_npd_doc_finder" sequence="0"/>
+
+</odoo>

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+    <!-- 02:00 เวลาไทย (19:00 UTC): เพิ่มประเภทเอกสารจากโมดูลที่ติดตั้งใหม่เข้าในการค้นหา -->
+    <record id="ir_cron_npd_doc_finder_refresh" model="ir.cron">
+        <field name="name">ค้นหาเลขเอกสาร: อัปเดตประเภทเอกสาร</field>
+        <field name="model_id" ref="model_npd_doc_finder_line"/>
+        <field name="state">code</field>
+        <field name="code">model._cron_refresh_view()</field>
+        <field name="interval_number">1</field>
+        <field name="interval_type">days</field>
+        <field name="nextcall" eval="(DateTime.now() + timedelta(days=1)).strftime('%Y-%m-%d 19:00:00')"/>
+    </record>
+</odoo>
