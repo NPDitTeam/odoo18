@@ -21,6 +21,9 @@ class RefundPayment(models.Model):
             moves = rec.move_id
             if 'reversed_wtax_move_id' in rec._fields:
                 moves |= rec.reversed_wtax_move_id
+            # คืนเงินโอนผิด/ยกเลิก: รายการโอนคืน (custom_refund_payment)
+            if 'refund_out_move_id' in rec._fields:
+                moves |= rec.refund_out_move_id
             moves._npd_cancel_by_reverse(_('ยกเลิก %s') % (rec.name or ''))
             rec.state = 'cancelled'
             rec.show_state = False

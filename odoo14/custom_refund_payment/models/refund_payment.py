@@ -193,11 +193,6 @@ class RefundPayment(models.Model):
                     except Exception as e:
                         raise UserError(_("ไม่สามารถเปลี่ยนสถานะเอกสารบัญชีให้เป็นร่างได้: %s" % str(e)))
 
-            if rec.refund_out_move_id and rec.refund_out_move_id.state == 'posted':
-                try:
-                    rec.refund_out_move_id.button_draft()
-                except Exception as e:
-                    raise UserError(_("ไม่สามารถเปลี่ยนสถานะรายการโอนคืนให้เป็นร่างได้: %s" % str(e)))
             rec.state = 'cancelled'
             rec.show_state = False
 
@@ -220,11 +215,6 @@ class RefundPayment(models.Model):
                     except Exception as e:
                         raise UserError(_("ไม่สามารถเปลี่ยนสถานะเอกสารบัญชีให้เป็นร่างได้: %s" % str(e)))
 
-            if rec.refund_out_move_id and rec.refund_out_move_id.state == 'posted':
-                try:
-                    rec.refund_out_move_id.button_draft()
-                except Exception as e:
-                    raise UserError(_("ไม่สามารถเปลี่ยนสถานะรายการโอนคืนให้เป็นร่างได้: %s" % str(e)))
             rec.state = 'draft'
             rec.show_state = False
 
