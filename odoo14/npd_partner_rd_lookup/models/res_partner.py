@@ -17,7 +17,7 @@ RD_TIMEOUT = 8
 EMPTY = (None, '', '-')
 FIELD_LABELS = {'name': 'ชื่อ', 'branch': 'รหัสสาขา', 'street': 'ที่อยู่', 'street2': 'ตำบล/แขวง',
                 'city': 'อำเภอ/เขต', 'state_id': 'จังหวัด', 'zip': 'รหัสไปรษณีย์', 'country_id': 'ประเทศ'}
-BRANCH_IN_NAME = re.compile(r'สาขา\s*(?:ที่)?\s*(\d{1,5})')
+BRANCH_IN_NAME = re.compile(r'สาขา\s*(?:ที่)?\s*(\d+)')
 
 
 def npd_tin_digits(vat):
@@ -46,20 +46,25 @@ class ResPartner(models.Model):
             '<TIN>%s</TIN><ProvinceCode>0</ProvinceCode><BranchNumber>%d</BranchNumber>'
             '<AmphurCode>0</AmphurCode></Service></soap:Body></soap:Envelope>'
         ) % (RD_NS, tin, int(branch_no or 0))
-        try:
-            resp = requests.post(RD_URL, data=body.encode('utf-8'), timeout=RD_TIMEOUT, headers={
-                'Content-Type': 'text/xml; charset=utf-8', 'SOAPAction': '"%s/Service"' % RD_NS})
-            resp.raise_for_status()
-            result = ET.fromstring(resp.content).find('.//{%s}ServiceResult' % RD_NS)
-        except Exception as e:
-            _logger.warning('npd_partner_rd_lookup: เรียกกรมสรรพากรไม่สำเร็จ %s: %s', tin, e)
-            raise UserError(_('เชื่อมต่อระบบกรมสรรพากรไม่ได้ในขณะนี้ กรุณากรอกข้อมูลเอง หรือลองใหม่ภายหลัง'))
+        result = None
+        for attempt in (1, 2):  # ระบบกรมสะดุดชั่วคราวบ้าง (ทดสอบ 1,200 ราย สะดุด 1 ครั้ง) — ลองใหม่ 1 ครั้ง
+            try:
+                resp = requests.post(RD_URL, data=body.encode('utf-8'), timeout=RD_TIMEOUT, headers={
+                    'Content-Type': 'text/xml; charset=utf-8', 'SOAPAction': '"%s/Service"' % RD_NS})
+                resp.raise_for_status()
+                result = ET.fromstring(resp.content).find('.//{%s}ServiceResult' % RD_NS)
+                break
+            except Exception as e:
+                _logger.warning('npd_partner_rd_lookup: เรียกกรมสรรพากรไม่สำเร็จ %s (ครั้งที่ %s): %s', tin, attempt, e)
+                if attempt == 2:
+                    raise UserError(_('เชื่อมต่อระบบกรมสรรพากรไม่ได้ในขณะนี้ กรุณากรอกข้อมูลเอง หรือลองใหม่ภายหลัง'))
         if result is None:
             return None
         data = {}
         for col in result:
             vals = [a.text for a in col]
-            data[col.tag.split('}')[1]] = vals[0].strip() if vals and vals[0] else None
+            # ข้อมูลกรมมีช่องว่างซ้อน เช่น 'เซอร์วิส  จำกัด' — เหลือช่องเดียว
+            data[col.tag.split('}')[1]] = re.sub(r'\s+', ' ', vals[0]).strip() if vals and vals[0] else None
         if data.get('vmsgerr') or data.get('vName') in EMPTY:
             return None
         return data
@@ -108,6 +113,9 @@ class ResPartner(models.Model):
     def _npd_rd_values(self, data, branch_no):
         title = '' if (data.get('vtitleName') or '-') in EMPTY else data['vtitleName'].strip()
         name = data['vName'].strip()
+        surname = (data.get('vSurname') or '').strip()
+        if surname not in EMPTY:
+            name = '%s %s' % (name, surname)
         if title and not name.startswith(title):
             name = '%s %s' % (title, name)
         if branch_no:
@@ -124,8 +132,11 @@ class ResPartner(models.Model):
         if re.fullmatch(r'\d{1,5}', branch) and int(branch):
             return int(branch)
         m = BRANCH_IN_NAME.search(self.name or '')
-        if m and int(m.group(1)):
-            return int(m.group(1))
+        if m:
+            if len(m.group(1)) > 5:
+                return None  # เลขสาขาในชื่อเกิน 5 หลัก (พิมพ์ผิด) — ไม่เดา ไม่งั้นจะได้ข้อมูลสำนักงานใหญ่มาทับ
+            if int(m.group(1)):
+                return int(m.group(1))
         return int(branch) if re.fullmatch(r'\d{1,5}', branch) else 0
 
     # ---------- หน้าจอ ----------
@@ -141,10 +152,17 @@ class ResPartner(models.Model):
             return {'warning': {'title': _('เลขประจำตัวผู้เสียภาษีไม่ถูกต้อง'),
                                 'message': _('เลข %s ไม่ผ่านการตรวจสอบหลักสุดท้าย กรุณาตรวจสอบอีกครั้ง') % tin}}
         branch_no = self._npd_rd_branch_no()
+        if branch_no is None:
+            return {'warning': {'title': _('รหัสสาขาไม่ชัดเจน'), 'message': _(
+                'ชื่อมีคำว่า สาขา แต่เลขสาขาเกิน 5 หลัก กรุณาใส่รหัสสาขา 5 หลักในช่องสาขา แล้วลองใหม่')}}
         try:
             data = self._npd_rd_query(tin, branch_no)
         except UserError as e:
             return {'warning': {'title': _('ดึงข้อมูลกรมสรรพากรไม่ได้'), 'message': str(e.args[0])}}
+        if not data and branch_no and self._npd_rd_query(tin, 0):
+            return {'warning': {'title': _('ไม่พบสาขานี้ในระบบกรมสรรพากร'), 'message': _(
+                'พบเลข %s (สำนักงานใหญ่) แต่ไม่พบสาขา %05d — สาขาอาจปิด/ยกเลิกแล้ว หรือรหัสสาขาไม่ถูกต้อง\n'
+                'ระบบไม่ได้เติมข้อมูลให้ กรุณาตรวจรหัสสาขา') % (tin, branch_no)}}
         if not data:
             return {'warning': {'title': _('ไม่พบในระบบกรมสรรพากร'), 'message': _(
                 'ไม่พบผู้ประกอบการจดทะเบียน VAT เลข %s สาขา %05d\n(อาจไม่ได้จด VAT หรือรหัสสาขาไม่ถูกต้อง) กรุณากรอกข้อมูลเอง')
@@ -188,7 +206,12 @@ class ResPartner(models.Model):
         if not npd_tin_valid(tin):
             raise UserError(_('เลขประจำตัวผู้เสียภาษีไม่ถูกต้อง (ต้องเป็นเลข 13 หลักที่ถูกต้อง)'))
         branch_no = self._npd_rd_branch_no()
+        if branch_no is None:
+            raise UserError(_('ชื่อมีคำว่า สาขา แต่เลขสาขาเกิน 5 หลัก กรุณาใส่รหัสสาขา 5 หลักในช่องสาขา แล้วลองใหม่'))
         data = self._npd_rd_query(tin, branch_no)
+        if not data and branch_no and self._npd_rd_query(tin, 0):
+            raise UserError(_('พบเลข %s (สำนักงานใหญ่) แต่ไม่พบสาขา %05d ในระบบกรมสรรพากร — สาขาอาจปิด/ยกเลิกแล้ว '
+                              'หรือรหัสสาขาไม่ถูกต้อง ไม่ได้แก้ไขข้อมูล') % (tin, branch_no))
         if not data:
             raise UserError(_('ไม่พบผู้ประกอบการจดทะเบียน VAT เลข %s สาขา %05d ในระบบกรมสรรพากร') % (tin, branch_no))
         vals = {k: v for k, v in self._npd_rd_values(data, branch_no).items() if k in self._fields and v}

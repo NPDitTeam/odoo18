@@ -33,7 +33,7 @@ class NpdPartnerRdUpdateWizard(models.TransientModel):
         partners = self.partner_ids.filtered(lambda p: p.is_company and p.vat)
         if len(partners) > MAX_PARTNERS:
             raise UserError(_('เลือกได้ครั้งละไม่เกิน %s ราย (เลือกมา %s ราย)') % (MAX_PARTNERS, len(partners)))
-        updated, not_found, invalid, failed, name_dup = [], [], [], [], []
+        updated, not_found, invalid, failed, name_dup, branch_gone, branch_unclear = [], [], [], [], [], [], []
         skipped = len(self.partner_ids) - len(partners)
         for partner in partners:
             tin = npd_tin_digits(partner.vat)
@@ -41,13 +41,19 @@ class NpdPartnerRdUpdateWizard(models.TransientModel):
                 invalid.append(partner.display_name)
                 continue
             branch_no = partner._npd_rd_branch_no()
+            if branch_no is None:
+                branch_unclear.append(partner.display_name)
+                continue
             try:
                 data = partner._npd_rd_query(tin, branch_no)
             except UserError:
                 failed.append(partner.display_name)
                 continue
             if not data:
-                not_found.append(partner.display_name)
+                if branch_no and partner._npd_rd_query(tin, 0):
+                    branch_gone.append('%s (สาขา %05d)' % (partner.display_name, branch_no))
+                else:
+                    not_found.append(partner.display_name)
                 continue
             vals = partner._npd_rd_values(data, branch_no)
             write = {}
@@ -83,6 +89,12 @@ class NpdPartnerRdUpdateWizard(models.TransientModel):
         if not_found:
             lines.append(_('ไม่พบในกรมสรรพากร %s ราย (อาจไม่ได้จด VAT หรือรหัสสาขาไม่ตรง): %s')
                          % (len(not_found), ', '.join(not_found[:20])))
+        if branch_unclear:
+            lines.append(_('รหัสสาขาไม่ชัดเจน %s ราย (เลขสาขาในชื่อเกิน 5 หลัก) ไม่ได้แก้ ให้ใส่รหัสสาขาก่อน: %s')
+                         % (len(branch_unclear), ', '.join(branch_unclear[:20])))
+        if branch_gone:
+            lines.append(_('ไม่พบสาขา %s ราย (มีสำนักงานใหญ่ แต่สาขาอาจปิดแล้ว/รหัสสาขาผิด) ไม่ได้แก้: %s')
+                         % (len(branch_gone), ', '.join(branch_gone[:20])))
         if name_dup:
             lines.append(_('ไม่ได้เปลี่ยนชื่อ %s ราย เพราะชื่อจากกรมซ้ำกับผู้ติดต่อรายอื่น (อาจเป็นรายซ้ำ ควรตรวจ): %s')
                          % (len(name_dup), ', '.join(name_dup[:20])))
