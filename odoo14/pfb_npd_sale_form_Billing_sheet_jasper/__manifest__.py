@@ -1,6 +1,6 @@
 {
     'name': 'ใบแจ้งหนี้/ใบวางบิล (Jasper)',
-    'version': '18.0.1.0.1',
+    'version': '18.0.1.0.2',
     'summary': 'Jasper Report for Invoice / Billing Note',
     'description': """
         Invoice / Billing Note report using JasperReports.

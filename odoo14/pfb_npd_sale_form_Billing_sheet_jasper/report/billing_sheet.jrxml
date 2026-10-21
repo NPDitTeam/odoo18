@@ -266,7 +266,7 @@
 			<textField isBlankWhenNull="true">
 				<reportElement style="Thai" x="475" y="2" width="84" height="18" uuid="c7b1a000-0000-4000-8000-000000000305"/>
 				<textElement textAlignment="Right"><font fontName="Sarabun" size="13"/></textElement>
-				<textFieldExpression><![CDATA[$F{Amount_Total-amount_total} != null && !$F{Amount_Total-amount_total}.isEmpty() ? String.format("%,.2f", Double.parseDouble($F{Amount_Total-amount_total})) : "0.00"]]></textFieldExpression>
+				<textFieldExpression><![CDATA[$F{Amount_Untaxed-amount_untaxed} != null && !$F{Amount_Untaxed-amount_untaxed}.isEmpty() ? String.format("%,.2f", Double.parseDouble($F{Amount_Untaxed-amount_untaxed})) : "0.00"]]></textFieldExpression>
 			</textField>
 		</band>
 	</detail>
