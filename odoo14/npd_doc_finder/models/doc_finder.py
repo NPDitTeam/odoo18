@@ -148,6 +148,12 @@ SOURCES = [
         SELECT q.id, 'purchase.request', 'purchase_request', q.name, 'ใบขอซื้อ (PR)',
                {date}, NULL::int, q.company_id, q.state::varchar
         FROM purchase_request q WHERE q.name IS NOT NULL AND q.name <> '/'"""),
+    (14, 'account_payment', ['move_id', 'payment_type', 'name'], """
+        SELECT p.id, 'account.payment', CASE WHEN p.payment_type = 'inbound' THEN 'pay_in' ELSE 'pay_out' END,
+               m.name, CASE WHEN p.payment_type = 'inbound' THEN 'รับชำระเงิน' ELSE 'จ่ายชำระเงิน' END,
+               m.date, m.partner_id, m.company_id, m.state::varchar
+        FROM account_payment p JOIN account_move m ON m.id = p.move_id
+        WHERE m.name IS NOT NULL AND m.name NOT IN ('/', '') AND m.name IS DISTINCT FROM p.name"""),
 ]
 
 # วันที่ของตารางที่ชื่อคอลัมน์ไม่เหมือนกัน: ลองตามลำดับ
