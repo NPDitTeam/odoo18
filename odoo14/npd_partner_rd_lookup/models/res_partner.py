@@ -15,7 +15,7 @@ RD_URL = 'https://rdws.rd.go.th/serviceRD3/vatserviceRD3.asmx'
 RD_NS = 'https://rdws.rd.go.th/serviceRD3/vatserviceRD3'
 RD_TIMEOUT = 8
 EMPTY = (None, '', '-')
-FIELD_LABELS = {'name': 'ชื่อ', 'branch': 'รหัสสาขา', 'street': 'ที่อยู่', 'street2': 'ตำบล/แขวง',
+FIELD_LABELS = {'name': 'ชื่อ', 'vat': 'เลขประจำตัวผู้เสียภาษี', 'branch': 'รหัสสาขา', 'street': 'ที่อยู่', 'street2': 'ตำบล/แขวง',
                 'city': 'อำเภอ/เขต', 'state_id': 'จังหวัด', 'zip': 'รหัสไปรษณีย์', 'country_id': 'ประเทศ'}
 BRANCH_IN_NAME = re.compile(r'สาขา\s*(?:ที่)?\s*(\d+)')
 
@@ -139,62 +139,50 @@ class ResPartner(models.Model):
                 return int(m.group(1))
         return int(branch) if re.fullmatch(r'\d{1,5}', branch) else 0
 
-    # ---------- หน้าจอ ----------
-    @api.onchange('vat', 'branch')
-    def _onchange_npd_rd_lookup(self):
-        """บริษัท: กรอกเลขผู้เสียภาษี (และรหัสสาขา) แล้วดึงข้อมูลจากกรมสรรพากรมาเติมช่องที่ยังว่าง"""
-        if not self.is_company or not self.vat:
-            return
-        tin = npd_tin_digits(self.vat)
-        if len(tin) != 13:
-            return
+    # ---------- popup ค้นหา (เรียกจากปุ่มในฟอร์ม ไม่ต้องบันทึกผู้ติดต่อก่อน) ----------
+    @api.model
+    def npd_rd_lookup_values(self, vat, branch=False, partner_id=False):
+        """คืนผลค้นหาให้ popup: {ok, message, values (เขียนลงฟอร์ม), display (แสดงให้ดู), warning}"""
+        tin = npd_tin_digits(vat)
         if not npd_tin_valid(tin):
-            return {'warning': {'title': _('เลขประจำตัวผู้เสียภาษีไม่ถูกต้อง'),
-                                'message': _('เลข %s ไม่ผ่านการตรวจสอบหลักสุดท้าย กรุณาตรวจสอบอีกครั้ง') % tin}}
-        branch_no = self._npd_rd_branch_no()
-        if branch_no is None:
-            return {'warning': {'title': _('รหัสสาขาไม่ชัดเจน'), 'message': _(
-                'ชื่อมีคำว่า สาขา แต่เลขสาขาเกิน 5 หลัก กรุณาใส่รหัสสาขา 5 หลักในช่องสาขา แล้วลองใหม่')}}
+            return {'ok': False, 'message': _('เลขประจำตัวผู้เสียภาษีไม่ถูกต้อง (ต้องเป็นเลข 13 หลัก และหลักสุดท้ายถูกต้อง)')}
+        branch = (branch or '').strip()
+        if branch and not re.fullmatch(r'\d{1,5}', branch):
+            return {'ok': False, 'message': _('รหัสสาขาต้องเป็นตัวเลขไม่เกิน 5 หลัก เช่น 00000 (สำนักงานใหญ่), 00004')}
+        branch_no = int(branch) if branch else 0
         try:
             data = self._npd_rd_query(tin, branch_no)
         except UserError as e:
-            return {'warning': {'title': _('ดึงข้อมูลกรมสรรพากรไม่ได้'), 'message': str(e.args[0])}}
+            return {'ok': False, 'message': e.args[0]}
         if not data and branch_no and self._npd_rd_query(tin, 0):
-            return {'warning': {'title': _('ไม่พบสาขานี้ในระบบกรมสรรพากร'), 'message': _(
-                'พบเลข %s (สำนักงานใหญ่) แต่ไม่พบสาขา %05d — สาขาอาจปิด/ยกเลิกแล้ว หรือรหัสสาขาไม่ถูกต้อง\n'
-                'ระบบไม่ได้เติมข้อมูลให้ กรุณาตรวจรหัสสาขา') % (tin, branch_no)}}
+            return {'ok': False, 'message': _(
+                'พบเลข %s (สำนักงานใหญ่) แต่ไม่พบสาขา %05d — สาขาอาจปิด/ยกเลิกแล้ว หรือรหัสสาขาไม่ถูกต้อง') % (tin, branch_no)}
         if not data:
-            return {'warning': {'title': _('ไม่พบในระบบกรมสรรพากร'), 'message': _(
-                'ไม่พบผู้ประกอบการจดทะเบียน VAT เลข %s สาขา %05d\n(อาจไม่ได้จด VAT หรือรหัสสาขาไม่ถูกต้อง) กรุณากรอกข้อมูลเอง')
-                % (tin, branch_no)}}
+            return {'ok': False, 'message': _(
+                'ไม่พบผู้ประกอบการจดทะเบียน VAT เลข %s สาขา %05d (อาจไม่ได้จด VAT หรือรหัสสาขาไม่ถูกต้อง)') % (tin, branch_no)}
         vals = self._npd_rd_values(data, branch_no)
-        filled = []
-        for fname, value in vals.items():
-            if fname not in self._fields or not value:
+        vals['vat'] = tin
+        values, display = {}, []
+        for fname in ('name', 'vat', 'branch', 'street', 'street2', 'city', 'state_id', 'zip', 'country_id'):
+            if fname not in self._fields or not vals.get(fname):
                 continue
-            current = self[fname]
-            if fname == 'branch' and current and current.strip() not in ('', '00000'):
-                continue
-            if not current or (fname == 'branch' and current.strip() == '00000'):
-                self[fname] = value
-                filled.append(FIELD_LABELS.get(fname, self._fields[fname].string))
-        dup = self._npd_rd_duplicate(tin, branch_no)
-        msg = []
-        if filled:
-            msg.append(_('เติมข้อมูลจากกรมสรรพากรแล้ว: %s') % ', '.join(filled))
-        if not filled:
-            msg.append(_('พบในกรมสรรพากร: %s (ช่องที่กรอกไว้แล้วไม่ได้เปลี่ยน กดปุ่ม "ดึงข้อมูลกรมสรรพากร" ถ้าต้องการใช้ข้อมูลกรมทั้งหมด)')
-                       % vals['name'])
-        if dup:
-            msg.append(_('คำเตือน: มีผู้ติดต่อเลขนี้และสาขานี้อยู่แล้ว: %s') % ', '.join(dup.mapped('display_name')[:3]))
-        if dup or not filled:
-            return {'warning': {'title': _('ข้อมูลกรมสรรพากร'), 'message': '\n'.join(msg)}}
+            field = self._fields[fname]
+            if field.type == 'many2one':
+                rec = self.env[field.comodel_name].browse(vals[fname])
+                values[fname] = [rec.id, rec.display_name]
+                display.append([FIELD_LABELS.get(fname, field.string), rec.display_name])
+            else:
+                values[fname] = vals[fname]
+                display.append([FIELD_LABELS.get(fname, field.string), vals[fname]])
+        dup = self._npd_rd_duplicate(tin, branch_no, partner_id)
+        warning = _('มีผู้ติดต่อเลขนี้และสาขานี้อยู่แล้ว: %s') % ', '.join(dup.mapped('display_name')[:3]) if dup else False
+        return {'ok': True, 'values': values, 'display': display, 'warning': warning}
 
-    def _npd_rd_duplicate(self, tin, branch_no):
+    def _npd_rd_duplicate(self, tin, branch_no, exclude_id=False):
         domain = [('is_company', '=', True), ('vat', 'like', tin)]
         if 'branch' in self._fields:
             domain.append(('branch', 'in', ['%05d' % branch_no] + (['', False] if not branch_no else [])))
-        own = self._origin.id if self._origin else False
+        own = exclude_id or (self._origin.id if self and self._origin else False)
         if own:
             domain.append(('id', '!=', own))
         return self.sudo().search(domain, limit=3)

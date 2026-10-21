@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <t t-name="npd_partner_rd_lookup.RdLookupWidget">
+        <button type="button" class="btn btn-link p-0 o_npd_rd_btn" t-on-click="open">
+            <i class="fa fa-search me-1"/>ค้นหาข้อมูลจากกรมสรรพากร
+        </button>
+    </t>
+
+    <t t-name="npd_partner_rd_lookup.RdLookupDialog">
+        <Dialog title="'ค้นหาข้อมูลบริษัทจากกรมสรรพากร'" size="'md'">
+            <div class="row g-2 align-items-end">
+                <div class="col-7">
+                    <label class="form-label">เลขประจำตัวผู้เสียภาษี (13 หลัก)</label>
+                    <input type="text" class="form-control o_npd_rd_vat" maxlength="20"
+                           t-model="state.vat" t-on-keydown="onKeydown"/>
+                </div>
+                <div class="col-3">
+                    <label class="form-label">รหัสสาขา</label>
+                    <input type="text" class="form-control o_npd_rd_branch" maxlength="5" placeholder="00000"
+                           t-model="state.branch" t-on-keydown="onKeydown"/>
+                </div>
+                <div class="col-2">
+                    <button type="button" class="btn btn-secondary w-100 o_npd_rd_search" t-on-click="search">ค้นหา</button>
+                </div>
+            </div>
+            <div class="text-muted small mt-1">สำนักงานใหญ่ใช้ 00000 · ข้อมูลจากระบบตรวจสอบผู้ประกอบการจดทะเบียน VAT ของกรมสรรพากร</div>
+            <div class="mt-3 o_npd_rd_result">
+                <div t-if="state.loading" class="text-muted"><i class="fa fa-spinner fa-spin me-1"/>กำลังค้นหา...</div>
+                <t t-elif="state.result">
+                    <div t-if="!state.result.ok" class="alert alert-warning mb-0" t-esc="state.result.message"/>
+                    <t t-else="">
+                        <table class="table table-sm mb-2">
+                            <tr t-foreach="state.result.display" t-as="row" t-key="row_index">
+                                <th class="w-25" t-esc="row[0]"/>
+                                <td t-esc="row[1]"/>
+                            </tr>
+                        </table>
+                        <div t-if="state.result.warning" class="alert alert-warning mb-0" t-esc="state.result.warning"/>
+                    </t>
+                </t>
+            </div>
+            <t t-set-slot="footer">
+                <button class="btn btn-primary o_npd_rd_apply" t-att-disabled="!(state.result and state.result.ok)"
+                        t-on-click="apply">ใช้ข้อมูลนี้</button>
+                <button class="btn btn-secondary" t-on-click="props.close">ปิด</button>
+            </t>
+        </Dialog>
+    </t>
+
+</templates>
