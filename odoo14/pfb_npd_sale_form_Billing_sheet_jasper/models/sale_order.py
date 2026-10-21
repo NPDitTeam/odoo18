@@ -189,8 +189,9 @@ class SaleOrder(models.Model):
     def _compute_jasper_bs_amounts(self):
         for rec in self:
             days = rec.pfb_date_of_rent or 0
-            # o14: amount_total / pfb_date_of_rent (ถ้าวันเป็น 0 o14 จะพัง)
-            rec.jasper_bs_rent_per_day = rec.amount_total / days if days else rec.amount_total
+            # ค่าเช่าต่อวัน = ค่าเช่าก่อนภาษี / จำนวนวัน (ผู้ใช้สั่ง 21 ต.ค. 2569 ให้ตรงกับใบเสนอราคา/ใบกำกับการเช่า;
+            # เดิม o14 ใช้ amount_total รวม VAT)
+            rec.jasper_bs_rent_per_day = rec.amount_untaxed / days if days else rec.amount_untaxed
             rec.jasper_bs_deposit = 0.0 if rec.deposit_ref else (rec.pfb_amount or 0.0)
             rec.jasper_bs_wht_base = _money(rec.amount_untaxed)
             rec.jasper_bs_wht_amount = rec._bs_wht_amount()
