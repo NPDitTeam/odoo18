@@ -1,6 +1,6 @@
 {
     'name': 'ใบกำกับการเช่า (Jasper)',
-    'version': '18.0.1.0.0',
+    'version': '18.0.1.0.1',
     'summary': 'Jasper Report for Rental Invoice Form',
     'description': """
         Rental Invoice Report using JasperReports.

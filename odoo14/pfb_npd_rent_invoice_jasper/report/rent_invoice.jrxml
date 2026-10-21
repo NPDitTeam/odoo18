@@ -90,6 +90,9 @@
 	<field name="Rental_Per_Day-jasper_rental_per_day" class="java.lang.String">
 		<fieldDescription><![CDATA[Rental_Per_Day-jasper_rental_per_day]]></fieldDescription>
 	</field>
+	<field name="Rental_Per_Day_Untaxed-jasper_rental_per_day_untaxed" class="java.lang.String">
+		<fieldDescription><![CDATA[Rental_Per_Day_Untaxed-jasper_rental_per_day_untaxed]]></fieldDescription>
+	</field>
 	<field name="Grand_Total-jasper_grand_total" class="java.lang.String">
 		<fieldDescription><![CDATA[Grand_Total-jasper_grand_total]]></fieldDescription>
 	</field>
@@ -552,18 +555,18 @@
 				<textFieldExpression><![CDATA[$F{Insurance_Net-pfb_amount} != null && !$F{Insurance_Net-pfb_amount}.isEmpty() ? String.format("%,.2f", Double.parseDouble($F{Insurance_Net-pfb_amount})) : "0.00"]]></textFieldExpression>
 			</textField>
 			<staticText>
-				<reportElement style="Thai" x="330" y="105" width="140" height="22" uuid="b1c2d3e4-0005-0001-0001-000000000018"/>
+				<reportElement style="Thai" x="330" y="105" width="160" height="22" uuid="b1c2d3e4-0005-0001-0001-000000000018"/>
 				<textElement textAlignment="Right" verticalAlignment="Middle">
 					<font fontName="Sarabun" size="14" isBold="true"/>
 				</textElement>
-				<text><![CDATA[ค่าเช่าต่อวันรวม(vat) :]]></text>
+				<text><![CDATA[ค่าเช่าต่อวันไม่รวม(vat) :]]></text>
 			</staticText>
 			<textField isBlankWhenNull="true">
-				<reportElement style="Thai" x="460" y="105" width="105" height="22" uuid="b1c2d3e4-0005-0001-0001-000000000019"/>
+				<reportElement style="Thai" x="490" y="105" width="75" height="22" uuid="b1c2d3e4-0005-0001-0001-000000000019"/>
 				<textElement textAlignment="Right" verticalAlignment="Middle">
 					<font fontName="Sarabun" size="14" isBold="true"/>
 				</textElement>
-				<textFieldExpression><![CDATA[$F{Rental_Per_Day-jasper_rental_per_day} != null && !$F{Rental_Per_Day-jasper_rental_per_day}.isEmpty() ? String.format("%,.2f", Double.parseDouble($F{Rental_Per_Day-jasper_rental_per_day})) : "0.00"]]></textFieldExpression>
+				<textFieldExpression><![CDATA[$F{Rental_Per_Day_Untaxed-jasper_rental_per_day_untaxed} != null && !$F{Rental_Per_Day_Untaxed-jasper_rental_per_day_untaxed}.isEmpty() ? String.format("%,.2f", Double.parseDouble($F{Rental_Per_Day_Untaxed-jasper_rental_per_day_untaxed})) : "0.00"]]></textFieldExpression>
 			</textField>
 			<rectangle radius="8">
 				<reportElement mode="Transparent" x="0" y="131" width="565" height="26" uuid="b1c2d3e4-0005-0001-0001-000000000020"/>
