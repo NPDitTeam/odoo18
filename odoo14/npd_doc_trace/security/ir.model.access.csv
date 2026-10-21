@@ -1,0 +1,3 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_npd_doc_trace_wizard,npd.doc.trace.wizard,model_npd_doc_trace_wizard,base.group_user,1,1,1,1
+access_npd_doc_trace_line,npd.doc.trace.line,model_npd_doc_trace_line,base.group_user,1,1,1,1
