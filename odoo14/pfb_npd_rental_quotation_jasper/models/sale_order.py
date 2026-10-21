@@ -85,6 +85,12 @@ class SaleOrder(models.Model):
         string='Rental Per Day',
         compute='_compute_jasper_rental_per_day',
     )
+    # ใบเสนอราคาเช่า: ค่าเช่าต่อวันคิดจาก "ค่าเช่า" (ก่อน VAT) — แยกฟิลด์ เพราะ jasper_rental_per_day
+    # ใช้ร่วมกับใบกำกับการเช่า (ยังคิดจากยอดรวม VAT ตาม o14)
+    jasper_rental_per_day_untaxed = fields.Float(
+        string='Rental Per Day (untaxed)',
+        compute='_compute_jasper_rental_per_day_untaxed',
+    )
     jasper_grand_total = fields.Float(
         string='Grand Total (Rental + Insurance)',
         compute='_compute_jasper_grand_total',
@@ -110,6 +116,11 @@ class SaleOrder(models.Model):
     def _compute_jasper_rental_per_day(self):
         for rec in self:
             rec.jasper_rental_per_day = (rec.amount_total or 0.0) / (rec.pfb_date_of_rent or 1)
+
+    @api.depends('amount_untaxed', 'pfb_date_of_rent')
+    def _compute_jasper_rental_per_day_untaxed(self):
+        for rec in self:
+            rec.jasper_rental_per_day_untaxed = (rec.amount_untaxed or 0.0) / (rec.pfb_date_of_rent or 1)
 
     @api.depends('amount_total', 'pfb_amount')
     def _compute_jasper_grand_total(self):

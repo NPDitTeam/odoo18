@@ -1,6 +1,6 @@
 {
     'name': 'ใบเสนอราคาเช่าสินค้า (Jasper)',
-    'version': '18.0.1.0.0',
+    'version': '18.0.1.0.1',
     'summary': 'Jasper Report for Rental Quotation Form',
     'description': """
         Rental Quotation Report using JasperReports.
