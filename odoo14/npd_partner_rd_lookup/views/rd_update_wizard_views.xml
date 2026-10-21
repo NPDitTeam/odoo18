@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_npd_partner_rd_update_wizard_form" model="ir.ui.view">
+        <field name="name">npd.partner.rd.update.wizard.form</field>
+        <field name="model">npd.partner.rd.update.wizard</field>
+        <field name="arch" type="xml">
+            <form string="อัปเดตข้อมูลจากกรมสรรพากร">
+                <field name="state" invisible="1"/>
+                <div invisible="state != 'draft'">
+                    <p class="text-muted">
+                        ใช้เลขประจำตัวผู้เสียภาษีและรหัสสาขาของผู้ติดต่อที่เลือก ดึงข้อมูลจากระบบตรวจสอบผู้ประกอบการ VAT ของกรมสรรพากร
+                        แล้วอัปเดตตามที่เลือกด้านล่าง (เฉพาะผู้ติดต่อประเภทบริษัทที่มีเลขผู้เสียภาษี) ทุกรายบันทึกในประวัติ
+                    </p>
+                    <group>
+                        <field name="update_name"/>
+                        <field name="update_address"/>
+                        <field name="update_branch"/>
+                    </group>
+                    <field name="partner_ids" readonly="1">
+                        <list>
+                            <field name="display_name"/>
+                            <field name="vat"/>
+                            <field name="city"/>
+                        </list>
+                    </field>
+                </div>
+                <field name="result" nolabel="1" invisible="state != 'done'"/>
+                <footer>
+                    <button name="action_update" type="object" string="อัปเดต" class="btn-primary"
+                            invisible="state != 'draft'"/>
+                    <button string="ปิด" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_npd_partner_rd_update_wizard" model="ir.actions.act_window">
+        <field name="name">อัปเดตข้อมูลจากกรมสรรพากร</field>
+        <field name="res_model">npd.partner.rd.update.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+        <field name="binding_model_id" ref="base.model_res_partner"/>
+        <field name="binding_view_types">list,form</field>
+        <field name="groups_id" eval="[(4, ref('base.group_partner_manager'))]"/>
+    </record>
+</odoo>

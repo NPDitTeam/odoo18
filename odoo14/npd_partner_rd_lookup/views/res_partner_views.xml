@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_partner_form_npd_rd_lookup" model="ir.ui.view">
+        <field name="name">res.partner.form.npd.rd.lookup</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="base.view_partner_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='vat']" position="after">
+                <button name="action_npd_rd_fill" type="object" string="ดึงข้อมูลกรมสรรพากร"
+                        class="oe_link" icon="fa-download" colspan="2"
+                        invisible="not is_company or not vat"
+                        confirm="ใช้ข้อมูลจากกรมสรรพากรทับ ชื่อ สาขา และที่อยู่ ทั้งหมด?"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>
