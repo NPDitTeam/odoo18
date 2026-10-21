@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_npd_bill_line_partner_wizard_form" model="ir.ui.view">
+        <field name="name">npd.bill.line.partner.wizard.form</field>
+        <field name="model">npd.bill.line.partner.wizard</field>
+        <field name="arch" type="xml">
+            <form string="ระบุ Partner รายบรรทัด">
+                <div class="text-muted mb-2">
+                    สำหรับบิลที่ลงบันทึกแล้ว: เลือก Partner (ผู้ขาย/ผู้ออกใบกำกับภาษีจริง) ของแต่ละบรรทัด
+                    ระบบใส่ให้ในแท็บ Tax Invoice อัตโนมัติ แก้เองได้ ไม่กระทบรายการบัญชีและยอดเงิน
+                </div>
+                <group>
+                    <field name="move_id"/>
+                    <field name="vendor_id"/>
+                </group>
+                <separator string="รายการจากใบแจ้งหนี้"/>
+                <field name="line_ids" nolabel="1">
+                    <list editable="bottom" create="0" delete="0">
+                        <field name="move_line_id" column_invisible="1" force_save="1"/>
+                        <field name="product_id" force_save="1"/>
+                        <field name="name" force_save="1"/>
+                        <field name="price_total" force_save="1"/>
+                        <field name="partner_id" domain="[('parent_id', '=', False)]" options="{'no_create_edit': True}"/>
+                    </list>
+                </field>
+                <separator string="Tax Invoice"/>
+                <field name="tax_ids" nolabel="1">
+                    <list editable="bottom" create="0" delete="0">
+                        <field name="tax_invoice_id" column_invisible="1" force_save="1"/>
+                        <field name="partner_id" domain="[('parent_id', '=', False)]" options="{'no_create_edit': True}"/>
+                        <field name="tax_invoice_number" force_save="1"/>
+                        <field name="tax_invoice_date" force_save="1"/>
+                        <field name="tax_base_amount" force_save="1"/>
+                        <field name="balance" force_save="1"/>
+                    </list>
+                </field>
+                <footer>
+                    <button name="action_apply" type="object" string="บันทึก" class="btn-primary"/>
+                    <button string="ยกเลิก" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_npd_bill_line_partner_wizard" model="ir.actions.act_window">
+        <field name="name">ระบุ Partner รายบรรทัด</field>
+        <field name="res_model">npd.bill.line.partner.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+        <field name="context">{'dialog_size': 'extra-large'}</field>
+    </record>
+
+    <record id="view_move_form_npd_line_partner_button" model="ir.ui.view">
+        <field name="name">account.move.form.npd.line.partner.button</field>
+        <field name="model">account.move</field>
+        <field name="inherit_id" ref="account.view_move_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//header" position="inside">
+                <button name="%(action_npd_bill_line_partner_wizard)d" type="action" string="ระบุ Partner รายบรรทัด"
+                        context="{'active_id': id}"
+                        invisible="state != 'posted' or move_type not in ('in_invoice', 'in_refund', 'in_receipt')"/>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>

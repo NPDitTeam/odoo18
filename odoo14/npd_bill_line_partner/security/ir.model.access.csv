@@ -1,0 +1,4 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_npd_bill_line_partner_wizard,npd.bill.line.partner.wizard,model_npd_bill_line_partner_wizard,account.group_account_invoice,1,1,1,1
+access_npd_bill_line_partner_wizard_line,npd.bill.line.partner.wizard.line,model_npd_bill_line_partner_wizard_line,account.group_account_invoice,1,1,1,1
+access_npd_bill_line_partner_wizard_tax,npd.bill.line.partner.wizard.tax,model_npd_bill_line_partner_wizard_tax,account.group_account_invoice,1,1,1,1
