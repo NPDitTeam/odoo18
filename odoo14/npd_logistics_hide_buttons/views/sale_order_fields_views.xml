@@ -38,7 +38,8 @@
                 <attribute name="invisible">is_npd_logistics_company</attribute>
             </xpath>
 
-            <!-- สรุปท้ายใบ: ค่าประกัน / ส่วนลดเช่า / รวม VAT -->
+            <!-- สรุปท้ายใบ: ค่าประกัน / ส่วนลดเช่า
+                 (ไม่แตะ npd_amount_total_vat — ฟอร์มบน prod ยังไม่มีช่องนี้ xpath จะพังทั้งโมดูล) -->
             <xpath expr="//field[@name='total_rental_discount']" position="attributes">
                 <attribute name="invisible">is_npd_logistics_company</attribute>
             </xpath>
@@ -58,9 +59,6 @@
                 <attribute name="invisible">is_npd_logistics_company</attribute>
             </xpath>
             <xpath expr="//label[@for='pfb_amount']" position="attributes">
-                <attribute name="invisible">is_npd_logistics_company</attribute>
-            </xpath>
-            <xpath expr="//field[@name='npd_amount_total_vat']" position="attributes">
                 <attribute name="invisible">is_npd_logistics_company</attribute>
             </xpath>
 
