@@ -101,10 +101,12 @@ class VehicleBookingStartCheckWizard(models.TransientModel):
     all_checked = fields.Boolean(compute='_compute_progress')
     progress_text = fields.Char(compute='_compute_progress')
 
-    @api.depends('line_ids.check_state')
+    @api.depends('line_ids.check_state', 'booking_id.shipment_purpose')
     def _compute_progress(self):
         for wiz in self:
-            lines = wiz.line_ids
+            # เที่ยวช่วยสาขา: หน้าจอซ่อนรายการสินค้า (ใช้หมายเหตุ+AI แทน) จึงไม่นับรายการ
+            # ไม่งั้นติด "ยังตรวจไม่ครบ 0 จาก 1" โดยที่คนขับไม่มีทางกดตรวจได้
+            lines = wiz.line_ids if wiz.booking_id.shipment_purpose != 'help_branch' else wiz.line_ids.browse()
             checked = lines.filtered(lambda l: l.check_state != 'pending')
             mismatch = lines.filtered(lambda l: l.check_state == 'incorrect')
             wiz.total_count = len(lines)
@@ -133,7 +135,11 @@ class VehicleBookingStartCheckWizard(models.TransientModel):
         # ดึงผลตรวจเดิมมาด้วย เผื่อคนขับตรวจผ่านแอปไปแล้วบางส่วน
         # จะได้ไม่ต้องตรวจซ้ำและเห็นว่าใครตรวจอะไรไว้
         lines = []
-        for line in booking.transport_order_id.order_line_ids:
+        # เที่ยวช่วยสาขาไม่มีของให้ตรวจ (ถึงใบขนส่งจะมีรายการติดมา) — ไม่ดึงรายการ
+        order_lines = booking.transport_order_id.order_line_ids
+        if booking.shipment_purpose == 'help_branch':
+            order_lines = order_lines.browse()
+        for line in order_lines:
             lines.append((0, 0, {
                 'order_line_id': line.id,
                 'product_name': line.product_name_o14 or '',
@@ -220,7 +226,7 @@ class VehicleBookingStartCheckWizard(models.TransientModel):
                 done=self.checked_count, total=self.total_count))
 
         driver = booking.driver_id
-        for line in self.line_ids:
+        for line in (self.line_ids if booking.shipment_purpose != 'help_branch' else self.line_ids.browse()):
             real = line.order_line_id
             if not real:
                 continue
