@@ -1,12 +1,22 @@
 # -*- coding: utf-8 -*-
 {
-    'name': 'NPD Logistics ซ่อนปุ่มใบสั่งขาย',
-    'version': '18.0.1.0.0',
-    'summary': 'บริษัท เอ็นพีดี โลจิสติกส์ ไม่ใช้ปุ่ม "ยกเลิกรายการอ้างอิงบิลเช่า" และ "ตัดสต๊อก Auto" — ซ่อนในใบสั่งขาย',
+    'name': 'NPD Logistics ใบสั่งขายแบบ o14',
+    'version': '18.0.1.1.0',
+    'summary': 'บริษัท เอ็นพีดี โลจิสติกส์: ซ่อนปุ่มงานเช่า และปิดสูตรเช่าของบริษัทอื่น (จำนวน×วัน, ค่าประกัน, ราคารวม VAT) ให้ลงข้อมูลตรงแบบ o14',
+    'description': """
+ใบสั่งขายของ บริษัท เอ็นพีดี โลจิสติกส์ จำกัด
+* ซ่อนปุ่ม "ยกเลิกรายการอ้างอิงบิลเช่า" และ "ตัดสต๊อก Auto"
+* ไม่คำนวณจำนวน = Quantity Rent x วันเช่า
+* ไม่ดึงค่าประกันอัตโนมัติ
+* ไม่ใช้ราคารวม VAT แบบใบเช่า (ใช้ราคาที่กรอกตรง)
+
+บริษัทอื่นทำงานเหมือนเดิม
+    """,
     'category': 'Sales',
     'author': 'NPD',
     'license': 'LGPL-3',
-    'depends': ['transport_sync', 'so_auto_stock_cut', 'sale_order_cancel_wizard'],
+    'depends': ['transport_sync', 'so_auto_stock_cut', 'sale_order_cancel_wizard',
+                'pfb_npd_all_customs', 'npd_rent_price_round'],
     'data': [
         'views/sale_order_views.xml',
     ],
