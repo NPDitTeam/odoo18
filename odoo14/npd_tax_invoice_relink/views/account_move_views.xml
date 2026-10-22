@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_move_form_npd_tax_invoice_relink" model="ir.ui.view">
+        <field name="name">account.move.form.npd.tax.invoice.relink</field>
+        <field name="model">account.move</field>
+        <field name="inherit_id" ref="account.view_move_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//header" position="inside">
+                <field name="npd_taxinv_orphan_count" invisible="1"/>
+                <button name="action_npd_relink_tax_invoices" type="object"
+                        string="ผูกใบกำกับภาษี" class="btn-warning"
+                        invisible="state != 'draft' or npd_taxinv_orphan_count == 0"
+                        help="แถวในแท็บ Tax Invoice ที่เพิ่มด้วย 'เพิ่มรายการ' ยังไม่ได้ผูกกับบรรทัดภาษี (ทำให้ยืนยันแล้วขึ้น Invalid Tax Amount)"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>
