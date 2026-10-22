@@ -334,7 +334,17 @@ class SaleOrderLine(models.Model):
         default='product'
     )
     second_uom_id = fields.Many2one('uom.uom', string="Secondary UOM")
-    second_uom_qty = fields.Float('Secondary Qty')
+    # น้ำหนัก/หน่วย ดึงจากน้ำหนักสินค้าที่ฝั่งเซิร์ฟเวอร์ (22 ต.ค. 2569)
+    # เดิมตั้งค่าใน onchange อย่างเดียว แต่ช่องนี้ไม่อยู่ในตารางรายการ → Odoo 18 ทิ้งค่าตอนบันทึก
+    # ทุกบรรทัดเลยเป็น 0 แล้ว "น้ำหนักรวม" (Quantity Rent × น้ำหนัก/หน่วย) เป็น 0 ตาม
+    # readonly=False: ค่าที่ส่งมาตอนสร้าง (เช่นดึงข้อมูลเช่าจากบริษัทอื่น) ยังใช้ค่านั้น
+    second_uom_qty = fields.Float(
+        'Secondary Qty', compute='_compute_second_uom_qty', store=True, readonly=False)
+
+    @api.depends('product_id')
+    def _compute_second_uom_qty(self):
+        for line in self:
+            line.second_uom_qty = line.product_id.weight if line.product_id else 0.0
 
     is_manual_qty = fields.Boolean(
         string="Manual Quantity Set",
