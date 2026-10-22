@@ -76,6 +76,13 @@
             <xpath expr="//field[@name='customer_channel_id']" position="attributes">
                 <attribute name="required">not is_npd_logistics_company</attribute>
             </xpath>
+            <!-- Order อนุมัติ / สถานะการตรวจสอบ (ผู้ใช้สั่ง 22 ต.ค. 2569 ไม่ได้ใช้) -->
+            <xpath expr="//field[@name='approver_id'][not(ancestor::field[@name='order_line'])]" position="attributes">
+                <attribute name="invisible">is_npd_logistics_company</attribute>
+            </xpath>
+            <xpath expr="//field[@name='state_sale'][not(ancestor::field[@name='order_line'])]" position="attributes">
+                <attribute name="invisible">is_npd_logistics_company</attribute>
+            </xpath>
             <!-- รายการราคา: ช่องถูกซ่อนสำหรับ Logistics อยู่แล้ว (sale_api_rent) แต่ป้ายยังโผล่ว่าง ๆ -->
             <xpath expr="//label[@for='pricelist_id']" position="attributes">
                 <attribute name="invisible">is_npd_logistics_company</attribute>
