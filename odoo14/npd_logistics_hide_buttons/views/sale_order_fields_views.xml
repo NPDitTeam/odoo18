@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ใบสั่งขายของ บริษัท เอ็นพีดี โลจิสติกส์ จำกัด: ซ่อนช่องที่เป็นสูตรงานเช่า/ช่องที่บริษัทอื่นต้องกรอก
+         (o14 ฐานโลจิสติกส์ไม่มีช่องเหล่านี้) ผู้ใช้สั่ง 22 ต.ค. 2569
+         ทุกเงื่อนไขต่อท้ายด้วย "or is_npd_logistics_company" — บริษัทอื่นเหมือนเดิมทุกอย่าง -->
+    <record id="view_order_form_logistics_hide_fields" model="ir.ui.view">
+        <field name="name">sale.order.form.logistics.hide.fields</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_order_form"/>
+        <field name="priority">99</field>
+        <field name="arch" type="xml">
+            <!-- หัวใบ -->
+            <xpath expr="//field[@name='pfb_so_type']" position="attributes">
+                <attribute name="invisible">is_npd_logistics_company</attribute>
+            </xpath>
+            <xpath expr="//field[@name='pfb_objective_id']" position="attributes">
+                <attribute name="invisible">pfb_so_type == 'sale' or is_npd_logistics_company</attribute>
+            </xpath>
+            <xpath expr="//field[@name='pfb_date_of_rent'][not(ancestor::field[@name='order_line'])]" position="attributes">
+                <attribute name="invisible">pfb_so_type == 'sale' or is_npd_logistics_company</attribute>
+            </xpath>
+            <xpath expr="//field[@name='deposit_return_status']" position="attributes">
+                <attribute name="invisible">is_npd_logistics_company</attribute>
+            </xpath>
+            <xpath expr="//field[@name='renewal_bill_status']" position="attributes">
+                <attribute name="invisible">is_npd_logistics_company</attribute>
+            </xpath>
+            <xpath expr="//field[@name='delivery_note_no']" position="attributes">
+                <attribute name="invisible">is_npd_logistics_company</attribute>
+            </xpath>
+            <xpath expr="//field[@name='use_new_calc']" position="attributes">
+                <attribute name="invisible">is_npd_logistics_company</attribute>
+            </xpath>
+            <xpath expr="//field[@name='use_baan_kheaw']" position="attributes">
+                <attribute name="invisible">is_npd_logistics_company</attribute>
+            </xpath>
+            <xpath expr="//field[@name='vat_from_total']" position="attributes">
+                <attribute name="invisible">is_npd_logistics_company</attribute>
+            </xpath>
+
+            <!-- สรุปท้ายใบ: ค่าประกัน / ส่วนลดเช่า / รวม VAT -->
+            <xpath expr="//field[@name='total_rental_discount']" position="attributes">
+                <attribute name="invisible">is_npd_logistics_company</attribute>
+            </xpath>
+            <xpath expr="//field[@name='pfb_amount_insurance'][not(@invisible='1')]" position="attributes">
+                <attribute name="invisible">is_npd_logistics_company</attribute>
+            </xpath>
+            <xpath expr="//field[@name='pfb_dis_amount_insurance']" position="attributes">
+                <attribute name="invisible">is_npd_logistics_company</attribute>
+            </xpath>
+            <xpath expr="//field[@name='pfb_insurance_min']" position="attributes">
+                <attribute name="invisible">is_npd_logistics_company</attribute>
+            </xpath>
+            <xpath expr="//field[@name='pfb_required_insurance_premium']" position="attributes">
+                <attribute name="invisible">is_npd_logistics_company</attribute>
+            </xpath>
+            <xpath expr="//field[@name='pfb_amount']" position="attributes">
+                <attribute name="invisible">is_npd_logistics_company</attribute>
+            </xpath>
+            <xpath expr="//label[@for='pfb_amount']" position="attributes">
+                <attribute name="invisible">is_npd_logistics_company</attribute>
+            </xpath>
+            <xpath expr="//field[@name='npd_amount_total_vat']" position="attributes">
+                <attribute name="invisible">is_npd_logistics_company</attribute>
+            </xpath>
+
+            <!-- คอลัมน์รายการสินค้า -->
+            <xpath expr="//field[@name='order_line']/list/field[@name='pfb_quantity']" position="attributes">
+                <!-- Logistics กรอก Quantity Rent เป็นจำนวนของเสมอ (แบบ o14) -->
+                <attribute name="invisible">not pfb_so_rent_ok and not parent.is_npd_logistics_company</attribute>
+            </xpath>
+            <xpath expr="//field[@name='order_line']/list/field[@name='pfb_date_of_rent']" position="attributes">
+                <attribute name="column_invisible">parent.is_npd_logistics_company</attribute>
+            </xpath>
+            <xpath expr="//field[@name='order_line']/list/field[@name='pfb_insurance_price']" position="attributes">
+                <attribute name="column_invisible">parent.is_npd_logistics_company</attribute>
+            </xpath>
+            <!-- เหลือช่อง "ราคาต่อหน่วย" ช่องเดียว (Logistics ไม่ถอด VAT ค่าเท่ากับราคาที่กรอก) -->
+            <xpath expr="//field[@name='order_line']/list/field[@name='price_unit']" position="attributes">
+                <attribute name="column_invisible">parent.is_npd_logistics_company</attribute>
+            </xpath>
+        </field>
+    </record>
+</odoo>

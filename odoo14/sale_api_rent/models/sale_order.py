@@ -214,11 +214,12 @@ class SaleOrder(models.Model):
             self.order_line.unlink()
 
         for sol in sol_data:
+            # ไม่ก็อป product_uom_qty: ต้นทางเป็นใบเช่า ค่านี้คือ จำนวน x วันเช่า (เช่น 364 x 30 = 10,920)
+            # o14 ฐานโลจิสติกส์ก็อปแค่ Quantity Rent จำนวนปล่อยค่าเริ่มต้น 1 (ผู้ใช้สั่ง 22 ต.ค. 2569 ให้เหมือน o14)
             self.env["sale.order.line"].create({
                 "order_id": self.id,
                 "product_id": sol.product_id.id,
                 "name": sol.name,
-                "product_uom_qty": sol.product_uom_qty,
                 "pfb_quantity": sol.pfb_quantity,
                 "second_uom_qty": sol.second_uom_qty,
                 "total_weight": sol.total_weight,

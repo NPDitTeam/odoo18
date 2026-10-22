@@ -6,7 +6,7 @@ o14 ฐาน Logistics ไม่ได้ติดตั้งสูตรง�
   1. จำนวน = Quantity Rent × วันเช่า (pfb_npd_all_customs) — เคยทำให้ 364 กลายเป็น 10,920
   2. ค่าประกันดึงจากรายการราคาอัตโนมัติ (pfb_npd_all_customs)
   3. ราคารวม VAT ×1.07 แบบใบเช่า (npd_rent_price_round) — ใช้ราคาที่พิมพ์ตรง ๆ
-ภาษีที่ pfb_npd_all_customs ตั้งตามประเภทใบไม่แตะ (ผู้ใช้ไม่ได้สั่ง)
+  4. ภาษีรายบรรทัด — o14 ฐานโลจิสติกส์ใบสั่งขายไม่มีภาษีเลย (ตรวจ 60 วัน: สินค้าเช่า 4,059 / ค่าขนส่ง 157 บรรทัด)
 """
 from odoo import api, models
 
@@ -44,6 +44,24 @@ class SaleOrderLine(models.Model):
                 line.product_uom_qty = qty
             # 2) ไม่มีค่าประกันในงานขนส่ง
             line.pfb_insurance_price = 0.0
+            # 4) สูตรเดิมตั้งภาษีตามประเภทใบ ("ภาษีขายยังไม่ถึงกำหนด Vat 7%" กลุ่ม TAX 1%)
+            #    o14 ฐานโลจิสติกส์ใบสั่งขายไม่มีภาษีทุกบรรทัด
+            if line.tax_id:
+                line.tax_id = False
+
+    # 4) ภาษี: ใบสั่งขาย Logistics ไม่มีภาษี (ผู้ใช้สั่ง 22 ต.ค. 2569 "TAX 1% ไม่คิด") ----------
+    @api.depends('product_id', 'company_id')
+    def _compute_tax_id(self):
+        others = self.filtered(lambda l: not _is_logistics(l))
+        super(SaleOrderLine, others)._compute_tax_id()
+        for line in self - others:
+            line.tax_id = False
+
+    @api.onchange('tax_id')
+    def _onchange_tax_id_block(self):
+        if _is_logistics(self):
+            return None
+        return super()._onchange_tax_id_block()
 
     @api.model_create_multi
     def create(self, vals_list):
