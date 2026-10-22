@@ -17,6 +17,13 @@
             <xpath expr="//header/button[@name='action_open_cancel_wizard']" position="attributes">
                 <attribute name="invisible">tr_is_npd_logistics</attribute>
             </xpath>
+            <!-- ส่งโดยอีเมล: โลจิสติกส์ไม่ส่งใบเสนอราคา/ใบสั่งขายให้ลูกค้า (ผู้ใช้สั่ง 22 ต.ค. 2569) -->
+            <xpath expr="//header/button[@id='send_by_email_primary']" position="attributes">
+                <attribute name="invisible">state != 'draft' or tr_is_npd_logistics</attribute>
+            </xpath>
+            <xpath expr="//header/button[@id='send_by_email']" position="attributes">
+                <attribute name="invisible">state not in ('sent', 'sale') or tr_is_npd_logistics</attribute>
+            </xpath>
         </field>
     </record>
 </odoo>

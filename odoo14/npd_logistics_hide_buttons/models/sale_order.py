@@ -6,7 +6,8 @@
 - ช่องทางลูกค้า (แท็บการตลาด): o14 ฐานโลจิสติกส์ไม่มีช่องนี้
   ดึงข้อมูลการเช่ามา = ใช้ของใบต้นทาง · ไม่มี = "พนักงานสาขาติดต่อ"
 """
-from odoo import api, models
+from odoo import _, api, models
+from odoo.exceptions import UserError
 
 from odoo.addons.transport_sync.models.sale_order import NPD_LOGISTICS_REGISTRY
 
@@ -39,6 +40,22 @@ class SaleOrder(models.Model):
             company = Company.browse(vals['company_id']) if vals.get('company_id') else self.env.company
             self._npd_logistics_fill_required(vals, company)
         return super().create(vals_list)
+
+    def action_confirm(self):
+        # กรอกบริษัทต้นทาง + เลข SO แล้วกดยืนยันเลย โดยไม่ได้กด "ดึงข้อมูลการเช่า" → ได้ใบเปล่า
+        # (SO-261022-0022, 22 ต.ค. 2569) และยืนยันแล้วปุ่มดึงถูกซ่อน → ดึงให้เองก่อนยืนยัน
+        for order in self:
+            if order.company_id.company_registry != NPD_LOGISTICS_REGISTRY:
+                continue
+            purpose = getattr(order, 'shipment_purpose', False)
+            if purpose in ('branch_transfer', 'help_branch'):
+                continue
+            if not order.order_line.filtered('product_id') and order.source_company_id and order.so_number:
+                order._fetch_rental_data(order.source_company_id, order.so_number.strip())
+            if purpose in ('to_customer', 'from_customer') and not order.order_line.filtered('product_id'):
+                raise UserError(_('ใบสั่งขาย %s ยังไม่มีรายการสินค้า กรุณากด "ดึงข้อมูลการเช่า" ก่อนยืนยัน')
+                                % order.name)
+        return super().action_confirm()
 
     def _fetch_rental_data(self, source_company, so_number):
         res = super()._fetch_rental_data(source_company, so_number)
