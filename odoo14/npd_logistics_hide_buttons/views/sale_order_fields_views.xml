@@ -126,6 +126,18 @@
             <xpath expr="//field[@name='order_line']/list/field[@name='pfb_insurance_price']" position="attributes">
                 <attribute name="column_invisible">parent.is_npd_logistics_company</attribute>
             </xpath>
+            <!-- ให้ตรง o14: ค่าประกันอยู่หลังหน่วยวัด (product_uom ตัวแรกคือตัวซ่อนของ groups="!uom.group_uom") -->
+            <xpath expr="//field[@name='order_line']/list/field[@name='product_uom'][last()]" position="after">
+                <xpath expr="//field[@name='order_line']/list/field[@name='pfb_insurance_price']" position="move"/>
+            </xpath>
+            <!-- o14 มีคอลัมน์น้ำหนักรวมเฉพาะ NPD_Logistics_New (บริษัทเช่าไม่มี) -->
+            <xpath expr="//field[@name='order_line']/list/field[@name='total_weight']" position="attributes">
+                <attribute name="column_invisible">not parent.is_npd_logistics_company</attribute>
+            </xpath>
+            <!-- o14 ซ่อน Disc.% ทุกบริษัท (ใช้ประเภทส่วนลด/ปุ่มส่วนลดแทน) -->
+            <xpath expr="//field[@name='order_line']/list/field[@name='discount']" position="attributes">
+                <attribute name="column_invisible">1</attribute>
+            </xpath>
             <!-- เหลือช่อง "ราคาต่อหน่วย" ช่องเดียว (Logistics ไม่ถอด VAT ค่าเท่ากับราคาที่กรอก) -->
             <xpath expr="//field[@name='order_line']/list/field[@name='price_unit']" position="attributes">
                 <attribute name="column_invisible">parent.is_npd_logistics_company</attribute>
