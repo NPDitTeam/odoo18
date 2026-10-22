@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ใบสั่งขายของ บริษัท เอ็นพีดี โลจิสติกส์ จำกัด: ซ่อนปุ่มที่ใช้กับงานเช่าของบริษัทอื่น
+         (tr_is_npd_logistics มาจาก transport_sync — เช็คจากเลขทะเบียนบริษัท) -->
+    <record id="view_order_form_logistics_hide_buttons" model="ir.ui.view">
+        <field name="name">sale.order.form.logistics.hide.buttons</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_order_form"/>
+        <field name="priority">99</field>
+        <field name="arch" type="xml">
+            <xpath expr="//header" position="inside">
+                <field name="tr_is_npd_logistics" invisible="1"/>
+            </xpath>
+            <xpath expr="//header/button[@name='action_auto_validate_delivery']" position="attributes">
+                <attribute name="invisible">state != 'sale' or sc_has_cut or tr_is_npd_logistics</attribute>
+            </xpath>
+            <xpath expr="//header/button[@name='action_open_cancel_wizard']" position="attributes">
+                <attribute name="invisible">tr_is_npd_logistics</attribute>
+            </xpath>
+        </field>
+    </record>
+</odoo>

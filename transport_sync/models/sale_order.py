@@ -49,7 +49,11 @@ class SaleOrder(models.Model):
                 'product_name': line.product_id.name if line.product_id else None,
                 'product_code': line.product_id.default_code if line.product_id else None,
                 'description': line.name or '',
-                'quantity': line.product_uom_qty,
+                # จำนวนของจริง = Quantity Rent ถ้ามี ไม่มีค่อยใช้ product_uom_qty (กฎเดียวกับ api_transport ของ o14)
+                # - ใบเช่า: product_uom_qty = Quantity Rent × จำนวนวัน ไม่ใช่จำนวนของ
+                # - ใบ "ขาย" ของ Logistics: Quantity Rent = จำนวนของ, product_uom_qty = 1 (หน่วยคิดค่าขนส่ง)
+                # - ใบขายที่ไม่ได้กรอก Quantity Rent (0) → ใช้ product_uom_qty
+                'quantity': _g(line, 'pfb_quantity', 0) or line.product_uom_qty,
                 'uom': line.product_uom.name if line.product_uom else None,
                 'price_unit': line.price_unit,
                 'discount': line.discount,
@@ -230,6 +234,26 @@ class SaleOrder(models.Model):
         self.filtered('transport_sent').write({'transport_sent': False})
         return res
 
+    def _check_transport_quantities(self):
+        """ห้ามส่งสินค้าที่ไม่รู้จำนวนจริงไปให้คนขับ (ผู้ใช้สั่ง 22 ต.ค. 2569)
+
+        - ใบเช่าที่ไม่ได้กรอก Quantity Rent: product_uom_qty คือ จำนวน × วัน ถ้าส่งไปคนขับจะเห็นเกินจริงหลายเท่า
+        - สินค้าที่จำนวนออกมาเป็น 0
+        บรรทัดค่าบริการ (ชื่อขึ้นต้น "ค่า" เช่น ค่าขนส่ง) และบรรทัดหัวข้อ/หมายเหตุ ไม่ตรวจ
+        """
+        self.ensure_one()
+        goods = self.order_line.filtered(
+            lambda l: l.product_id and not l.display_type
+            and not (l.product_id.name or '').startswith('ค่า'))
+        missing_rent = goods.filtered(
+            lambda l: _g(self, 'pfb_so_type') == 'rent' and not _g(l, 'pfb_quantity', 0))
+        zero = goods.filtered(lambda l: not (_g(l, 'pfb_quantity', 0) or l.product_uom_qty))
+        if missing_rent or zero:
+            names = '\n'.join('- %s' % l.product_id.display_name for l in (missing_rent | zero)[:15])
+            head = (_('ใบเช่ายังไม่ได้ระบุ Quantity Rent (จำนวนสินค้าที่เช่า) กรุณาระบุก่อนส่งไปยังระบบขนส่ง')
+                    if missing_rent else _('จำนวนสินค้ายังไม่ได้ระบุ กรุณาระบุก่อนส่งไปยังระบบขนส่ง'))
+            raise UserError('%s\n\n%s' % (head, names))
+
     def action_send_to_transport(self):
         """ ส่งข้อมูลใบสั่งขายไปยังระบบขนส่งโดยตรง (ไม่ผ่าน API เพราะ db เดียวกัน)
             ส่งซ้ำ = อัพเดททับ record เดิม """
@@ -239,6 +263,7 @@ class SaleOrder(models.Model):
             raise UserError(_("❌ ส่งได้เฉพาะบริษัท เอ็นพีดี โลจิสติกส์ จำกัด เท่านั้น"))
         if self.state != 'sale':
             raise UserError(_("❌ ส่งได้เฉพาะใบที่เป็นคำสั่งขายแล้ว"))
+        self._check_transport_quantities()
 
         payload = self._prepare_transport_payload()
         transport, status = self.env['transport.order'].sudo()._receive_from_sale_order(payload)
