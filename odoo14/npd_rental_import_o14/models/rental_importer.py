@@ -40,6 +40,7 @@ ORDER_FIELDS = [
     'use_new_calc', 'use_baan_kheaw', 'vat_from_total',
     'x_round_enabled', 'x_round_step', 'x_round_method',
     'amount_untaxed', 'amount_tax', 'amount_total', 'note', 'client_order_ref',
+    'commitment_date',
 ]
 
 LINE_FIELDS = [
@@ -49,6 +50,8 @@ LINE_FIELDS = [
     'price_subtotal', 'price_tax', 'price_total',
     # จำนวนเช่า (Quantity Rent) — ใช้ตัดสต็อก/คืนสินค้า ไม่ยกมา = ตัดสต็อกไม่ได้
     'pfb_quantity',
+    # คอลัมน์แบบ o14 (npd_sale_line_discount_o14): ส่วนลดรายบรรทัด + น้ำหนักต่อหน่วย
+    'discount_type_selection', 'discount_method', 'discount_amount', 'second_uom_qty',
 ]
 
 # ช่องลูกค้าที่คัดลอกจาก o14 เมื่อฝั่ง 18 ยังไม่มีลูกค้ารายนี้

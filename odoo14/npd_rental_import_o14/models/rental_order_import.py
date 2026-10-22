@@ -34,6 +34,8 @@ COPY_AS_IS = [
     'total_rental_discount', 'deposit_return_status',
     'use_new_calc', 'use_baan_kheaw', 'vat_from_total',
     'client_order_ref',
+    # วันที่จัดส่งสินค้า (คอลัมน์รายการดึงจากหัวใบ)
+    'commitment_date',
 ]
 
 
@@ -169,6 +171,14 @@ class RentalOrderImport(models.Model):
             'tax_id': [(6, 0, self._map_taxes(row.get('tax_id'), tax_names).ids)],
             'o14_line_id': row.get('id') or 0,
         })
+        # ส่วนลดรายบรรทัด (ใช้เกณฑ์ขออนุมัติ 50%) — ฝั่ง 14 บางฐานไม่มีช่อง ก็ข้ามไป
+        Line = self.env['sale.order.line']
+        for name in ('discount_type_selection', 'discount_method', 'discount_amount'):
+            if name in Line._fields and row.get(name):
+                values[name] = row[name]
+        # น้ำหนักต่อหน่วยตามฝั่ง 14 ถ้ามี ไม่มีก็ให้ดึงจากน้ำหนักสินค้าฝั่ง 18 เอง
+        if 'second_uom_qty' in Line._fields and row.get('second_uom_qty'):
+            values['second_uom_qty'] = row['second_uom_qty']
         return values, None
 
     def _set_o14_amounts(self, order, line_rows):
@@ -195,10 +205,17 @@ class RentalOrderImport(models.Model):
             return
         order.flush_recordset()
         lines.flush_recordset()
+        # เขียนตรงแล้วน้ำหนักรวมไม่คำนวณตาม (sale_api_rent: จำนวน × น้ำหนักต่อหน่วย) — ใส่ไปพร้อมกัน
+        weight = 'total_weight' in lines._fields and not getattr(order, 'is_renew_green_house', False)
         for line in lines:
-            self.env.cr.execute('UPDATE sale_order_line SET pfb_quantity = %s WHERE id = %s',
-                                (qty[line.o14_line_id], line.id))
-        lines.invalidate_recordset(['pfb_quantity'])
+            if weight:
+                self.env.cr.execute(
+                    'UPDATE sale_order_line SET pfb_quantity = %s, total_weight = %s * COALESCE(second_uom_qty, 0) '
+                    'WHERE id = %s', (qty[line.o14_line_id], qty[line.o14_line_id], line.id))
+            else:
+                self.env.cr.execute('UPDATE sale_order_line SET pfb_quantity = %s WHERE id = %s',
+                                    (qty[line.o14_line_id], line.id))
+        lines.invalidate_recordset(['pfb_quantity', 'total_weight'] if weight else ['pfb_quantity'])
 
     # ------------------------------------------------------------------
     def _fetch_o14_net_delivered(self, order_ids):
