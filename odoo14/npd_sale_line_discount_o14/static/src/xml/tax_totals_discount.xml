@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <!-- ใบเสนอราคา/ใบสั่งขาย: ส่วนลดแบบ o14 ต่อจาก "ราคาก่อนรวมภาษีมูลค่าเพิ่ม" ก่อนบรรทัด VAT
+         แสดงอย่างเดียว ไม่หักออกจากยอดรวม (เหมือน o14) -->
+    <t t-name="npd_sale_line_discount_o14.TaxTotalsField" t-inherit="account.TaxTotalsField" t-inherit-mode="extension">
+        <xpath expr="//t[@t-foreach='subtotal.tax_groups']" position="before">
+            <t t-if="subtotal_first and props.record.resModel === 'sale.order'">
+                <tr t-if="'discount_amt_line' in props.record.data">
+                    <td class="o_td_label">
+                        <label class="o_form_label o_tax_total_label">- Line Discount</label>
+                    </td>
+                    <td class="o_list_monetary">
+                        <span style="white-space: nowrap;" t-out="formatMonetary(props.record.data.discount_amt_line || 0)"/>
+                    </td>
+                </tr>
+                <tr t-if="'total_rental_discount' in props.record.data and !props.record.data.is_npd_logistics_company">
+                    <td class="o_td_label">
+                        <label class="o_form_label o_tax_total_label">- Rental Discount</label>
+                    </td>
+                    <td class="o_list_monetary">
+                        <span style="white-space: nowrap;" t-out="formatMonetary(props.record.data.total_rental_discount || 0)"/>
+                    </td>
+                </tr>
+            </t>
+        </xpath>
+    </t>
+</templates>

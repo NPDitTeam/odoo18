@@ -18,10 +18,13 @@
                        readonly="discount_method not in ('fix', 'per')"/>
                 <field name="commitment_date" optional="show"/>
             </xpath>
-            <!-- สรุปท้ายใบแบบ o14: - Line Discount (ส่วนลดประเภท Product) ก่อน - Rental Discount
-                 ไม่หักออกจากยอดรวม เหมือน o14 -->
+            <!-- สรุปท้ายใบแบบ o14: - Line Discount / - Rental Discount แสดงในตารางยอดก่อนบรรทัด VAT
+                 (static/src/xml/tax_totals_discount.xml) ช่องในฟอร์มเก็บไว้ให้โหลดค่าเท่านั้น -->
             <xpath expr="//group[@name='sale_total']/field[@name='total_rental_discount']" position="before">
-                <field name="discount_amt_line" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                <field name="discount_amt_line" invisible="1"/>
+            </xpath>
+            <xpath expr="//group[@name='sale_total']/field[@name='total_rental_discount']" position="attributes">
+                <attribute name="invisible">1</attribute>
             </xpath>
             <xpath expr="//field[@name='order_line']/list/field[@name='tax_id']" position="after">
                 <field name="price_subtotal_without_discount" widget="monetary"/>
