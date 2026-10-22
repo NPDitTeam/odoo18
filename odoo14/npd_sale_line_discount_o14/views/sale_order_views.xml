@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- คอลัมน์ตามลำดับ o14: ... ราคาต่อหน่วย, ประเภทการลดราคา, ยอดส่วนลด, วันที่จัดส่งสินค้า, ภาษี, ยอดหลังหักส่วนลด, รวม -->
+    <record id="view_order_form_line_discount_o14" model="ir.ui.view">
+        <field name="name">sale.order.form.line.discount.o14</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_order_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='order_line']/list/field[@name='tax_id']" position="before">
+                <field name="discount_method"/>
+                <field name="discount_amount" string="ยอดส่วนลด"
+                       readonly="discount_method not in ('fix', 'per')"/>
+                <field name="commitment_date" optional="show"/>
+            </xpath>
+            <xpath expr="//field[@name='order_line']/list/field[@name='tax_id']" position="after">
+                <field name="price_subtotal_without_discount" widget="monetary"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>
