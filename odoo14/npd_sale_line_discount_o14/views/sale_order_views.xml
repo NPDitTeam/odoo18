@@ -5,7 +5,13 @@
         <field name="name">sale.order.form.line.discount.o14</field>
         <field name="model">sale.order</field>
         <field name="inherit_id" ref="sale.view_order_form"/>
+        <!-- หลัง npd_logistics_hide_buttons (99) ที่ย้ายค่าประกันไปหลังหน่วยวัด -->
+        <field name="priority">100</field>
         <field name="arch" type="xml">
+            <!-- น้ำหนักต่อหน่วย (ดึงจากน้ำหนักสินค้า) ต่อจากค่าประกันแบบ o14 — แก้ไม่ได้ กันน้ำหนักรวมเพี้ยน -->
+            <xpath expr="//field[@name='order_line']/list/field[@name='pfb_insurance_price']" position="after">
+                <field name="second_uom_qty" string="น้ำหนักต่อหน่วย" readonly="1" force_save="1"/>
+            </xpath>
             <xpath expr="//field[@name='order_line']/list/field[@name='tax_id']" position="before">
                 <field name="discount_method"/>
                 <field name="discount_amount" string="ยอดส่วนลด"
