@@ -58,7 +58,7 @@
         <field name="target">new</field>
     </record>
 
-    <menuitem id="menu_npd_doc_finder" name="ค้นหาเลขเอกสาร"
-              parent="account.menu_finance" action="action_npd_doc_finder" sequence="0"/>
+    <!-- เมนู "ค้นหาเลขเอกสาร" ถอดออก 22 ต.ค. 2569 ตามผู้ใช้; โมดูลยังอยู่เพราะเมนู
+         "ตรวจสอบเอกสารที่เชื่อมโยง" (npd_doc_trace) ใช้ตัวค้นเลขเอกสารนี้ -->
 
 </odoo>
