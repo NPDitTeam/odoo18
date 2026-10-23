@@ -5,6 +5,14 @@ from odoo import api, models
 class SaleOrder(models.Model):
     _inherit = 'sale.order'
 
+    def action_draft(self):
+        # ยกเลิกแล้วตั้งกลับเป็นใบเสนอราคา = ทำใหม่ การอนุมัติเดิม (ส่วนลด/ค่าประกัน) ต้องเริ่มใหม่ด้วย
+        # ไม่งั้นแก้ส่วนลดเพิ่มแล้วยังขึ้น "อนุมัติแล้ว" Convert ได้เลย (SO-261023-0026, 23 ต.ค. 2569)
+        res = super().action_draft()
+        if 'state_sale' in self._fields:
+            self.filtered(lambda o: o.state == 'draft' and o.state_sale != 'draft').write({'state_sale': 'draft'})
+        return res
+
     def _show_cancel_wizard(self):
         # กดยกเลิกแล้วยกเลิกเลย ไม่เปิดหน้าส่งอีเมลแจ้งลูกค้า (ผู้ใช้สั่ง 23 ต.ค. 2569)
         return False
