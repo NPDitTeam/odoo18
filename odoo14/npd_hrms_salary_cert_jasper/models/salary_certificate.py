@@ -138,4 +138,6 @@ class NpdSalaryCertificate(models.Model):
             rec.jasper_footer_phone = 'โทร. %s' % c.hrms_cert_footer_phone if c.hrms_cert_footer_phone else ''
 
     def action_print(self):
-        return self.env.ref('npd_hrms_salary_cert_jasper.jasper_salary_certificate_report').report_action(self)
+        # config=False: ไม่ให้ Odoo เด้งหน้า "กำหนดค่าเค้าโครงเอกสาร" (บริษัทที่ยังไม่ตั้ง layout) — รายงานนี้เป็น Jasper
+        return self.env.ref('npd_hrms_salary_cert_jasper.jasper_salary_certificate_report').report_action(
+            self, config=False)
