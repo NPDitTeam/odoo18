@@ -1,0 +1,4 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_npd_sale_approval_request,npd.sale.approval.request,model_npd_sale_approval_request,base.group_user,1,1,1,1
+access_npd_sale_approval_decide,npd.sale.approval.decide,model_npd_sale_approval_decide,base.group_user,1,1,1,1
+access_npd_sale_approval_decide_line,npd.sale.approval.decide.line,model_npd_sale_approval_decide_line,base.group_user,1,1,1,1
