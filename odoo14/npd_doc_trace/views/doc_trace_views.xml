@@ -11,7 +11,7 @@
                     กด <b>เปิด</b> เพื่อไปหน้าเอกสาร หรือ <b>ตรวจต่อ</b> เพื่อดูเอกสารที่เชื่อมกับใบนั้นต่อ
                 </div>
                 <field name="doc_id" widget="npd_doc_trace" nolabel="1" class="w-100"
-                       placeholder="เช่น CUST.IN-261020-0039, INV-1019, SO-2610..."
+                       placeholder="เลขเอกสารหรือเลขใบกำกับภาษี เช่น CUST.IN-261020-0039, INV-1019, TI52Y622514A-2609..."
                        options="{'no_create': True, 'no_open': True}"/>
                 <div invisible="not trail" class="mt-2">
                     <span class="text-muted">เส้นทาง: </span><field name="trail" readonly="1" nolabel="1" class="d-inline"/>

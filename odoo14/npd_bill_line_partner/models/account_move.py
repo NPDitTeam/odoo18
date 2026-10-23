@@ -95,6 +95,20 @@ class AccountMove(models.Model):
         self._npd_check_line_partner()
         return super().action_post()
 
+    def _npd_apply_line_partner_to_journal(self):
+        """ลงบันทึกแล้ว: Partner รายบรรทัด → partner_id ของบรรทัดค่าใช้จ่าย ให้บัญชีแยกประเภทกรองตาม Partner จริงได้
+        (o14 AP-0930260007 Steeltech ไม่เจอใน General Ledger, 23 ต.ค. 2569) บรรทัดเจ้าหนี้ยังเป็นผู้ขาย"""
+        for move in self.filtered(lambda m: m.state == 'posted' and m.move_type in BILL_TYPES):
+            for line in move.invoice_line_ids:
+                if line.display_type == 'product' and line.npd_line_partner_id \
+                        and line.partner_id != line.npd_line_partner_id:
+                    line.with_context(check_move_validity=False).write({'partner_id': line.npd_line_partner_id.id})
+
+    def _post(self, soft=True):
+        posted = super()._post(soft=soft)
+        posted._npd_apply_line_partner_to_journal()
+        return posted
+
 
 class AccountMoveLine(models.Model):
     _inherit = 'account.move.line'
