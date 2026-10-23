@@ -28,11 +28,35 @@ class SaleOrder(models.Model):
         string='เป็นบริษัทเอ็นพีดี โลจิสติกส์',
         compute='_compute_tr_is_npd_logistics')
 
+    # ข้อมูลขนส่งที่สร้างจากใบนี้ (ปุ่มลัดบนใบสั่งขาย ผู้ใช้สั่ง 23 ต.ค. 2569)
+    # จับคู่ด้วยเลขใบ + is_from_odoo18 — เลขใบโลจิสติกส์ o18 ชนกับใบที่ซิงก์จาก o14 ได้ (เช่น SO-261022-0022)
+    tr_transport_order_id = fields.Many2one(
+        'transport.order', string='ข้อมูลขนส่ง', compute='_compute_tr_transport_order')
+
     @api.depends('company_id', 'company_id.company_registry')
     def _compute_tr_is_npd_logistics(self):
         for order in self:
             order.tr_is_npd_logistics = (
                 order.company_id.company_registry == NPD_LOGISTICS_REGISTRY)
+
+    @api.depends('name', 'transport_sent')
+    def _compute_tr_transport_order(self):
+        Transport = self.env['transport.order'].sudo().with_context(transport_sync_all_branches=True)
+        for order in self:
+            order.tr_transport_order_id = Transport.search([
+                ('name', '=', order.name), ('is_from_odoo18', '=', True)], limit=1) \
+                if order.transport_sent and order.name else False
+
+    def action_open_transport_order(self):
+        self.ensure_one()
+        return {
+            'type': 'ir.actions.act_window',
+            'name': _('ข้อมูลขนส่ง'),
+            'res_model': 'transport.order',
+            'res_id': self.tr_transport_order_id.id,
+            'view_mode': 'form',
+            'target': 'current',
+        }
 
     def _prepare_transport_payload(self):
         """ สร้าง dict โครงสร้างเดียวกับ API /api/sale_orders ของ odoo14

@@ -15,6 +15,13 @@
                         icon="fa-paper-plane"
                         string="ส่งไปยังระบบขนส่ง"
                         invisible="state != 'sale' or not tr_is_npd_logistics"/>
+                <!-- ส่งแล้ว: ลัดไปดูข้อมูลขนส่งที่สร้างจากใบนี้ -->
+                <field name="tr_transport_order_id" invisible="1"/>
+                <button name="action_open_transport_order" type="object"
+                        class="oe_stat_button"
+                        icon="fa-truck"
+                        string="ข้อมูลขนส่ง"
+                        invisible="not tr_transport_order_id"/>
             </xpath>
         </field>
     </record>
