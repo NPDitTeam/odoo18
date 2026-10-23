@@ -31,6 +31,13 @@
             <xpath expr="//field[@name='order_line']" position="attributes">
                 <attribute name="readonly">state in ('sale', 'done', 'cancel') or locked or not pricelist_id</attribute>
             </xpath>
+            <!-- เงื่อนไขและข้อกำหนด: ข้อความธรรมดาแทนตัวแก้ HTML (ซ่อนช่องเดิม ไม่ replace เพราะวิวอื่นอาจ xpath หา note) -->
+            <xpath expr="//field[@name='note']" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+            <xpath expr="//field[@name='note']" position="after">
+                <field name="npd_note_text" colspan="2" nolabel="1" placeholder="เงื่อนไขและข้อกำหนด..."/>
+            </xpath>
             <xpath expr="//field[@name='order_line']/list/field[@name='tax_id']" position="after">
                 <field name="price_subtotal_without_discount" widget="monetary"/>
             </xpath>

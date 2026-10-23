@@ -1,9 +1,25 @@
 # -*- coding: utf-8 -*-
-from odoo import api, models
+from odoo import api, fields, models
+from odoo.tools import html2plaintext, is_html_empty, plaintext2html
 
 
 class SaleOrder(models.Model):
     _inherit = 'sale.order'
+
+    # เงื่อนไขและข้อกำหนดแบบข้อความธรรมดา ไม่มีแถบเครื่องมือ (ผู้ใช้สั่ง 23 ต.ค. 2569 เหมือนใบลดหนี้)
+    # ข้อมูลยังเก็บใน note (Html) เดิม ใบแจ้งหนี้/รายงานที่อ่าน note จึงใช้ได้เหมือนเดิม
+    npd_note_text = fields.Text(
+        string='เงื่อนไขและข้อกำหนด',
+        compute='_compute_npd_note_text', inverse='_inverse_npd_note_text')
+
+    def _compute_npd_note_text(self):
+        for order in self:
+            order.npd_note_text = '' if is_html_empty(order.note) else html2plaintext(order.note)
+
+    def _inverse_npd_note_text(self):
+        for order in self:
+            text = (order.npd_note_text or '').strip()
+            order.note = plaintext2html(text) if text else False
 
     def action_draft(self):
         # ยกเลิกแล้วตั้งกลับเป็นใบเสนอราคา = ทำใหม่ การอนุมัติเดิม (ส่วนลด/ค่าประกัน) ต้องเริ่มใหม่ด้วย
