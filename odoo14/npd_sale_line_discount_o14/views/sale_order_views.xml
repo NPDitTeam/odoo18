@@ -26,6 +26,11 @@
             <xpath expr="//group[@name='sale_total']/field[@name='total_rental_discount']" position="attributes">
                 <attribute name="invisible">1</attribute>
             </xpath>
+            <!-- ยืนยันเป็นคำสั่งขายแล้ว แก้/เพิ่ม/ลบรายการสินค้าไม่ได้ (ผู้ใช้สั่ง 23 ต.ค. 2569)
+                 เดิม: state == 'cancel' or locked or not pricelist_id -->
+            <xpath expr="//field[@name='order_line']" position="attributes">
+                <attribute name="readonly">state in ('sale', 'done', 'cancel') or locked or not pricelist_id</attribute>
+            </xpath>
             <xpath expr="//field[@name='order_line']/list/field[@name='tax_id']" position="after">
                 <field name="price_subtotal_without_discount" widget="monetary"/>
             </xpath>
