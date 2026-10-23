@@ -67,7 +67,7 @@
                         <page string="รายการพนักงาน" name="lines">
                             <field name="line_ids">
                                 <list limit="500"
-                                      decoration-warning="refund_status == 'pending'"
+                                      decoration-warning="refund_status in ('pending', 'on_hold')"
                                       decoration-muted="skip_deduction">
                                     <field name="employee_code"/>
                                     <field name="firstname"/>
@@ -83,7 +83,9 @@
                                     <field name="skip_deduction"/>
                                     <field name="work_status"/>
                                     <field name="refund_amount" sum="ต้องคืน"/>
-                                    <field name="refund_status" widget="badge"/>
+                                    <field name="refund_status" widget="badge"
+                                           decoration-danger="refund_status == 'on_hold'"/>
+                                    <field name="refund_hold" string="ระงับคืน" optional="show"/>
                                     <button name="action_generate_schedule" type="object"
                                             string="สร้างงวด" icon="fa-calendar"
                                             class="btn-link"/>
@@ -109,6 +111,16 @@
                                             <field name="deducted_amount"/>
                                             <field name="refund_amount"/>
                                             <field name="refund_status"/>
+                                            <!-- ระงับการคืน: ติ๊ก = ไม่คืน จนกว่าจะเอาติ๊กออก (คืนในรอบของวันที่ปลดระงับ) -->
+                                            <field name="refund_hold"
+                                                   invisible="work_status != 'resigned'"
+                                                   readonly="manual_refunded"/>
+                                            <field name="refund_hold_note" invisible="not refund_hold"
+                                                   placeholder="เช่น รอตรวจทรัพย์สิน/หนี้ค้างก่อนคืน"/>
+                                            <field name="refund_release_date"
+                                                   invisible="work_status != 'resigned' or refund_hold"/>
+                                            <field name="refund_due_date"
+                                                   invisible="work_status != 'resigned' or refund_hold"/>
                                             <field name="manual_refunded"/>
                                             <field name="manual_refunded_date"
                                                    invisible="not manual_refunded"/>
