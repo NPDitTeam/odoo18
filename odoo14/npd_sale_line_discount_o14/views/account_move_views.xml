@@ -16,6 +16,11 @@
             <xpath expr="//field[@name='tax_totals']" position="before">
                 <field name="discount_amt_line" invisible="1"/>
             </xpath>
+            <!-- - ส่วนลดค่าเช่า ท้ายใบแจ้งหนี้: o14 ไม่เคยมีค่า (0 ทุกใบ) การคืนเงินประกันใช้ rent_discount ของใบรับคืนสินค้า
+                 ผู้ใช้สั่งซ่อน 23 ต.ค. 2569 -->
+            <xpath expr="//field[@name='total_rental_discount']" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
         </field>
     </record>
 </odoo>
