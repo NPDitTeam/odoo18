@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'NPD คอลัมน์ส่วนลดรายการสินค้าแบบ o14',
-    'version': '18.0.1.4.0',
+    'version': '18.0.1.5.1',
     'summary': 'น้ำหนักต่อหน่วย / ประเภทการลดราคา / ยอดส่วนลด / วันที่จัดส่งสินค้า / ยอดหลังหักส่วนลด ในรายการใบเสนอราคา + ส่วนลดเกิน 50% ต้องขออนุมัติ',
     'description': """
 ให้คอลัมน์รายการสินค้าใบเสนอราคา/ใบสั่งขาย o18 ตรงกับ o14 (ผู้ใช้สั่ง 22 ต.ค. 2569)
@@ -16,8 +16,9 @@ o14 ได้คอลัมน์เหล่านี้จาก bi_sale_purc
     'category': 'Sales',
     'author': 'NPD',
     'license': 'LGPL-3',
-    'depends': ['sale_isolated_quotation', 'pfb_npd_all_customs'],
+    'depends': ['sale_isolated_quotation', 'pfb_npd_all_customs', 'product'],
     'data': [
+        'data/decimal_precision.xml',
         'views/sale_order_views.xml',
     ],
     'assets': {

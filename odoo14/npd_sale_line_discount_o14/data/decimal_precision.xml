@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ส่วนลด Fixed แปลงเป็น % ของยอดบรรทัด ทศนิยม 2 ตำแหน่ง (ค่าเดิม) ทำยอดบาทเพี้ยน → 6 ตำแหน่ง
+         product.decimal_discount เป็น noupdate จึงตั้งผ่าน function ทุกครั้งที่อัปเดตโมดูล -->
+    <function model="decimal.precision" name="write"
+              eval="[[ref('product.decimal_discount')], {'digits': 6}]"/>
+</odoo>

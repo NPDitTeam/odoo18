@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from odoo import models
+from odoo import api, models
 
 
 class SaleOrder(models.Model):
@@ -8,3 +8,20 @@ class SaleOrder(models.Model):
     def _show_cancel_wizard(self):
         # กดยกเลิกแล้วยกเลิกเลย ไม่เปิดหน้าส่งอีเมลแจ้งลูกค้า (ผู้ใช้สั่ง 23 ต.ค. 2569)
         return False
+
+    # แทนของ pfb_npd_all_customs: รวมส่วนลดเป็นบาท (o14 เอาตัวเลขที่กรอกมาบวกตรง ๆ
+    # เลือก Percentage 20 + 20 เลยขึ้น 40 แทน 44 บาท) และคิดใหม่เมื่อยอด/ประเภทการลดราคาเปลี่ยน
+    @api.depends('order_line.discount_type_selection', 'order_line.discount_amount',
+                 'order_line.discount_method', 'order_line.price_unit',
+                 'order_line.product_uom_qty', 'order_line.tax_id')
+    def _compute_total_rental_discount(self):
+        for order in self:
+            rental_discount = product_discount = 0.0
+            for line in order.order_line:
+                baht = line._npd_discount_baht()
+                if line.discount_type_selection == 'rental':
+                    rental_discount += baht
+                elif not line.discount_type_selection or line.discount_type_selection == 'product':
+                    product_discount += baht
+            order.total_rental_discount = rental_discount
+            order.discount_amt_line = product_discount

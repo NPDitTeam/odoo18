@@ -117,11 +117,11 @@ class SaleOrder(models.Model):
                     max_discount = line.price_subtotal_without_discount * 0.5  # 50% ของยอดรวมรายการสินค้า
 
                     if rec.state_sale == 'draft' or rec.state_sale == 'waiting_to_approve'or rec.state_sale == 'reject':
-                        if line.discount_amount > max_discount:
+                        if (line._npd_discount_baht() if hasattr(line, "_npd_discount_baht") else line.discount_amount) > max_discount:
                             rec.button_convert_visible = False
 
                     elif rec.state_sale == 'approved':
-                        if line.discount_amount > max_discount:
+                        if (line._npd_discount_baht() if hasattr(line, "_npd_discount_baht") else line.discount_amount) > max_discount:
                             rec.button_convert_visible = True
 
     @api.onchange("order_line.discount_amount", "discount_amt_line", "pfb_dis_amount_insurance", "quotation_state", "state_sale")
@@ -254,7 +254,7 @@ class SaleOrder(models.Model):
                     max_discount = line.price_subtotal_without_discount * 0.5  # 50% ของยอดรวมรายการสินค้า
 
                     if rec.state_sale == 'draft' or rec.state_sale == 'reject':
-                        if line.discount_amount > max_discount:
+                        if (line._npd_discount_baht() if hasattr(line, "_npd_discount_baht") else line.discount_amount) > max_discount:
                             rec.button_convert_visible_send = True
 
 
