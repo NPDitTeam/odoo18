@@ -1,0 +1,5 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_npd_salary_certificate_officer,npd.salary.certificate officer,model_npd_salary_certificate,npd_hrms_base.group_hrms_officer,1,1,1,0
+access_npd_salary_certificate_manager,npd.salary.certificate manager,model_npd_salary_certificate,npd_hrms_base.group_hrms_manager,1,1,1,1
+access_npd_salary_cert_signer_officer,npd.salary.cert.signer officer,model_npd_salary_cert_signer,npd_hrms_base.group_hrms_officer,1,0,0,0
+access_npd_salary_cert_signer_manager,npd.salary.cert.signer manager,model_npd_salary_cert_signer,npd_hrms_base.group_hrms_manager,1,1,1,1

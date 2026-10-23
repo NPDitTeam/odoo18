@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- report_name ต้องไม่ซ้ำทั้งฐาน (jasper_reports หาไฟล์ jrxml จากชื่อนี้) และห้ามมี "/" -->
+    <record id="jasper_salary_certificate_report" model="ir.actions.report">
+        <field name="name">หนังสือรับรองเงินเดือน</field>
+        <field name="model">npd.salary.certificate</field>
+        <field name="report_type">jasper</field>
+        <field name="file">npd_hrms_salary_cert_jasper/report/salary_certificate.jrxml</field>
+        <field name="attachment_use">False</field>
+        <field name="report_name">หนังสือรับรองเงินเดือน NPD</field>
+        <field name="jasper_report">True</field>
+        <field name="jasper_output">pdf</field>
+        <field name="model_id" ref="npd_hrms_salary_cert_jasper.model_npd_salary_certificate"/>
+        <field name="binding_model_id" ref="npd_hrms_salary_cert_jasper.model_npd_salary_certificate"/>
+        <field name="binding_type">report</field>
+        <field name="print_report_name">'หนังสือรับรองเงินเดือน_%s' % (object.employee_name or object.id)</field>
+    </record>
+    <record id="jasper_salary_certificate_file" model="ir.actions.report.xml.file">
+        <field name="default">True</field>
+        <field name="filename">salary_certificate.jrxml</field>
+        <field name="report_id" ref="npd_hrms_salary_cert_jasper.jasper_salary_certificate_report"/>
+        <field name="file" type="base64" file="npd_hrms_salary_cert_jasper/report/salary_certificate.jrxml"/>
+    </record>
+</odoo>

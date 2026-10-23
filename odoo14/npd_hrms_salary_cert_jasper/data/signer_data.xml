@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+    <record id="signer_supaporn" model="npd.salary.cert.signer">
+        <field name="sequence">10</field>
+        <field name="name">นางสาวสุภาพร ฤทธิ์คำรพ</field>
+        <field name="title">ฝ่ายบุคคล</field>
+    </record>
+    <record id="signer_suttawee" model="npd.salary.cert.signer">
+        <field name="sequence">20</field>
+        <field name="name">นายสุทธวีร์ วิญญรัตน์</field>
+        <field name="title">รักษาการแทนฝ่ายบุคคล</field>
+    </record>
+</odoo>
