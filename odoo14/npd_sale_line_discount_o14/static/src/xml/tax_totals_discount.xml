@@ -4,6 +4,17 @@
          แสดงอย่างเดียว ไม่หักออกจากยอดรวม (เหมือน o14) -->
     <t t-name="npd_sale_line_discount_o14.TaxTotalsField" t-inherit="account.TaxTotalsField" t-inherit-mode="extension">
         <xpath expr="//t[@t-foreach='subtotal.tax_groups']" position="before">
+            <!-- ใบแจ้งหนี้/ใบลดหนี้ลูกค้า: - Line Discount (ส่วนลดค่าเช่ามีช่องของ pfb_npd_all_customs ใต้ตารางอยู่แล้ว) -->
+            <t t-if="subtotal_first and props.record.resModel === 'account.move' and ['out_invoice', 'out_refund'].includes(props.record.data.move_type) and 'discount_amt_line' in props.record.data">
+                <tr>
+                    <td class="o_td_label">
+                        <label class="o_form_label o_tax_total_label">- Line Discount</label>
+                    </td>
+                    <td class="o_list_monetary">
+                        <span style="white-space: nowrap;" t-out="formatMonetary(props.record.data.discount_amt_line || 0)"/>
+                    </td>
+                </tr>
+            </t>
             <t t-if="subtotal_first and props.record.resModel === 'sale.order'">
                 <tr t-if="'discount_amt_line' in props.record.data">
                     <td class="o_td_label">
